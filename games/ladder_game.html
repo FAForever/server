@@ -29,14 +29,13 @@
 <pre><code class="python">import logging
 from typing import List, Optional
 
-from server.abc.base_game import InitMode
 from server.config import config
 from server.players import Player
 from server.rating import RatingType
 
-from .game import Game, GameType
+from .game import Game
 from .game_results import ArmyOutcome, GameOutcome
-from .typedefs import FeaturedModType
+from .typedefs import FeaturedModType, GameType, InitMode
 
 logger = logging.getLogger(__name__)
 

@@ -42,6 +42,20 @@ class GameState(Enum):
 
 
 @unique
+class GameConnectionState(Enum):
+    INITIALIZING = 0
+    INITIALIZED = 1
+    CONNECTED_TO_HOST = 2
+    ENDED = 3
+
+
+@unique
+class InitMode(Enum):
+    NORMAL_LOBBY = 0
+    AUTO_LOBBY = 1
+
+
+@unique
 class Victory(Enum):
     DEMORALIZATION = 0
     DOMINATION = 1
@@ -58,22 +72,13 @@ class GameType(Enum):
     @staticmethod
     def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
         &#34;&#34;&#34;
-        :param value: The string to convert from
-
-        :return: GameType or None if the string is not valid
+        # Returns
+        `GameType` or `None` if the string is not valid
         &#34;&#34;&#34;
-        return {
-            &#34;coop&#34;: GameType.COOP,
-            &#34;custom&#34;: GameType.CUSTOM,
-            &#34;matchmaker&#34;: GameType.MATCHMAKER,
-        }.get(value)
+        return GameType.__members__.get(value.upper())
 
-    def to_string(self) -&gt; Optional[str]:
-        return {
-            GameType.COOP: &#34;coop&#34;,
-            GameType.CUSTOM: &#34;custom&#34;,
-            GameType.MATCHMAKER: &#34;matchmaker&#34;,
-        }.get(self)
+    def to_string(self) -&gt; str:
+        return self.name.lower()
 
 
 @unique
@@ -587,6 +592,46 @@ def from_basic(
 </dd>
 </dl>
 </dd>
+<dt id="server.games.typedefs.GameConnectionState"><code class="flex name class">
+<span>class <span class="ident">GameConnectionState</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GameConnectionState(Enum):
+    INITIALIZING = 0
+    INITIALIZED = 1
+    CONNECTED_TO_HOST = 2
+    ENDED = 3</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.games.typedefs.GameConnectionState.CONNECTED_TO_HOST"><code class="name">var <span class="ident">CONNECTED_TO_HOST</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.typedefs.GameConnectionState.ENDED"><code class="name">var <span class="ident">ENDED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.typedefs.GameConnectionState.INITIALIZED"><code class="name">var <span class="ident">INITIALIZED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.typedefs.GameConnectionState.INITIALIZING"><code class="name">var <span class="ident">INITIALIZING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
 <dt id="server.games.typedefs.GameState"><code class="flex name class">
 <span>class <span class="ident">GameState</span></span>
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
@@ -645,22 +690,13 @@ def from_basic(
     @staticmethod
     def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
         &#34;&#34;&#34;
-        :param value: The string to convert from
-
-        :return: GameType or None if the string is not valid
+        # Returns
+        `GameType` or `None` if the string is not valid
         &#34;&#34;&#34;
-        return {
-            &#34;coop&#34;: GameType.COOP,
-            &#34;custom&#34;: GameType.CUSTOM,
-            &#34;matchmaker&#34;: GameType.MATCHMAKER,
-        }.get(value)
+        return GameType.__members__.get(value.upper())
 
-    def to_string(self) -&gt; Optional[str]:
-        return {
-            GameType.COOP: &#34;coop&#34;,
-            GameType.CUSTOM: &#34;custom&#34;,
-            GameType.MATCHMAKER: &#34;matchmaker&#34;,
-        }.get(self)</code></pre>
+    def to_string(self) -&gt; str:
+        return self.name.lower()</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -687,8 +723,8 @@ def from_basic(
 <span>def <span class="ident">from_string</span></span>(<span>value: str) ‑> Union[<a title="server.games.typedefs.GameType" href="#server.games.typedefs.GameType">GameType</a>, NoneType]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>:param value: The string to convert from</p>
-<p>:return: GameType or None if the string is not valid</p></div>
+<div class="desc"><h1 id="returns">Returns</h1>
+<p><code><a title="server.games.typedefs.GameType" href="#server.games.typedefs.GameType">GameType</a></code> or <code>None</code> if the string is not valid</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -696,22 +732,17 @@ def from_basic(
 <pre><code class="python">@staticmethod
 def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
     &#34;&#34;&#34;
-    :param value: The string to convert from
-
-    :return: GameType or None if the string is not valid
+    # Returns
+    `GameType` or `None` if the string is not valid
     &#34;&#34;&#34;
-    return {
-        &#34;coop&#34;: GameType.COOP,
-        &#34;custom&#34;: GameType.CUSTOM,
-        &#34;matchmaker&#34;: GameType.MATCHMAKER,
-    }.get(value)</code></pre>
+    return GameType.__members__.get(value.upper())</code></pre>
 </details>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
 <dt id="server.games.typedefs.GameType.to_string"><code class="name flex">
-<span>def <span class="ident">to_string</span></span>(<span>self) ‑> Union[str, NoneType]</span>
+<span>def <span class="ident">to_string</span></span>(<span>self) ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -719,13 +750,39 @@ def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def to_string(self) -&gt; Optional[str]:
-    return {
-        GameType.COOP: &#34;coop&#34;,
-        GameType.CUSTOM: &#34;custom&#34;,
-        GameType.MATCHMAKER: &#34;matchmaker&#34;,
-    }.get(self)</code></pre>
+<pre><code class="python">def to_string(self) -&gt; str:
+    return self.name.lower()</code></pre>
 </details>
+</dd>
+</dl>
+</dd>
+<dt id="server.games.typedefs.InitMode"><code class="flex name class">
+<span>class <span class="ident">InitMode</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class InitMode(Enum):
+    NORMAL_LOBBY = 0
+    AUTO_LOBBY = 1</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.games.typedefs.InitMode.AUTO_LOBBY"><code class="name">var <span class="ident">AUTO_LOBBY</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.typedefs.InitMode.NORMAL_LOBBY"><code class="name">var <span class="ident">NORMAL_LOBBY</span></code></dt>
+<dd>
+<div class="desc"></div>
 </dd>
 </dl>
 </dd>
@@ -1033,6 +1090,15 @@ def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
 </ul>
 </li>
 <li>
+<h4><code><a title="server.games.typedefs.GameConnectionState" href="#server.games.typedefs.GameConnectionState">GameConnectionState</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.typedefs.GameConnectionState.CONNECTED_TO_HOST" href="#server.games.typedefs.GameConnectionState.CONNECTED_TO_HOST">CONNECTED_TO_HOST</a></code></li>
+<li><code><a title="server.games.typedefs.GameConnectionState.ENDED" href="#server.games.typedefs.GameConnectionState.ENDED">ENDED</a></code></li>
+<li><code><a title="server.games.typedefs.GameConnectionState.INITIALIZED" href="#server.games.typedefs.GameConnectionState.INITIALIZED">INITIALIZED</a></code></li>
+<li><code><a title="server.games.typedefs.GameConnectionState.INITIALIZING" href="#server.games.typedefs.GameConnectionState.INITIALIZING">INITIALIZING</a></code></li>
+</ul>
+</li>
+<li>
 <h4><code><a title="server.games.typedefs.GameState" href="#server.games.typedefs.GameState">GameState</a></code></h4>
 <ul class="">
 <li><code><a title="server.games.typedefs.GameState.ENDED" href="#server.games.typedefs.GameState.ENDED">ENDED</a></code></li>
@@ -1049,6 +1115,13 @@ def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
 <li><code><a title="server.games.typedefs.GameType.MATCHMAKER" href="#server.games.typedefs.GameType.MATCHMAKER">MATCHMAKER</a></code></li>
 <li><code><a title="server.games.typedefs.GameType.from_string" href="#server.games.typedefs.GameType.from_string">from_string</a></code></li>
 <li><code><a title="server.games.typedefs.GameType.to_string" href="#server.games.typedefs.GameType.to_string">to_string</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.games.typedefs.InitMode" href="#server.games.typedefs.InitMode">InitMode</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.typedefs.InitMode.AUTO_LOBBY" href="#server.games.typedefs.InitMode.AUTO_LOBBY">AUTO_LOBBY</a></code></li>
+<li><code><a title="server.games.typedefs.InitMode.NORMAL_LOBBY" href="#server.games.typedefs.InitMode.NORMAL_LOBBY">NORMAL_LOBBY</a></code></li>
 </ul>
 </li>
 <li>

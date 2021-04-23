@@ -98,29 +98,30 @@ class AchievementService(Service):
         &#34;&#34;&#34;
         Sends a batch of achievement updates.
 
-        :param player_id: the player to update the achievements for
-        :param queue: an array of achievement updates in the form::
+        # Params
+        - `player_id`: the player to update the achievements for
+        - `queue`: an array of achievement updates in the form:
+        ```
+        [{
+            &#34;achievement_id&#34;: string,
+            &#34;update_type&#34;: &#34;REVEAL|INCREMENT|UNLOCK|SET_STEPS_AT_LEAST&#34;,
+            &#34;steps&#34;: integer
+        }]
+        ```
+        `steps` is mandatory for update type `INCREMENT` and
+        `SET_STEPS_AT_LEAST`.
 
-            [{
-                &#34;achievement_id&#34;: string,
-                &#34;update_type&#34;: string,
-                &#34;steps&#34;: integer
-            }]
-
-            ``updateType`` being one of &#34;REVEAL&#34;, &#34;INCREMENT&#34;, &#34;UNLOCK&#34; or &#34;SET_STEPS_AT_LEAST&#34;
-            ``steps`` being mandatory only for update type `` INCREMENT`` and ``SET_STEPS_AT_LEAST``
-
-        :return
-        If successful, this method returns an array with the following structure::
-
-            [{
-                &#34;achievement_id&#34;: string,
-                &#34;current_state&#34;: string,
-                &#34;current_steps&#34;: integer,
-                &#34;newly_unlocked&#34;: boolean
-            }]
-
-        Else, it returns None
+        # Returns
+        If successful, this method returns an array with the following structure:
+        ```
+        [{
+            &#34;achievement_id&#34;: string,
+            &#34;current_state&#34;: string,
+            &#34;current_steps&#34;: integer,
+            &#34;newly_unlocked&#34;: boolean
+        }]
+        ```
+        Otherwise, it returns None
         &#34;&#34;&#34;
         self._logger.info(&#34;Updating %d achievements for player %d&#34;, len(queue), player_id)
         try:
@@ -152,8 +153,10 @@ class AchievementService(Service):
         &#34;&#34;&#34;
         Enqueues an achievement update that reveals an achievement.
 
-        :param achievement_id: the achievement to unlock
-        :param queue: the queue to put this update into so it can be batch executed later
+        # Params
+        - `achievement_id`: the achievement to unlock
+        - `queue`: the queue to put this update into so it can be batch
+        executed later
         &#34;&#34;&#34;
         queue.append({
             &#34;achievement_id&#34;: achievement_id,
@@ -164,8 +167,10 @@ class AchievementService(Service):
         &#34;&#34;&#34;
         Enqueues an achievement update that reveals an achievement.
 
-        :param achievement_id: the achievement to unlock
-        :param queue: the queue to put this update into so it can be batch executed later
+        # Params
+        - `achievement_id`: the achievement to unlock
+        - `queue`: the queue to put this update into so it can be batch
+        executed later
         &#34;&#34;&#34;
         queue.append({
             &#34;achievement_id&#34;: achievement_id,
@@ -176,9 +181,11 @@ class AchievementService(Service):
         &#34;&#34;&#34;
         Enqueues an achievement update that increments an achievement.
 
-        :param achievement_id: the achievement to unlock
-        :param steps the number of steps to increment
-        :param queue: the queue to put this update into so it can be batch executed later
+        # Params
+        - `achievement_id`: the achievement to unlock
+        - `steps`: the number of steps to increment
+        - `queue`: the queue to put this update into so it can be batch
+        executed later
         &#34;&#34;&#34;
         if steps == 0:
             return
@@ -191,11 +198,14 @@ class AchievementService(Service):
 
     def set_steps_at_least(self, achievement_id, steps, queue):
         &#34;&#34;&#34;
-        Enqueues an achievement update that sets the steps to the specified minimum steps.
+        Enqueues an achievement update that sets the steps to the specified
+        minimum steps.
 
-        :param achievement_id: the achievement to update
-        :param steps the minimum number of steps to set
-        :param queue: the queue to put this update into so it can be batch executed later
+        # Params
+        - `achievement_id`: the achievement to update
+        - `steps`: the minimum number of steps to set
+        - `queue`: the queue to put this update into so it can be batch
+        executed later
         &#34;&#34;&#34;
         if steps == 0:
             return
@@ -235,29 +245,30 @@ class AchievementService(Service):
         &#34;&#34;&#34;
         Sends a batch of achievement updates.
 
-        :param player_id: the player to update the achievements for
-        :param queue: an array of achievement updates in the form::
+        # Params
+        - `player_id`: the player to update the achievements for
+        - `queue`: an array of achievement updates in the form:
+        ```
+        [{
+            &#34;achievement_id&#34;: string,
+            &#34;update_type&#34;: &#34;REVEAL|INCREMENT|UNLOCK|SET_STEPS_AT_LEAST&#34;,
+            &#34;steps&#34;: integer
+        }]
+        ```
+        `steps` is mandatory for update type `INCREMENT` and
+        `SET_STEPS_AT_LEAST`.
 
-            [{
-                &#34;achievement_id&#34;: string,
-                &#34;update_type&#34;: string,
-                &#34;steps&#34;: integer
-            }]
-
-            ``updateType`` being one of &#34;REVEAL&#34;, &#34;INCREMENT&#34;, &#34;UNLOCK&#34; or &#34;SET_STEPS_AT_LEAST&#34;
-            ``steps`` being mandatory only for update type `` INCREMENT`` and ``SET_STEPS_AT_LEAST``
-
-        :return
-        If successful, this method returns an array with the following structure::
-
-            [{
-                &#34;achievement_id&#34;: string,
-                &#34;current_state&#34;: string,
-                &#34;current_steps&#34;: integer,
-                &#34;newly_unlocked&#34;: boolean
-            }]
-
-        Else, it returns None
+        # Returns
+        If successful, this method returns an array with the following structure:
+        ```
+        [{
+            &#34;achievement_id&#34;: string,
+            &#34;current_state&#34;: string,
+            &#34;current_steps&#34;: integer,
+            &#34;newly_unlocked&#34;: boolean
+        }]
+        ```
+        Otherwise, it returns None
         &#34;&#34;&#34;
         self._logger.info(&#34;Updating %d achievements for player %d&#34;, len(queue), player_id)
         try:
@@ -289,8 +300,10 @@ class AchievementService(Service):
         &#34;&#34;&#34;
         Enqueues an achievement update that reveals an achievement.
 
-        :param achievement_id: the achievement to unlock
-        :param queue: the queue to put this update into so it can be batch executed later
+        # Params
+        - `achievement_id`: the achievement to unlock
+        - `queue`: the queue to put this update into so it can be batch
+        executed later
         &#34;&#34;&#34;
         queue.append({
             &#34;achievement_id&#34;: achievement_id,
@@ -301,8 +314,10 @@ class AchievementService(Service):
         &#34;&#34;&#34;
         Enqueues an achievement update that reveals an achievement.
 
-        :param achievement_id: the achievement to unlock
-        :param queue: the queue to put this update into so it can be batch executed later
+        # Params
+        - `achievement_id`: the achievement to unlock
+        - `queue`: the queue to put this update into so it can be batch
+        executed later
         &#34;&#34;&#34;
         queue.append({
             &#34;achievement_id&#34;: achievement_id,
@@ -313,9 +328,11 @@ class AchievementService(Service):
         &#34;&#34;&#34;
         Enqueues an achievement update that increments an achievement.
 
-        :param achievement_id: the achievement to unlock
-        :param steps the number of steps to increment
-        :param queue: the queue to put this update into so it can be batch executed later
+        # Params
+        - `achievement_id`: the achievement to unlock
+        - `steps`: the number of steps to increment
+        - `queue`: the queue to put this update into so it can be batch
+        executed later
         &#34;&#34;&#34;
         if steps == 0:
             return
@@ -328,11 +345,14 @@ class AchievementService(Service):
 
     def set_steps_at_least(self, achievement_id, steps, queue):
         &#34;&#34;&#34;
-        Enqueues an achievement update that sets the steps to the specified minimum steps.
+        Enqueues an achievement update that sets the steps to the specified
+        minimum steps.
 
-        :param achievement_id: the achievement to update
-        :param steps the minimum number of steps to set
-        :param queue: the queue to put this update into so it can be batch executed later
+        # Params
+        - `achievement_id`: the achievement to update
+        - `steps`: the minimum number of steps to set
+        - `queue`: the queue to put this update into so it can be batch
+        executed later
         &#34;&#34;&#34;
         if steps == 0:
             return
@@ -361,27 +381,29 @@ class AchievementService(Service):
 </code></dt>
 <dd>
 <div class="desc"><p>Sends a batch of achievement updates.</p>
-<p>:param player_id: the player to update the achievements for
-:param queue: an array of achievement updates in the form::</p>
+<h1 id="params">Params</h1>
+<ul>
+<li><code>player_id</code>: the player to update the achievements for</li>
+<li><code>queue</code>: an array of achievement updates in the form:</li>
+</ul>
 <pre><code>[{
-    "achievement_id": string,
-    "update_type": string,
-    "steps": integer
-}]
-
-&lt;code&gt;updateType&lt;/code&gt; being one of "REVEAL", "INCREMENT", "UNLOCK" or "SET_STEPS_AT_LEAST"
-&lt;code&gt;steps&lt;/code&gt; being mandatory only for update type &lt;code&gt; INCREMENT&lt;/code&gt; and &lt;code&gt;SET\_STEPS\_AT\_LEAST&lt;/code&gt;
-</code></pre>
-<p>:return
-If successful, this method returns an array with the following structure::</p>
-<pre><code>[{
-    "achievement_id": string,
-    "current_state": string,
-    "current_steps": integer,
-    "newly_unlocked": boolean
+    &quot;achievement_id&quot;: string,
+    &quot;update_type&quot;: &quot;REVEAL|INCREMENT|UNLOCK|SET_STEPS_AT_LEAST&quot;,
+    &quot;steps&quot;: integer
 }]
 </code></pre>
-<p>Else, it returns None</p></div>
+<p><code>steps</code> is mandatory for update type <code>INCREMENT</code> and
+<code>SET_STEPS_AT_LEAST</code>.</p>
+<h1 id="returns">Returns</h1>
+<p>If successful, this method returns an array with the following structure:</p>
+<pre><code>[{
+    &quot;achievement_id&quot;: string,
+    &quot;current_state&quot;: string,
+    &quot;current_steps&quot;: integer,
+    &quot;newly_unlocked&quot;: boolean
+}]
+</code></pre>
+<p>Otherwise, it returns None</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -390,29 +412,30 @@ If successful, this method returns an array with the following structure::</p>
     &#34;&#34;&#34;
     Sends a batch of achievement updates.
 
-    :param player_id: the player to update the achievements for
-    :param queue: an array of achievement updates in the form::
+    # Params
+    - `player_id`: the player to update the achievements for
+    - `queue`: an array of achievement updates in the form:
+    ```
+    [{
+        &#34;achievement_id&#34;: string,
+        &#34;update_type&#34;: &#34;REVEAL|INCREMENT|UNLOCK|SET_STEPS_AT_LEAST&#34;,
+        &#34;steps&#34;: integer
+    }]
+    ```
+    `steps` is mandatory for update type `INCREMENT` and
+    `SET_STEPS_AT_LEAST`.
 
-        [{
-            &#34;achievement_id&#34;: string,
-            &#34;update_type&#34;: string,
-            &#34;steps&#34;: integer
-        }]
-
-        ``updateType`` being one of &#34;REVEAL&#34;, &#34;INCREMENT&#34;, &#34;UNLOCK&#34; or &#34;SET_STEPS_AT_LEAST&#34;
-        ``steps`` being mandatory only for update type `` INCREMENT`` and ``SET_STEPS_AT_LEAST``
-
-    :return
-    If successful, this method returns an array with the following structure::
-
-        [{
-            &#34;achievement_id&#34;: string,
-            &#34;current_state&#34;: string,
-            &#34;current_steps&#34;: integer,
-            &#34;newly_unlocked&#34;: boolean
-        }]
-
-    Else, it returns None
+    # Returns
+    If successful, this method returns an array with the following structure:
+    ```
+    [{
+        &#34;achievement_id&#34;: string,
+        &#34;current_state&#34;: string,
+        &#34;current_steps&#34;: integer,
+        &#34;newly_unlocked&#34;: boolean
+    }]
+    ```
+    Otherwise, it returns None
     &#34;&#34;&#34;
     self._logger.info(&#34;Updating %d achievements for player %d&#34;, len(queue), player_id)
     try:
@@ -446,9 +469,13 @@ If successful, this method returns an array with the following structure::</p>
 </code></dt>
 <dd>
 <div class="desc"><p>Enqueues an achievement update that increments an achievement.</p>
-<p>:param achievement_id: the achievement to unlock
-:param steps the number of steps to increment
-:param queue: the queue to put this update into so it can be batch executed later</p></div>
+<h1 id="params">Params</h1>
+<ul>
+<li><code>achievement_id</code>: the achievement to unlock</li>
+<li><code>steps</code>: the number of steps to increment</li>
+<li><code>queue</code>: the queue to put this update into so it can be batch
+executed later</li>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -457,9 +484,11 @@ If successful, this method returns an array with the following structure::</p>
     &#34;&#34;&#34;
     Enqueues an achievement update that increments an achievement.
 
-    :param achievement_id: the achievement to unlock
-    :param steps the number of steps to increment
-    :param queue: the queue to put this update into so it can be batch executed later
+    # Params
+    - `achievement_id`: the achievement to unlock
+    - `steps`: the number of steps to increment
+    - `queue`: the queue to put this update into so it can be batch
+    executed later
     &#34;&#34;&#34;
     if steps == 0:
         return
@@ -476,8 +505,12 @@ If successful, this method returns an array with the following structure::</p>
 </code></dt>
 <dd>
 <div class="desc"><p>Enqueues an achievement update that reveals an achievement.</p>
-<p>:param achievement_id: the achievement to unlock
-:param queue: the queue to put this update into so it can be batch executed later</p></div>
+<h1 id="params">Params</h1>
+<ul>
+<li><code>achievement_id</code>: the achievement to unlock</li>
+<li><code>queue</code>: the queue to put this update into so it can be batch
+executed later</li>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -486,8 +519,10 @@ If successful, this method returns an array with the following structure::</p>
     &#34;&#34;&#34;
     Enqueues an achievement update that reveals an achievement.
 
-    :param achievement_id: the achievement to unlock
-    :param queue: the queue to put this update into so it can be batch executed later
+    # Params
+    - `achievement_id`: the achievement to unlock
+    - `queue`: the queue to put this update into so it can be batch
+    executed later
     &#34;&#34;&#34;
     queue.append({
         &#34;achievement_id&#34;: achievement_id,
@@ -499,21 +534,29 @@ If successful, this method returns an array with the following structure::</p>
 <span>def <span class="ident">set_steps_at_least</span></span>(<span>self, achievement_id, steps, queue)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Enqueues an achievement update that sets the steps to the specified minimum steps.</p>
-<p>:param achievement_id: the achievement to update
-:param steps the minimum number of steps to set
-:param queue: the queue to put this update into so it can be batch executed later</p></div>
+<div class="desc"><p>Enqueues an achievement update that sets the steps to the specified
+minimum steps.</p>
+<h1 id="params">Params</h1>
+<ul>
+<li><code>achievement_id</code>: the achievement to update</li>
+<li><code>steps</code>: the minimum number of steps to set</li>
+<li><code>queue</code>: the queue to put this update into so it can be batch
+executed later</li>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def set_steps_at_least(self, achievement_id, steps, queue):
     &#34;&#34;&#34;
-    Enqueues an achievement update that sets the steps to the specified minimum steps.
+    Enqueues an achievement update that sets the steps to the specified
+    minimum steps.
 
-    :param achievement_id: the achievement to update
-    :param steps the minimum number of steps to set
-    :param queue: the queue to put this update into so it can be batch executed later
+    # Params
+    - `achievement_id`: the achievement to update
+    - `steps`: the minimum number of steps to set
+    - `queue`: the queue to put this update into so it can be batch
+    executed later
     &#34;&#34;&#34;
     if steps == 0:
         return
@@ -530,8 +573,12 @@ If successful, this method returns an array with the following structure::</p>
 </code></dt>
 <dd>
 <div class="desc"><p>Enqueues an achievement update that reveals an achievement.</p>
-<p>:param achievement_id: the achievement to unlock
-:param queue: the queue to put this update into so it can be batch executed later</p></div>
+<h1 id="params">Params</h1>
+<ul>
+<li><code>achievement_id</code>: the achievement to unlock</li>
+<li><code>queue</code>: the queue to put this update into so it can be batch
+executed later</li>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -540,8 +587,10 @@ If successful, this method returns an array with the following structure::</p>
     &#34;&#34;&#34;
     Enqueues an achievement update that reveals an achievement.
 
-    :param achievement_id: the achievement to unlock
-    :param queue: the queue to put this update into so it can be batch executed later
+    # Params
+    - `achievement_id`: the achievement to unlock
+    - `queue`: the queue to put this update into so it can be batch
+    executed later
     &#34;&#34;&#34;
     queue.append({
         &#34;achievement_id&#34;: achievement_id,

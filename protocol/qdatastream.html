@@ -45,14 +45,15 @@ class QDataStreamProtocol(Protocol):
     @staticmethod
     def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
         &#34;&#34;&#34;
-        Parse a serialized QString from buffer (A bytes like object) at given position
+        Parse a serialized QString from buffer (A bytes like object) at given
+        position.
 
-        Requires len(buffer[pos:]) &gt;= 4.
+        Requires `len(buffer[pos:]) &gt;= 4`.
 
         Pos is added to buffer_pos.
 
-        :type buffer: bytes
-        :return (int, str): (buffer_pos, message)
+        # Returns
+        The new buffer position and the message.
         &#34;&#34;&#34;
         chunk = buffer[pos:pos + 4]
         rest = buffer[pos + 4:]
@@ -111,9 +112,8 @@ class QDataStreamProtocol(Protocol):
         &#34;&#34;&#34;
         Read a message from the stream
 
-        On malformed stream, raises IncompleteReadError
-
-        :return dict: Parsed message
+        # Errors
+        Raises `IncompleteReadError` on malformed stream.
         &#34;&#34;&#34;
         (block_length, ) = struct.unpack(&#34;!I&#34;, (await self.reader.readexactly(4)))
         block = await self.reader.readexactly(block_length)
@@ -170,14 +170,15 @@ PONG_MSG = QDataStreamProtocol.pack_message(&#34;PONG&#34;)</code></pre>
     @staticmethod
     def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
         &#34;&#34;&#34;
-        Parse a serialized QString from buffer (A bytes like object) at given position
+        Parse a serialized QString from buffer (A bytes like object) at given
+        position.
 
-        Requires len(buffer[pos:]) &gt;= 4.
+        Requires `len(buffer[pos:]) &gt;= 4`.
 
         Pos is added to buffer_pos.
 
-        :type buffer: bytes
-        :return (int, str): (buffer_pos, message)
+        # Returns
+        The new buffer position and the message.
         &#34;&#34;&#34;
         chunk = buffer[pos:pos + 4]
         rest = buffer[pos + 4:]
@@ -236,9 +237,8 @@ PONG_MSG = QDataStreamProtocol.pack_message(&#34;PONG&#34;)</code></pre>
         &#34;&#34;&#34;
         Read a message from the stream
 
-        On malformed stream, raises IncompleteReadError
-
-        :return dict: Parsed message
+        # Errors
+        Raises `IncompleteReadError` on malformed stream.
         &#34;&#34;&#34;
         (block_length, ) = struct.unpack(&#34;!I&#34;, (await self.reader.readexactly(4)))
         block = await self.reader.readexactly(block_length)
@@ -365,11 +365,12 @@ def read_block(data):
 <span>def <span class="ident">read_qstring</span></span>(<span>buffer: bytes, pos: int = 0) ‑> Tuple[int, str]</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Parse a serialized QString from buffer (A bytes like object) at given position</p>
-<p>Requires len(buffer[pos:]) &gt;= 4.</p>
+<div class="desc"><p>Parse a serialized QString from buffer (A bytes like object) at given
+position.</p>
+<p>Requires <code>len(buffer[pos:]) &gt;= 4</code>.</p>
 <p>Pos is added to buffer_pos.</p>
-<p>:type buffer: bytes
-:return (int, str): (buffer_pos, message)</p></div>
+<h1 id="returns">Returns</h1>
+<p>The new buffer position and the message.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -377,14 +378,15 @@ def read_block(data):
 <pre><code class="python">@staticmethod
 def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
     &#34;&#34;&#34;
-    Parse a serialized QString from buffer (A bytes like object) at given position
+    Parse a serialized QString from buffer (A bytes like object) at given
+    position.
 
-    Requires len(buffer[pos:]) &gt;= 4.
+    Requires `len(buffer[pos:]) &gt;= 4`.
 
     Pos is added to buffer_pos.
 
-    :type buffer: bytes
-    :return (int, str): (buffer_pos, message)
+    # Returns
+    The new buffer position and the message.
     &#34;&#34;&#34;
     chunk = buffer[pos:pos + 4]
     rest = buffer[pos + 4:]
@@ -406,8 +408,8 @@ def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
 </code></dt>
 <dd>
 <div class="desc"><p>Read a message from the stream</p>
-<p>On malformed stream, raises IncompleteReadError</p>
-<p>:return dict: Parsed message</p></div>
+<h1 id="errors">Errors</h1>
+<p>Raises <code>IncompleteReadError</code> on malformed stream.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -416,9 +418,8 @@ def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
     &#34;&#34;&#34;
     Read a message from the stream
 
-    On malformed stream, raises IncompleteReadError
-
-    :return dict: Parsed message
+    # Errors
+    Raises `IncompleteReadError` on malformed stream.
     &#34;&#34;&#34;
     (block_length, ) = struct.unpack(&#34;!I&#34;, (await self.reader.readexactly(4)))
     block = await self.reader.readexactly(block_length)

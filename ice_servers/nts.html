@@ -47,14 +47,6 @@ class TwilioNTS:
     Creates new twilio NTS tokens
     &#34;&#34;&#34;
     def __init__(self, sid=None, token=None):
-        &#34;&#34;&#34;
-        Constructor
-
-        Creates a Twilio rest client
-
-        :param sid str: Twilio Account Sid
-        :param key str: Twilio Auth Token
-        &#34;&#34;&#34;
         if sid is None:
             sid = config.TWILIO_ACCOUNT_SID  # pragma: no cover
         if token is None:
@@ -68,7 +60,8 @@ class TwilioNTS:
         &#34;&#34;&#34;
         Fetches token from Twilio
 
-        :param ttl - ttl in seconds
+        # Params
+        - `ttl`: ttl in seconds
         &#34;&#34;&#34;
         if ttl is None:
             ttl = config.TWILIO_TTL  # pragma: no cover
@@ -93,11 +86,7 @@ class TwilioNTS:
 </code></dt>
 <dd>
 <div class="desc"><p>Twilio NTS Token Service</p>
-<p>Creates new twilio NTS tokens</p>
-<p>Constructor</p>
-<p>Creates a Twilio rest client</p>
-<p>:param sid str: Twilio Account Sid
-:param key str: Twilio Auth Token</p></div>
+<p>Creates new twilio NTS tokens</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -109,14 +98,6 @@ class TwilioNTS:
     Creates new twilio NTS tokens
     &#34;&#34;&#34;
     def __init__(self, sid=None, token=None):
-        &#34;&#34;&#34;
-        Constructor
-
-        Creates a Twilio rest client
-
-        :param sid str: Twilio Account Sid
-        :param key str: Twilio Auth Token
-        &#34;&#34;&#34;
         if sid is None:
             sid = config.TWILIO_ACCOUNT_SID  # pragma: no cover
         if token is None:
@@ -130,7 +111,8 @@ class TwilioNTS:
         &#34;&#34;&#34;
         Fetches token from Twilio
 
-        :param ttl - ttl in seconds
+        # Params
+        - `ttl`: ttl in seconds
         &#34;&#34;&#34;
         if ttl is None:
             ttl = config.TWILIO_TTL  # pragma: no cover
@@ -146,7 +128,10 @@ class TwilioNTS:
 </code></dt>
 <dd>
 <div class="desc"><p>Fetches token from Twilio</p>
-<p>:param ttl - ttl in seconds</p></div>
+<h1 id="params">Params</h1>
+<ul>
+<li><code>ttl</code>: ttl in seconds</li>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -155,7 +140,8 @@ class TwilioNTS:
     &#34;&#34;&#34;
     Fetches token from Twilio
 
-    :param ttl - ttl in seconds
+    # Params
+    - `ttl`: ttl in seconds
     &#34;&#34;&#34;
     if ttl is None:
         ttl = config.TWILIO_TTL  # pragma: no cover

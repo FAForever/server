@@ -148,9 +148,7 @@ class MatchmakerQueue:
         &#34;&#34;&#34;
         Search for a match.
 
-        Puts a search object into the Queue and awaits completion.
-
-        :param player: Player to search for a matchup for
+        Puts a search object into the queue and awaits completion.
         &#34;&#34;&#34;
         assert search is not None
 
@@ -232,9 +230,9 @@ class MatchmakerQueue:
     def match(self, s1: Search, s2: Search) -&gt; bool:
         &#34;&#34;&#34;
         Mark the given two searches as matched
-        :param s1:
-        :param s2:
-        :return: True if matching succeeded or False if matching failed
+
+        # Returns
+        `True` if matching succeeded or `False` if matching failed.
         &#34;&#34;&#34;
         if s1.is_matched or s2.is_matched:
             return False
@@ -387,9 +385,7 @@ class MatchmakerQueue:
         &#34;&#34;&#34;
         Search for a match.
 
-        Puts a search object into the Queue and awaits completion.
-
-        :param player: Player to search for a matchup for
+        Puts a search object into the queue and awaits completion.
         &#34;&#34;&#34;
         assert search is not None
 
@@ -471,9 +467,9 @@ class MatchmakerQueue:
     def match(self, s1: Search, s2: Search) -&gt; bool:
         &#34;&#34;&#34;
         Mark the given two searches as matched
-        :param s1:
-        :param s2:
-        :return: True if matching succeeded or False if matching failed
+
+        # Returns
+        `True` if matching succeeded or `False` if matching failed.
         &#34;&#34;&#34;
         if s1.is_matched or s2.is_matched:
             return False
@@ -673,10 +669,9 @@ async def find_matches(self) -&gt; None:
 <span>def <span class="ident">match</span></span>(<span>self, s1: <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, s2: <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>) ‑> bool</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Mark the given two searches as matched
-:param s1:
-:param s2:
-:return: True if matching succeeded or False if matching failed</p></div>
+<div class="desc"><p>Mark the given two searches as matched</p>
+<h1 id="returns">Returns</h1>
+<p><code>True</code> if matching succeeded or <code>False</code> if matching failed.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -684,9 +679,9 @@ async def find_matches(self) -&gt; None:
 <pre><code class="python">def match(self, s1: Search, s2: Search) -&gt; bool:
     &#34;&#34;&#34;
     Mark the given two searches as matched
-    :param s1:
-    :param s2:
-    :return: True if matching succeeded or False if matching failed
+
+    # Returns
+    `True` if matching succeeded or `False` if matching failed.
     &#34;&#34;&#34;
     if s1.is_matched or s2.is_matched:
         return False
@@ -777,8 +772,7 @@ in the queue.</p></div>
 </code></dt>
 <dd>
 <div class="desc"><p>Search for a match.</p>
-<p>Puts a search object into the Queue and awaits completion.</p>
-<p>:param player: Player to search for a matchup for</p></div>
+<p>Puts a search object into the queue and awaits completion.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -787,9 +781,7 @@ in the queue.</p></div>
     &#34;&#34;&#34;
     Search for a match.
 
-    Puts a search object into the Queue and awaits completion.
-
-    :param player: Player to search for a matchup for
+    Puts a search object into the queue and awaits completion.
     &#34;&#34;&#34;
     assert search is not None
 

@@ -36,33 +36,33 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
     &#34;&#34;&#34;
     async def send_ConnectToPeer(self, player_name: str, player_uid: int, offer: bool):
         &#34;&#34;&#34;
-        Tells a client that has a listening LobbyComm instance to connect to the given peer
-        :param player_name: Remote player name
-        :param player_uid: Remote player identifier
+        Tells a client that has a listening LobbyComm instance to connect to the
+        given peer
+
+        # Params
+        - `player_name`: Remote player name
+        - `player_uid`: Remote player identifier
         &#34;&#34;&#34;
         await self.send_gpgnet_message(&#34;ConnectToPeer&#34;, [player_name, player_uid, offer])
 
     async def send_JoinGame(self, remote_player_name: str, remote_player_uid: int):
         &#34;&#34;&#34;
         Tells the game to join the given peer by ID
-        :param remote_player_name:
-        :param remote_player_uid:
         &#34;&#34;&#34;
         await self.send_gpgnet_message(&#34;JoinGame&#34;, [remote_player_name, remote_player_uid])
 
-    async def send_HostGame(self, map_path):
+    async def send_HostGame(self, map_path: str):
         &#34;&#34;&#34;
         Tells the game to start listening for incoming connections as a host
-        :param map_path: Which scenario to use
+
+        # Params
+        - `map_path`: Which scenario to use
         &#34;&#34;&#34;
         await self.send_gpgnet_message(&#34;HostGame&#34;, [str(map_path)])
 
     async def send_DisconnectFromPeer(self, id: int):
         &#34;&#34;&#34;
         Instructs the game to disconnect from the peer given by id
-
-        :param id:
-        :return:
         &#34;&#34;&#34;
         await self.send_gpgnet_message(&#34;DisconnectFromPeer&#34;, [id])
 
@@ -165,33 +165,33 @@ def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]
     &#34;&#34;&#34;
     async def send_ConnectToPeer(self, player_name: str, player_uid: int, offer: bool):
         &#34;&#34;&#34;
-        Tells a client that has a listening LobbyComm instance to connect to the given peer
-        :param player_name: Remote player name
-        :param player_uid: Remote player identifier
+        Tells a client that has a listening LobbyComm instance to connect to the
+        given peer
+
+        # Params
+        - `player_name`: Remote player name
+        - `player_uid`: Remote player identifier
         &#34;&#34;&#34;
         await self.send_gpgnet_message(&#34;ConnectToPeer&#34;, [player_name, player_uid, offer])
 
     async def send_JoinGame(self, remote_player_name: str, remote_player_uid: int):
         &#34;&#34;&#34;
         Tells the game to join the given peer by ID
-        :param remote_player_name:
-        :param remote_player_uid:
         &#34;&#34;&#34;
         await self.send_gpgnet_message(&#34;JoinGame&#34;, [remote_player_name, remote_player_uid])
 
-    async def send_HostGame(self, map_path):
+    async def send_HostGame(self, map_path: str):
         &#34;&#34;&#34;
         Tells the game to start listening for incoming connections as a host
-        :param map_path: Which scenario to use
+
+        # Params
+        - `map_path`: Which scenario to use
         &#34;&#34;&#34;
         await self.send_gpgnet_message(&#34;HostGame&#34;, [str(map_path)])
 
     async def send_DisconnectFromPeer(self, id: int):
         &#34;&#34;&#34;
         Instructs the game to disconnect from the peer given by id
-
-        :param id:
-        :return:
         &#34;&#34;&#34;
         await self.send_gpgnet_message(&#34;DisconnectFromPeer&#34;, [id])
 
@@ -227,18 +227,25 @@ async def send(self, message):
 <span>async def <span class="ident">send_ConnectToPeer</span></span>(<span>self, player_name: str, player_uid: int, offer: bool)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Tells a client that has a listening LobbyComm instance to connect to the given peer
-:param player_name: Remote player name
-:param player_uid: Remote player identifier</p></div>
+<div class="desc"><p>Tells a client that has a listening LobbyComm instance to connect to the
+given peer</p>
+<h1 id="params">Params</h1>
+<ul>
+<li><code>player_name</code>: Remote player name</li>
+<li><code>player_uid</code>: Remote player identifier</li>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def send_ConnectToPeer(self, player_name: str, player_uid: int, offer: bool):
     &#34;&#34;&#34;
-    Tells a client that has a listening LobbyComm instance to connect to the given peer
-    :param player_name: Remote player name
-    :param player_uid: Remote player identifier
+    Tells a client that has a listening LobbyComm instance to connect to the
+    given peer
+
+    # Params
+    - `player_name`: Remote player name
+    - `player_uid`: Remote player identifier
     &#34;&#34;&#34;
     await self.send_gpgnet_message(&#34;ConnectToPeer&#34;, [player_name, player_uid, offer])</code></pre>
 </details>
@@ -247,9 +254,7 @@ async def send(self, message):
 <span>async def <span class="ident">send_DisconnectFromPeer</span></span>(<span>self, id: int)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Instructs the game to disconnect from the peer given by id</p>
-<p>:param id:
-:return:</p></div>
+<div class="desc"><p>Instructs the game to disconnect from the peer given by id</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -257,27 +262,29 @@ async def send(self, message):
 <pre><code class="python">async def send_DisconnectFromPeer(self, id: int):
     &#34;&#34;&#34;
     Instructs the game to disconnect from the peer given by id
-
-    :param id:
-    :return:
     &#34;&#34;&#34;
     await self.send_gpgnet_message(&#34;DisconnectFromPeer&#34;, [id])</code></pre>
 </details>
 </dd>
 <dt id="server.protocol.gpgnet.GpgNetServerProtocol.send_HostGame"><code class="name flex">
-<span>async def <span class="ident">send_HostGame</span></span>(<span>self, map_path)</span>
+<span>async def <span class="ident">send_HostGame</span></span>(<span>self, map_path: str)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Tells the game to start listening for incoming connections as a host
-:param map_path: Which scenario to use</p></div>
+<div class="desc"><p>Tells the game to start listening for incoming connections as a host</p>
+<h1 id="params">Params</h1>
+<ul>
+<li><code>map_path</code>: Which scenario to use</li>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def send_HostGame(self, map_path):
+<pre><code class="python">async def send_HostGame(self, map_path: str):
     &#34;&#34;&#34;
     Tells the game to start listening for incoming connections as a host
-    :param map_path: Which scenario to use
+
+    # Params
+    - `map_path`: Which scenario to use
     &#34;&#34;&#34;
     await self.send_gpgnet_message(&#34;HostGame&#34;, [str(map_path)])</code></pre>
 </details>
@@ -286,9 +293,7 @@ async def send(self, message):
 <span>async def <span class="ident">send_JoinGame</span></span>(<span>self, remote_player_name: str, remote_player_uid: int)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Tells the game to join the given peer by ID
-:param remote_player_name:
-:param remote_player_uid:</p></div>
+<div class="desc"><p>Tells the game to join the given peer by ID</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -296,8 +301,6 @@ async def send(self, message):
 <pre><code class="python">async def send_JoinGame(self, remote_player_name: str, remote_player_uid: int):
     &#34;&#34;&#34;
     Tells the game to join the given peer by ID
-    :param remote_player_name:
-    :param remote_player_uid:
     &#34;&#34;&#34;
     await self.send_gpgnet_message(&#34;JoinGame&#34;, [remote_player_name, remote_player_uid])</code></pre>
 </details>

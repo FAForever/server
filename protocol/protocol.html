@@ -69,8 +69,11 @@ class Protocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         Asynchronously read a message from the stream
 
-        :raises: IncompleteReadError
-        :return dict: Parsed message
+        # Returns
+        The parsed message
+
+        # Errors
+        May raise `IncompleteReadError`.
         &#34;&#34;&#34;
         pass  # pragma: no cover
 
@@ -78,8 +81,8 @@ class Protocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         Send a single message in the form of a dictionary
 
-        :param message: Message to send
-        :raises: DisconnectedError
+        # Errors
+        May raise `DisconnectedError`.
         &#34;&#34;&#34;
         await self.send_raw(self.encode_message(message))
 
@@ -89,8 +92,8 @@ class Protocol(metaclass=ABCMeta):
 
         May be more optimal than sending a single message.
 
-        :param messages:
-        :raises: DisconnectedError
+        # Errors
+        May raise `DisconnectedError`.
         &#34;&#34;&#34;
         self.write_messages(messages)
         await self.drain()
@@ -99,8 +102,8 @@ class Protocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         Send raw bytes. Should generally not be used.
 
-        :param data: bytes to send
-        :raises: DisconnectedError
+        # Errors
+        May raise `DisconnectedError`.
         &#34;&#34;&#34;
         self.write_raw(data)
         await self.drain()
@@ -111,7 +114,8 @@ class Protocol(metaclass=ABCMeta):
         sending broadcasts or when sending messages that are triggered by
         incoming messages from other players.
 
-        :param message: Message to send
+        # Errors
+        May raise `DisconnectedError`.
         &#34;&#34;&#34;
         if not self.is_connected():
             raise DisconnectedError(&#34;Protocol is not connected!&#34;)
@@ -122,7 +126,8 @@ class Protocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         Write multiple message into the message buffer.
 
-        :param messages: List of messages to write
+        # Errors
+        May raise `DisconnectedError`.
         &#34;&#34;&#34;
         metrics.sent_messages.labels(self.__class__.__name__).inc()
         if not self.is_connected():
@@ -134,7 +139,8 @@ class Protocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         Write raw bytes into the message buffer. Should generally not be used.
 
-        :param data: bytes to send
+        # Errors
+        May raise `DisconnectedError`.
         &#34;&#34;&#34;
         metrics.sent_messages.labels(self.__class__.__name__).inc()
         if not self.is_connected():
@@ -145,7 +151,10 @@ class Protocol(metaclass=ABCMeta):
     async def close(self) -&gt; None:
         &#34;&#34;&#34;
         Close the underlying writer as soon as the buffer has emptied.
-        :return:
+
+        # Errors
+        Never raises. Any exceptions that occur while waiting to close are
+        ignored.
         &#34;&#34;&#34;
         self.writer.close()
         with contextlib.suppress(Exception):
@@ -157,7 +166,8 @@ class Protocol(metaclass=ABCMeta):
         Await the write buffer to empty.
         See StreamWriter.drain()
 
-        :raises: DisconnectedError if the client disconnects while waiting for
+        # Errors
+        Raises `DisconnectedError` if the client disconnects while waiting for
         the write buffer to empty.
         &#34;&#34;&#34;
         # Method needs to be synchronized as drain() cannot be called
@@ -236,8 +246,11 @@ class Protocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         Asynchronously read a message from the stream
 
-        :raises: IncompleteReadError
-        :return dict: Parsed message
+        # Returns
+        The parsed message
+
+        # Errors
+        May raise `IncompleteReadError`.
         &#34;&#34;&#34;
         pass  # pragma: no cover
 
@@ -245,8 +258,8 @@ class Protocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         Send a single message in the form of a dictionary
 
-        :param message: Message to send
-        :raises: DisconnectedError
+        # Errors
+        May raise `DisconnectedError`.
         &#34;&#34;&#34;
         await self.send_raw(self.encode_message(message))
 
@@ -256,8 +269,8 @@ class Protocol(metaclass=ABCMeta):
 
         May be more optimal than sending a single message.
 
-        :param messages:
-        :raises: DisconnectedError
+        # Errors
+        May raise `DisconnectedError`.
         &#34;&#34;&#34;
         self.write_messages(messages)
         await self.drain()
@@ -266,8 +279,8 @@ class Protocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         Send raw bytes. Should generally not be used.
 
-        :param data: bytes to send
-        :raises: DisconnectedError
+        # Errors
+        May raise `DisconnectedError`.
         &#34;&#34;&#34;
         self.write_raw(data)
         await self.drain()
@@ -278,7 +291,8 @@ class Protocol(metaclass=ABCMeta):
         sending broadcasts or when sending messages that are triggered by
         incoming messages from other players.
 
-        :param message: Message to send
+        # Errors
+        May raise `DisconnectedError`.
         &#34;&#34;&#34;
         if not self.is_connected():
             raise DisconnectedError(&#34;Protocol is not connected!&#34;)
@@ -289,7 +303,8 @@ class Protocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         Write multiple message into the message buffer.
 
-        :param messages: List of messages to write
+        # Errors
+        May raise `DisconnectedError`.
         &#34;&#34;&#34;
         metrics.sent_messages.labels(self.__class__.__name__).inc()
         if not self.is_connected():
@@ -301,7 +316,8 @@ class Protocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         Write raw bytes into the message buffer. Should generally not be used.
 
-        :param data: bytes to send
+        # Errors
+        May raise `DisconnectedError`.
         &#34;&#34;&#34;
         metrics.sent_messages.labels(self.__class__.__name__).inc()
         if not self.is_connected():
@@ -312,7 +328,10 @@ class Protocol(metaclass=ABCMeta):
     async def close(self) -&gt; None:
         &#34;&#34;&#34;
         Close the underlying writer as soon as the buffer has emptied.
-        :return:
+
+        # Errors
+        Never raises. Any exceptions that occur while waiting to close are
+        ignored.
         &#34;&#34;&#34;
         self.writer.close()
         with contextlib.suppress(Exception):
@@ -324,7 +343,8 @@ class Protocol(metaclass=ABCMeta):
         Await the write buffer to empty.
         See StreamWriter.drain()
 
-        :raises: DisconnectedError if the client disconnects while waiting for
+        # Errors
+        Raises `DisconnectedError` if the client disconnects while waiting for
         the write buffer to empty.
         &#34;&#34;&#34;
         # Method needs to be synchronized as drain() cannot be called
@@ -368,8 +388,10 @@ def encode_message(message: dict) -&gt; bytes:
 <span>async def <span class="ident">close</span></span>(<span>self) ‑> NoneType</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Close the underlying writer as soon as the buffer has emptied.
-:return:</p></div>
+<div class="desc"><p>Close the underlying writer as soon as the buffer has emptied.</p>
+<h1 id="errors">Errors</h1>
+<p>Never raises. Any exceptions that occur while waiting to close are
+ignored.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -377,7 +399,10 @@ def encode_message(message: dict) -&gt; bytes:
 <pre><code class="python">async def close(self) -&gt; None:
     &#34;&#34;&#34;
     Close the underlying writer as soon as the buffer has emptied.
-    :return:
+
+    # Errors
+    Never raises. Any exceptions that occur while waiting to close are
+    ignored.
     &#34;&#34;&#34;
     self.writer.close()
     with contextlib.suppress(Exception):
@@ -390,7 +415,8 @@ def encode_message(message: dict) -&gt; bytes:
 <dd>
 <div class="desc"><p>Await the write buffer to empty.
 See StreamWriter.drain()</p>
-<p>:raises: DisconnectedError if the client disconnects while waiting for
+<h1 id="errors">Errors</h1>
+<p>Raises <code><a title="server.protocol.protocol.DisconnectedError" href="#server.protocol.protocol.DisconnectedError">DisconnectedError</a></code> if the client disconnects while waiting for
 the write buffer to empty.</p></div>
 <details class="source">
 <summary>
@@ -402,7 +428,8 @@ async def drain(self) -&gt; None:
     Await the write buffer to empty.
     See StreamWriter.drain()
 
-    :raises: DisconnectedError if the client disconnects while waiting for
+    # Errors
+    Raises `DisconnectedError` if the client disconnects while waiting for
     the write buffer to empty.
     &#34;&#34;&#34;
     # Method needs to be synchronized as drain() cannot be called
@@ -436,8 +463,10 @@ async def drain(self) -&gt; None:
 </code></dt>
 <dd>
 <div class="desc"><p>Asynchronously read a message from the stream</p>
-<p>:raises: IncompleteReadError
-:return dict: Parsed message</p></div>
+<h1 id="returns">Returns</h1>
+<p>The parsed message</p>
+<h1 id="errors">Errors</h1>
+<p>May raise <code>IncompleteReadError</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -447,8 +476,11 @@ async def read_message(self) -&gt; dict:
     &#34;&#34;&#34;
     Asynchronously read a message from the stream
 
-    :raises: IncompleteReadError
-    :return dict: Parsed message
+    # Returns
+    The parsed message
+
+    # Errors
+    May raise `IncompleteReadError`.
     &#34;&#34;&#34;
     pass  # pragma: no cover</code></pre>
 </details>
@@ -458,8 +490,8 @@ async def read_message(self) -&gt; dict:
 </code></dt>
 <dd>
 <div class="desc"><p>Send a single message in the form of a dictionary</p>
-<p>:param message: Message to send
-:raises: DisconnectedError</p></div>
+<h1 id="errors">Errors</h1>
+<p>May raise <code><a title="server.protocol.protocol.DisconnectedError" href="#server.protocol.protocol.DisconnectedError">DisconnectedError</a></code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -468,8 +500,8 @@ async def read_message(self) -&gt; dict:
     &#34;&#34;&#34;
     Send a single message in the form of a dictionary
 
-    :param message: Message to send
-    :raises: DisconnectedError
+    # Errors
+    May raise `DisconnectedError`.
     &#34;&#34;&#34;
     await self.send_raw(self.encode_message(message))</code></pre>
 </details>
@@ -480,8 +512,8 @@ async def read_message(self) -&gt; dict:
 <dd>
 <div class="desc"><p>Send multiple messages in the form of a list of dictionaries.</p>
 <p>May be more optimal than sending a single message.</p>
-<p>:param messages:
-:raises: DisconnectedError</p></div>
+<h1 id="errors">Errors</h1>
+<p>May raise <code><a title="server.protocol.protocol.DisconnectedError" href="#server.protocol.protocol.DisconnectedError">DisconnectedError</a></code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -492,8 +524,8 @@ async def read_message(self) -&gt; dict:
 
     May be more optimal than sending a single message.
 
-    :param messages:
-    :raises: DisconnectedError
+    # Errors
+    May raise `DisconnectedError`.
     &#34;&#34;&#34;
     self.write_messages(messages)
     await self.drain()</code></pre>
@@ -504,8 +536,8 @@ async def read_message(self) -&gt; dict:
 </code></dt>
 <dd>
 <div class="desc"><p>Send raw bytes. Should generally not be used.</p>
-<p>:param data: bytes to send
-:raises: DisconnectedError</p></div>
+<h1 id="errors">Errors</h1>
+<p>May raise <code><a title="server.protocol.protocol.DisconnectedError" href="#server.protocol.protocol.DisconnectedError">DisconnectedError</a></code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -514,8 +546,8 @@ async def read_message(self) -&gt; dict:
     &#34;&#34;&#34;
     Send raw bytes. Should generally not be used.
 
-    :param data: bytes to send
-    :raises: DisconnectedError
+    # Errors
+    May raise `DisconnectedError`.
     &#34;&#34;&#34;
     self.write_raw(data)
     await self.drain()</code></pre>
@@ -528,7 +560,8 @@ async def read_message(self) -&gt; dict:
 <div class="desc"><p>Write a single message into the message buffer. Should be used when
 sending broadcasts or when sending messages that are triggered by
 incoming messages from other players.</p>
-<p>:param message: Message to send</p></div>
+<h1 id="errors">Errors</h1>
+<p>May raise <code><a title="server.protocol.protocol.DisconnectedError" href="#server.protocol.protocol.DisconnectedError">DisconnectedError</a></code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -539,7 +572,8 @@ incoming messages from other players.</p>
     sending broadcasts or when sending messages that are triggered by
     incoming messages from other players.
 
-    :param message: Message to send
+    # Errors
+    May raise `DisconnectedError`.
     &#34;&#34;&#34;
     if not self.is_connected():
         raise DisconnectedError(&#34;Protocol is not connected!&#34;)
@@ -552,7 +586,8 @@ incoming messages from other players.</p>
 </code></dt>
 <dd>
 <div class="desc"><p>Write multiple message into the message buffer.</p>
-<p>:param messages: List of messages to write</p></div>
+<h1 id="errors">Errors</h1>
+<p>May raise <code><a title="server.protocol.protocol.DisconnectedError" href="#server.protocol.protocol.DisconnectedError">DisconnectedError</a></code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -561,7 +596,8 @@ incoming messages from other players.</p>
     &#34;&#34;&#34;
     Write multiple message into the message buffer.
 
-    :param messages: List of messages to write
+    # Errors
+    May raise `DisconnectedError`.
     &#34;&#34;&#34;
     metrics.sent_messages.labels(self.__class__.__name__).inc()
     if not self.is_connected():
@@ -575,7 +611,8 @@ incoming messages from other players.</p>
 </code></dt>
 <dd>
 <div class="desc"><p>Write raw bytes into the message buffer. Should generally not be used.</p>
-<p>:param data: bytes to send</p></div>
+<h1 id="errors">Errors</h1>
+<p>May raise <code><a title="server.protocol.protocol.DisconnectedError" href="#server.protocol.protocol.DisconnectedError">DisconnectedError</a></code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -584,7 +621,8 @@ incoming messages from other players.</p>
     &#34;&#34;&#34;
     Write raw bytes into the message buffer. Should generally not be used.
 
-    :param data: bytes to send
+    # Errors
+    May raise `DisconnectedError`.
     &#34;&#34;&#34;
     metrics.sent_messages.labels(self.__class__.__name__).inc()
     if not self.is_connected():

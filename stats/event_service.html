@@ -69,21 +69,24 @@ class EventService(Service):
         &#34;&#34;&#34;
         Sends a batch of event updates.
 
-        :param player_id: the player to update the events for
-        :param queue: an array of event updates in the form::
+        # Params
+        - `player_id`: the player to update the events for
+        - `queue`: an array of event updates in the form:
+        ```
+        [{
+            &#34;event_id&#34;: string,
+            &#34;update_count&#34;: long
+        }]
+        ```
 
-            [{
-                &#34;event_id&#34;: string,
-                &#34;update_count&#34;: long
-            }]
-
-        :return
-        If successful, this method returns an array with the following structure::
-
-            [{
-                &#34;event_id&#34;: string,
-                &#34;count&#34;: long
-            }]
+        # Returns
+        If successful, this method returns an array with the following structure:
+        ```
+        [{
+            &#34;event_id&#34;: string,
+            &#34;count&#34;: long
+        }]
+        ```
         Else, returns None
         &#34;&#34;&#34;
         self._logger.info(&#34;Recording %d events for player %d&#34;, len(queue), player_id)
@@ -111,9 +114,11 @@ class EventService(Service):
         &#34;&#34;&#34;
         Enqueues an event update.
 
-        :param event_id: the event to trigger
-        :param count: the update count
-        :param queue: if set, the update will be put into this array for later batch execution
+        # Params
+        - `event_id`: the event to trigger
+        - `count`: the update count
+        - `queue`: if set, the update will be put into this array for later
+        batch execution
         &#34;&#34;&#34;
         if count == 0:
             return
@@ -149,21 +154,24 @@ class EventService(Service):
         &#34;&#34;&#34;
         Sends a batch of event updates.
 
-        :param player_id: the player to update the events for
-        :param queue: an array of event updates in the form::
+        # Params
+        - `player_id`: the player to update the events for
+        - `queue`: an array of event updates in the form:
+        ```
+        [{
+            &#34;event_id&#34;: string,
+            &#34;update_count&#34;: long
+        }]
+        ```
 
-            [{
-                &#34;event_id&#34;: string,
-                &#34;update_count&#34;: long
-            }]
-
-        :return
-        If successful, this method returns an array with the following structure::
-
-            [{
-                &#34;event_id&#34;: string,
-                &#34;count&#34;: long
-            }]
+        # Returns
+        If successful, this method returns an array with the following structure:
+        ```
+        [{
+            &#34;event_id&#34;: string,
+            &#34;count&#34;: long
+        }]
+        ```
         Else, returns None
         &#34;&#34;&#34;
         self._logger.info(&#34;Recording %d events for player %d&#34;, len(queue), player_id)
@@ -191,9 +199,11 @@ class EventService(Service):
         &#34;&#34;&#34;
         Enqueues an event update.
 
-        :param event_id: the event to trigger
-        :param count: the update count
-        :param queue: if set, the update will be put into this array for later batch execution
+        # Params
+        - `event_id`: the event to trigger
+        - `count`: the update count
+        - `queue`: if set, the update will be put into this array for later
+        batch execution
         &#34;&#34;&#34;
         if count == 0:
             return
@@ -218,18 +228,21 @@ class EventService(Service):
 </code></dt>
 <dd>
 <div class="desc"><p>Sends a batch of event updates.</p>
-<p>:param player_id: the player to update the events for
-:param queue: an array of event updates in the form::</p>
+<h1 id="params">Params</h1>
+<ul>
+<li><code>player_id</code>: the player to update the events for</li>
+<li><code>queue</code>: an array of event updates in the form:</li>
+</ul>
 <pre><code>[{
-    "event_id": string,
-    "update_count": long
+    &quot;event_id&quot;: string,
+    &quot;update_count&quot;: long
 }]
 </code></pre>
-<p>:return
-If successful, this method returns an array with the following structure::</p>
+<h1 id="returns">Returns</h1>
+<p>If successful, this method returns an array with the following structure:</p>
 <pre><code>[{
-    "event_id": string,
-    "count": long
+    &quot;event_id&quot;: string,
+    &quot;count&quot;: long
 }]
 </code></pre>
 <p>Else, returns None</p></div>
@@ -241,21 +254,24 @@ If successful, this method returns an array with the following structure::</p>
     &#34;&#34;&#34;
     Sends a batch of event updates.
 
-    :param player_id: the player to update the events for
-    :param queue: an array of event updates in the form::
+    # Params
+    - `player_id`: the player to update the events for
+    - `queue`: an array of event updates in the form:
+    ```
+    [{
+        &#34;event_id&#34;: string,
+        &#34;update_count&#34;: long
+    }]
+    ```
 
-        [{
-            &#34;event_id&#34;: string,
-            &#34;update_count&#34;: long
-        }]
-
-    :return
-    If successful, this method returns an array with the following structure::
-
-        [{
-            &#34;event_id&#34;: string,
-            &#34;count&#34;: long
-        }]
+    # Returns
+    If successful, this method returns an array with the following structure:
+    ```
+    [{
+        &#34;event_id&#34;: string,
+        &#34;count&#34;: long
+    }]
+    ```
     Else, returns None
     &#34;&#34;&#34;
     self._logger.info(&#34;Recording %d events for player %d&#34;, len(queue), player_id)
@@ -285,9 +301,13 @@ If successful, this method returns an array with the following structure::</p>
 </code></dt>
 <dd>
 <div class="desc"><p>Enqueues an event update.</p>
-<p>:param event_id: the event to trigger
-:param count: the update count
-:param queue: if set, the update will be put into this array for later batch execution</p></div>
+<h1 id="params">Params</h1>
+<ul>
+<li><code>event_id</code>: the event to trigger</li>
+<li><code>count</code>: the update count</li>
+<li><code>queue</code>: if set, the update will be put into this array for later
+batch execution</li>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -296,9 +316,11 @@ If successful, this method returns an array with the following structure::</p>
     &#34;&#34;&#34;
     Enqueues an event update.
 
-    :param event_id: the event to trigger
-    :param count: the update count
-    :param queue: if set, the update will be put into this array for later batch execution
+    # Params
+    - `event_id`: the event to trigger
+    - `count`: the update count
+    - `queue`: if set, the update will be put into this array for later
+    batch execution
     &#34;&#34;&#34;
     if count == 0:
         return

@@ -51,28 +51,28 @@ class DependencyInjector(object):
     instance of the object called `hello` (whether that is an injectable, or
     another class in the class list).
 
-    # Example
-    ```
-    class SomeClass(object):
-        def __init__(self, external):
-            self.external = external
+    # Examples
+    Create a class that depends on some external injectable.
+    &gt;&gt;&gt; class SomeClass(object):
+    ...     def __init__(self, external):
+    ...         self.external = external
 
-    class SomeOtherClass(object):
-        def __init__(self, some_class):
-            self.some_class = some_class
+    Create a class that depends on the first class.
+    &gt;&gt;&gt; class SomeOtherClass(object):
+    ...     def __init__(self, some_class):
+    ...         self.some_class = some_class
 
-    injector = DependencyInjector()
-    injector.add_injectables(external=object())
-    classes = injector.build_classes({
-        &#34;some_class&#34;: SomeClass,
-        &#34;other&#34;: SomeOtherClass
-    })
+    Do the dependency injection.
+    &gt;&gt;&gt; injector = DependencyInjector()
+    &gt;&gt;&gt; injector.add_injectables(external=object())
+    &gt;&gt;&gt; classes = injector.build_classes({
+    ...     &#34;some_class&#34;: SomeClass,
+    ...     &#34;other&#34;: SomeOtherClass
+    ... })
 
-    assert isinstance(classes[&#34;some_class&#34;], SomeClass)
-    assert isinstance(classes[&#34;other&#34;], SomeOtherClass)
-    assert classes[&#34;other&#34;].some_class is classes[&#34;some_class&#34;]
-    ```
-
+    &gt;&gt;&gt; assert isinstance(classes[&#34;some_class&#34;], SomeClass)
+    &gt;&gt;&gt; assert isinstance(classes[&#34;other&#34;], SomeOtherClass)
+    &gt;&gt;&gt; assert classes[&#34;other&#34;].some_class is classes[&#34;some_class&#34;]
     &#34;&#34;&#34;
 
     def __init__(self) -&gt; None:
@@ -208,25 +208,28 @@ instance of another class passed to <code>build_classes</code>.</p>
 depend on an object called <code>hello</code>, then they will both receive the same
 instance of the object called <code>hello</code> (whether that is an injectable, or
 another class in the class list).</p>
-<h1 id="example">Example</h1>
-<pre><code>class SomeClass(object):
-    def __init__(self, external):
-        self.external = external
-
-class SomeOtherClass(object):
-    def __init__(self, some_class):
-        self.some_class = some_class
-
-injector = DependencyInjector()
-injector.add_injectables(external=object())
-classes = injector.build_classes({
-    &quot;some_class&quot;: SomeClass,
-    &quot;other&quot;: SomeOtherClass
-})
-
-assert isinstance(classes[&quot;some_class&quot;], SomeClass)
-assert isinstance(classes[&quot;other&quot;], SomeOtherClass)
-assert classes[&quot;other&quot;].some_class is classes[&quot;some_class&quot;]
+<h1 id="examples">Examples</h1>
+<p>Create a class that depends on some external injectable.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class SomeClass(object):
+...     def __init__(self, external):
+...         self.external = external
+</code></pre>
+<p>Create a class that depends on the first class.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class SomeOtherClass(object):
+...     def __init__(self, some_class):
+...         self.some_class = some_class
+</code></pre>
+<p>Do the dependency injection.</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; injector = DependencyInjector()
+&gt;&gt;&gt; injector.add_injectables(external=object())
+&gt;&gt;&gt; classes = injector.build_classes({
+...     &quot;some_class&quot;: SomeClass,
+...     &quot;other&quot;: SomeOtherClass
+... })
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; assert isinstance(classes[&quot;some_class&quot;], SomeClass)
+&gt;&gt;&gt; assert isinstance(classes[&quot;other&quot;], SomeOtherClass)
+&gt;&gt;&gt; assert classes[&quot;other&quot;].some_class is classes[&quot;some_class&quot;]
 </code></pre></div>
 <details class="source">
 <summary>
@@ -250,28 +253,28 @@ assert classes[&quot;other&quot;].some_class is classes[&quot;some_class&quot;]
     instance of the object called `hello` (whether that is an injectable, or
     another class in the class list).
 
-    # Example
-    ```
-    class SomeClass(object):
-        def __init__(self, external):
-            self.external = external
+    # Examples
+    Create a class that depends on some external injectable.
+    &gt;&gt;&gt; class SomeClass(object):
+    ...     def __init__(self, external):
+    ...         self.external = external
 
-    class SomeOtherClass(object):
-        def __init__(self, some_class):
-            self.some_class = some_class
+    Create a class that depends on the first class.
+    &gt;&gt;&gt; class SomeOtherClass(object):
+    ...     def __init__(self, some_class):
+    ...         self.some_class = some_class
 
-    injector = DependencyInjector()
-    injector.add_injectables(external=object())
-    classes = injector.build_classes({
-        &#34;some_class&#34;: SomeClass,
-        &#34;other&#34;: SomeOtherClass
-    })
+    Do the dependency injection.
+    &gt;&gt;&gt; injector = DependencyInjector()
+    &gt;&gt;&gt; injector.add_injectables(external=object())
+    &gt;&gt;&gt; classes = injector.build_classes({
+    ...     &#34;some_class&#34;: SomeClass,
+    ...     &#34;other&#34;: SomeOtherClass
+    ... })
 
-    assert isinstance(classes[&#34;some_class&#34;], SomeClass)
-    assert isinstance(classes[&#34;other&#34;], SomeOtherClass)
-    assert classes[&#34;other&#34;].some_class is classes[&#34;some_class&#34;]
-    ```
-
+    &gt;&gt;&gt; assert isinstance(classes[&#34;some_class&#34;], SomeClass)
+    &gt;&gt;&gt; assert isinstance(classes[&#34;other&#34;], SomeOtherClass)
+    &gt;&gt;&gt; assert classes[&#34;other&#34;].some_class is classes[&#34;some_class&#34;]
     &#34;&#34;&#34;
 
     def __init__(self) -&gt; None:

@@ -87,12 +87,7 @@ __all__ = (
 <span>(</span><span>*searches: <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Represents the state of a users search for a match.</p>
-<p>Default ctor for a search</p>
-<p>:param players: player to use for searching
-:param start_time: optional start time for the search
-:param rating_type: rating type
-:return: the search object</p></div>
+<div class="desc"><p>Represents the state of a users search for a match.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -265,22 +260,6 @@ def raw_ratings(self):
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="server.matchmaker.CombinedSearch.await_match"><code class="name flex">
-<span>async def <span class="ident">await_match</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Wait for this search to complete</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def await_match(self):
-    &#34;&#34;&#34;
-    Wait for this search to complete
-    &#34;&#34;&#34;
-    await asyncio.wait({s.await_match() for s in self.searches})</code></pre>
-</details>
-</dd>
 <dt id="server.matchmaker.CombinedSearch.done"><code class="name flex">
 <span>def <span class="ident">done</span></span>(<span>self) ‑> bool</span>
 </code></dt>
@@ -294,34 +273,17 @@ def raw_ratings(self):
     return all(s.done() for s in self.searches)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.CombinedSearch.match"><code class="name flex">
-<span>def <span class="ident">match</span></span>(<span>self, other: <a title="server.matchmaker.Search" href="#server.matchmaker.Search">Search</a>)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Mark as matched with given opponent</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def match(self, other: &#34;Search&#34;):
-    &#34;&#34;&#34;
-    Mark as matched with given opponent
-    &#34;&#34;&#34;
-    self._logger.info(&#34;Combined search matched %s with %s&#34;, self.players, other.players)
-
-    for s in self.searches:
-        s.match(other)</code></pre>
-</details>
-</dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a></b></code>:
 <ul class="hlist">
 <li><code><a title="server.matchmaker.search.Search.adjusted_rating" href="search.html#server.matchmaker.search.Search.adjusted_rating">adjusted_rating</a></code></li>
+<li><code><a title="server.matchmaker.search.Search.await_match" href="search.html#server.matchmaker.search.Search.await_match">await_match</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.boundary_75" href="search.html#server.matchmaker.search.Search.boundary_75">boundary_75</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.boundary_80" href="search.html#server.matchmaker.search.Search.boundary_80">boundary_80</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.cancel" href="search.html#server.matchmaker.search.Search.cancel">cancel</a></code></li>
+<li><code><a title="server.matchmaker.search.Search.match" href="search.html#server.matchmaker.search.Search.match">match</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.matches_with" href="search.html#server.matchmaker.search.Search.matches_with">matches_with</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.register_failed_matching_attempt" href="search.html#server.matchmaker.search.Search.register_failed_matching_attempt">register_failed_matching_attempt</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.search_expansion" href="search.html#server.matchmaker.search.Search.search_expansion">search_expansion</a></code></li>
@@ -543,9 +505,7 @@ amount of times.</p></div>
         &#34;&#34;&#34;
         Search for a match.
 
-        Puts a search object into the Queue and awaits completion.
-
-        :param player: Player to search for a matchup for
+        Puts a search object into the queue and awaits completion.
         &#34;&#34;&#34;
         assert search is not None
 
@@ -627,9 +587,9 @@ amount of times.</p></div>
     def match(self, s1: Search, s2: Search) -&gt; bool:
         &#34;&#34;&#34;
         Mark the given two searches as matched
-        :param s1:
-        :param s2:
-        :return: True if matching succeeded or False if matching failed
+
+        # Returns
+        `True` if matching succeeded or `False` if matching failed.
         &#34;&#34;&#34;
         if s1.is_matched or s2.is_matched:
             return False
@@ -829,10 +789,9 @@ async def find_matches(self) -&gt; None:
 <span>def <span class="ident">match</span></span>(<span>self, s1: <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, s2: <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>) ‑> bool</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Mark the given two searches as matched
-:param s1:
-:param s2:
-:return: True if matching succeeded or False if matching failed</p></div>
+<div class="desc"><p>Mark the given two searches as matched</p>
+<h1 id="returns">Returns</h1>
+<p><code>True</code> if matching succeeded or <code>False</code> if matching failed.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -840,9 +799,9 @@ async def find_matches(self) -&gt; None:
 <pre><code class="python">def match(self, s1: Search, s2: Search) -&gt; bool:
     &#34;&#34;&#34;
     Mark the given two searches as matched
-    :param s1:
-    :param s2:
-    :return: True if matching succeeded or False if matching failed
+
+    # Returns
+    `True` if matching succeeded or `False` if matching failed.
     &#34;&#34;&#34;
     if s1.is_matched or s2.is_matched:
         return False
@@ -933,8 +892,7 @@ in the queue.</p></div>
 </code></dt>
 <dd>
 <div class="desc"><p>Search for a match.</p>
-<p>Puts a search object into the Queue and awaits completion.</p>
-<p>:param player: Player to search for a matchup for</p></div>
+<p>Puts a search object into the queue and awaits completion.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -943,9 +901,7 @@ in the queue.</p></div>
     &#34;&#34;&#34;
     Search for a match.
 
-    Puts a search object into the Queue and awaits completion.
-
-    :param player: Player to search for a matchup for
+    Puts a search object into the queue and awaits completion.
     &#34;&#34;&#34;
     assert search is not None
 
@@ -1175,12 +1131,7 @@ on the current rate of ladder queues</p></div>
 <span>(</span><span>players: List[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], start_time: Union[float, NoneType] = None, rating_type: str = 'ladder_1v1', on_matched: Callable[[ForwardRef('<a title="server.matchmaker.Search" href="#server.matchmaker.Search">Search</a>'), ForwardRef('<a title="server.matchmaker.Search" href="#server.matchmaker.Search">Search</a>')], Any] = &lt;function Search.&lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Represents the state of a users search for a match.</p>
-<p>Default ctor for a search</p>
-<p>:param players: player to use for searching
-:param start_time: optional start time for the search
-:param rating_type: rating type
-:return: the search object</p></div>
+<div class="desc"><p>Represents the state of a users search for a match.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1197,14 +1148,6 @@ on the current rate of ladder queues</p></div>
         rating_type: str = RatingType.LADDER_1V1,
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
-        &#34;&#34;&#34;
-        Default ctor for a search
-
-        :param players: player to use for searching
-        :param start_time: optional start time for the search
-        :param rating_type: rating type
-        :return: the search object
-        &#34;&#34;&#34;
         assert isinstance(players, list)
         for player in players:
             assert player.ratings[rating_type] is not None
@@ -1310,11 +1253,10 @@ on the current rate of ladder queues</p></div>
     def match_threshold(self) -&gt; float:
         &#34;&#34;&#34;
         Defines the threshold for game quality
-        The base minimum quality is determined as 80% of the quality of a game
-        against a copy of yourself.
-        This is decreased by self.search_expansion if search is to be expanded.
 
-        :return:
+        The base minimum quality is determined as 80% of the quality of a game
+        against a copy of yourself. This is decreased by `self.search_expansion`
+        if search is to be expanded.
         &#34;&#34;&#34;
 
         return max(0.8 * self.quality_against_self - self.search_expansion, 0)
@@ -1365,8 +1307,6 @@ on the current rate of ladder queues</p></div>
     def match(self, other: &#34;Search&#34;):
         &#34;&#34;&#34;
         Mark as matched with given opponent
-        :param other:
-        :return:
         &#34;&#34;&#34;
         self._logger.info(&#34;Matched %s with %s&#34;, self, other)
 
@@ -1388,7 +1328,6 @@ on the current rate of ladder queues</p></div>
     async def await_match(self):
         &#34;&#34;&#34;
         Wait for this search to complete
-        :return:
         &#34;&#34;&#34;
         await asyncio.wait_for(self._match, None)
         return self._match
@@ -1486,11 +1425,10 @@ def is_matched(self):
 </dd>
 <dt id="server.matchmaker.Search.match_threshold"><code class="name">var <span class="ident">match_threshold</span> : float</code></dt>
 <dd>
-<div class="desc"><p>Defines the threshold for game quality
-The base minimum quality is determined as 80% of the quality of a game
-against a copy of yourself.
-This is decreased by self.search_expansion if search is to be expanded.</p>
-<p>:return:</p></div>
+<div class="desc"><p>Defines the threshold for game quality</p>
+<p>The base minimum quality is determined as 80% of the quality of a game
+against a copy of yourself. This is decreased by <code>self.search_expansion</code>
+if search is to be expanded.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1499,11 +1437,10 @@ This is decreased by self.search_expansion if search is to be expanded.</p>
 def match_threshold(self) -&gt; float:
     &#34;&#34;&#34;
     Defines the threshold for game quality
-    The base minimum quality is determined as 80% of the quality of a game
-    against a copy of yourself.
-    This is decreased by self.search_expansion if search is to be expanded.
 
-    :return:
+    The base minimum quality is determined as 80% of the quality of a game
+    against a copy of yourself. This is decreased by `self.search_expansion`
+    if search is to be expanded.
     &#34;&#34;&#34;
 
     return max(0.8 * self.quality_against_self - self.search_expansion, 0)</code></pre>
@@ -1592,8 +1529,7 @@ def search_expansion(self) -&gt; float:
 <span>async def <span class="ident">await_match</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Wait for this search to complete
-:return:</p></div>
+<div class="desc"><p>Wait for this search to complete</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1601,7 +1537,6 @@ def search_expansion(self) -&gt; float:
 <pre><code class="python">async def await_match(self):
     &#34;&#34;&#34;
     Wait for this search to complete
-    :return:
     &#34;&#34;&#34;
     await asyncio.wait_for(self._match, None)
     return self._match</code></pre>
@@ -1697,9 +1632,7 @@ def search_expansion(self) -&gt; float:
 <span>def <span class="ident">match</span></span>(<span>self, other: <a title="server.matchmaker.Search" href="#server.matchmaker.Search">Search</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Mark as matched with given opponent
-:param other:
-:return:</p></div>
+<div class="desc"><p>Mark as matched with given opponent</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1707,8 +1640,6 @@ def search_expansion(self) -&gt; float:
 <pre><code class="python">def match(self, other: &#34;Search&#34;):
     &#34;&#34;&#34;
     Mark as matched with given opponent
-    :param other:
-    :return:
     &#34;&#34;&#34;
     self._logger.info(&#34;Matched %s with %s&#34;, self, other)
 
@@ -1818,12 +1749,10 @@ and increase internal counter by one.</p></div>
 <li>
 <h4><code><a title="server.matchmaker.CombinedSearch" href="#server.matchmaker.CombinedSearch">CombinedSearch</a></code></h4>
 <ul class="">
-<li><code><a title="server.matchmaker.CombinedSearch.await_match" href="#server.matchmaker.CombinedSearch.await_match">await_match</a></code></li>
 <li><code><a title="server.matchmaker.CombinedSearch.done" href="#server.matchmaker.CombinedSearch.done">done</a></code></li>
 <li><code><a title="server.matchmaker.CombinedSearch.failed_matching_attempts" href="#server.matchmaker.CombinedSearch.failed_matching_attempts">failed_matching_attempts</a></code></li>
 <li><code><a title="server.matchmaker.CombinedSearch.is_cancelled" href="#server.matchmaker.CombinedSearch.is_cancelled">is_cancelled</a></code></li>
 <li><code><a title="server.matchmaker.CombinedSearch.is_matched" href="#server.matchmaker.CombinedSearch.is_matched">is_matched</a></code></li>
-<li><code><a title="server.matchmaker.CombinedSearch.match" href="#server.matchmaker.CombinedSearch.match">match</a></code></li>
 <li><code><a title="server.matchmaker.CombinedSearch.match_threshold" href="#server.matchmaker.CombinedSearch.match_threshold">match_threshold</a></code></li>
 <li><code><a title="server.matchmaker.CombinedSearch.players" href="#server.matchmaker.CombinedSearch.players">players</a></code></li>
 <li><code><a title="server.matchmaker.CombinedSearch.ratings" href="#server.matchmaker.CombinedSearch.ratings">ratings</a></code></li>
