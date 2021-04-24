@@ -29,14 +29,6 @@ class Search:
         rating_type: str = RatingType.LADDER_1V1,
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
-        """
-        Default ctor for a search
-
-        :param players: player to use for searching
-        :param start_time: optional start time for the search
-        :param rating_type: rating type
-        :return: the search object
-        """
         assert isinstance(players, list)
         for player in players:
             assert player.ratings[rating_type] is not None
@@ -142,11 +134,10 @@ class Search:
     def match_threshold(self) -> float:
         """
         Defines the threshold for game quality
-        The base minimum quality is determined as 80% of the quality of a game
-        against a copy of yourself.
-        This is decreased by self.search_expansion if search is to be expanded.
 
-        :return:
+        The base minimum quality is determined as 80% of the quality of a game
+        against a copy of yourself. This is decreased by `self.search_expansion`
+        if search is to be expanded.
         """
 
         return max(0.8 * self.quality_against_self - self.search_expansion, 0)
@@ -197,8 +188,6 @@ class Search:
     def match(self, other: "Search"):
         """
         Mark as matched with given opponent
-        :param other:
-        :return:
         """
         self._logger.info("Matched %s with %s", self, other)
 
@@ -220,7 +209,6 @@ class Search:
     async def await_match(self):
         """
         Wait for this search to complete
-        :return:
         """
         await asyncio.wait_for(self._match, None)
         return self._match

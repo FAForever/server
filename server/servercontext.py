@@ -1,3 +1,7 @@
+"""
+Manages a group of connections using the same protocol over the same port
+"""
+
 import asyncio
 import socket
 from typing import Callable, Dict, Iterable, Type

@@ -1,6 +1,7 @@
 """
-Some helper functions for common async tasks.
+Some helper functions for common async tasks
 """
+
 import asyncio
 import inspect
 import logging
@@ -125,7 +126,8 @@ def synchronized(*args):
     """
     Ensure that a function will only execute in serial.
 
-    :param lock: An instance of asyncio.Lock to use for synchronization.
+    # Params
+    - `lock`: An instance of asyncio.Lock to use for synchronization.
     """
     # Invoked like @synchronized
     if args and inspect.isfunction(args[0]):
@@ -165,7 +167,8 @@ def synchronizedmethod(*args):
     """
     Create a method that will be wrapped with an async lock.
 
-    :param attrname: The name of the lock attribute that will be used. If the
+    # Params
+    - `attrname`: The name of the lock attribute that will be used. If the
         attribute doesn't exist or is None, a lock will be created. The default
         is to use a value based on the decorated function name.
     """

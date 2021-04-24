@@ -41,21 +41,24 @@ class EventService(Service):
         """
         Sends a batch of event updates.
 
-        :param player_id: the player to update the events for
-        :param queue: an array of event updates in the form::
+        # Params
+        - `player_id`: the player to update the events for
+        - `queue`: an array of event updates in the form:
+        ```
+        [{
+            "event_id": string,
+            "update_count": long
+        }]
+        ```
 
-            [{
-                "event_id": string,
-                "update_count": long
-            }]
-
-        :return
-        If successful, this method returns an array with the following structure::
-
-            [{
-                "event_id": string,
-                "count": long
-            }]
+        # Returns
+        If successful, this method returns an array with the following structure:
+        ```
+        [{
+            "event_id": string,
+            "count": long
+        }]
+        ```
         Else, returns None
         """
         self._logger.info("Recording %d events for player %d", len(queue), player_id)
@@ -83,9 +86,11 @@ class EventService(Service):
         """
         Enqueues an event update.
 
-        :param event_id: the event to trigger
-        :param count: the update count
-        :param queue: if set, the update will be put into this array for later batch execution
+        # Params
+        - `event_id`: the event to trigger
+        - `count`: the update count
+        - `queue`: if set, the update will be put into this array for later
+        batch execution
         """
         if count == 0:
             return

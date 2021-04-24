@@ -1,3 +1,7 @@
+"""
+Manages connected and authenticated players
+"""
+
 import asyncio
 from typing import Optional, Set, ValuesView
 

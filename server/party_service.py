@@ -1,3 +1,7 @@
+"""
+Manages interactions between players and parties
+"""
+
 from typing import Dict, List, Set
 
 from .core import Service

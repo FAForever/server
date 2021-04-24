@@ -1,5 +1,5 @@
 """
-Tiny local-only http server for getting stats and performing various tasks
+Tiny http server for introspecting state
 """
 
 import socket

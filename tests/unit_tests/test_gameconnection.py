@@ -10,9 +10,15 @@ from asynctest import CoroutineMock, exhaust_callbacks
 from sqlalchemy import select
 
 from server import GameConnection
-from server.abc.base_game import GameConnectionState
 from server.db.models import coop_leaderboard, game_stats
-from server.games import CoopGame, Game, GameState, ValidityState, Victory
+from server.games import (
+    CoopGame,
+    Game,
+    GameConnectionState,
+    GameState,
+    ValidityState,
+    Victory
+)
 from server.players import PlayerState
 from server.protocol import DisconnectedError
 

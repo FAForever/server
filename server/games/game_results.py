@@ -211,9 +211,15 @@ def resolve_game(team_outcomes: List[Set[ArmyOutcome]]) -> List[GameOutcome]:
     for individual players on a team
     and converts a list of two GameOutcomes,
     either VICTORY and DEFEAT or DRAW and DRAW.
-    Throws GameResolutionError if outcomes are inconsistent or ambiguous.
-    :param team_outcomes: list of GameOutcomes
-    :return: list of ranks as to be used with trueskill
+
+    # Params
+    - `team_outcomes`: list of `GameOutcomes`
+
+    # Errors
+    Throws `GameResolutionError` if outcomes are inconsistent or ambiguous.
+
+    # Returns
+    A list of ranks as to be used with trueskill
     """
     if len(team_outcomes) != 2:
         raise GameResolutionError(

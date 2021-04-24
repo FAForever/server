@@ -14,6 +14,20 @@ class GameState(Enum):
 
 
 @unique
+class GameConnectionState(Enum):
+    INITIALIZING = 0
+    INITIALIZED = 1
+    CONNECTED_TO_HOST = 2
+    ENDED = 3
+
+
+@unique
+class InitMode(Enum):
+    NORMAL_LOBBY = 0
+    AUTO_LOBBY = 1
+
+
+@unique
 class Victory(Enum):
     DEMORALIZATION = 0
     DOMINATION = 1
@@ -30,22 +44,13 @@ class GameType(Enum):
     @staticmethod
     def from_string(value: str) -> Optional["GameType"]:
         """
-        :param value: The string to convert from
-
-        :return: GameType or None if the string is not valid
+        # Returns
+        `GameType` or `None` if the string is not valid
         """
-        return {
-            "coop": GameType.COOP,
-            "custom": GameType.CUSTOM,
-            "matchmaker": GameType.MATCHMAKER,
-        }.get(value)
+        return GameType.__members__.get(value.upper())
 
-    def to_string(self) -> Optional[str]:
-        return {
-            GameType.COOP: "coop",
-            GameType.CUSTOM: "custom",
-            GameType.MATCHMAKER: "matchmaker",
-        }.get(self)
+    def to_string(self) -> str:
+        return self.name.lower()
 
 
 @unique

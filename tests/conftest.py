@@ -21,7 +21,13 @@ from server.api.oauth_session import OAuth2Session
 from server.config import TRACE, config
 from server.db import FAFDatabase
 from server.game_service import GameService
-from server.games import CoopGame, FeaturedModType, Game, ValidityState
+from server.games import (
+    CoopGame,
+    FeaturedModType,
+    Game,
+    InitMode,
+    ValidityState
+)
 from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import MatchmakerQueue
@@ -30,6 +36,9 @@ from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.rating import RatingType
 from server.rating_service.rating_service import RatingService
+from server.stats.achievement_service import AchievementService
+from server.stats.event_service import EventService
+from server.stats.game_stats_service import GameStatsService
 from tests.utils import MockDatabase
 
 logging.getLogger().setLevel(TRACE)
@@ -70,7 +79,13 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     config.addinivalue_line(
+        "addopts", "--strict-markers"
+    )
+    config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+    )
+    config.addinivalue_line(
+        "markers", "rabbitmq: marks tests as requiring a running instance of RabbitMQ"
     )
 
 
@@ -200,7 +215,6 @@ def coop_game(database, players):
 
 
 def make_game(database, uid, players, game_type=Game):
-    from server.abc.base_game import InitMode
     mock_parent = CoroutineMock()
     game = asynctest.create_autospec(
         spec=game_type(uid, database, mock_parent, CoroutineMock())
@@ -264,7 +278,6 @@ def player_factory():
 
 @pytest.fixture
 def players(player_factory):
-    from server.players import PlayerState
     return mock.Mock(
         hosting=player_factory("Paula_Bean", player_id=1, state=PlayerState.HOSTING),
         peer=player_factory("That_Guy", player_id=2, state=PlayerState.JOINING),
@@ -375,19 +388,16 @@ def api_accessor():
 
 @pytest.fixture
 def event_service(api_accessor):
-    from server.stats.event_service import EventService
     return EventService(api_accessor)
 
 
 @pytest.fixture
 def achievement_service(api_accessor):
-    from server.stats.achievement_service import AchievementService
     return AchievementService(api_accessor)
 
 
 @pytest.fixture
 def game_stats_service(event_service, achievement_service):
-    from server.stats.game_stats_service import GameStatsService
     return GameStatsService(event_service, achievement_service)
 
 

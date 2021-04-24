@@ -394,7 +394,7 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
     assert msg == {
         "command": "notice",
         "style": "error",
-        "text": "You are banned from FAF forever. <br>Reason : <br>Test live ban"
+        "text": "You are banned from FAF forever. <br>Reason: <br>Test live ban"
     }
 
 

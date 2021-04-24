@@ -1,3 +1,7 @@
+"""
+Handles requests from connected clients
+"""
+
 import asyncio
 import contextlib
 import hashlib
@@ -16,7 +20,6 @@ from sqlalchemy import and_, func, select
 import server.metrics as metrics
 from server.db import FAFDatabase
 
-from .abc.base_game import GameConnectionState, InitMode
 from .config import TRACE, config
 from .db.models import (
     avatars,
@@ -36,7 +39,9 @@ from .games import (
     CoopGame,
     CustomGame,
     FeaturedModType,
+    GameConnectionState,
     GameState,
+    InitMode,
     VisibilityState
 )
 from .geoip_service import GeoIpService
@@ -1095,11 +1100,11 @@ class LobbyConnection:
     async def send_warning(self, message: str, fatal: bool = False):
         """
         Display a warning message to the client
-        :param message: Warning message to display
-        :param fatal: Whether or not the warning is fatal.
-                      If the client receives a fatal warning it should disconnect
-                      and not attempt to reconnect.
-        :return: None
+
+        # Params
+        - `message`: Warning message to display
+        - `fatal`: Whether or not the warning is fatal.  If the client receives
+        a fatal warning it should disconnect and not attempt to reconnect.
         """
         await self.send({
             "command": "notice",
@@ -1111,7 +1116,7 @@ class LobbyConnection:
 
     def write_warning(self, message: str, fatal: bool = False):
         """
-        Like send_warning, but does not await the data to be sent.
+        Like `send_warning`, but does not await the data to be sent.
         """
         self.write({
             "command": "notice",

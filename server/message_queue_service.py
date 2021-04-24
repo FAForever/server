@@ -1,3 +1,7 @@
+"""
+Interfaces with RabbitMQ
+"""
+
 import asyncio
 import json
 from typing import Dict
@@ -18,11 +22,11 @@ class ConnectionAttemptFailed(ConnectionError):
 
 @with_logger
 class MessageQueueService(Service):
+    """
+    Service handling connection to the message queue
+    and providing an interface to publish messages.
+    """
     def __init__(self) -> None:
-        """
-        Service handling connection to the message queue
-        and providing an interface to publish messages.
-        """
         self._logger.debug("Message queue service created.")
         self._connection = None
         self._channel = None
