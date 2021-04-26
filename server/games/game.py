@@ -19,6 +19,7 @@ from server.db.models import (
 from server.games.game_results import (
     ArmyOutcome,
     ArmyReportedOutcome,
+    ArmyResult,
     GameOutcome,
     GameResolutionError,
     GameResultReport,
@@ -280,7 +281,12 @@ class Game():
         )
 
     async def add_result(
-        self, reporter: int, army: int, result_type: str, score: int
+        self,
+        reporter: int,
+        army: int,
+        result_type: str,
+        score: int,
+        result_metadata: Optional[str] = None,
     ):
         """
         As computed by the game.
@@ -290,6 +296,8 @@ class Game():
         - `army`: the army number being reported for
         - `result_type`: a string representing the result
         - `score`: an arbitrary number assigned with the result
+        - `result_metadata`: everything preceding the `result_type` in the
+            result message from the game, one or more words, optional
         """
         if army not in self.armies:
             self._logger.debug(
@@ -307,7 +315,7 @@ class Game():
             )
             return
 
-        result = GameResultReport(reporter, army, outcome, score)
+        result = GameResultReport(reporter, army, outcome, score, result_metadata)
         self._results.add(result)
         self._logger.info(
             "%s reported result for army %s: %s %s", reporter, army,
@@ -466,11 +474,21 @@ class Game():
         team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
 
         if self.validity is ValidityState.VALID:
+            team_player_partial_outcomes = []
+            team_army_partial_results = []
+
+            for team in basic_info.teams:
+                partial_team_outcome = set()
+                partial_army_results = []
+
+                for player in team:
+                    partial_team_outcome.add(self.get_player_outcome(player))
+                    partial_army_results.append(self.get_army_results(player))
+
+                team_player_partial_outcomes.append(partial_team_outcome)
+                team_army_partial_results.append(partial_army_results)
+
             try:
-                team_player_partial_outcomes = [
-                    {self.get_player_outcome(player) for player in team}
-                    for team in basic_info.teams
-                ]
                 # TODO: Remove override once game result messages are reliable
                 team_outcomes = (
                     self._outcome_override_hook()
@@ -488,7 +506,11 @@ class Game():
             commander_kills = {}
 
         return EndedGameInfo.from_basic(
-            basic_info, self.validity, team_outcomes, commander_kills
+            basic_info,
+            self.validity,
+            team_outcomes,
+            commander_kills,
+            team_army_partial_results,
         )
 
     def _outcome_override_hook(self) -> Optional[List[GameOutcome]]:
@@ -821,6 +843,15 @@ class Game():
             return ArmyOutcome.UNKNOWN
 
         return self._results.outcome(army)
+
+    def get_army_results(self, player: Player) -> ArmyResult:
+        army = self.get_player_option(player.id, "Army")
+        return {
+            "player_id": player.id,
+            "army": army,
+            "army_result": ArmyOutcome.UNKNOWN,
+            "metadata": self._results.metadata(army),
+        }
 
     def report_army_stats(self, stats_json):
         self._army_stats_list = json.loads(stats_json)["stats"]

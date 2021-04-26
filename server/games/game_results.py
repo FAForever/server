@@ -2,7 +2,8 @@ import contextlib
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from enum import Enum
-from typing import Dict, Iterator, List, NamedTuple, Set
+from itertools import groupby
+from typing import Dict, Iterator, List, NamedTuple, Optional, Set
 
 from server.decorators import with_logger
 
@@ -39,6 +40,16 @@ class ArmyReportedOutcome(Enum):
         return ArmyOutcome(value)
 
 
+class ArmyResult(NamedTuple):
+    """
+    Broadcast in the end of game rabbitmq message.
+    """
+    player_id: int
+    army: Optional[int]
+    army_result: ArmyOutcome
+    metadata: List[str]
+
+
 class GameOutcome(Enum):
     VICTORY = "VICTORY"
     DEFEAT = "DEFEAT"
@@ -57,6 +68,7 @@ class GameResultReport(NamedTuple):
     army: int
     outcome: ArmyReportedOutcome
     score: int
+    metadata: str = ''
 
 
 @with_logger
@@ -148,6 +160,37 @@ class GameResultReports(Mapping):
             self._game_id, army, decision, voters,
         )
         return decision
+
+    def metadata(self, army: int) -> list:
+        if army not in self:
+            return []
+
+        submitted_metadata = []
+        hashes = []
+        split = []
+        for report in self[army]:
+            if report.metadata:
+                submitted_metadata.append(report.metadata)
+                hashes.append(hash("".join(sorted(report.metadata))))
+                split.append(report.metadata.split(" "))
+
+        if len(hashes):  # we have at least one piece of submitted metadata
+            g = groupby(hashes)
+            if next(g, True) and not next(g, False):  # all metadata matches
+                return sorted(split[0])
+        else:
+            return []
+
+        # Not all metadata matches, so we look for common tags
+        first, *others = (set(item) for item in split)
+        resolved_to = sorted(first.intersection(*others))
+
+        self._logger.info(
+            "Conflicting metadata for game %s army %s resolved to %s. Reports are: %s",
+            self._game_id, army, resolved_to, submitted_metadata,
+        )
+
+        return resolved_to
 
     def score(self, army: int) -> int:
         """

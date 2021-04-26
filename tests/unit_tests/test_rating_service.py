@@ -53,8 +53,16 @@ def game_rating_summary():
         1,
         RatingType.GLOBAL,
         [
-            TeamRatingSummary(GameOutcome.VICTORY, {1}),
-            TeamRatingSummary(GameOutcome.DEFEAT, {2}),
+            TeamRatingSummary(
+                GameOutcome.VICTORY,
+                {1},
+                [{"player_id": 1, "army": 0, "army_result": "VICTORY", "metadata": []}]
+            ),
+            TeamRatingSummary(
+                GameOutcome.DEFEAT,
+                {2},
+                [{"player_id": 2, "army": 1, "army_result": "DEFEAT", "metadata": []}],
+            ),
         ],
     )
 
@@ -70,8 +78,16 @@ def game_info():
         {},
         ValidityState.VALID,
         [
-            TeamRatingSummary(GameOutcome.VICTORY, {1}),
-            TeamRatingSummary(GameOutcome.DEFEAT, {2}),
+            TeamRatingSummary(
+                GameOutcome.VICTORY,
+                {1},
+                [{"player_id": 1, "army": 0, "army_result": "VICTORY", "metadata": []}]
+            ),
+            TeamRatingSummary(
+                GameOutcome.DEFEAT,
+                {2},
+                [{"player_id": 2, "army": 1, "army_result": "DEFEAT", "metadata": []}],
+            ),
         ],
     )
 
@@ -90,8 +106,16 @@ def bad_game_info():
         {},
         ValidityState.VALID,
         [
-            TeamRatingSummary(GameOutcome.VICTORY, {1}),
-            TeamRatingSummary(GameOutcome.VICTORY, {2}),
+            TeamRatingSummary(
+                GameOutcome.VICTORY,
+                {1},
+                [{"player_id": 1, "army": 0, "army_result": "VICTORY", "metadata": []}]
+            ),
+            TeamRatingSummary(
+                GameOutcome.VICTORY,
+                {2},
+                [{"player_id": 2, "army": 1, "army_result": "VICTORY", "metadata": []}],
+            ),
         ],
     )
 
@@ -235,8 +259,30 @@ async def test_get_rating_data(semiinitialized_service):
         game_id,
         RatingType.GLOBAL,
         [
-            TeamRatingSummary(player1_outcome, {player1_id}),
-            TeamRatingSummary(player2_outcome, {player2_id}),
+            TeamRatingSummary(
+                player1_outcome,
+                {1},
+                [
+                    {
+                        "player_id": player1_id,
+                        "army": 0,
+                        "army_result": player1_outcome.name,
+                        "metadata": [],
+                    }
+                ],
+            ),
+            TeamRatingSummary(
+                player2_outcome,
+                {2},
+                [
+                    {
+                        "player_id": player2_id,
+                        "army": 1,
+                        "army_result": player2_outcome.name,
+                        "metadata": [],
+                    }
+                ],
+            ),
         ],
     )
 

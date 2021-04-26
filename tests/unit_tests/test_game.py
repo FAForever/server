@@ -951,10 +951,17 @@ async def test_game_results(game: Game, players):
     assert len(result_dict["teams"]) == 2
 
     for team in result_dict["teams"]:
-        assert team["outcome"] == (
-            "VICTORY" if team["player_ids"] == [host_id]
-            else "DEFEAT"
-        )
+        outcome = "VICTORY" if team["player_ids"] == [host_id] else "DEFEAT"
+        army = 0 if team["player_ids"] == [host_id] else 1
+        assert team["outcome"] == outcome
+        assert team["army_results"] == [
+            {
+                "player_id": team["player_ids"][0],
+                "army": army,
+                "army_result": outcome,
+                "metadata": [],
+            }
+        ]
     assert result_dict["game_id"] == game.id
     assert result_dict["map_id"] == game.map_id
     assert result_dict["featured_mod"] == "faf"

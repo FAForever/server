@@ -1,3 +1,4 @@
+import logging
 import mock
 import pytest
 
@@ -42,3 +43,56 @@ def test_outcome_cache(game_results):
     game_results._compute_outcome.assert_called_once_with(1)
     assert game_results.outcome(1) is ArmyOutcome.CONFLICTING
     game_results._compute_outcome.assert_called_once_with(1)
+
+
+def test_metadata_no_matching_army(game_results):
+    assert game_results.metadata(1) == []
+
+
+def test_no_metadata_for_army(game_results):
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10))
+
+    assert game_results.metadata(1) == []
+
+
+def test_matching_simple_metadata(game_results):
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall"))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall"))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall"))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall"))
+
+    assert game_results.metadata(1) == ["recall"]
+
+
+def test_matching_complex_metadata(game_results):
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall something else"))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall something else"))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall something else"))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall something else"))
+
+    assert game_results.metadata(1) == ["else", "recall", "something"]
+
+
+def test_conflicting_simple_metadata(game_results, caplog):
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall"))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "something"))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "else"))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall"))
+
+    with caplog.at_level(logging.INFO):
+        assert game_results.metadata(1) == []
+        assert "Conflicting metadata" in caplog.records[0].message
+
+
+def test_conflicting_complex_metadata(game_results, caplog):
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall something else"))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall other thing"))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall thing"))
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, ""))
+
+    with caplog.at_level(logging.INFO):
+        assert game_results.metadata(1) == ["recall"]
+        assert "Conflicting metadata" in caplog.records[0].message
