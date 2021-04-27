@@ -169,8 +169,9 @@ class EndedGameInfo(NamedTuple):
         for outcome, army_results in zip(team_outcomes, team_partial_army_results):
             complete_team_results = []
             for player in army_results:
-                player["army_result"] = outcome.name
-                complete_team_results.append(player)
+                resolved_data = {**player._asdict(), "army_result": outcome.name}
+                resolved_result = ArmyResult(**resolved_data)
+                complete_team_results.append(resolved_result)
             team_complete_army_results.append(complete_team_results)
 
         return cls(

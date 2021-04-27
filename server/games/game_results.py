@@ -161,7 +161,12 @@ class GameResultReports(Mapping):
         )
         return decision
 
-    def metadata(self, army: int) -> list:
+    def metadata(self, army: int) -> List[str]:
+        """
+        If any users have sent metadata tags in their messages about this army
+        this function will compare those tags across all messages trying to find
+        common ones to return.
+        """
         if army not in self:
             return []
 
@@ -176,7 +181,7 @@ class GameResultReports(Mapping):
 
         if len(hashes):  # we have at least one piece of submitted metadata
             g = groupby(hashes)
-            if next(g, True) and not next(g, False):  # all metadata matches
+            if next(g, True) and not next(g, False):  # all hashes match
                 return sorted(split[0])
         else:
             return []

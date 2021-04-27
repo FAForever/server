@@ -19,7 +19,7 @@ from server.games import (
     Victory,
     VisibilityState
 )
-from server.games.game_results import ArmyOutcome
+from server.games.game_results import ArmyOutcome, ArmyResult
 from server.games.typedefs import FeaturedModType
 from server.rating import InclusiveRange, RatingType
 from tests.unit_tests.conftest import (
@@ -951,16 +951,15 @@ async def test_game_results(game: Game, players):
     assert len(result_dict["teams"]) == 2
 
     for team in result_dict["teams"]:
-        outcome = "VICTORY" if team["player_ids"] == [host_id] else "DEFEAT"
-        army = 0 if team["player_ids"] == [host_id] else 1
+        outcome, army = ("VICTORY", 0) if team["player_ids"] == [host_id] else ("DEFEAT", 1)
         assert team["outcome"] == outcome
         assert team["army_results"] == [
-            {
-                "player_id": team["player_ids"][0],
-                "army": army,
-                "army_result": outcome,
-                "metadata": [],
-            }
+            ArmyResult(
+                team["player_ids"][0],
+                army,
+                outcome,
+                [],
+            )
         ]
     assert result_dict["game_id"] == game.id
     assert result_dict["map_id"] == game.map_id

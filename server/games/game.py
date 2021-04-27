@@ -286,7 +286,7 @@ class Game():
         army: int,
         result_type: str,
         score: int,
-        result_metadata: Optional[str] = None,
+        result_metadata: Optional[str] = "",
     ):
         """
         As computed by the game.
@@ -846,12 +846,9 @@ class Game():
 
     def get_army_results(self, player: Player) -> ArmyResult:
         army = self.get_player_option(player.id, "Army")
-        return {
-            "player_id": player.id,
-            "army": army,
-            "army_result": ArmyOutcome.UNKNOWN,
-            "metadata": self._results.metadata(army),
-        }
+        return ArmyResult(
+            player.id, army, ArmyOutcome.UNKNOWN, self._results.metadata(army)
+        )
 
     def report_army_stats(self, stats_json):
         self._army_stats_list = json.loads(stats_json)["stats"]

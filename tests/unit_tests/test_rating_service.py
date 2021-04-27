@@ -11,7 +11,7 @@ from server.db.models import (
     leaderboard_rating,
     leaderboard_rating_journal
 )
-from server.games.game_results import GameOutcome
+from server.games.game_results import ArmyResult, GameOutcome
 from server.games.typedefs import (
     EndedGameInfo,
     TeamRatingSummary,
@@ -54,14 +54,10 @@ def game_rating_summary():
         RatingType.GLOBAL,
         [
             TeamRatingSummary(
-                GameOutcome.VICTORY,
-                {1},
-                [{"player_id": 1, "army": 0, "army_result": "VICTORY", "metadata": []}]
+                GameOutcome.VICTORY, {1}, [ArmyResult(1, 0, "VICTORY", [])]
             ),
             TeamRatingSummary(
-                GameOutcome.DEFEAT,
-                {2},
-                [{"player_id": 2, "army": 1, "army_result": "DEFEAT", "metadata": []}],
+                GameOutcome.DEFEAT, {2}, [ArmyResult(2, 1, "DEFEAT", [])],
             ),
         ],
     )
@@ -79,14 +75,10 @@ def game_info():
         ValidityState.VALID,
         [
             TeamRatingSummary(
-                GameOutcome.VICTORY,
-                {1},
-                [{"player_id": 1, "army": 0, "army_result": "VICTORY", "metadata": []}]
+                GameOutcome.VICTORY, {1}, [ArmyResult(1, 0, "VICTORY", [])]
             ),
             TeamRatingSummary(
-                GameOutcome.DEFEAT,
-                {2},
-                [{"player_id": 2, "army": 1, "army_result": "DEFEAT", "metadata": []}],
+                GameOutcome.DEFEAT, {2}, [ArmyResult(2, 1, "DEFEAT", [])],
             ),
         ],
     )
@@ -107,14 +99,10 @@ def bad_game_info():
         ValidityState.VALID,
         [
             TeamRatingSummary(
-                GameOutcome.VICTORY,
-                {1},
-                [{"player_id": 1, "army": 0, "army_result": "VICTORY", "metadata": []}]
+                GameOutcome.VICTORY, {1}, [ArmyResult(1, 0, "VICTORY", [])]
             ),
             TeamRatingSummary(
-                GameOutcome.VICTORY,
-                {2},
-                [{"player_id": 2, "army": 1, "army_result": "VICTORY", "metadata": []}],
+                GameOutcome.VICTORY, {2}, [ArmyResult(2, 1, "VICTORY", [])],
             ),
         ],
     )
@@ -260,27 +248,13 @@ async def test_get_rating_data(semiinitialized_service):
         RatingType.GLOBAL,
         [
             TeamRatingSummary(
-                player1_outcome,
-                {1},
-                [
-                    {
-                        "player_id": player1_id,
-                        "army": 0,
-                        "army_result": player1_outcome.name,
-                        "metadata": [],
-                    }
+                player1_outcome, {1}, [
+                    ArmyResult(player1_id, 0, player1_outcome.name, [])
                 ],
             ),
             TeamRatingSummary(
-                player2_outcome,
-                {2},
-                [
-                    {
-                        "player_id": player2_id,
-                        "army": 1,
-                        "army_result": player2_outcome.name,
-                        "metadata": [],
-                    }
+                player2_outcome, {2}, [
+                    ArmyResult(player2_id, 1, player2_outcome.name, [])
                 ],
             ),
         ],
