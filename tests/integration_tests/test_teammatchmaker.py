@@ -609,13 +609,18 @@ async def test_ratings_initialized_based_on_global_persisted(
     )
     protos = [proto1, proto2, proto3, proto4]
     for proto in protos:
-        await read_until_command(proto, "game_info")
+        # Read the initial game list
+        await read_until_command(proto, "player_info")
+        # Read the broadcasted update
+        await read_until_command(proto, "player_info")
+
+    for proto in protos:
         await proto.send_message({
             "command": "game_matchmaking",
             "state": "start",
             "mod": "tmm2v2"
         })
-        await read_until_command(proto, "player_info")
+        await read_until_command(proto, "search_info")
 
     msg1, msg2, msg3, msg4 = await asyncio.gather(*[
         client_response(proto) for proto in protos

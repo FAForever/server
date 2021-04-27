@@ -342,8 +342,10 @@ async def test_anti_map_repetition(lobby_server):
     # was played. We don't actually play the game out here, so the players
     # game history should remain unchanged.
     for _ in range(20):
-        await proto1.close()
-        await proto2.close()
+        await asyncio.gather(
+            proto1.close(),
+            proto2.close()
+        )
 
         proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
         msg = await read_until_command(proto1, "game_launch")
