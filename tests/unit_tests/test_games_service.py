@@ -7,7 +7,8 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_initialization(game_service):
-    assert len(game_service.dirty_games) == 0
+    assert len(game_service._dirty_games) == 0
+    assert game_service.pop_dirty_games() == set()
 
 
 async def test_create_game(players, game_service):
@@ -21,7 +22,7 @@ async def test_create_game(players, game_service):
         password=None
     )
     assert game is not None
-    assert game in game_service.dirty_games
+    assert game in game_service.pop_dirty_games()
     assert isinstance(game, CustomGame)
 
     game_service.remove_game(game)
@@ -49,7 +50,7 @@ async def test_create_game_ladder1v1(players, game_service):
         name="Test Ladder",
     )
     assert game is not None
-    assert game in game_service.dirty_games
+    assert game in game_service.pop_dirty_games()
     assert isinstance(game, LadderGame)
     assert game.game_mode == "ladder1v1"
 
@@ -64,6 +65,6 @@ async def test_create_game_other_gamemode(players, game_service):
         password=None
     )
     assert game is not None
-    assert game in game_service.dirty_games
+    assert game in game_service.pop_dirty_games()
     assert isinstance(game, Game)
     assert game.game_mode == "labwars"

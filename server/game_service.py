@@ -3,7 +3,7 @@ Manages the lifecycle of active games
 """
 
 from collections import Counter
-from typing import Dict, List, Optional, Type, Union, ValuesView
+from typing import Dict, List, Optional, Set, Type, Union, ValuesView
 
 import aiocron
 
@@ -104,23 +104,23 @@ class GameService(Service):
             # Turn resultset into a list of uids
             self.ranked_mods = set(map(lambda x: x[0], rows))
 
-    @property
-    def dirty_games(self):
-        return self._dirty_games
-
-    @property
-    def dirty_queues(self):
-        return self._dirty_queues
-
     def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
         if isinstance(obj, Game):
             self._dirty_games.add(obj)
         elif isinstance(obj, MatchmakerQueue):
             self._dirty_queues.add(obj)
 
-    def clear_dirty(self):
+    def pop_dirty_games(self) -> Set[Game]:
+        dirty_games = self._dirty_games
         self._dirty_games = set()
+
+        return dirty_games
+
+    def pop_dirty_queues(self) -> Set[MatchmakerQueue]:
+        dirty_queues = self._dirty_queues
         self._dirty_queues = set()
+
+        return dirty_queues
 
     def create_uid(self) -> int:
         self.game_id_counter += 1

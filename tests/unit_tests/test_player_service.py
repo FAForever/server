@@ -104,12 +104,12 @@ async def test_mark_dirty(player_factory, player_service):
 
     # Marking the same player as dirty multiple times should not matter
     player_service.mark_dirty(player)
-    assert player_service.dirty_players == {player}
+    assert player_service._dirty_players == {player}
     player_service.mark_dirty(player)
-    assert player_service.dirty_players == {player}
+    assert player_service._dirty_players == {player}
 
-    player_service.clear_dirty()
-    assert player_service.dirty_players == set()
+    assert player_service.pop_dirty_players() == {player}
+    assert player_service._dirty_players == set()
 
 
 async def test_update_data(player_service):

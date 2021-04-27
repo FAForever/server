@@ -49,11 +49,9 @@ class BroadcastService(Service):
 
     async def report_dirties(self):
         self.game_service.update_active_game_metrics()
-        dirty_games = self.game_service.dirty_games
-        dirty_queues = self.game_service.dirty_queues
-        dirty_players = self.player_service.dirty_players
-        self.game_service.clear_dirty()
-        self.player_service.clear_dirty()
+        dirty_games = self.game_service.pop_dirty_games()
+        dirty_queues = self.game_service.pop_dirty_queues()
+        dirty_players = self.player_service.pop_dirty_players()
 
         if dirty_queues:
             matchmaker_info = {

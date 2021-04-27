@@ -428,11 +428,12 @@ async def test_game_sim_ends_when_connections_ended_sim(game: Game, players):
 
 
 @fast_forward(90)
-async def test_game_marked_dirty_when_timed_out(game: Game):
+async def test_game_marked_dirty_when_timed_out(game: Game, game_service):
     game.state = GameState.INITIALIZING
     await game.timeout_game()
+
     assert game.state is GameState.ENDED
-    assert game in game.game_service.dirty_games
+    assert game in game_service.pop_dirty_games()
 
 
 async def test_clear_slot(
