@@ -13,6 +13,7 @@ from typing import Iterable
 from unittest import mock
 
 import asynctest
+import hypothesis
 import pytest
 from asynctest import CoroutineMock
 
@@ -42,6 +43,11 @@ from server.stats.game_stats_service import GameStatsService
 from tests.utils import MockDatabase
 
 logging.getLogger().setLevel(TRACE)
+hypothesis.settings.register_profile(
+    "nightly",
+    max_examples=10_000,
+    print_blob=True
+)
 
 
 def pytest_addoption(parser):
