@@ -2,7 +2,6 @@ import contextlib
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from enum import Enum
-from itertools import groupby
 from typing import Dict, FrozenSet, Iterator, List, NamedTuple, Optional, Set
 
 from server.decorators import with_logger
