@@ -238,7 +238,7 @@ async def test_start_game_with_teams(
         unique=True
     )
 )
-@settings(deadline=300)
+@settings(deadline=None)
 @autocontext("ladder_and_game_service_context", "monkeypatch_context")
 async def test_start_game_start_spots(
     ladder_and_game_service,

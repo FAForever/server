@@ -7,6 +7,8 @@ on:
       - master
       - develop
   pull_request:
+  schedule:
+    - cron: '0 0 * * *'
 
 env:
   FAF_DB_VERSION: v112
@@ -67,6 +69,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Cache hypothesis examples
+        uses: actions/cache@v2
+        with:
+          path: .hypothesis
+          key: .hypothesis
+
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
@@ -92,9 +100,16 @@ jobs:
           pip install pipenv
           pipenv sync --dev
 
-      - run: pipenv run tests --cov-report=xml -m ""
+      - name: Run tests
+        if: ${{ github.event_name != 'schedule' }}
+        run: pipenv run tests --cov-report=xml -m ""
+
+      - name: Run hypothesis tests with many examples
+        if: ${{ github.event_name == 'schedule' }}
+        run: pipenv run tests -m "hypothesis" --hypothesis-profile nightly
 
       - name: Report coverage
+        if: ${{ github.event_name != 'schedule' }}
         uses: codecov/codecov-action@v1
         with:
           files: coverage.xml
