@@ -60,40 +60,84 @@ def test_no_metadata_for_army(game_results):
 
 
 def test_matching_simple_metadata(game_results):
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall"))
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall"))
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall"))
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall"))
+    game_results.add(
+        GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall"]))
+    )
+    game_results.add(
+        GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall"]))
+    )
+    game_results.add(
+        GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall"]))
+    )
+    game_results.add(
+        GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall"]))
+    )
 
     assert game_results.metadata(1) == ["recall"]
 
 
 def test_matching_complex_metadata(game_results):
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall something else"))
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall something else"))
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall something else"))
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall something else"))
+    game_results.add(
+        GameResultReport(
+            1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall", "something", "else"])
+        )
+    )
+    game_results.add(
+        GameResultReport(
+            1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall", "something", "else"])
+        )
+    )
+    game_results.add(
+        GameResultReport(
+            1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall", "something", "else"])
+        )
+    )
+    game_results.add(
+        GameResultReport(
+            1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall", "something", "else"])
+        )
+    )
 
     assert game_results.metadata(1) == ["else", "recall", "something"]
 
 
 def test_conflicting_simple_metadata(game_results, caplog):
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall"))
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "something"))
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "else"))
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall"))
-
-    with caplog.at_level(logging.INFO):
-        assert game_results.metadata(1) == []
-        assert "Conflicting metadata" in caplog.records[0].message
-
-
-def test_conflicting_complex_metadata(game_results, caplog):
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall something else"))
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall other thing"))
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, "recall thing"))
-    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, ""))
+    game_results.add(
+        GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall"]))
+    )
+    game_results.add(
+        GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["something"]))
+    )
+    game_results.add(
+        GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["else"]))
+    )
+    game_results.add(
+        GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall"]))
+    )
 
     with caplog.at_level(logging.INFO):
         assert game_results.metadata(1) == ["recall"]
         assert "Conflicting metadata" in caplog.records[0].message
+
+
+def test_conflicting_complex_metadata(game_results, caplog):
+    game_results.add(
+        GameResultReport(
+            1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall", "something", "else"])
+        )
+    )
+    game_results.add(
+        GameResultReport(
+            1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall", "other", "thing"])
+        )
+    )
+    game_results.add(
+        GameResultReport(
+            1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall", "thing"])
+        )
+    )
+    game_results.add(GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset()))
+
+    with caplog.at_level(logging.INFO):
+        assert game_results.metadata(1) == []
+        assert "unable to resolve" in caplog.records[0].message

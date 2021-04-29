@@ -4,7 +4,6 @@ Game communication over GpgNet
 
 import asyncio
 import contextlib
-import re
 from typing import Any, List
 
 from sqlalchemy import select, text
@@ -300,23 +299,13 @@ class GameConnection(GpgNetServerProtocol):
         army = int(army)
         result = str(result).lower()
 
-        result_types = r"defeat|draw|score|victory"
-        pattern = re.compile(fr"""
-            # Metadata is optional, captures trailing space
-            ^(?P<metadata>.*(?={result_types}))
-            # Result type and score are required, score can be negative
-            (?P<result_type>{result_types})\s
-            (?P<score>-?[0-9]+)$
-        """, re.VERBOSE)
-        match = re.match(pattern, result)
-
         try:
-            metadata, result_type, score = (item.strip() for item in match.groups())
-        except AttributeError:  # no match
+            *metadata, result_type, score = result.split()
+        except ValueError:
             self._logger.warning("Invalid result for %s reported: %s", army, result)
         else:
             await self.game.add_result(
-                self.player.id, army, result_type, int(score), metadata
+                self.player.id, army, result_type, int(score), frozenset(metadata)
             )
 
     async def handle_operation_complete(

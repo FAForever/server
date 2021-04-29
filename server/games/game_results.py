@@ -3,7 +3,7 @@ from collections import Counter, defaultdict
 from collections.abc import Mapping
 from enum import Enum
 from itertools import groupby
-from typing import Dict, Iterator, List, NamedTuple, Optional, Set
+from typing import Dict, FrozenSet, Iterator, List, NamedTuple, Optional, Set
 
 from server.decorators import with_logger
 
@@ -68,7 +68,7 @@ class GameResultReport(NamedTuple):
     army: int
     outcome: ArmyReportedOutcome
     score: int
-    metadata: str = ''
+    metadata: FrozenSet[str] = []
 
 
 @with_logger
@@ -170,32 +170,29 @@ class GameResultReports(Mapping):
         if army not in self:
             return []
 
-        submitted_metadata = []
-        hashes = []
-        split = []
-        for report in self[army]:
-            if report.metadata:
-                submitted_metadata.append(report.metadata)
-                hashes.append(hash("".join(sorted(report.metadata))))
-                split.append(report.metadata.split(" "))
-
-        if len(hashes):  # we have at least one piece of submitted metadata
-            g = groupby(hashes)
-            if next(g, True) and not next(g, False):  # all hashes match
-                return sorted(split[0])
-        else:
+        all_metadata = [report.metadata for report in self[army] if report.metadata]
+        metadata_count = Counter(all_metadata).most_common()
+        if not len(metadata_count):
             return []
-
-        # Not all metadata matches, so we look for common tags
-        first, *others = (set(item) for item in split)
-        resolved_to = sorted(first.intersection(*others))
-
-        self._logger.info(
-            "Conflicting metadata for game %s army %s resolved to %s. Reports are: %s",
-            self._game_id, army, resolved_to, submitted_metadata,
-        )
-
-        return resolved_to
+        elif len(metadata_count) == 1:
+            # Everyone agrees!
+            return sorted(list(metadata_count[0][0]))
+        else:
+            most_common, next_most_common, *_ = metadata_count
+            if most_common[1] > next_most_common[1]:
+                resolved_to = sorted(list(most_common[0]))
+                self._logger.info(
+                    "Conflicting metadata for game %s army %s resolved to %s. Reports are: %s",
+                    self._game_id, army, resolved_to, all_metadata,
+                )
+                return resolved_to
+            else:
+                # We have a tie
+                self._logger.info(
+                    "Conflicting metadata for game %s army %s, unable to resolve. Reports are: %s",
+                    self._game_id, army, all_metadata,
+                )
+                return []
 
     def score(self, army: int) -> int:
         """

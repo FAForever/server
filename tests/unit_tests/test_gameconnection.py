@@ -354,14 +354,14 @@ async def test_handle_action_GameResult_calls_add_result(game: Game, game_connec
     game_connection.connect_to_host = CoroutineMock()
 
     await game_connection.handle_action("GameResult", [0, "score -5"])
-    game.add_result.assert_called_once_with(game_connection.player.id, 0, "score", -5, "")
+    game.add_result.assert_called_once_with(game_connection.player.id, 0, "score", -5, frozenset())
 
 
 async def test_cannot_parse_game_results(game: Game, game_connection: GameConnection, caplog):
     game_connection.connect_to_host = CoroutineMock()
 
     with caplog.at_level(logging.WARNING):
-        await game_connection.handle_action("GameResult", [0, "invalid result"])
+        await game_connection.handle_action("GameResult", [0, ""])
         game.add_result.assert_not_called()
         assert 'Invalid result' in caplog.records[0].message
 
@@ -657,5 +657,5 @@ async def test_handle_action_invalid(game_connection: GameConnection):
 async def test_result_format_phantom(game: Game, game_connection: GameConnection):
     await game_connection.handle_action("GameResult", [0, "phantom score -5"])
     game.add_result.assert_called_once_with(
-        game_connection.player.id, 0, "score", -5, "phantom"
+        game_connection.player.id, 0, "score", -5, frozenset(["phantom"])
     )

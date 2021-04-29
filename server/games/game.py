@@ -286,7 +286,7 @@ class Game():
         army: int,
         result_type: str,
         score: int,
-        result_metadata: Optional[str] = "",
+        result_metadata: FrozenSet[str] = frozenset(),
     ):
         """
         As computed by the game.
