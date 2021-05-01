@@ -2,6 +2,7 @@ import asyncio
 import itertools
 import math
 import time
+import statistics
 from typing import Any, Callable, List, Optional, Tuple
 
 from trueskill import Rating, quality
@@ -14,6 +15,19 @@ from ..players import Player
 
 Match = Tuple["Search", "Search"]
 OnMatchedCallback = Callable[["Search", "Search"], Any]
+
+
+class Game:
+    """
+    Represents a potential game
+    """
+    def __init__(
+        self,
+        match: Match,
+        match_quality: float
+    ):
+        self.match = match
+        self.quality = match_quality
 
 
 @with_logger
@@ -81,6 +95,24 @@ class Search:
         return ratings
 
     @property
+    def cumulated_rating(self):
+        cumulated_rating = 0
+        for player in self.players:
+            mean, dev = player.ratings[self.rating_type]
+            rating = mean - 3 * dev
+            cumulated_rating += rating
+        return cumulated_rating
+
+    @property
+    def average_rating(self):
+        ratings = []
+        for player in self.players:
+            mean, dev = player.ratings[self.rating_type]
+            rating = mean - 3 * dev
+            ratings.append(rating)
+        return statistics.mean(ratings)
+
+    @property
     def raw_ratings(self):
         return [player.ratings[self.rating_type] for player in self.players]
 
@@ -105,7 +137,7 @@ class Search:
 
     @property
     def failed_matching_attempts(self) -> int:
-        return self._failed_matching_attempts
+        return self._failed_matching_attempts * len(self.players)
 
     @property
     def search_expansion(self) -> float:
@@ -234,7 +266,7 @@ class Search:
 
     def __repr__(self) -> str:
         """For debugging"""
-        return f"Search({[p.login for p in self.players]})"
+        return f"Search({[p.login for p in self.players]}, {self.average_rating})"
 
 
 class CombinedSearch(Search):
@@ -255,12 +287,25 @@ class CombinedSearch(Search):
         return list(itertools.chain(*[s.ratings for s in self.searches]))
 
     @property
+    def cumulated_rating(self):
+        return sum(s.cumulated_rating for s in self.searches)
+
+    @property
+    def average_rating(self):
+        ratings = []
+        for s in self.searches:
+            for mean, dev in s.raw_ratings:
+                rating = mean - 3 * dev
+                ratings.append(rating)
+        return statistics.mean(ratings)
+
+    @property
     def raw_ratings(self):
         return list(itertools.chain(*[s.raw_ratings for s in self.searches]))
 
     @property
     def failed_matching_attempts(self) -> int:
-        return max(search.failed_matching_attempts for search in self.searches)
+        return sum(search.failed_matching_attempts for search in self.searches)
 
     def register_failed_matching_attempt(self):
         for search in self.searches:

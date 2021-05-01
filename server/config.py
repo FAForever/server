@@ -83,6 +83,12 @@ class ConfigurationStore:
         self.START_RATING_MEAN = 1500
         self.START_RATING_DEV = 500
         self.TOP_PLAYER_MIN_RATING = 1600
+        self.MINIMUM_GAME_QUALITY = 0.5
+        self.MAXIMUM_RATING_IMBALANCE = 600
+        self.MAXIMUM_RATING_DEVIATION = 300
+        self.TIME_BONUS = 0.025
+        self.MAXIMUM_TIME_BONUS = 0.4
+        self.NEWBIE_BONUS = 0.2
 
         self.TWILIO_ACCOUNT_SID = ""
         self.TWILIO_TOKEN = ""

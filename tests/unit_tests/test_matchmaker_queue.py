@@ -205,7 +205,7 @@ def test_combined_search_attributes(matchmaker_players):
     assert search.failed_matching_attempts == 1
 
     search.register_failed_matching_attempt()
-    assert search.failed_matching_attempts == 2
+    assert search.failed_matching_attempts == 4
 
 
 def test_queue_time_until_next_pop(queue_factory):

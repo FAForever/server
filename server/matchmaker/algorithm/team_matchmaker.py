@@ -1,0 +1,301 @@
+import itertools
+import math
+import random
+import statistics as stats
+from collections import OrderedDict, defaultdict
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar
+)
+
+from ...config import config
+from ...decorators import with_logger
+from ..search import CombinedSearch, Game, Match, Search
+from .matchmaker import Matchmaker
+
+
+@with_logger
+class MatchmakingPolicy(object):
+    def __init__(self):
+        self.matches: Dict[Search, Search] = {}
+
+    def _match(self, s1: Search, s2: Search):
+        self._logger.debug(f"Matching %s and %s ({self.__class__})", s1, s2)
+        self.matches[s1] = s2
+        self.matches[s2] = s1
+
+    def _unmatch(self, s1: Search):
+        s2 = self.matches[s1]
+        self._logger.debug(f"Unmatching %s and %s ({self.__class__})", s1, s2)
+        assert self.matches[s2] == s1
+        del self.matches[s1]
+        del self.matches[s2]
+
+    """
+    1. list all the parties in queue by their average rating.
+    2. Take a party and select the neighboring parties alternating between lower 
+    and higher until you have 8 players. If the next party to select would leave 
+    you with more than 8 players you skip that party and try the next one.
+    3. you now have a list of parties that will be in your potential game. Distribute 
+     them into two teams.
+     Start with the easiest cases: one party makes a full team already or one party 
+     has n-1 players so you only need to find the best fitting single player.
+     If that is not the case perform the karmarkar-karp algorithm to get a good approximation for a partition
+    4. add this game to a games list
+    5. repeat 2. to 4. for every party.
+    6. you now have a list of potential games with minimal rating variation and minimal rating imbalance.
+    7. remove all games with match quality below threshold then sort by quality descending
+    8. pick the first game from the game list and remove all other games that contain the same players
+    9. repeat until the list is empty
+
+    for the future:
+    Find combination of potential games that allows for maximal number of games to launch
+    Repeat 8. with an increasing amount of top games removed beforehand to get all possible game combinations
+    If there is more than one solution, pick the one with highest total game quality
+    Optimization: sort by game quality first, abort when you find a solution with 
+    the full number of theoretically possible games (floor(playersInQueue/(teamSize*2)))
+    """
+
+
+class Container:
+    def __init__(self, rating_difference, content):
+        self.rating = rating_difference
+        self.content = content
+
+
+@with_logger
+class TeamMatchMaker(MatchmakingPolicy):
+    def __init__(self):
+        super().__init__()
+        self.team_size = 4
+
+    def find(self, searches: Iterable[Search]) -> List[Match]:
+        """
+        Matchmaker for teams of varied size. Untested for higher than 4v4 but it should work
+        """
+        searches = list(searches)
+        searches.sort(key=lambda s: s.average_rating, reverse=True)
+        self._logger.debug("=== starting matching algorithm ===")
+        possible_games = set()
+        for index, search in enumerate(searches):
+            self._logger.debug(f"building game for {repr(search)}")
+            participants = self._pick_neighboring_players(searches, index)
+            try:
+                match = self.make_teams(list(participants), self.team_size)
+                game = self.calculate_game_quality(match)
+                possible_games.add(game)
+            except AssertionError:
+                self._logger.warning("failed to assign even teams. Skipping this game...")
+        self._logger.debug(f"got {len(possible_games)} games")
+        for game in possible_games:
+            self._logger.debug(f"game:{repr(game.match[0])} vs {repr(game.match[1])} rating disparity: {game.match[0].cumulated_rating - game.match[1].cumulated_rating} quality: {game.quality}")
+        self._pick_best_noncolliding_games(list(possible_games))
+        return self._remove_duplicates()
+
+    def _pick_neighboring_players(self, searches: List[Search], index: int) -> List[Search]:
+        participants = []
+        i = 0
+        number_of_players = 0
+        out_of_bounds_counter = 0
+        while number_of_players < self.team_size * 2 and out_of_bounds_counter < 2:
+            try:
+                candidate = searches[index]
+                out_of_bounds_counter = 0
+                if number_of_players + len(candidate.players) <= self.team_size * 2:
+                    participants.append(candidate)
+                    number_of_players += len(candidate.players)
+            except IndexError:
+                out_of_bounds_counter += 1
+            i += 1
+            index += i * pow(-1, i)
+        return participants
+
+    def make_teams(self, searches: List[Search], team_size: int) -> Tuple[Search, Search]:
+        avg = CombinedSearch(*searches).average_rating
+        team_target_strength = CombinedSearch(*searches).cumulated_rating / 2
+        searches_dict = self._searches_by_size(searches)
+        team_a = []
+        team_b = []
+
+        if searches_dict[team_size]:
+            search = searches_dict[team_size].pop()
+            team_a.append(search)
+            searches.remove(search)
+        elif searches_dict[team_size - 1]:
+            search = searches_dict[team_size - 1].pop()
+            filler = self._find_most_balanced_filler(avg, search, searches_dict)
+            team_a.append(search)
+            team_a.append(filler)
+            searches.remove(search)
+            searches.remove(filler)
+        else:
+            team_a, searches = self.run_karmarkar_karp_algorithm(searches)
+        team_b.extend(searches)
+
+        combined_team_a = CombinedSearch(*team_a)
+        combined_team_b = CombinedSearch(*team_b)
+        self._logger.debug(f"made teams: Average rating: {avg} target strength: {team_target_strength}")
+        self._logger.debug(f"team a: {str(team_a)} cumulated rating: {combined_team_a.cumulated_rating}\
+         average rating: {combined_team_a.average_rating}")
+        self._logger.debug(f"team b: {str(team_b)} cumulated rating: {combined_team_b.cumulated_rating}\
+         average rating: {combined_team_b.average_rating}")
+        assert len(combined_team_a.players) == team_size
+        assert len(combined_team_b.players) == team_size
+        return combined_team_a, combined_team_b
+
+    def run_karmarkar_karp_algorithm(self, searches):
+        self._logger.debug(f"Running Karmarkar-Karp to partition the teams")
+        containers = []
+        for s in searches:
+            # Karmarkar-Karp works only for positive integers. By adding 5000 to the rating of each player
+            # we also strongly incentivise the algorithm to give both teams the same number of players
+            containers.append(Container(5000 * len(s.players) + s.cumulated_rating, [s]))
+
+        containers.sort(key=lambda c: c.rating)
+        elem1 = containers.pop()
+        elem2 = containers.pop()
+        while True:
+            #  elem1 is always bigger than elem2
+            container = Container(elem1.rating - elem2.rating, [elem1, elem2])
+            containers.append(container)
+            containers.sort(key=lambda c: c.rating)
+            elem1 = containers.pop()
+            try:
+                elem2 = containers.pop()
+            except IndexError:
+                break
+        self._logger.debug(f"Rating disparity: {elem1.rating}")
+
+        team_a = []
+        team_b = []
+        containers_a = []
+        containers_b = []
+        containers_a.append(elem1.content[0])
+        containers_b.append(elem1.content[1])
+        while len(containers_a) > 0 or len(containers_b) > 0:
+            for e in containers_a:
+                if len(e.content) == 2:
+                    containers_a.append(e.content[0])
+                    containers_b.append(e.content[1])
+                else:
+                    team_a.append(e.content[0])
+                containers_a.remove(e)
+            for e in containers_b:
+                if len(e.content) == 2:
+                    containers_b.append(e.content[0])
+                    containers_a.append(e.content[1])
+                else:
+                    team_b.append(e.content[0])
+                containers_b.remove(e)
+        return team_a, team_b
+
+    def _searches_by_size(self, searches: List[Search]) -> Dict[int, List[Search]]:
+        searches_by_size: Dict[int, List[Search]] = defaultdict(list)
+
+        for search in searches:
+            size = len(search.players)
+            searches_by_size[size].append(search)
+
+        self._logger.debug(f"participating searches by player size:")
+        for i in range(self.team_size, 0, -1):
+            self._logger.debug(f"{i} players: {str(searches_by_size[i])}")
+        return searches_by_size
+
+    def _find_most_balanced_filler(self, avg, search, searches_dict):
+        """
+        If we simply fetch the highest/lowest rated single player search we may overshoot our
+        goal to get the most balanced teams, so we try them all until we find the one that brings
+        us closest to the rating average i.e. balanced teams
+        If there is no single player search we have hit a search combination that is impossible to
+        separate into two teams e.g. (3, 3, 2) for 4v4
+        """
+        team_avg = search.average_rating
+        if not searches_dict[1]:
+            self._logger.warning("given searches are impossible to split in even teams because of party sizes")
+            raise AssertionError
+        searches_dict[1].sort(key=lambda s: s.cumulated_rating, reverse=True)
+        reverse = False
+        if avg - team_avg < 0:
+            pop = searches_dict[1].pop()
+            reverse = True
+        else:
+            pop = searches_dict[1].pop(0)
+        old_pop = pop
+        avg_delta = -1
+        old_avg_delta = 0
+        while avg_delta < old_avg_delta and searches_dict[1]:
+            old_pop = pop
+            if reverse:
+                pop = searches_dict[1].pop()
+            else:
+                pop = searches_dict[1].pop(0)
+            old_team_avg = CombinedSearch(*[search, old_pop]).average_rating
+            old_avg_delta = abs(avg - old_team_avg)
+            self._logger.debug(f"old delta with {str([old_pop])} is {old_avg_delta} (avg is {old_team_avg})")
+            team_avg = CombinedSearch(*[search, pop]).average_rating
+            avg_delta = abs(avg - team_avg)
+            self._logger.debug(f"delta with {str([pop])} is {avg_delta} (avg is {team_avg})")
+        self._logger.debug(f"used {str([old_pop])} as filler")
+        return old_pop
+
+    def calculate_game_quality(self, match: Match) -> Game:
+        newbie_bonus = 0
+        time_bonus = 0
+        ratings = []
+        for team in match:
+            time_bonus += team.failed_matching_attempts * config.TIME_BONUS
+            time_bonus = min(time_bonus, config.MAXIMUM_TIME_BONUS)
+            newbie_bonus += team.has_newbie() * config.NEWBIE_BONUS
+            # Note: This punishes pre-made parties that have big internal rating differences
+            #           If we use team.average_rating we only get the two ratings of the teams
+            #           because we merged them into one combinedSearch before
+            for mean, dev in team.raw_ratings:
+                rating = mean - 3 * dev
+                ratings.append(rating)
+
+        rating_disparity = abs(match[0].cumulated_rating - match[1].cumulated_rating)
+        fairness = max((config.MAXIMUM_RATING_IMBALANCE - rating_disparity) / config.MAXIMUM_RATING_IMBALANCE, 0)
+        deviation = stats.pstdev(ratings)
+        uniformity = max((config.MAXIMUM_RATING_DEVIATION - deviation) / config.MAXIMUM_RATING_DEVIATION, 0)
+
+        quality = fairness * uniformity + newbie_bonus + time_bonus
+        self._logger.debug(f"bonuses: {newbie_bonus + time_bonus} rating disparity: {rating_disparity} -> fairness: {fairness} deviation: {deviation} -> uniformity: {uniformity} -> game quality: {quality}")
+        return Game(match, quality)
+
+    def _pick_best_noncolliding_games(self, games: List[Game]):
+        for game in list(games):
+            if game.quality < config.MINIMUM_GAME_QUALITY:
+                games.remove(game)
+        self._logger.debug(f"{len(games)} games left after removal of games with quality < {config.MINIMUM_GAME_QUALITY}")
+        games.sort(key=lambda gme: gme.quality, reverse=True)
+
+        while len(games) > 0:
+            g = games.pop(0)
+            self._match(g.match[0], g.match[1])
+            used_players = set()
+            for search in g.match:
+                for player in search.players:
+                    used_players.add(player)
+            self._logger.debug(f"used players: {[p.login for p in used_players]}")
+            for game in list(games):
+                for search in game.match:
+                    if not set(search.players).isdisjoint(used_players):
+                        games.remove(game)
+                        self._logger.debug(f"removed game: {str(game.match)}")
+                        break
+
+    def _remove_duplicates(self) -> List[Match]:
+        matches_set: Set[Match] = set()
+        for s1, s2 in self.matches.items():
+            if (s1, s2) in matches_set or (s2, s1) in matches_set:
+                continue
+            matches_set.add((s1, s2))
+        self._logger.debug("chosen games: " + str(list(matches_set)))
+        return list(matches_set)
+
