@@ -1,50 +1,37 @@
-import itertools
-import math
-import random
 import statistics as stats
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from typing import (
     Dict,
     Iterable,
-    Iterator,
     List,
-    Optional,
-    Set,
-    Tuple,
-    TypeVar
+    Tuple
 )
 
+from .matchmaker import Matchmaker
+from ..search import CombinedSearch, Game, Match, Search
 from ...config import config
 from ...decorators import with_logger
-from ..search import CombinedSearch, Game, Match, Search
-from .matchmaker import Matchmaker
+
+
+class Container:
+    def __init__(self, rating_difference, content):
+        self.rating = rating_difference
+        self.content = content
 
 
 @with_logger
-class MatchmakingPolicy(object):
-    def __init__(self):
-        self.matches: Dict[Search, Search] = {}
-
-    def _match(self, s1: Search, s2: Search):
-        self._logger.debug(f"Matching %s and %s ({self.__class__})", s1, s2)
-        self.matches[s1] = s2
-        self.matches[s2] = s1
-
-    def _unmatch(self, s1: Search):
-        s2 = self.matches[s1]
-        self._logger.debug(f"Unmatching %s and %s ({self.__class__})", s1, s2)
-        assert self.matches[s2] == s1
-        del self.matches[s1]
-        del self.matches[s2]
-
+class TeamMatchMaker(Matchmaker):
     """
+    Matchmaker for teams of varied size. Untested for higher than 4v4 but it should work
+
+    Overview of the algorithm:
     1. list all the parties in queue by their average rating.
-    2. Take a party and select the neighboring parties alternating between lower 
-    and higher until you have 8 players. If the next party to select would leave 
+    2. Take a party and select the neighboring parties alternating between lower
+    and higher until you have 8 players. If the next party to select would leave
     you with more than 8 players you skip that party and try the next one.
-    3. you now have a list of parties that will be in your potential game. Distribute 
+    3. you now have a list of parties that will be in your potential game. Distribute
      them into two teams.
-     Start with the easiest cases: one party makes a full team already or one party 
+     Start with the easiest cases: one party makes a full team already or one party
      has n-1 players so you only need to find the best fitting single player.
      If that is not the case perform the karmarkar-karp algorithm to get a good approximation for a partition
     4. add this game to a games list
@@ -58,27 +45,11 @@ class MatchmakingPolicy(object):
     Find combination of potential games that allows for maximal number of games to launch
     Repeat 8. with an increasing amount of top games removed beforehand to get all possible game combinations
     If there is more than one solution, pick the one with highest total game quality
-    Optimization: sort by game quality first, abort when you find a solution with 
+    Optimization: sort by game quality first, abort when you find a solution with
     the full number of theoretically possible games (floor(playersInQueue/(teamSize*2)))
     """
 
-
-class Container:
-    def __init__(self, rating_difference, content):
-        self.rating = rating_difference
-        self.content = content
-
-
-@with_logger
-class TeamMatchMaker(MatchmakingPolicy):
-    def __init__(self):
-        super().__init__()
-        self.team_size = 4
-
     def find(self, searches: Iterable[Search]) -> List[Match]:
-        """
-        Matchmaker for teams of varied size. Untested for higher than 4v4 but it should work
-        """
         searches = list(searches)
         searches.sort(key=lambda s: s.average_rating, reverse=True)
         self._logger.debug("=== starting matching algorithm ===")
@@ -87,7 +58,7 @@ class TeamMatchMaker(MatchmakingPolicy):
             self._logger.debug(f"building game for {repr(search)}")
             participants = self._pick_neighboring_players(searches, index)
             try:
-                match = self.make_teams(list(participants), self.team_size)
+                match = self.make_teams(list(participants))
                 game = self.calculate_game_quality(match)
                 possible_games.add(game)
             except AssertionError:
@@ -95,8 +66,7 @@ class TeamMatchMaker(MatchmakingPolicy):
         self._logger.debug(f"got {len(possible_games)} games")
         for game in possible_games:
             self._logger.debug(f"game:{repr(game.match[0])} vs {repr(game.match[1])} rating disparity: {game.match[0].cumulated_rating - game.match[1].cumulated_rating} quality: {game.quality}")
-        self._pick_best_noncolliding_games(list(possible_games))
-        return self._remove_duplicates()
+        return self._pick_best_noncolliding_games(list(possible_games))
 
     def _pick_neighboring_players(self, searches: List[Search], index: int) -> List[Search]:
         participants = []
@@ -116,19 +86,19 @@ class TeamMatchMaker(MatchmakingPolicy):
             index += i * pow(-1, i)
         return participants
 
-    def make_teams(self, searches: List[Search], team_size: int) -> Tuple[Search, Search]:
+    def make_teams(self, searches: List[Search]) -> Tuple[Search, Search]:
         avg = CombinedSearch(*searches).average_rating
         team_target_strength = CombinedSearch(*searches).cumulated_rating / 2
         searches_dict = self._searches_by_size(searches)
         team_a = []
         team_b = []
 
-        if searches_dict[team_size]:
-            search = searches_dict[team_size].pop()
+        if searches_dict[self.team_size]:
+            search = searches_dict[self.team_size].pop()
             team_a.append(search)
             searches.remove(search)
-        elif searches_dict[team_size - 1]:
-            search = searches_dict[team_size - 1].pop()
+        elif searches_dict[self.team_size - 1]:
+            search = searches_dict[self.team_size - 1].pop()
             filler = self._find_most_balanced_filler(avg, search, searches_dict)
             team_a.append(search)
             team_a.append(filler)
@@ -145,8 +115,8 @@ class TeamMatchMaker(MatchmakingPolicy):
          average rating: {combined_team_a.average_rating}")
         self._logger.debug(f"team b: {str(team_b)} cumulated rating: {combined_team_b.cumulated_rating}\
          average rating: {combined_team_b.average_rating}")
-        assert len(combined_team_a.players) == team_size
-        assert len(combined_team_b.players) == team_size
+        assert len(combined_team_a.players) == self.team_size
+        assert len(combined_team_b.players) == self.team_size
         return combined_team_a, combined_team_b
 
     def run_karmarkar_karp_algorithm(self, searches):
@@ -264,16 +234,17 @@ class TeamMatchMaker(MatchmakingPolicy):
         self._logger.debug(f"bonuses: {newbie_bonus + time_bonus} rating disparity: {rating_disparity} -> fairness: {fairness} deviation: {deviation} -> uniformity: {uniformity} -> game quality: {quality}")
         return Game(match, quality)
 
-    def _pick_best_noncolliding_games(self, games: List[Game]):
+    def _pick_best_noncolliding_games(self, games: List[Game]) -> List[Match]:
         for game in list(games):
             if game.quality < config.MINIMUM_GAME_QUALITY:
                 games.remove(game)
         self._logger.debug(f"{len(games)} games left after removal of games with quality < {config.MINIMUM_GAME_QUALITY}")
         games.sort(key=lambda gme: gme.quality, reverse=True)
 
+        matches: List[Match] = []
         while len(games) > 0:
             g = games.pop(0)
-            self._match(g.match[0], g.match[1])
+            matches.append(g.match)
             used_players = set()
             for search in g.match:
                 for player in search.players:
@@ -285,13 +256,5 @@ class TeamMatchMaker(MatchmakingPolicy):
                         games.remove(game)
                         self._logger.debug(f"removed game: {str(game.match)}")
                         break
-
-    def _remove_duplicates(self) -> List[Match]:
-        matches_set: Set[Match] = set()
-        for s1, s2 in self.matches.items():
-            if (s1, s2) in matches_set or (s2, s1) in matches_set:
-                continue
-            matches_set.add((s1, s2))
-        self._logger.debug("chosen games: " + str(list(matches_set)))
-        return list(matches_set)
-
+        self._logger.debug("chosen games: " + str(matches))
+        return matches

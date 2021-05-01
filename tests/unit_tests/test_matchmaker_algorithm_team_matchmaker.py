@@ -45,7 +45,7 @@ def test_team_matchmaker_performance(player_factory, bench, caplog):
     searches = [Search([player_factory(1500, 500, ladder_games=1)]) for _ in range(num_searches)]
 
     with bench:
-        TeamMatchMaker().find(searches)
+        TeamMatchMaker(4).find(searches)
 
     assert bench.elapsed() < 0.5
 
@@ -63,13 +63,13 @@ def test_team_matchmaker_algorithm(player_factory):
     s.append(c3)
     s.append(c4)
 
-    matches = TeamMatchMaker().find(s)
+    matches = TeamMatchMaker(4).find(s)
 
     assert len(matches) == 2
     for match in matches:
-        assert TeamMatchMaker().calculate_game_quality(match).quality > config.MINIMUM_GAME_QUALITY
+        assert TeamMatchMaker(4).calculate_game_quality(match).quality > config.MINIMUM_GAME_QUALITY
         for team in match:
-            assert len(team.players) == TeamMatchMaker().team_size
+            assert len(team.players) == 4
 
 
 def test_team_matchmaker_algorithm_2(player_factory):
@@ -85,13 +85,13 @@ def test_team_matchmaker_algorithm_2(player_factory):
     s.append(c3)
     s.append(c4)
 
-    matches = TeamMatchMaker().find(s)
+    matches = TeamMatchMaker(4).find(s)
 
     assert len(matches) == 1
     for match in matches:
-        assert TeamMatchMaker().calculate_game_quality(match).quality > config.MINIMUM_GAME_QUALITY
+        assert TeamMatchMaker(4).calculate_game_quality(match).quality > config.MINIMUM_GAME_QUALITY
         for team in match:
-            assert len(team.players) == TeamMatchMaker().team_size
+            assert len(team.players) == 4
 
 
 def test_team_matchmaker_make_teams(player_factory):
@@ -100,7 +100,7 @@ def test_team_matchmaker_make_teams(player_factory):
     team_a = CombinedSearch(*[s[0], s[1], s[3], s[5]])
     team_b = CombinedSearch(*[s[2], s[4], s[6], s[7]])
 
-    teams = TeamMatchMaker().make_teams(s, 4)
+    teams = TeamMatchMaker(4).make_teams(s)
 
     # By converting to a set we don't have to worry about order
     assert set(teams[0].players) == set(team_a.players)
@@ -117,7 +117,7 @@ def test_team_matchmaker_make_teams_2(player_factory):
 
     team_a = CombinedSearch(*[c1, s[2]])
     team_b = CombinedSearch(*[c2, s[0], s[1]])
-    teams = TeamMatchMaker().make_teams(s, 4)
+    teams = TeamMatchMaker(4).make_teams(s)
 
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
@@ -129,7 +129,7 @@ def test_team_matchmaker_make_teams_3(player_factory):
 
     team_a = CombinedSearch(*[s[1], s[2], s[4], s[7]])
     team_b = CombinedSearch(*[s[0], s[3], s[5], s[6]])
-    teams = TeamMatchMaker().make_teams(s, 4)
+    teams = TeamMatchMaker(4).make_teams(s)
 
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
@@ -143,7 +143,7 @@ def test_team_matchmaker_make_teams_4(player_factory):
 
     team_a = CombinedSearch(*[s[1], s[4], s[6]])
     team_b = CombinedSearch(*[s[0], s[2], s[3], s[5]])
-    teams = TeamMatchMaker().make_teams(s, 4)
+    teams = TeamMatchMaker(4).make_teams(s)
 
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
@@ -157,7 +157,7 @@ def test_make_teams_with_negative_rated_players(player_factory):
 
     team_a = CombinedSearch(*[s[0], s[1], s[3], s[4]])
     team_b = CombinedSearch(*[s[2], s[5], s[6]])
-    teams = TeamMatchMaker().make_teams(s, 4)
+    teams = TeamMatchMaker(4).make_teams(s)
 
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
@@ -171,7 +171,7 @@ def test_make_teams_with_full_sized_search(player_factory):
 
     team_a = CombinedSearch(*[c1])
     team_b = CombinedSearch(*[s[0], s[1], s[2], s[3]])
-    teams = TeamMatchMaker().make_teams(s, 4)
+    teams = TeamMatchMaker(4).make_teams(s)
 
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
@@ -184,7 +184,7 @@ def test_make_teams_with_almost_full_sized_search(player_factory):
 
     team_a = CombinedSearch(*[c1, s[3]])
     team_b = CombinedSearch(*[s[0], s[1], s[2], s[4]])
-    teams = TeamMatchMaker().make_teams(s, 4)
+    teams = TeamMatchMaker(4).make_teams(s)
 
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
@@ -200,7 +200,7 @@ def test_handle_impossible_team_splits(player_factory):
     s.append(c3)
 
     with pytest.raises(AssertionError):
-        TeamMatchMaker().make_teams(s, 4)
+        TeamMatchMaker(4).make_teams(s)
 
 
 def test_ignore_impossible_team_splits(player_factory):
@@ -212,7 +212,7 @@ def test_ignore_impossible_team_splits(player_factory):
     s.append(c2)
     s.append(c3)
 
-    matches = TeamMatchMaker().find(s)
+    matches = TeamMatchMaker(4).find(s)
 
     assert len(matches) == 0
 
@@ -221,7 +221,7 @@ def test_game_quality(player_factory):
     s = make_searches([100, 100, 100, 100, 100, 100, 100, 100], player_factory)
     team_a = CombinedSearch(*[s[0], s[1], s[2], s[3]])
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
-    game = TeamMatchMaker().calculate_game_quality((team_a, team_b))
+    game = TeamMatchMaker(4).calculate_game_quality((team_a, team_b))
 
     assert game.quality == 1.0
 
@@ -230,7 +230,7 @@ def test_game_quality_2(player_factory):
     s = make_searches([100, 100, 400, 400, 400, 400, 100, 100], player_factory)
     team_a = CombinedSearch(*[s[0], s[1], s[2], s[3]])
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
-    game = TeamMatchMaker().calculate_game_quality((team_a, team_b))
+    game = TeamMatchMaker(4).calculate_game_quality((team_a, team_b))
 
     assert game.quality == 0.5
 
@@ -239,6 +239,6 @@ def test_game_quality_3(player_factory):
     s = make_searches([100, 100, 4000, 4000, 4000, 4000, 100, 100], player_factory)
     team_a = CombinedSearch(*[s[0], s[1], s[2], s[3]])
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
-    game = TeamMatchMaker().calculate_game_quality((team_a, team_b))
+    game = TeamMatchMaker(4).calculate_game_quality((team_a, team_b))
 
     assert game.quality == 0.0
