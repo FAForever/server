@@ -252,12 +252,8 @@ class TeamMatchMaker(MatchmakingPolicy):
             time_bonus += team.failed_matching_attempts * config.TIME_BONUS
             time_bonus = min(time_bonus, config.MAXIMUM_TIME_BONUS)
             newbie_bonus += team.has_newbie() * config.NEWBIE_BONUS
-            # Note: This punishes pre-made parties that have big internal rating differences
-            #           If we use team.average_rating we only get the two ratings of the teams
-            #           because we merged them into one combinedSearch before
-            for mean, dev in team.raw_ratings:
-                rating = mean - 3 * dev
-                ratings.append(rating)
+            for search in team.get_original_searches():
+                ratings.append(search.average_rating)
 
         rating_disparity = abs(match[0].cumulated_rating - match[1].cumulated_rating)
         fairness = max((config.MAXIMUM_RATING_IMBALANCE - rating_disparity) / config.MAXIMUM_RATING_IMBALANCE, 0)
