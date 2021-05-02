@@ -994,7 +994,7 @@ async def test_team_game_results(game: Game, game_add_players):
         ]
 
 
-async def test_invalid_game_results(game: Game, game_add_players):
+async def test_army_results_present_for_invalid_games(game: Game, game_add_players):
     game.state = GameState.LOBBY
     # Team 1 is the FFA_TEAM, will cause the game to have ValidityState.FFA_NOT_RANKED
     players = (*game_add_players(game, 2, 0), *game_add_players(game, 2, 1))
