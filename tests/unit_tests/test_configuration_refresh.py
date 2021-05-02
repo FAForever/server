@@ -81,9 +81,3 @@ async def test_config_no_callback_without_change(config_service, monkeypatch):
 
     assert config.DB_PASSWORD == "banana"
     callback.assert_not_called()
-
-
-async def test_config_api_key_value(config_service):
-    config.refresh()
-
-    assert config._api_jwt_public_key_value == "This is a sample file\n"

@@ -189,7 +189,8 @@ class ServerInstance(object):
             nts_client=twilio_nts,
             players=self.services["player_service"],
             ladder_service=self.services["ladder_service"],
-            party_service=self.services["party_service"]
+            party_service=self.services["party_service"],
+            oauth_service=self.services["oauth_service"]
         )
 
     def write_broadcast(
