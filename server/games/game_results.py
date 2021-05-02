@@ -45,7 +45,7 @@ class ArmyResult(NamedTuple):
     """
     player_id: int
     army: Optional[int]
-    army_result: ArmyOutcome
+    army_result: str
     metadata: List[str]
 
 
@@ -67,7 +67,7 @@ class GameResultReport(NamedTuple):
     army: int
     outcome: ArmyReportedOutcome
     score: int
-    metadata: FrozenSet[str] = []
+    metadata: FrozenSet[str] = frozenset()
 
 
 @with_logger
@@ -169,29 +169,30 @@ class GameResultReports(Mapping):
         if army not in self:
             return []
 
-        all_metadata = [report.metadata for report in self[army] if report.metadata]
+        all_metadata = [report.metadata for report in self[army]]
         metadata_count = Counter(all_metadata).most_common()
-        if not len(metadata_count):
+        if not metadata_count:
             return []
-        elif len(metadata_count) == 1:
+
+        if len(metadata_count) == 1:
             # Everyone agrees!
             return sorted(list(metadata_count[0][0]))
-        else:
-            most_common, next_most_common, *_ = metadata_count
-            if most_common[1] > next_most_common[1]:
-                resolved_to = sorted(list(most_common[0]))
-                self._logger.info(
-                    "Conflicting metadata for game %s army %s resolved to %s. Reports are: %s",
-                    self._game_id, army, resolved_to, all_metadata,
-                )
-                return resolved_to
-            else:
-                # We have a tie
-                self._logger.info(
-                    "Conflicting metadata for game %s army %s, unable to resolve. Reports are: %s",
-                    self._game_id, army, all_metadata,
-                )
-                return []
+
+        most_common, next_most_common, *_ = metadata_count
+        if most_common[1] > next_most_common[1]:
+            resolved_to = sorted(list(most_common[0]))
+            self._logger.info(
+                "Conflicting metadata for game %s army %s resolved to %s. Reports are: %s",
+                self._game_id, army, resolved_to, all_metadata,
+            )
+            return resolved_to
+
+        # We have a tie
+        self._logger.info(
+            "Conflicting metadata for game %s army %s, unable to resolve. Reports are: %s",
+            self._game_id, army, all_metadata,
+        )
+        return []
 
     def score(self, army: int) -> int:
         """

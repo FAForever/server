@@ -76,6 +76,23 @@ def test_matching_simple_metadata(game_results):
     assert game_results.metadata(1) == ["recall"]
 
 
+def test_matching_simple_partial_metadata(game_results):
+    game_results.add(
+        GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset())
+    )
+    game_results.add(
+        GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset())
+    )
+    game_results.add(
+        GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset())
+    )
+    game_results.add(
+        GameResultReport(1, 1, ArmyReportedOutcome.DEFEAT, -10, frozenset(["recall"]))
+    )
+
+    assert game_results.metadata(1) == []
+
+
 def test_matching_complex_metadata(game_results):
     game_results.add(
         GameResultReport(

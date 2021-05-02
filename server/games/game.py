@@ -475,18 +475,18 @@ class Game():
 
         if self.validity is ValidityState.VALID:
             team_player_partial_outcomes = []
-            team_army_partial_results = []
+            team_army_results = []
 
             for team in basic_info.teams:
                 partial_team_outcome = set()
-                partial_army_results = []
+                army_results = []
 
                 for player in team:
                     partial_team_outcome.add(self.get_player_outcome(player))
-                    partial_army_results.append(self.get_army_results(player))
+                    army_results.append(self.get_army_results(player))
 
                 team_player_partial_outcomes.append(partial_team_outcome)
-                team_army_partial_results.append(partial_army_results)
+                team_army_results.append(army_results)
 
             try:
                 # TODO: Remove override once game result messages are reliable
@@ -510,7 +510,7 @@ class Game():
             self.validity,
             team_outcomes,
             commander_kills,
-            team_army_partial_results,
+            team_army_results,
         )
 
     def _outcome_override_hook(self) -> Optional[List[GameOutcome]]:
@@ -847,7 +847,10 @@ class Game():
     def get_army_results(self, player: Player) -> ArmyResult:
         army = self.get_player_option(player.id, "Army")
         return ArmyResult(
-            player.id, army, ArmyOutcome.UNKNOWN, self._results.metadata(army)
+            player.id,
+            army,
+            self.get_player_outcome(player).name,
+            self._results.metadata(army),
         )
 
     def report_army_stats(self, stats_json):

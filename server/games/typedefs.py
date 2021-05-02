@@ -155,24 +155,13 @@ class EndedGameInfo(NamedTuple):
         validity: ValidityState,
         team_outcomes: List[GameOutcome],
         commander_kills: Dict[str, int],
-        team_partial_army_results: List[List[ArmyResult]],
+        team_army_results: List[List[ArmyResult]],
     ) -> "EndedGameInfo":
         if len(basic_info.teams) != len(team_outcomes):
             raise ValueError(
                 "Team sets of basic_info and team outcomes must refer to the "
                 "same number of teams in the same order."
             )
-
-        # team_partial_army_results were initialized with ArmyOutcome.UNKNOWN so
-        # we need to get the resolved outcome from team_outcomes
-        team_complete_army_results = []
-        for outcome, army_results in zip(team_outcomes, team_partial_army_results):
-            complete_team_results = []
-            for player in army_results:
-                resolved_data = {**player._asdict(), "army_result": outcome.name}
-                resolved_result = ArmyResult(**resolved_data)
-                complete_team_results.append(resolved_result)
-            team_complete_army_results.append(complete_team_results)
 
         return cls(
             basic_info.game_id,
@@ -185,7 +174,7 @@ class EndedGameInfo(NamedTuple):
             [
                 TeamRatingSummary(outcome, set(player.id for player in team), army_results)
                 for outcome, team, army_results
-                in zip(team_outcomes, basic_info.teams, team_complete_army_results)
+                in zip(team_outcomes, basic_info.teams, team_army_results)
             ],
         )
 

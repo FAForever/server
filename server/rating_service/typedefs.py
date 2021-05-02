@@ -39,7 +39,7 @@ class GameRatingSummary(NamedTuple):
             game_info["rating_type"],
             [
                 TeamRatingSummary(
-                    getattr(GameOutcome, summary["outcome"]),
+                    GameOutcome(summary["outcome"]),
                     set(summary["player_ids"]),
                     summary["army_results"],
                 )
