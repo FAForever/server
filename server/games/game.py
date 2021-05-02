@@ -471,22 +471,19 @@ class Game():
         await self._run_pre_rate_validity_checks()
 
         basic_info = self.get_basic_info()
+
+        team_army_results = [
+            [self.get_army_results(player) for player in team]
+            for team in basic_info.teams
+        ]
+
         team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
 
         if self.validity is ValidityState.VALID:
-            team_player_partial_outcomes = []
-            team_army_results = []
-
-            for team in basic_info.teams:
-                partial_team_outcome = set()
-                army_results = []
-
-                for player in team:
-                    partial_team_outcome.add(self.get_player_outcome(player))
-                    army_results.append(self.get_army_results(player))
-
-                team_player_partial_outcomes.append(partial_team_outcome)
-                team_army_results.append(army_results)
+            team_player_partial_outcomes = [
+                {self.get_player_outcome(player) for player in team}
+                for team in basic_info.teams
+            ]
 
             try:
                 # TODO: Remove override once game result messages are reliable

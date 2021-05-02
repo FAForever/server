@@ -969,14 +969,38 @@ async def test_game_results(game: Game, players):
 
 async def test_team_game_results(game: Game, game_add_players):
     game.state = GameState.LOBBY
-    players = {
-        player.id: player
-        for player in (*game_add_players(game, 2, 0), *game_add_players(game, 2, 2))
-    }
+    players = (*game_add_players(game, 2, 0), *game_add_players(game, 2, 2))
 
     await game.launch()
-    for i, player in enumerate(players.values()):
-        game.set_player_option(player.id, "Army", i)
+    for i, player in enumerate(players):
+        for _ in players:
+            if i == 0:  # This player was the last one standing
+                await game.add_result(player.id, i, "victory", 1)
+            else:
+                await game.add_result(player.id, i, "defeat", 1)
+
+    game_results = await game.resolve_game_results()
+    result_dict = game_results.to_dict()
+
+    for i, team in enumerate(result_dict["teams"]):
+        assert team["outcome"] == "VICTORY" if i == 0 else "DEFEAT"
+        assert team["army_results"] == [
+            ArmyResult(
+                player_id,
+                game.get_player_option(player_id, "Army"),
+                "VICTORY" if player_id == 1 else "DEFEAT",
+                [],
+            ) for player_id in team["player_ids"]
+        ]
+
+
+async def test_invalid_game_results(game: Game, game_add_players):
+    game.state = GameState.LOBBY
+    # Team 1 is the FFA_TEAM, will cause the game to have ValidityState.FFA_NOT_RANKED
+    players = (*game_add_players(game, 2, 0), *game_add_players(game, 2, 1))
+
+    await game.launch()
+    for i, player in enumerate(players):
         if i == 0:  # This player was the last one standing
             await game.add_result(player.id, i, "victory", 1)
         else:
@@ -986,7 +1010,7 @@ async def test_team_game_results(game: Game, game_add_players):
     result_dict = game_results.to_dict()
 
     for i, team in enumerate(result_dict["teams"]):
-        assert team["outcome"] == "VICTORY" if i == 0 else "DEFEAT"
+        assert team["outcome"] == "UNKNOWN"
         assert team["army_results"] == [
             ArmyResult(
                 player_id,

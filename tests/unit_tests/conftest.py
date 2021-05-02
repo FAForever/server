@@ -128,7 +128,7 @@ def add_connected_players(game: Game, players):
     """
     Utility to add players with army and StartSpot indexed by a list
     """
-    for army, player in enumerate(players):
+    for army, player in enumerate(players, start=len(game.players)):
         add_connected_player(game, player)
         game.set_player_option(player.id, "Army", army)
         game.set_player_option(player.id, "StartSpot", army)
