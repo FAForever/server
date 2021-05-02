@@ -87,17 +87,6 @@ def api_priv_key():
 
 
 @pytest.fixture
-def api_pub_key():
-    config._api_jwt_public_key_value = textwrap.dedent("""
-    -----BEGIN PUBLIC KEY-----
-    MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBANcXbVA8c7jMb8LVSQTp7G/YAiEPi2be
-    8k9XTqcis6QHLCw6ELh0r8bOOkeRSUGLXja91NzJmh2Jvx/bwLhd1G0CAwEAAQ==
-    -----END PUBLIC KEY-----
-    """)
-    return config._api_jwt_public_key_value
-
-
-@pytest.fixture
 async def lobby_server(
     event_loop,
     database,
@@ -109,8 +98,7 @@ async def lobby_server(
     rating_service,
     message_queue_service,
     party_service,
-    policy_server,
-    api_pub_key
+    policy_server
 ):
     with mock.patch(
         "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",

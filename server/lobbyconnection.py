@@ -52,6 +52,7 @@ from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
+from .oauth_service import OAuthService
 from .party_service import PartyService
 from .player_service import PlayerService
 from .players import Player, PlayerState
@@ -71,7 +72,8 @@ class LobbyConnection:
         nts_client: Optional[TwilioNTS],
         geoip: GeoIpService,
         ladder_service: LadderService,
-        party_service: PartyService
+        party_service: PartyService,
+        oauth_service: OAuthService
     ):
         self._db = database
         self.geoip_service = geoip
@@ -81,6 +83,7 @@ class LobbyConnection:
         self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
         self.party_service = party_service
+        self.oauth_service = oauth_service
         self._authenticated = False
         self.player = None  # type: Player
         self.game_connection = None  # type: GameConnection
@@ -515,15 +518,9 @@ class LobbyConnection:
         return response.get("result", "") == "honest"
 
     async def command_auth(self, message):
-        pub_key = config._api_jwt_public_key_value
         token = message["token"]
         unique_id = message["unique_id"]
-
-        try:
-            token = jwt.decode(token, pub_key, algorithms="RS256")
-            player_id = token["user_id"]
-        except (InvalidTokenError, KeyError):
-            raise AuthenticationError("Token signature was invalid")
+        player_id = await self.oauth_service.get_player_id_from_token(token)
 
         new_irc_password = hexlify(os.urandom(16)).decode()
         await self.send({

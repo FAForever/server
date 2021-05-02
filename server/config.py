@@ -57,13 +57,8 @@ class ConfigurationStore:
         self.API_TOKEN_URI = "https://api.test.faforever.com/oauth/token"
         self.API_BASE_URL = "https://api.test.faforever.com/"
         self.USE_API = True
-        # A path pointing to a pub key file.
-        self.API_JWT_PUBLIC_KEY_FILE = ""
-        # For setting the public key directly. Takes precedence over ..._FILE
-        self.API_JWT_PUBLIC_KEY = ""
-        # Resolved public key. If API_JWT_PUBLIC_KEY is a file path then this
-        # will contain the contents of that file.
-        self._api_jwt_public_key_value = ""
+        # Location of the OAuth jwks
+        self.HYDRA_JWKS_URI = "https://hydra.test.faforever.com/.well-known/jwks.json"
 
         self.MQ_USER = "faf-python-server"
         self.MQ_PASSWORD = "banana"
@@ -167,17 +162,5 @@ def set_log_level():
     logger.setLevel(config.LOG_LEVEL)
 
 
-def read_api_pub_key():
-    if config.API_JWT_PUBLIC_KEY:
-        config._api_jwt_public_key_value = config.API_JWT_PUBLIC_KEY
-    elif config.API_JWT_PUBLIC_KEY_FILE:
-        with open(config.API_JWT_PUBLIC_KEY_FILE) as f:
-            config._api_jwt_public_key_value = f.read()
-
-
 config = ConfigurationStore()
 config.register_callback("LOG_LEVEL", set_log_level)
-config.register_callback("API_JWT_PUBLIC_KEY_FILE", read_api_pub_key)
-config.register_callback("API_JWT_PUBLIC_KEY", read_api_pub_key)
-
-read_api_pub_key()
