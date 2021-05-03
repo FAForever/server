@@ -95,6 +95,7 @@ import server.metrics as metrics
 
 from .api.api_accessor import ApiAccessor
 from .asyncio_extensions import synchronizedmethod
+from .broadcast_service import BroadcastService
 from .config import TRACE, config
 from .configuration_service import ConfigurationService
 from .control import run_control_server
@@ -102,7 +103,6 @@ from .core import Service, create_services
 from .db import FAFDatabase
 from .game_service import GameService
 from .gameconnection import GameConnection
-from .games import GameState
 from .geoip_service import GeoIpService
 from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
@@ -114,7 +114,6 @@ from .protocol import Protocol, QDataStreamProtocol
 from .rating_service.rating_service import RatingService
 from .servercontext import ServerContext
 from .stats.game_stats_service import GameStatsService
-from .timing import at_interval
 
 __author__ = "Askaholic, Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung"
 __contact__ = "admin@faforever.com"
@@ -122,6 +121,7 @@ __license__ = "GPLv3"
 __copyright__ = "Copyright (c) 2011-2015 " + __author__
 
 __all__ = (
+    "BroadcastService",
     "ConfigurationService",
     "GameConnection",
     "GameService",
@@ -130,6 +130,7 @@ __all__ = (
     "LadderService",
     "MessageQueueService",
     "PartyService",
+    "PlayerService",
     "RatingService",
     "RatingService",
     "ServerInstance",
@@ -139,7 +140,6 @@ __all__ = (
     "run_control_server",
 )
 
-DIRTY_REPORT_INTERVAL = 1  # Seconds
 logger = logging.getLogger("server")
 
 if config.ENABLE_METRICS:
@@ -176,6 +176,7 @@ class ServerInstance(object):
         self.contexts: Set[ServerContext] = set()
 
         self.services = _override_services or create_services({
+            "server": self,
             "database": self.database,
             "api_accessor": self.api_accessor,
             "loop": self.loop,
@@ -219,54 +220,6 @@ class ServerInstance(object):
         await asyncio.gather(*[
             service.initialize() for service in self.services.values()
         ])
-
-        game_service: GameService = self.services["game_service"]
-        player_service: PlayerService = self.services["player_service"]
-
-        @at_interval(DIRTY_REPORT_INTERVAL, loop=self.loop)
-        def do_report_dirties():
-            game_service.update_active_game_metrics()
-            dirty_games = game_service.dirty_games
-            dirty_queues = game_service.dirty_queues
-            dirty_players = player_service.dirty_players
-            game_service.clear_dirty()
-            player_service.clear_dirty()
-
-            if dirty_queues:
-                self.write_broadcast({
-                    "command": "matchmaker_info",
-                    "queues": [queue.to_dict() for queue in dirty_queues]
-                })
-
-            if dirty_players:
-                self.write_broadcast(
-                    {
-                        "command": "player_info",
-                        "players": [player.to_dict() for player in dirty_players]
-                    },
-                    lambda lobby_conn: lobby_conn.authenticated
-                )
-
-            # TODO: This spams squillions of messages: we should implement per-
-            # connection message aggregation at the next abstraction layer down :P
-            for game in dirty_games:
-                if game.state == GameState.ENDED:
-                    game_service.remove_game(game)
-
-                # So we're going to be broadcasting this to _somebody_...
-                message = game.to_dict()
-
-                self.write_broadcast(
-                    message,
-                    lambda conn: (
-                        conn.authenticated
-                        and game.is_visible_to_player(conn.player)
-                    )
-                )
-
-        @at_interval(45, loop=self.loop)
-        def ping_broadcast():
-            self.write_broadcast({"command": "ping"})
 
         self.started = True
 

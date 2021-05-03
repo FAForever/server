@@ -66,15 +66,14 @@ class PlayerService(Service):
     def all_players(self) -> ValuesView[Player]:
         return self._players.values()
 
-    @property
-    def dirty_players(self) -> Set[Player]:
-        return self._dirty_players
-
     def mark_dirty(self, player: Player):
         self._dirty_players.add(player)
 
-    def clear_dirty(self):
+    def pop_dirty_players(self) -> Set[Player]:
+        dirty_players = self._dirty_players
         self._dirty_players = set()
+
+        return dirty_players
 
     async def fetch_player_data(self, player):
         async with self._db.acquire() as conn:

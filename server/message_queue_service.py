@@ -125,6 +125,7 @@ class MessageQueueService(Service):
         exchange_name: str,
         routing: str,
         payload: Dict,
+        mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -> None:
         if not self._is_ready:
@@ -142,7 +143,11 @@ class MessageQueueService(Service):
         )
 
         async with self._channel.transaction():
-            await exchange.publish(message, routing_key=routing)
+            await exchange.publish(
+                message,
+                routing_key=routing,
+                mandatory=mandatory
+            )
             self._logger.log(
                 TRACE, "Published message %s to %s/%s", payload, exchange_name, routing
             )
