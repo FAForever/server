@@ -171,8 +171,6 @@ class GameResultReports(Mapping):
 
         all_metadata = [report.metadata for report in self[army]]
         metadata_count = Counter(all_metadata).most_common()
-        if not metadata_count:
-            return []
 
         if len(metadata_count) == 1:
             # Everyone agrees!

@@ -969,9 +969,10 @@ async def test_game_results(game: Game, players):
 
 async def test_team_game_results(game: Game, game_add_players):
     game.state = GameState.LOBBY
-    players = (*game_add_players(game, 2, 0), *game_add_players(game, 2, 2))
+    players = (*game_add_players(game, 2, 2), *game_add_players(game, 2, 3))
 
     await game.launch()
+
     for i, player in enumerate(players):
         for _ in players:
             if i == 0:  # This player was the last one standing
@@ -982,43 +983,45 @@ async def test_team_game_results(game: Game, game_add_players):
     game_results = await game.resolve_game_results()
     result_dict = game_results.to_dict()
 
-    for i, team in enumerate(result_dict["teams"]):
-        assert team["outcome"] == "VICTORY" if i == 0 else "DEFEAT"
-        assert team["army_results"] == [
-            ArmyResult(
-                player_id,
-                game.get_player_option(player_id, "Army"),
-                "VICTORY" if player_id == 1 else "DEFEAT",
-                [],
-            ) for player_id in team["player_ids"]
-        ]
+    assert result_dict["teams"][0]["outcome"] == "VICTORY"
+    assert result_dict["teams"][0]["army_results"] == [
+        ArmyResult(1, 0, "VICTORY", []),
+        ArmyResult(2, 1, "DEFEAT", []),
+    ]
+    assert result_dict["teams"][1]["outcome"] == "DEFEAT"
+    assert result_dict["teams"][1]["army_results"] == [
+        ArmyResult(3, 2, "DEFEAT", []),
+        ArmyResult(4, 3, "DEFEAT", []),
+    ]
 
 
 async def test_army_results_present_for_invalid_games(game: Game, game_add_players):
     game.state = GameState.LOBBY
-    # Team 1 is the FFA_TEAM, will cause the game to have ValidityState.FFA_NOT_RANKED
-    players = (*game_add_players(game, 2, 0), *game_add_players(game, 2, 1))
+    players = (*game_add_players(game, 2, 2), *game_add_players(game, 2, 3))
 
     await game.launch()
+    game.validity = ValidityState.CHEATS_ENABLED
+
     for i, player in enumerate(players):
-        if i == 0:  # This player was the last one standing
-            await game.add_result(player.id, i, "victory", 1)
-        else:
-            await game.add_result(player.id, i, "defeat", 1)
+        for _ in players:
+            if i == 0:  # This player was the last one standing
+                await game.add_result(player.id, i, "victory", 1)
+            else:
+                await game.add_result(player.id, i, "defeat", 1)
 
     game_results = await game.resolve_game_results()
     result_dict = game_results.to_dict()
 
-    for i, team in enumerate(result_dict["teams"]):
-        assert team["outcome"] == "UNKNOWN"
-        assert team["army_results"] == [
-            ArmyResult(
-                player_id,
-                game.get_player_option(player_id, "Army"),
-                "VICTORY" if player_id == 1 else "DEFEAT",
-                [],
-            ) for player_id in team["player_ids"]
-        ]
+    assert result_dict["teams"][0]["outcome"] == "VICTORY"
+    assert result_dict["teams"][0]["army_results"] == [
+        ArmyResult(1, 0, "VICTORY", []),
+        ArmyResult(2, 1, "DEFEAT", []),
+    ]
+    assert result_dict["teams"][1]["outcome"] == "DEFEAT"
+    assert result_dict["teams"][1]["army_results"] == [
+        ArmyResult(3, 2, "DEFEAT", []),
+        ArmyResult(4, 3, "DEFEAT", []),
+    ]
 
 
 async def test_game_results_commander_kills(
