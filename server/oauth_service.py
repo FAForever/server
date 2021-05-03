@@ -3,7 +3,7 @@ import json
 import jwt
 import requests
 
-from jwt import InvalidTokenError, algorithms
+from jwt import algorithms,InvalidTokenError
 
 from .config import config
 from .core import Service
