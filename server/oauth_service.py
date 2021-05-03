@@ -39,6 +39,6 @@ class OauthService(Service):
         try:
             signing_key = self.jwks_client.get_signing_key_from_jwt(token)
             decoded_token = jwt.decode(token, signing_key.key, algorithms=["RS256"], options={"verify_signature": False})
-            return decoded_token["sub"]
+            return int(decoded_token["sub"])
         except (InvalidTokenError, KeyError):
             raise AuthenticationError("Token signature was invalid")
