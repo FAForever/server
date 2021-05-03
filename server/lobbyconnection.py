@@ -16,9 +16,7 @@ from hashlib import md5
 from typing import Optional
 
 import aiohttp
-import jwt
 import pymysql
-from jwt import InvalidTokenError
 from sqlalchemy import and_, func, select
 
 import server.metrics as metrics
