@@ -1,11 +1,9 @@
 import aiocron
-import json
 import jwt
-import requests
 
 from jwt import PyJWKClient, InvalidTokenError
 
-from .config import config
+from server.config import config
 from .core import Service
 from .decorators import with_logger
 from .exceptions import AuthenticationError
@@ -25,7 +23,7 @@ class OAuthService(Service):
         # crontab: min hour day month day_of_week
         # Run every day to update public keys.
         self._update_cron = aiocron.crontab(
-            "0 0 * * *", func=self.retrieve_public_keys()
+            "0 0 * * *", func=self.retrieve_public_keys
         )
 
     async def retrieve_public_keys(self) -> None:
