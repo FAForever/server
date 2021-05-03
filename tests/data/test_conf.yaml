@@ -19,7 +19,6 @@ API_CLIENT_SECRET: "banana"
 API_TOKEN_URI: "https://api.test.faforever.com/oauth/token"
 API_BASE_URL: "https://api.test.faforever.com/"
 USE_API: true
-API_JWT_PUBLIC_KEY_FILE: "tests/data/test-api-key.pub"
 
 WWW_URL: "https://www.faforever.com"
 CONTENT_URL: "http://content.faforever.com"
@@ -49,3 +48,5 @@ LADDER_SEARCH_EXPANSION_STEP: 0.05
 QUEUE_POP_TIME_MAX: 180
 QUEUE_POP_DESIRED_MATCHES: 4
 QUEUE_POP_TIME_MOVING_AVG_SIZE: 5
+
+HYDRA_JWKS_URI:
