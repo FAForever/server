@@ -627,13 +627,6 @@ class ServerInstance(object):
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
 </ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="server.ConfigurationService.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
@@ -2282,13 +2275,6 @@ cause the caller to be disconnected as well.</p></div>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
 </ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="server.GameService.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Instance variables</h3>
 <dl>
 <dt id="server.GameService.all_games"><code class="name">var <span class="ident">all_games</span> : ValuesView[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
@@ -2904,13 +2890,6 @@ time we need, but which can in principle change over time.</p></div>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
 </ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="server.GameStatsService.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="server.GameStatsService.process_game_stats"><code class="name flex">
@@ -3241,13 +3220,6 @@ the service will try to download a new file from tue url in <code><a title="serv
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
 </ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="server.GeoIpService.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="server.GeoIpService.check_geoip_db_file_updated"><code class="name flex">
@@ -3942,13 +3914,6 @@ statistics, and launches the games.</p></div>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
 </ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="server.LadderService.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="server.LadderService.cancel_search"><code class="name flex">
@@ -4612,13 +4577,6 @@ and providing an interface to publish messages.</p></div>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
 </ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="server.MessageQueueService.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="server.MessageQueueService.declare_exchange"><code class="name flex">
@@ -4914,13 +4872,6 @@ with other players.</p></div>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
 </ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="server.PartyService.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="server.PartyService.accept_invite"><code class="name flex">
@@ -5560,13 +5511,6 @@ atomic.</p></div>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
 </ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="server.RatingService.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="server.RatingService.enqueue"><code class="name flex">
@@ -6011,9 +5955,6 @@ state, i.e. the same players, games, etc.</p></div>
 <ul>
 <li>
 <h4><code><a title="server.ConfigurationService" href="#server.ConfigurationService">ConfigurationService</a></code></h4>
-<ul class="">
-<li><code><a title="server.ConfigurationService.services" href="#server.ConfigurationService.services">services</a></code></li>
-</ul>
 </li>
 <li>
 <h4><code><a title="server.GameConnection" href="#server.GameConnection">GameConnection</a></code></h4>
@@ -6068,7 +6009,6 @@ state, i.e. the same players, games, etc.</p></div>
 <li><code><a title="server.GameService.pending_games" href="#server.GameService.pending_games">pending_games</a></code></li>
 <li><code><a title="server.GameService.publish_game_results" href="#server.GameService.publish_game_results">publish_game_results</a></code></li>
 <li><code><a title="server.GameService.remove_game" href="#server.GameService.remove_game">remove_game</a></code></li>
-<li><code><a title="server.GameService.services" href="#server.GameService.services">services</a></code></li>
 <li><code><a title="server.GameService.update_active_game_metrics" href="#server.GameService.update_active_game_metrics">update_active_game_metrics</a></code></li>
 <li><code><a title="server.GameService.update_data" href="#server.GameService.update_data">update_data</a></code></li>
 </ul>
@@ -6077,7 +6017,6 @@ state, i.e. the same players, games, etc.</p></div>
 <h4><code><a title="server.GameStatsService" href="#server.GameStatsService">GameStatsService</a></code></h4>
 <ul class="">
 <li><code><a title="server.GameStatsService.process_game_stats" href="#server.GameStatsService.process_game_stats">process_game_stats</a></code></li>
-<li><code><a title="server.GameStatsService.services" href="#server.GameStatsService.services">services</a></code></li>
 </ul>
 </li>
 <li>
@@ -6089,7 +6028,6 @@ state, i.e. the same players, games, etc.</p></div>
 <li><code><a title="server.GeoIpService.download_geoip_db" href="#server.GeoIpService.download_geoip_db">download_geoip_db</a></code></li>
 <li><code><a title="server.GeoIpService.load_db" href="#server.GeoIpService.load_db">load_db</a></code></li>
 <li><code><a title="server.GeoIpService.refresh_file_path" href="#server.GeoIpService.refresh_file_path">refresh_file_path</a></code></li>
-<li><code><a title="server.GeoIpService.services" href="#server.GeoIpService.services">services</a></code></li>
 </ul>
 </li>
 <li>
@@ -6100,7 +6038,6 @@ state, i.e. the same players, games, etc.</p></div>
 <li><code><a title="server.LadderService.fetch_matchmaker_queues" href="#server.LadderService.fetch_matchmaker_queues">fetch_matchmaker_queues</a></code></li>
 <li><code><a title="server.LadderService.get_game_history" href="#server.LadderService.get_game_history">get_game_history</a></code></li>
 <li><code><a title="server.LadderService.on_match_found" href="#server.LadderService.on_match_found">on_match_found</a></code></li>
-<li><code><a title="server.LadderService.services" href="#server.LadderService.services">services</a></code></li>
 <li><code><a title="server.LadderService.start_game" href="#server.LadderService.start_game">start_game</a></code></li>
 <li><code><a title="server.LadderService.start_search" href="#server.LadderService.start_search">start_search</a></code></li>
 <li><code><a title="server.LadderService.update_data" href="#server.LadderService.update_data">update_data</a></code></li>
@@ -6113,7 +6050,6 @@ state, i.e. the same players, games, etc.</p></div>
 <li><code><a title="server.MessageQueueService.declare_exchange" href="#server.MessageQueueService.declare_exchange">declare_exchange</a></code></li>
 <li><code><a title="server.MessageQueueService.publish" href="#server.MessageQueueService.publish">publish</a></code></li>
 <li><code><a title="server.MessageQueueService.reconnect" href="#server.MessageQueueService.reconnect">reconnect</a></code></li>
-<li><code><a title="server.MessageQueueService.services" href="#server.MessageQueueService.services">services</a></code></li>
 </ul>
 </li>
 <li>
@@ -6126,7 +6062,6 @@ state, i.e. the same players, games, etc.</p></div>
 <li><code><a title="server.PartyService.leave_party" href="#server.PartyService.leave_party">leave_party</a></code></li>
 <li><code><a title="server.PartyService.mark_dirty" href="#server.PartyService.mark_dirty">mark_dirty</a></code></li>
 <li><code><a title="server.PartyService.remove_party" href="#server.PartyService.remove_party">remove_party</a></code></li>
-<li><code><a title="server.PartyService.services" href="#server.PartyService.services">services</a></code></li>
 <li><code><a title="server.PartyService.set_factions" href="#server.PartyService.set_factions">set_factions</a></code></li>
 <li><code><a title="server.PartyService.update_dirties" href="#server.PartyService.update_dirties">update_dirties</a></code></li>
 <li><code><a title="server.PartyService.write_broadcast_party" href="#server.PartyService.write_broadcast_party">write_broadcast_party</a></code></li>
@@ -6137,7 +6072,6 @@ state, i.e. the same players, games, etc.</p></div>
 <ul class="">
 <li><code><a title="server.RatingService.enqueue" href="#server.RatingService.enqueue">enqueue</a></code></li>
 <li><code><a title="server.RatingService.kill" href="#server.RatingService.kill">kill</a></code></li>
-<li><code><a title="server.RatingService.services" href="#server.RatingService.services">services</a></code></li>
 <li><code><a title="server.RatingService.shutdown" href="#server.RatingService.shutdown">shutdown</a></code></li>
 <li><code><a title="server.RatingService.update_data" href="#server.RatingService.update_data">update_data</a></code></li>
 </ul>

@@ -82,7 +82,7 @@ be called once.</p></div>
     injector = DependencyInjector()
     injector.add_injectables(**injectables)
 
-    return injector.build_classes(ServiceMeta.services)</code></pre>
+    return injector.build_classes(service_registry)</code></pre>
 </details>
 </dd>
 </dl>
@@ -346,12 +346,19 @@ another class in the class list).</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Service(metaclass=ServiceMeta):
+<pre><code class="python">class Service():
     &#34;&#34;&#34;
     All services should inherit from this class.
 
     Services are singleton objects which manage some server task.
     &#34;&#34;&#34;
+    def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any):
+        &#34;&#34;&#34;
+        For tracking which services have been defined.
+        &#34;&#34;&#34;
+        super().__init_subclass__(**kwargs)
+        arg_name = name or snake_case(cls.__name__)
+        service_registry[arg_name] = cls
 
     async def initialize(self) -&gt; None:
         &#34;&#34;&#34;
@@ -385,13 +392,6 @@ another class in the class list).</p>
 <li><a title="server.stats.event_service.EventService" href="../stats/event_service.html#server.stats.event_service.EventService">EventService</a></li>
 <li><a title="server.stats.game_stats_service.GameStatsService" href="../stats/game_stats_service.html#server.stats.game_stats_service.GameStatsService">GameStatsService</a></li>
 </ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="server.core.Service.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="server.core.Service.initialize"><code class="name flex">
@@ -483,7 +483,6 @@ another class in the class list).</p>
 <ul class="">
 <li><code><a title="server.core.Service.initialize" href="#server.core.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.Service.on_connection_lost" href="#server.core.Service.on_connection_lost">on_connection_lost</a></code></li>
-<li><code><a title="server.core.Service.services" href="#server.core.Service.services">services</a></code></li>
 <li><code><a title="server.core.Service.shutdown" href="#server.core.Service.shutdown">shutdown</a></code></li>
 </ul>
 </li>

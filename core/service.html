@@ -27,7 +27,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import re
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 from .dependency_injector import DependencyInjector
 
@@ -35,28 +35,22 @@ CASE_PATTERN = re.compile(r&#34;(?&lt;!^)(?=[A-Z])&#34;)
 DependencyGraph = Dict[str, List[str]]
 
 
-class ServiceMeta(type):
-    &#34;&#34;&#34;
-    For tracking which Services have been defined.
-    &#34;&#34;&#34;
-
-    # Mapping from parameter name to class
-    services: Dict[str, type] = {}
-
-    def __new__(cls, name, bases, attrs):
-        klass = type.__new__(cls, name, bases, attrs)
-        if name != &#34;Service&#34;:
-            arg_name = snake_case(name)
-            cls.services[arg_name] = klass
-        return klass
+service_registry: Dict[str, type] = {}
 
 
-class Service(metaclass=ServiceMeta):
+class Service():
     &#34;&#34;&#34;
     All services should inherit from this class.
 
     Services are singleton objects which manage some server task.
     &#34;&#34;&#34;
+    def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any):
+        &#34;&#34;&#34;
+        For tracking which services have been defined.
+        &#34;&#34;&#34;
+        super().__init_subclass__(**kwargs)
+        arg_name = name or snake_case(cls.__name__)
+        service_registry[arg_name] = cls
 
     async def initialize(self) -&gt; None:
         &#34;&#34;&#34;
@@ -85,7 +79,7 @@ def create_services(injectables: Dict[str, object] = {}) -&gt; Dict[str, Service
     injector = DependencyInjector()
     injector.add_injectables(**injectables)
 
-    return injector.build_classes(ServiceMeta.services)
+    return injector.build_classes(service_registry)
 
 
 def snake_case(string: str) -&gt; str:
@@ -121,7 +115,7 @@ be called once.</p></div>
     injector = DependencyInjector()
     injector.add_injectables(**injectables)
 
-    return injector.build_classes(ServiceMeta.services)</code></pre>
+    return injector.build_classes(service_registry)</code></pre>
 </details>
 </dd>
 <dt id="server.core.service.snake_case"><code class="name flex">
@@ -157,12 +151,19 @@ be called once.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Service(metaclass=ServiceMeta):
+<pre><code class="python">class Service():
     &#34;&#34;&#34;
     All services should inherit from this class.
 
     Services are singleton objects which manage some server task.
     &#34;&#34;&#34;
+    def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any):
+        &#34;&#34;&#34;
+        For tracking which services have been defined.
+        &#34;&#34;&#34;
+        super().__init_subclass__(**kwargs)
+        arg_name = name or snake_case(cls.__name__)
+        service_registry[arg_name] = cls
 
     async def initialize(self) -&gt; None:
         &#34;&#34;&#34;
@@ -196,13 +197,6 @@ be called once.</p></div>
 <li><a title="server.stats.event_service.EventService" href="../stats/event_service.html#server.stats.event_service.EventService">EventService</a></li>
 <li><a title="server.stats.game_stats_service.GameStatsService" href="../stats/game_stats_service.html#server.stats.game_stats_service.GameStatsService">GameStatsService</a></li>
 </ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="server.core.service.Service.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="server.core.service.Service.initialize"><code class="name flex">
@@ -255,43 +249,6 @@ be called once.</p></div>
 </dd>
 </dl>
 </dd>
-<dt id="server.core.service.ServiceMeta"><code class="flex name class">
-<span>class <span class="ident">ServiceMeta</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>For tracking which Services have been defined.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class ServiceMeta(type):
-    &#34;&#34;&#34;
-    For tracking which Services have been defined.
-    &#34;&#34;&#34;
-
-    # Mapping from parameter name to class
-    services: Dict[str, type] = {}
-
-    def __new__(cls, name, bases, attrs):
-        klass = type.__new__(cls, name, bases, attrs)
-        if name != &#34;Service&#34;:
-            arg_name = snake_case(name)
-            cls.services[arg_name] = klass
-        return klass</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>builtins.type</li>
-</ul>
-<h3>Class variables</h3>
-<dl>
-<dt id="server.core.service.ServiceMeta.services"><code class="name">var <span class="ident">services</span> : Dict[str, type]</code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
-</dd>
 </dl>
 </section>
 </article>
@@ -319,14 +276,7 @@ be called once.</p></div>
 <ul class="">
 <li><code><a title="server.core.service.Service.initialize" href="#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
-<li><code><a title="server.core.service.Service.services" href="#server.core.service.Service.services">services</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="#server.core.service.Service.shutdown">shutdown</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="server.core.service.ServiceMeta" href="#server.core.service.ServiceMeta">ServiceMeta</a></code></h4>
-<ul class="">
-<li><code><a title="server.core.service.ServiceMeta.services" href="#server.core.service.ServiceMeta.services">services</a></code></li>
 </ul>
 </li>
 </ul>
