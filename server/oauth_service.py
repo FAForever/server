@@ -1,9 +1,7 @@
 import aiocron
-import json
 import jwt
-import requests
 
-from jwt import PyJWKClient, InvalidTokenError
+from jwt import InvalidTokenError
 
 from .config import config
 from .core import Service
@@ -33,7 +31,7 @@ class OAuthService(Service):
         """
             Get the latest jwks from the hydra endpoint
         """
-        self.jwks_client = PyJWKClient(config.HYDRA_JWKS_URI)
+        self.jwks_client = jwt.PyJWKClient(config.HYDRA_JWKS_URI)
 
     async def get_player_id_from_token(self, token: str) -> int:
         """
