@@ -589,7 +589,10 @@ class LobbyConnection:
 
         old_player = self.player_service.get_player(self.player.id)
         if old_player:
-            self._logger.debug(&#34;player {} already signed in: {}&#34;.format(self.player.id, old_player))
+            self._logger.debug(
+                &#34;player %s already signed in: %s&#34;,
+                self.player.id, old_player
+            )
             if old_player.lobby_connection is not None:
                 with contextlib.suppress(DisconnectedError):
                     old_player.lobby_connection.write_warning(
@@ -1719,7 +1722,10 @@ class LobbyConnection:
 
         old_player = self.player_service.get_player(self.player.id)
         if old_player:
-            self._logger.debug(&#34;player {} already signed in: {}&#34;.format(self.player.id, old_player))
+            self._logger.debug(
+                &#34;player %s already signed in: %s&#34;,
+                self.player.id, old_player
+            )
             if old_player.lobby_connection is not None:
                 with contextlib.suppress(DisconnectedError):
                     old_player.lobby_connection.write_warning(
@@ -3027,7 +3033,10 @@ async def command_game_matchmaking(self, message):
 
     old_player = self.player_service.get_player(self.player.id)
     if old_player:
-        self._logger.debug(&#34;player {} already signed in: {}&#34;.format(self.player.id, old_player))
+        self._logger.debug(
+            &#34;player %s already signed in: %s&#34;,
+            self.player.id, old_player
+        )
         if old_player.lobby_connection is not None:
             with contextlib.suppress(DisconnectedError):
                 old_player.lobby_connection.write_warning(

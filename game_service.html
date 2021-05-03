@@ -32,7 +32,7 @@ Manages the lifecycle of active games
 &#34;&#34;&#34;
 
 from collections import Counter
-from typing import Dict, List, Optional, Type, Union, ValuesView
+from typing import Dict, List, Optional, Set, Type, Union, ValuesView
 
 import aiocron
 
@@ -45,7 +45,6 @@ from .decorators import with_logger
 from .games import (
     CustomGame,
     FeaturedMod,
-    FeaturedModType,
     Game,
     GameState,
     ValidityState,
@@ -134,23 +133,23 @@ class GameService(Service):
             # Turn resultset into a list of uids
             self.ranked_mods = set(map(lambda x: x[0], rows))
 
-    @property
-    def dirty_games(self):
-        return self._dirty_games
-
-    @property
-    def dirty_queues(self):
-        return self._dirty_queues
-
     def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
         if isinstance(obj, Game):
             self._dirty_games.add(obj)
         elif isinstance(obj, MatchmakerQueue):
             self._dirty_queues.add(obj)
 
-    def clear_dirty(self):
+    def pop_dirty_games(self) -&gt; Set[Game]:
+        dirty_games = self._dirty_games
         self._dirty_games = set()
+
+        return dirty_games
+
+    def pop_dirty_queues(self) -&gt; Set[MatchmakerQueue]:
+        dirty_queues = self._dirty_queues
         self._dirty_queues = set()
+
+        return dirty_queues
 
     def create_uid(self) -&gt; int:
         self.game_id_counter += 1
@@ -362,23 +361,23 @@ class GameService(Service):
             # Turn resultset into a list of uids
             self.ranked_mods = set(map(lambda x: x[0], rows))
 
-    @property
-    def dirty_games(self):
-        return self._dirty_games
-
-    @property
-    def dirty_queues(self):
-        return self._dirty_queues
-
     def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
         if isinstance(obj, Game):
             self._dirty_games.add(obj)
         elif isinstance(obj, MatchmakerQueue):
             self._dirty_queues.add(obj)
 
-    def clear_dirty(self):
+    def pop_dirty_games(self) -&gt; Set[Game]:
+        dirty_games = self._dirty_games
         self._dirty_games = set()
+
+        return dirty_games
+
+    def pop_dirty_queues(self) -&gt; Set[MatchmakerQueue]:
+        dirty_queues = self._dirty_queues
         self._dirty_queues = set()
+
+        return dirty_queues
 
     def create_uid(self) -&gt; int:
         self.game_id_counter += 1
@@ -513,30 +512,6 @@ def all_games(self) -&gt; ValuesView[Game]:
     return self._games.values()</code></pre>
 </details>
 </dd>
-<dt id="server.game_service.GameService.dirty_games"><code class="name">var <span class="ident">dirty_games</span></code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def dirty_games(self):
-    return self._dirty_games</code></pre>
-</details>
-</dd>
-<dt id="server.game_service.GameService.dirty_queues"><code class="name">var <span class="ident">dirty_queues</span></code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def dirty_queues(self):
-    return self._dirty_queues</code></pre>
-</details>
-</dd>
 <dt id="server.game_service.GameService.live_games"><code class="name">var <span class="ident">live_games</span> : List[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
 <div class="desc"></div>
@@ -597,20 +572,6 @@ def pending_games(self) -&gt; List[Game]:
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="server.game_service.GameService.clear_dirty"><code class="name flex">
-<span>def <span class="ident">clear_dirty</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def clear_dirty(self):
-    self._dirty_games = set()
-    self._dirty_queues = set()</code></pre>
-</details>
-</dd>
 <dt id="server.game_service.GameService.create_game"><code class="name flex">
 <span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: Type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame, visibility=VisibilityState.PUBLIC, host: Union[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>, NoneType] = None, name: Union[str, NoneType] = None, mapname: Union[str, NoneType] = None, password: Union[str, NoneType] = None, matchmaker_queue_id: Union[int, NoneType] = None, **kwargs)</span>
 </code></dt>
@@ -715,6 +676,38 @@ def pending_games(self) -&gt; List[Game]:
         self._dirty_games.add(obj)
     elif isinstance(obj, MatchmakerQueue):
         self._dirty_queues.add(obj)</code></pre>
+</details>
+</dd>
+<dt id="server.game_service.GameService.pop_dirty_games"><code class="name flex">
+<span>def <span class="ident">pop_dirty_games</span></span>(<span>self) ‑> Set[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pop_dirty_games(self) -&gt; Set[Game]:
+    dirty_games = self._dirty_games
+    self._dirty_games = set()
+
+    return dirty_games</code></pre>
+</details>
+</dd>
+<dt id="server.game_service.GameService.pop_dirty_queues"><code class="name flex">
+<span>def <span class="ident">pop_dirty_queues</span></span>(<span>self) ‑> Set[<a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pop_dirty_queues(self) -&gt; Set[MatchmakerQueue]:
+    dirty_queues = self._dirty_queues
+    self._dirty_queues = set()
+
+    return dirty_queues</code></pre>
 </details>
 </dd>
 <dt id="server.game_service.GameService.publish_game_results"><code class="name flex">
@@ -845,16 +838,15 @@ time we need, but which can in principle change over time.</p></div>
 <h4><code><a title="server.game_service.GameService" href="#server.game_service.GameService">GameService</a></code></h4>
 <ul class="">
 <li><code><a title="server.game_service.GameService.all_games" href="#server.game_service.GameService.all_games">all_games</a></code></li>
-<li><code><a title="server.game_service.GameService.clear_dirty" href="#server.game_service.GameService.clear_dirty">clear_dirty</a></code></li>
 <li><code><a title="server.game_service.GameService.create_game" href="#server.game_service.GameService.create_game">create_game</a></code></li>
 <li><code><a title="server.game_service.GameService.create_uid" href="#server.game_service.GameService.create_uid">create_uid</a></code></li>
-<li><code><a title="server.game_service.GameService.dirty_games" href="#server.game_service.GameService.dirty_games">dirty_games</a></code></li>
-<li><code><a title="server.game_service.GameService.dirty_queues" href="#server.game_service.GameService.dirty_queues">dirty_queues</a></code></li>
 <li><code><a title="server.game_service.GameService.initialise_game_counter" href="#server.game_service.GameService.initialise_game_counter">initialise_game_counter</a></code></li>
 <li><code><a title="server.game_service.GameService.live_games" href="#server.game_service.GameService.live_games">live_games</a></code></li>
 <li><code><a title="server.game_service.GameService.mark_dirty" href="#server.game_service.GameService.mark_dirty">mark_dirty</a></code></li>
 <li><code><a title="server.game_service.GameService.open_games" href="#server.game_service.GameService.open_games">open_games</a></code></li>
 <li><code><a title="server.game_service.GameService.pending_games" href="#server.game_service.GameService.pending_games">pending_games</a></code></li>
+<li><code><a title="server.game_service.GameService.pop_dirty_games" href="#server.game_service.GameService.pop_dirty_games">pop_dirty_games</a></code></li>
+<li><code><a title="server.game_service.GameService.pop_dirty_queues" href="#server.game_service.GameService.pop_dirty_queues">pop_dirty_queues</a></code></li>
 <li><code><a title="server.game_service.GameService.publish_game_results" href="#server.game_service.GameService.publish_game_results">publish_game_results</a></code></li>
 <li><code><a title="server.game_service.GameService.remove_game" href="#server.game_service.GameService.remove_game">remove_game</a></code></li>
 <li><code><a title="server.game_service.GameService.update_active_game_metrics" href="#server.game_service.GameService.update_active_game_metrics">update_active_game_metrics</a></code></li>

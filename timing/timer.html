@@ -118,10 +118,34 @@ class Timer(object):
         return self
 
     def __str__(self):
-        return f&#34;{self.interval} {self.func}&#34;
+        return f&#34;{self.get_delay()} {self.func}&#34;
 
     def __repr__(self):
         return f&#34;&lt;Timer {str(self)}&gt;&#34;
+
+
+class LazyIntervalTimer(Timer):
+    &#34;&#34;&#34;A timer that calls a function to get the next interval&#34;&#34;&#34;
+
+    def __init__(
+        self,
+        interval_func,
+        func=None,
+        args=(),
+        start=False,
+        loop=None
+    ):
+        super().__init__(
+            interval=None,
+            func=func,
+            args=args,
+            start=start,
+            loop=loop
+        )
+        self.interval_func = interval_func
+
+    def get_delay(self):
+        return self.interval_func()
 
 
 def at_interval(interval, func=None, args=(), start=True, loop=None):
@@ -182,6 +206,57 @@ def at_interval(interval, func=None, args=(), start=True, loop=None):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="server.timing.timer.LazyIntervalTimer"><code class="flex name class">
+<span>class <span class="ident">LazyIntervalTimer</span></span>
+<span>(</span><span>interval_func, func=None, args=(), start=False, loop=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A timer that calls a function to get the next interval</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class LazyIntervalTimer(Timer):
+    &#34;&#34;&#34;A timer that calls a function to get the next interval&#34;&#34;&#34;
+
+    def __init__(
+        self,
+        interval_func,
+        func=None,
+        args=(),
+        start=False,
+        loop=None
+    ):
+        super().__init__(
+            interval=None,
+            func=func,
+            args=args,
+            start=start,
+            loop=loop
+        )
+        self.interval_func = interval_func
+
+    def get_delay(self):
+        return self.interval_func()</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.timing.timer.Timer" href="#server.timing.timer.Timer">Timer</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="server.timing.timer.Timer" href="#server.timing.timer.Timer">Timer</a></b></code>:
+<ul class="hlist">
+<li><code><a title="server.timing.timer.Timer.call_func" href="#server.timing.timer.Timer.call_func">call_func</a></code></li>
+<li><code><a title="server.timing.timer.Timer.call_next" href="#server.timing.timer.Timer.call_next">call_next</a></code></li>
+<li><code><a title="server.timing.timer.Timer.get_delay" href="#server.timing.timer.Timer.get_delay">get_delay</a></code></li>
+<li><code><a title="server.timing.timer.Timer.set_result" href="#server.timing.timer.Timer.set_result">set_result</a></code></li>
+<li><code><a title="server.timing.timer.Timer.start" href="#server.timing.timer.Timer.start">start</a></code></li>
+<li><code><a title="server.timing.timer.Timer.stop" href="#server.timing.timer.Timer.stop">stop</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
 <dt id="server.timing.timer.Timer"><code class="flex name class">
 <span>class <span class="ident">Timer</span></span>
 <span>(</span><span>interval, func=None, args=(), start=False, loop=None)</span>
@@ -259,11 +334,15 @@ def at_interval(interval, func=None, args=(), start=True, loop=None):
         return self
 
     def __str__(self):
-        return f&#34;{self.interval} {self.func}&#34;
+        return f&#34;{self.get_delay()} {self.func}&#34;
 
     def __repr__(self):
         return f&#34;&lt;Timer {str(self)}&gt;&#34;</code></pre>
 </details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="server.timing.timer.LazyIntervalTimer" href="#server.timing.timer.LazyIntervalTimer">LazyIntervalTimer</a></li>
+</ul>
 <h3>Methods</h3>
 <dl>
 <dt id="server.timing.timer.Timer.call_func"><code class="name flex">
@@ -394,6 +473,9 @@ Else raise if needed.</p></div>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
+<li>
+<h4><code><a title="server.timing.timer.LazyIntervalTimer" href="#server.timing.timer.LazyIntervalTimer">LazyIntervalTimer</a></code></h4>
+</li>
 <li>
 <h4><code><a title="server.timing.timer.Timer" href="#server.timing.timer.Timer">Timer</a></code></h4>
 <ul class="two-column">

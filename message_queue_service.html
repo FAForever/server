@@ -154,6 +154,7 @@ class MessageQueueService(Service):
         exchange_name: str,
         routing: str,
         payload: Dict,
+        mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -&gt; None:
         if not self._is_ready:
@@ -171,7 +172,11 @@ class MessageQueueService(Service):
         )
 
         async with self._channel.transaction():
-            await exchange.publish(message, routing_key=routing)
+            await exchange.publish(
+                message,
+                routing_key=routing,
+                mandatory=mandatory
+            )
             self._logger.log(
                 TRACE, &#34;Published message %s to %s/%s&#34;, payload, exchange_name, routing
             )
@@ -337,6 +342,7 @@ and providing an interface to publish messages.</p></div>
         exchange_name: str,
         routing: str,
         payload: Dict,
+        mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -&gt; None:
         if not self._is_ready:
@@ -354,7 +360,11 @@ and providing an interface to publish messages.</p></div>
         )
 
         async with self._channel.transaction():
-            await exchange.publish(message, routing_key=routing)
+            await exchange.publish(
+                message,
+                routing_key=routing,
+                mandatory=mandatory
+            )
             self._logger.log(
                 TRACE, &#34;Published message %s to %s/%s&#34;, payload, exchange_name, routing
             )
@@ -404,7 +414,7 @@ and providing an interface to publish messages.</p></div>
 </details>
 </dd>
 <dt id="server.message_queue_service.MessageQueueService.publish"><code class="name flex">
-<span>async def <span class="ident">publish</span></span>(<span>self, exchange_name: str, routing: str, payload: Dict, delivery_mode: aio_pika.message.DeliveryMode = DeliveryMode.PERSISTENT) ‑> NoneType</span>
+<span>async def <span class="ident">publish</span></span>(<span>self, exchange_name: str, routing: str, payload: Dict, mandatory: bool = False, delivery_mode: aio_pika.message.DeliveryMode = DeliveryMode.PERSISTENT) ‑> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -417,6 +427,7 @@ and providing an interface to publish messages.</p></div>
     exchange_name: str,
     routing: str,
     payload: Dict,
+    mandatory: bool = False,
     delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
 ) -&gt; None:
     if not self._is_ready:
@@ -434,7 +445,11 @@ and providing an interface to publish messages.</p></div>
     )
 
     async with self._channel.transaction():
-        await exchange.publish(message, routing_key=routing)
+        await exchange.publish(
+            message,
+            routing_key=routing,
+            mandatory=mandatory
+        )
         self._logger.log(
             TRACE, &#34;Published message %s to %s/%s&#34;, payload, exchange_name, routing
         )</code></pre>

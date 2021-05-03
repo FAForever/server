@@ -95,15 +95,14 @@ class PlayerService(Service):
     def all_players(self) -&gt; ValuesView[Player]:
         return self._players.values()
 
-    @property
-    def dirty_players(self) -&gt; Set[Player]:
-        return self._dirty_players
-
     def mark_dirty(self, player: Player):
         self._dirty_players.add(player)
 
-    def clear_dirty(self):
+    def pop_dirty_players(self) -&gt; Set[Player]:
+        dirty_players = self._dirty_players
         self._dirty_players = set()
+
+        return dirty_players
 
     async def fetch_player_data(self, player):
         async with self._db.acquire() as conn:
@@ -375,15 +374,14 @@ class PlayerService(Service):
     def all_players(self) -&gt; ValuesView[Player]:
         return self._players.values()
 
-    @property
-    def dirty_players(self) -&gt; Set[Player]:
-        return self._dirty_players
-
     def mark_dirty(self, player: Player):
         self._dirty_players.add(player)
 
-    def clear_dirty(self):
+    def pop_dirty_players(self) -&gt; Set[Player]:
+        dirty_players = self._dirty_players
         self._dirty_players = set()
+
+        return dirty_players
 
     async def fetch_player_data(self, player):
         async with self._db.acquire() as conn:
@@ -620,34 +618,9 @@ def all_players(self) -&gt; ValuesView[Player]:
     return self._players.values()</code></pre>
 </details>
 </dd>
-<dt id="server.player_service.PlayerService.dirty_players"><code class="name">var <span class="ident">dirty_players</span> : Set[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def dirty_players(self) -&gt; Set[Player]:
-    return self._dirty_players</code></pre>
-</details>
-</dd>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="server.player_service.PlayerService.clear_dirty"><code class="name flex">
-<span>def <span class="ident">clear_dirty</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def clear_dirty(self):
-    self._dirty_players = set()</code></pre>
-</details>
-</dd>
 <dt id="server.player_service.PlayerService.fetch_player_data"><code class="name flex">
 <span>async def <span class="ident">fetch_player_data</span></span>(<span>self, player)</span>
 </code></dt>
@@ -772,6 +745,22 @@ def dirty_players(self) -&gt; Set[Player]:
     self._dirty_players.add(player)</code></pre>
 </details>
 </dd>
+<dt id="server.player_service.PlayerService.pop_dirty_players"><code class="name flex">
+<span>def <span class="ident">pop_dirty_players</span></span>(<span>self) ‑> Set[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pop_dirty_players(self) -&gt; Set[Player]:
+    dirty_players = self._dirty_players
+    self._dirty_players = set()
+
+    return dirty_players</code></pre>
+</details>
+</dd>
 <dt id="server.player_service.PlayerService.remove_player"><code class="name flex">
 <span>def <span class="ident">remove_player</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
 </code></dt>
@@ -871,13 +860,12 @@ uniqueid check.</p></div>
 <h4><code><a title="server.player_service.PlayerService" href="#server.player_service.PlayerService">PlayerService</a></code></h4>
 <ul class="">
 <li><code><a title="server.player_service.PlayerService.all_players" href="#server.player_service.PlayerService.all_players">all_players</a></code></li>
-<li><code><a title="server.player_service.PlayerService.clear_dirty" href="#server.player_service.PlayerService.clear_dirty">clear_dirty</a></code></li>
-<li><code><a title="server.player_service.PlayerService.dirty_players" href="#server.player_service.PlayerService.dirty_players">dirty_players</a></code></li>
 <li><code><a title="server.player_service.PlayerService.fetch_player_data" href="#server.player_service.PlayerService.fetch_player_data">fetch_player_data</a></code></li>
 <li><code><a title="server.player_service.PlayerService.get_player" href="#server.player_service.PlayerService.get_player">get_player</a></code></li>
 <li><code><a title="server.player_service.PlayerService.has_permission_role" href="#server.player_service.PlayerService.has_permission_role">has_permission_role</a></code></li>
 <li><code><a title="server.player_service.PlayerService.is_uniqueid_exempt" href="#server.player_service.PlayerService.is_uniqueid_exempt">is_uniqueid_exempt</a></code></li>
 <li><code><a title="server.player_service.PlayerService.mark_dirty" href="#server.player_service.PlayerService.mark_dirty">mark_dirty</a></code></li>
+<li><code><a title="server.player_service.PlayerService.pop_dirty_players" href="#server.player_service.PlayerService.pop_dirty_players">pop_dirty_players</a></code></li>
 <li><code><a title="server.player_service.PlayerService.remove_player" href="#server.player_service.PlayerService.remove_player">remove_player</a></code></li>
 <li><code><a title="server.player_service.PlayerService.signal_player_rating_change" href="#server.player_service.PlayerService.signal_player_rating_change">signal_player_rating_change</a></code></li>
 <li><code><a title="server.player_service.PlayerService.update_data" href="#server.player_service.PlayerService.update_data">update_data</a></code></li>
