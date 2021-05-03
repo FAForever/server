@@ -50,7 +50,7 @@ from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
-from .oauth_service import OAuthService
+from .oauth_service import OauthService
 from .party_service import PartyService
 from .player_service import PlayerService
 from .players import Player, PlayerState
@@ -71,7 +71,7 @@ class LobbyConnection:
         geoip: GeoIpService,
         ladder_service: LadderService,
         party_service: PartyService,
-        oauth_service: OAuthService
+        oauth_service: OauthService
     ):
         self._db = database
         self.geoip_service = geoip

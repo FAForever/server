@@ -10,7 +10,7 @@ from .exceptions import AuthenticationError
 
 
 @with_logger
-class OAuthService(Service):
+class OauthService(Service):
     """
         Service for managing the OAuth token logins and verification.
     """
