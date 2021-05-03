@@ -20,7 +20,7 @@ trueskill = "*"
 aiocron = "*"
 oauthlib = "*"
 sqlalchemy = "*"
-twilio = "*"
+twilio = ">=6.0.0,<6.51.0"  # See https://github.com/twilio/twilio-python/issues/556
 humanize = ">=2.6.0"
 aiomysql = {editable = true, git = "https://github.com/aio-libs/aiomysql"}
 pyyaml = "*"

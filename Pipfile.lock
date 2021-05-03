@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3edd87eeba0ae25b6da799a8b2e062a801fa5e00a1acc3e27caea1cf55eadd5a"
+            "sha256": "721796196741f30dbaa707d4466eff00cc358f6288a51042329b759665836c06"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -370,11 +370,11 @@
                 "crypto"
             ],
             "hashes": [
-                "sha256:5c6eca3c2940464d106b99ba83b00c6add741c9becaec087fb7ccdefea71350e",
-                "sha256:8d59a976fb773f3e6a39c85636357c4f0e242707394cadadd9814f5cbaa20e96"
+                "sha256:934d73fbba91b0483d3857d1aff50e96b2a892384ee2c17417ed3203f173fca1",
+                "sha256:fba44e7898bbca160a2b2b501f492824fc8382485d3a6f11ba5d0c1937ce6130"
             ],
             "index": "pypi",
-            "version": "==1.7.1"
+            "version": "==2.1.0"
         },
         "pymysql": {
             "hashes": [
@@ -494,10 +494,10 @@
         },
         "twilio": {
             "hashes": [
-                "sha256:f6cdd2d814c8db411cc6e55145e48491c145af60f5c024e5582578039d0b9141"
+                "sha256:dd8371c9b4ea422d6de7526b63b587da82e8488f2b3f6b1258d2cad6e4006a65"
             ],
             "index": "pypi",
-            "version": "==6.59.1"
+            "version": "==6.50.1"
         },
         "typing": {
             "hashes": [

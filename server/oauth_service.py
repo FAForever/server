@@ -3,8 +3,7 @@ import json
 import jwt
 import requests
 
-from jwt import InvalidTokenError
-from jwt.algorithms import RSAAlgorithm
+from jwt import PyJWKClient, InvalidTokenError
 
 from .config import config
 from .core import Service
@@ -19,13 +18,12 @@ class OAuthService(Service):
     """
 
     def __init__(self):
-        self.public_keys = None
+        self.jwks_client = None
 
     async def initialize(self) -> None:
         await self.retrieve_public_keys()
         # crontab: min hour day month day_of_week
-        # Run every Wednesday because GeoLite2 is updated every first Tuesday
-        # of the month.
+        # Run every day to update public keys.
         self._update_cron = aiocron.crontab(
             "0 0 * * *", func=self.retrieve_public_keys()
         )
@@ -34,19 +32,14 @@ class OAuthService(Service):
         """
             Get the latest jwks from the hydra endpoint
         """
-        self.public_keys = {}
-        jwks = requests.get(config.HYDRA_JWKS_URI).json()
-        for jwk in jwks['keys']:
-            kid = jwk['kid']
-            self.public_keys[kid] = RSAAlgorithm.from_jwk(json.dumps(jwk))
+        self.jwks_client = PyJWKClient(config.HYDRA_JWKS_URI)
 
     async def get_player_id_from_token(self, token: str) -> int:
         """
             Decode the JWT to get the player_id
         """
         try:
-            kid = jwt.get_unverified_header(token)['kid']
-            key = self.public_keys[kid]
-            return jwt.decode(token, key=key, algorithms="RS256")["user_id"]
+            signing_key = self.jwks_client.get_signing_key_from_jwt(token)
+            return jwt.decode(token, signing_key.key, algorithms=["RS256"])["user_id"]
         except (InvalidTokenError, KeyError):
             raise AuthenticationError("Token signature was invalid")
