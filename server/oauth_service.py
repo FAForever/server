@@ -1,7 +1,10 @@
 import aiocron
+import json
 import jwt
+import requests
 
 from jwt import InvalidTokenError
+from jwt.algorithms import RSAAlgorithm
 
 from .config import config
 from .core import Service
@@ -16,7 +19,7 @@ class OAuthService(Service):
     """
 
     def __init__(self):
-        self.jwks_client = None
+        self.public_keys = None
 
     async def initialize(self) -> None:
         await self.retrieve_public_keys()
@@ -31,14 +34,19 @@ class OAuthService(Service):
         """
             Get the latest jwks from the hydra endpoint
         """
-        self.jwks_client = jwt.PyJWKClient(config.HYDRA_JWKS_URI)
+        self.public_keys = {}
+        jwks = requests.get(config.HYDRA_JWKS_URI).json()
+        for jwk in jwks['keys']:
+            kid = jwk['kid']
+            self.public_keys[kid] = RSAAlgorithm.from_jwk(json.dumps(jwk))
 
     async def get_player_id_from_token(self, token: str) -> int:
         """
             Decode the JWT to get the player_id
         """
         try:
-            signing_key = self.jwks_client.get_signing_key_from_jwt(token)
-            return jwt.decode(token, signing_key.key, algorithms=["RS256"])["user_id"]
+            kid = jwt.get_unverified_header(token)['kid']
+            key = self.public_keys[kid]
+            return jwt.decode(token, key=key, algorithms="RS256")["user_id"]
         except (InvalidTokenError, KeyError):
             raise AuthenticationError("Token signature was invalid")
