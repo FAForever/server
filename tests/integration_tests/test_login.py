@@ -292,21 +292,21 @@ async def test_server_valid_login_with_token(lobby_server, api_priv_key):
 async def test_server_login_expired_token(lobby_server, api_priv_key):
     proto = await connect_client(lobby_server)
     await proto.send_message({
-        'command': 'auth',
-        'version': '1.0.0-dev',
-        'user_agent': 'faf-client',
-        'token': jwt.encode({
+        "command": "auth",
+        "version": "1.0.0-dev",
+        "user_agent": "faf-client",
+        "token": jwt.encode({
             "user_id": 1,
             "user_name": "test",
             "exp": int(time() - 10)
-        }, api_priv_key, algorithm='RS256').decode(),
-        'unique_id': 'some_id'
+        }, api_priv_key, algorithm="RS256").decode(),
+        "unique_id": "some_id"
     })
 
     msg = await proto.read_message()
     assert msg == {
-        'command': 'authentication_failed',
-        'text': 'Token signature was invalid'
+        "command": "authentication_failed",
+        "text": "Token signature was invalid"
     }
 
 
@@ -315,103 +315,40 @@ async def test_server_login_malformed_token(lobby_server, api_priv_key):
     was missing critical data"""
     proto = await connect_client(lobby_server)
     await proto.send_message({
-        'command': 'auth',
-        'version': '1.0.0-dev',
-        'user_agent': 'faf-client',
-        'token': jwt.encode(
-            {"exp": int(time() + 10)}, api_priv_key, algorithm='RS256'
-        ).decode(),
-        'unique_id': 'some_id'
-    })
-
-    msg = await proto.read_message()
-    assert msg == {
-        'command': 'authentication_failed',
-        'text': 'Token signature was invalid'
-    }
-
-
-async def test_server_valid_login_with_token(lobby_server, api_priv_key):
-    proto = await connect_client(lobby_server)
-    await proto.send_message({
         "command": "auth",
         "version": "1.0.0-dev",
         "user_agent": "faf-client",
-        "token": jwt.encode({
-          "user_id": 3,
-          "user_name": "Rhiza",
-          "scope": [],
-          "exp": int(time() + 10),
-          "authorities": [],
-          "non_locked": True,
-          "jti": "",
-          "client_id": ""
-        }, api_priv_key, algorithm="RS256").decode(),
+        "token": jwt.encode(
+            {"exp": int(time() + 10)}, api_priv_key, algorithm="RS256"
+        ).decode(),
         "unique_id": "some_id"
     })
 
     msg = await proto.read_message()
-    assert msg["command"] == "irc_password"
-    msg = await proto.read_message()
-    me = {
-        "id": 3,
-        "login": "Rhiza",
-        "clan": "123",
-        "country": "",
-        "ratings": {
-            "global": {
-                "rating": [1650.0, 62.52],
-                "number_of_games": 2
-            },
-            "ladder_1v1": {
-                "rating": [1650.0, 62.52],
-                "number_of_games": 2
-            }
-        },
-        "global_rating": [1650.0, 62.52],
-        "ladder_rating": [1650.0, 62.52],
-        "number_of_games": 2
-    }
     assert msg == {
-        "command": "welcome",
-        "me": me,
-        "id": 3,
-        "login": "Rhiza"
-    }
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "player_info",
-        "players": [me]
-    }
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "social",
-        "autojoin": ["#123_clan"],
-        "channels": ["#123_clan"],
-        "friends": [],
-        "foes": [],
-        "power": 0
+        "command": "authentication_failed",
+        "text": "Token signature was invalid"
     }
 
 
 async def test_server_login_expired_token(lobby_server, api_priv_key):
     proto = await connect_client(lobby_server)
     await proto.send_message({
-        'command': 'auth',
-        'version': '1.0.0-dev',
-        'user_agent': 'faf-client',
-        'token': jwt.encode({
+        "command": "auth",
+        "version": "1.0.0-dev",
+        "user_agent": "faf-client",
+        "token": jwt.encode({
             "user_id": 1,
             "user_name": "test",
             "exp": int(time() - 10)
-        }, api_priv_key, algorithm='RS256').decode(),
-        'unique_id': 'some_id'
+        }, api_priv_key, algorithm="RS256").decode(),
+        "unique_id": "some_id"
     })
 
     msg = await proto.read_message()
     assert msg == {
-        'command': 'authentication_failed',
-        'text': 'Token signature was invalid'
+        "command": "authentication_failed",
+        "text": "Token signature was invalid"
     }
 
 
@@ -420,17 +357,17 @@ async def test_server_login_malformed_token(lobby_server, api_priv_key):
     was missing critical data"""
     proto = await connect_client(lobby_server)
     await proto.send_message({
-        'command': 'auth',
-        'version': '1.0.0-dev',
-        'user_agent': 'faf-client',
-        'token': jwt.encode(
-            {"exp": int(time() + 10)}, api_priv_key, algorithm='RS256'
+        "command": "auth",
+        "version": "1.0.0-dev",
+        "user_agent": "faf-client",
+        "token": jwt.encode(
+            {"exp": int(time() + 10)}, api_priv_key, algorithm="RS256"
         ).decode(),
-        'unique_id': 'some_id'
+        "unique_id": "some_id"
     })
 
     msg = await proto.read_message()
     assert msg == {
-        'command': 'authentication_failed',
-        'text': 'Token signature was invalid'
+        "command": "authentication_failed",
+        "text": "Token signature was invalid"
     }
