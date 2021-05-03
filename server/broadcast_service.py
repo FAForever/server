@@ -65,10 +65,7 @@ class BroadcastService(Service):
                 "command": "player_info",
                 "players": [player.to_dict() for player in dirty_players]
             }
-            self.server.write_broadcast(
-                player_info,
-                lambda lobby_conn: lobby_conn.authenticated
-            )
+            self.server.write_broadcast(player_info)
 
         game_info = {
             "command": "game_info",
