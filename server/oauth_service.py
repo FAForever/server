@@ -48,6 +48,6 @@ class OauthService(Service):
         try:
             kid = jwt.get_unverified_header(token)['kid']
             key = self.public_keys[kid]
-            return int(jwt.decode(token, key=key, algorithms="RS256", options={"verify_signature": False})["sub"])
+            return int(jwt.decode(token, key=key, algorithms="RS256", options={"verify_aud": False})["sub"])
         except (InvalidTokenError, KeyError, ValueError):
             raise AuthenticationError("Token signature was invalid")
