@@ -48,6 +48,12 @@ class BroadcastService(Service):
         self._logger.debug("Broadcast service initialized")
 
     async def report_dirties(self):
+        """
+        Send updates about any dirty (changed) entities to connected players.
+        This function is called at a fixed interval, which guarantees that any
+        given object will not be written out to the clients more than once per
+        interval.
+        """
         self.game_service.update_active_game_metrics()
         dirty_games = self.game_service.pop_dirty_games()
         dirty_queues = self.game_service.pop_dirty_queues()
