@@ -50,7 +50,7 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug("=== starting matching algorithm ===")
         possible_games = set()
         for index, search in enumerate(searches):
-            self._logger.debug(f"building game for {repr(search)}")
+            self._logger.debug("building game for %s", repr(search))
             participants = self._pick_neighboring_players(searches, index)
             try:
                 match = self.make_teams(list(participants))
@@ -58,9 +58,13 @@ class TeamMatchMaker(Matchmaker):
                 possible_games.add(game)
             except AssertionError:
                 self._logger.warning("failed to assign even teams. Skipping this game...")
-        self._logger.debug(f"got {len(possible_games)} games")
+        self._logger.debug("got %i games", len(possible_games))
         for game in possible_games:
-            self._logger.debug(f"game:{repr(game.match[0])} vs {repr(game.match[1])} rating disparity: {game.match[0].cumulated_rating - game.match[1].cumulated_rating} quality: {game.quality}")
+            self._logger.debug("game: %s vs %s rating disparity: %i quality: %f",
+                               repr(game.match[0]),
+                               repr(game.match[1]),
+                               game.match[0].cumulated_rating - game.match[1].cumulated_rating,
+                               game.quality)
         return self._pick_best_noncolliding_games(list(possible_games))
 
     def _pick_neighboring_players(self, searches: List[Search], index: int) -> List[Search]:
@@ -105,17 +109,17 @@ class TeamMatchMaker(Matchmaker):
 
         combined_team_a = CombinedSearch(*team_a)
         combined_team_b = CombinedSearch(*team_b)
-        self._logger.debug(f"made teams: Average rating: {avg} target strength: {team_target_strength}")
-        self._logger.debug(f"team a: {str(team_a)} cumulated rating: {combined_team_a.cumulated_rating}\
-         average rating: {combined_team_a.average_rating}")
-        self._logger.debug(f"team b: {str(team_b)} cumulated rating: {combined_team_b.cumulated_rating}\
-         average rating: {combined_team_b.average_rating}")
+        self._logger.debug("made teams: Average rating: %s target strength: %s", avg, team_target_strength)
+        self._logger.debug("team a: %s cumulated rating: %s average rating: %s",
+                           team_a, combined_team_a.cumulated_rating, combined_team_a.average_rating)
+        self._logger.debug("team b: %s cumulated rating: %s average rating: %s",
+                           team_b, combined_team_b.cumulated_rating, combined_team_b.average_rating)
         assert len(combined_team_a.players) == self.team_size
         assert len(combined_team_b.players) == self.team_size
         return combined_team_a, combined_team_b
 
     def run_karmarkar_karp_algorithm(self, searches):
-        self._logger.debug(f"Running Karmarkar-Karp to partition the teams")
+        self._logger.debug("Running Karmarkar-Karp to partition the teams")
         containers = []
         for s in searches:
             # Karmarkar-Karp works only for positive integers. By adding 5000 to the rating of each player
@@ -135,7 +139,7 @@ class TeamMatchMaker(Matchmaker):
                 elem2 = containers.pop()
             except IndexError:
                 break
-        self._logger.debug(f"Rating disparity: {elem1.rating}")
+        self._logger.debug("Rating disparity: %s", elem1.rating)
 
         team_a = []
         team_b = []
@@ -167,9 +171,9 @@ class TeamMatchMaker(Matchmaker):
             size = len(search.players)
             searches_by_size[size].append(search)
 
-        self._logger.debug(f"participating searches by player size:")
+        self._logger.debug("participating searches by player size:")
         for i in range(self.team_size, 0, -1):
-            self._logger.debug(f"{i} players: {str(searches_by_size[i])}")
+            self._logger.debug("%i players: %s", i, searches_by_size[i])
         return searches_by_size
 
     def _find_most_balanced_filler(self, avg, search, searches_dict):
@@ -202,11 +206,11 @@ class TeamMatchMaker(Matchmaker):
                 pop = searches_dict[1].pop(0)
             old_team_avg = CombinedSearch(*[search, old_pop]).average_rating
             old_avg_delta = abs(avg - old_team_avg)
-            self._logger.debug(f"old delta with {str([old_pop])} is {old_avg_delta} (avg is {old_team_avg})")
+            self._logger.debug("old delta with %s is %s (avg is %s)", [old_pop], old_avg_delta, old_team_avg)
             team_avg = CombinedSearch(*[search, pop]).average_rating
             avg_delta = abs(avg - team_avg)
-            self._logger.debug(f"delta with {str([pop])} is {avg_delta} (avg is {team_avg})")
-        self._logger.debug(f"used {str([old_pop])} as filler")
+            self._logger.debug("delta with %s is %s (avg is %s)", [pop], avg_delta, team_avg)
+        self._logger.debug("used %s as filler", [old_pop])
         return old_pop
 
     def calculate_game_quality(self, match: Match) -> Game:
@@ -226,14 +230,17 @@ class TeamMatchMaker(Matchmaker):
         uniformity = max((config.MAXIMUM_RATING_DEVIATION - deviation) / config.MAXIMUM_RATING_DEVIATION, 0)
 
         quality = fairness * uniformity + newbie_bonus + time_bonus
-        self._logger.debug(f"bonuses: {newbie_bonus + time_bonus} rating disparity: {rating_disparity} -> fairness: {fairness} deviation: {deviation} -> uniformity: {uniformity} -> game quality: {quality}")
+        self._logger.debug(
+            "bonuses: %s rating disparity: %s -> fairness: %f deviation: %f -> uniformity: %f -> game quality: %f",
+            newbie_bonus + time_bonus, rating_disparity, fairness, deviation, uniformity, quality)
         return Game(match, quality)
 
     def _pick_best_noncolliding_games(self, games: List[Game]) -> List[Match]:
         for game in list(games):
             if game.quality < config.MINIMUM_GAME_QUALITY:
                 games.remove(game)
-        self._logger.debug(f"{len(games)} games left after removal of games with quality < {config.MINIMUM_GAME_QUALITY}")
+        self._logger.debug("%i games left after removal of games with quality < %s",
+                           len(games), config.MINIMUM_GAME_QUALITY)
         games.sort(key=lambda gme: gme.quality, reverse=True)
 
         matches: List[Match] = []
@@ -244,12 +251,12 @@ class TeamMatchMaker(Matchmaker):
             for search in g.match:
                 for player in search.players:
                     used_players.add(player)
-            self._logger.debug(f"used players: {[p.login for p in used_players]}")
+            self._logger.debug("used players: %s", [p.login for p in used_players])
             for game in list(games):
                 for search in game.match:
                     if not set(search.players).isdisjoint(used_players):
                         games.remove(game)
-                        self._logger.debug(f"removed game: {str(game.match)}")
+                        self._logger.debug("removed game: %s", game.match)
                         break
         self._logger.debug("chosen games: " + str(matches))
         return matches
