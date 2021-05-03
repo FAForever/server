@@ -1,8 +1,9 @@
 import logging
+
 import pytest
 
 from server import config
-from server.matchmaker import Search, CombinedSearch
+from server.matchmaker import CombinedSearch, Search
 from server.matchmaker.algorithm.team_matchmaker import TeamMatchMaker
 
 

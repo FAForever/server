@@ -1,16 +1,11 @@
 import statistics as stats
 from collections import defaultdict
-from typing import (
-    Dict,
-    Iterable,
-    List,
-    Tuple
-)
+from typing import Dict, Iterable, List, Tuple
 
-from .matchmaker import Matchmaker
-from ..search import CombinedSearch, Game, Match, Search
 from ...config import config
 from ...decorators import with_logger
+from ..search import CombinedSearch, Game, Match, Search
+from .matchmaker import Matchmaker
 
 
 class Container:

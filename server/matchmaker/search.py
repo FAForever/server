@@ -1,8 +1,8 @@
 import asyncio
 import itertools
 import math
-import time
 import statistics
+import time
 from typing import Any, Callable, List, Optional, Tuple
 
 from trueskill import Rating, quality
