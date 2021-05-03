@@ -3,7 +3,7 @@ import json
 import jwt
 import requests
 
-from jwt import InvalidTokenError
+from jwt import InvalidTokenError, algorithms
 
 from .config import config
 from .core import Service
@@ -37,7 +37,7 @@ class OAuthService(Service):
         jwks = requests.get(config.HYDRA_JWKS_URI).json()
         for jwk in jwks['keys']:
             kid = jwk['kid']
-            self.public_keys[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
+            self.public_keys[kid] = algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
 
     async def get_player_id_from_token(self, token: str) -> int:
         """
