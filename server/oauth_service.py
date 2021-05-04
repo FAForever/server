@@ -1,12 +1,13 @@
+import json
+
 import aiocron
 import aiohttp
-import json
 import jwt
-
 from jwt import InvalidTokenError
 from jwt.algorithms import RSAAlgorithm
 
 from server.config import config
+
 from .core import Service
 from .decorators import with_logger
 from .exceptions import AuthenticationError
