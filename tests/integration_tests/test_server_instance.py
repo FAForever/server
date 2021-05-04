@@ -33,6 +33,7 @@ async def test_multiple_contexts(
     tmp_user,
     policy_server,
     party_service,
+    oauth_service,
     event_loop
 ):
     config.USE_POLICY_SERVER = False
@@ -50,6 +51,7 @@ async def test_multiple_contexts(
             "geo_ip_service": geoip_service,
             "ladder_service": ladder_service,
             "party_service": party_service,
+            "oauth_service": oauth_service
         }
     )
     broadcast_service.server = instance
