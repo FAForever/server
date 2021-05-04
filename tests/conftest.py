@@ -74,7 +74,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--mysql_database",
         action="store",
-        default="faf",
+        default="faf_test",
         help="mysql database to use for tests",
     )
     parser.addoption(
