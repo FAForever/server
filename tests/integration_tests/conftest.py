@@ -105,9 +105,9 @@ async def lobby_server(
     with mock.patch(
         "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
         f"http://{policy_server.host}:{policy_server.port}"
-    ) as mock_policy, mock.patch("server.oauth_service.config.HYDRA_JWKS_URI",
+    ), mock.patch("server.oauth_service.config.HYDRA_JWKS_URI",
                         f"http://{jwks_server.host}:{jwks_server.port}/jwks"
-    ) as mock_oauth:
+    ):
         instance = ServerInstance(
             "UnitTestServer",
             database,
