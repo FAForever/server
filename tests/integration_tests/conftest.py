@@ -72,16 +72,16 @@ async def broadcast_service(
 
 
 @pytest.fixture
-def api_priv_key():
+def jwk_priv_key():
     return textwrap.dedent("""
     -----BEGIN RSA PRIVATE KEY-----
-    MIIBOgIBAAJBANcXbVA8c7jMb8LVSQTp7G/YAiEPi2be8k9XTqcis6QHLCw6ELh0
-    r8bOOkeRSUGLXja91NzJmh2Jvx/bwLhd1G0CAwEAAQJAHWPjGPKZsWel4c55AsXf
-    +8xdRh00pCLUo0i/w5C3UTM1fWv/8yMCSYO/th/L0/rc4kVvIOm8GOw/3zcyp6FK
-    dQIhAPbFBovMEDF3Tco7EiX90rVw+NgT8VoJxJACBr7R6lLjAiEA3yMQQqdpkeDA
-    z1zerZrzRG1Pn/OO5RCWTn3/ffIdzG8CIGUVpG7TsrZwpp72v6JsbUoB8w2gbbdy
-    VOCg096K4q/9AiEAkvEuRhalSPGvR18rLTw7MzahFv53fZWcxffnhnMo+HUCIH6t
-    GIuKi+gOWMYjXKLNRR34uxhTAvBcdZr8VBcPHSwj
+    MIIBOgIBAAJBAKia//Uh/0nwtCI2QEaorc4voP5Xx+68M/AHLsvzxe7qLut64+O3
+    vHlYp9B9wClxxp3unphCZDe+JIzRieCz14UCAwEAAQJAWh5G0uox/n5meabPojTE
+    eWFhxrB6j7MOe6wLKj4IvJKWxoxLuMoOWmqWcWLiFw4pXKFtjv6bOGW8uUyDZDQt
+    vQIhANt1HM3WPoFsvdnnqLH6PILfDRzal5Kjv1Ua97b7q2qLAiEAxK4zrououc6a
+    I+uVxvsTnU88DeydN2sTroc36YfC2C8CIQCuZg4i4ZxAnBrvfPKJpXPLCNjR0kDb
+    7rcROeIbjzp06wIgcZfXG5lnwqDTn6lh4QGEC5gGrFgbWTWLsYJBRax2WVsCIFeL
+    KtHOf7sc9jf0k73eooPK8b+g4pssztR4GObEThZh
     -----END RSA PRIVATE KEY-----
     """)
 
@@ -98,45 +98,50 @@ async def lobby_server(
     rating_service,
     message_queue_service,
     party_service,
-    policy_server
+    oauth_service,
+    policy_server,
+    jwks_server
 ):
     with mock.patch(
         "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
         f"http://{policy_server.host}:{policy_server.port}"
     ):
-        instance = ServerInstance(
-            "UnitTestServer",
-            database,
-            api_accessor=None,
-            twilio_nts=None,
-            loop=event_loop,
-            _override_services={
-                "broadcast_service": broadcast_service,
+        with mock.patch("server.lobbyconnection.config.HYDRA_JWKS_URI",
+                        f"http://{jwks_server.host}:{jwks_server.port}/jwks"
+                        ):
+            instance = ServerInstance(
+                "UnitTestServer",
+                database,
+                api_accessor=None,
+                twilio_nts=None,
+                loop=event_loop,
+                _override_services={
+                    "broadcast_service": broadcast_service,
                 "geo_ip_service": geoip_service,
-                "player_service": player_service,
-                "game_service": game_service,
-                "ladder_service": ladder_service,
-                "rating_service": rating_service,
-                "message_queue_service": message_queue_service,
-                "party_service": party_service
-            }
-        )
+                    "player_service": player_service,
+                    "game_service": game_service,
+                    "ladder_service": ladder_service,
+                    "rating_service": rating_service,
+                    "message_queue_service": message_queue_service,
+                    "party_service": party_service,
+                    "oauth_service": oauth_service
+                })
         # Set up the back reference
         broadcast_service.server = instance
 
-        ctx = await instance.listen(("127.0.0.1", None))
-        ctx.__connected_client_protos = []
-        player_service.is_uniqueid_exempt = lambda id: True
+            ctx = await instance.listen(("127.0.0.1", None))
+            ctx.__connected_client_protos = []
+            player_service.is_uniqueid_exempt = lambda id: True
 
-        yield ctx
+            yield ctx
 
-        ctx.close()
-        # Close connected protocol objects
-        # https://github.com/FAForever/server/issues/717
-        for proto in ctx.__connected_client_protos:
-            proto.writer.close()
-        await ctx.wait_closed()
-        await exhaust_callbacks(event_loop)
+            ctx.close()
+            # Close connected protocol objects
+            # https://github.com/FAForever/server/issues/717
+            for proto in ctx.__connected_client_protos:
+                proto.writer.close()
+            await ctx.wait_closed()
+            await exhaust_callbacks(event_loop)
 
 
 @pytest.fixture
@@ -178,6 +183,53 @@ async def policy_server():
 
         await request.json()
         return web.json_response({"result": handle.result})
+
+    app.add_routes(routes)
+
+    runner = web.AppRunner(app)
+
+    await runner.setup()
+    site = web.TCPSite(runner, host, port)
+    await site.start()
+
+    yield handle
+
+    await runner.cleanup()
+
+
+@pytest.fixture
+async def jwks_server():
+    host = "localhost"
+    port = 4080
+
+    app = web.Application()
+    routes = web.RouteTableDef()
+
+    class Handle(object):
+        def __init__(self):
+            self.host = host
+            self.port = port
+            self.result = json.loads(textwrap.dedent("""
+            {"keys":[
+            {
+                "kty": "RSA",
+                "e": "AQAB",
+                "use": "sig",
+                "kid": "L7wdUtrDssMTb57A_TNAI79DQCdp0T2-KUrSUoDJBhk",
+                "alg": "RS256",
+                "n": "qJr_9SH_SfC0IjZARqitzi-g_lfH7rwz8Acuy_PF7uou63rj47e8eVin0H3AKXHGne6emEJkN74kjNGJ4LPXhQ"
+            }]}
+            """))
+            self.verify = mock.Mock()
+
+    handle = Handle()
+
+    @routes.get("/jwks")
+    async def get(request):
+        # Register that the endpoint was called using a Mock
+        handle.verify()
+
+        return web.json_response(handle.result)
 
     app.add_routes(routes)
 
