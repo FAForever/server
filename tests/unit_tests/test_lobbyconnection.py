@@ -20,6 +20,7 @@ from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import Search
+from server.oauth_service import OauthService
 from server.party_service import PartyService
 from server.player_service import PlayerService
 from server.players import PlayerState
@@ -105,7 +106,8 @@ def lobbyconnection(
         players=mock_players,
         nts_client=mock_nts_client,
         ladder_service=asynctest.create_autospec(LadderService),
-        party_service=asynctest.create_autospec(PartyService)
+        party_service=asynctest.create_autospec(PartyService),
+        oauth_service=asynctest.create_autospec(OauthService)
     )
 
     lc.player = mock_player
