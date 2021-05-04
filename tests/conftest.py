@@ -403,9 +403,11 @@ def event_service(api_accessor):
 def achievement_service(api_accessor):
     return AchievementService(api_accessor)
 
+
 @pytest.fixture
 def oauth_service():
     return OauthService()
+
 
 @pytest.fixture
 def game_stats_service(event_service, achievement_service):
