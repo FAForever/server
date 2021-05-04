@@ -105,43 +105,42 @@ async def lobby_server(
     with mock.patch(
         "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
         f"http://{policy_server.host}:{policy_server.port}"
-    ):
-        with mock.patch("server.lobbyconnection.config.HYDRA_JWKS_URI",
+    ) as mock_policy, mock.patch("server.oauth_service.config.HYDRA_JWKS_URI",
                         f"http://{jwks_server.host}:{jwks_server.port}/jwks"
-                        ):
-            instance = ServerInstance(
-                "UnitTestServer",
-                database,
-                api_accessor=None,
-                twilio_nts=None,
-                loop=event_loop,
-                _override_services={
-                    "broadcast_service": broadcast_service,
+    ) as mock_oauth:
+        instance = ServerInstance(
+            "UnitTestServer",
+            database,
+            api_accessor=None,
+            twilio_nts=None,
+            loop=event_loop,
+            _override_services={
+                "broadcast_service": broadcast_service,
                 "geo_ip_service": geoip_service,
-                    "player_service": player_service,
-                    "game_service": game_service,
-                    "ladder_service": ladder_service,
-                    "rating_service": rating_service,
-                    "message_queue_service": message_queue_service,
-                    "party_service": party_service,
-                    "oauth_service": oauth_service
-                })
+                "player_service": player_service,
+                "game_service": game_service,
+                "ladder_service": ladder_service,
+                "rating_service": rating_service,
+                "message_queue_service": message_queue_service,
+                "party_service": party_service,
+                "oauth_service": oauth_service
+            })
         # Set up the back reference
         broadcast_service.server = instance
 
-            ctx = await instance.listen(("127.0.0.1", None))
-            ctx.__connected_client_protos = []
-            player_service.is_uniqueid_exempt = lambda id: True
+        ctx = await instance.listen(("127.0.0.1", None))
+        ctx.__connected_client_protos = []
+        player_service.is_uniqueid_exempt = lambda id: True
 
-            yield ctx
+        yield ctx
 
-            ctx.close()
-            # Close connected protocol objects
-            # https://github.com/FAForever/server/issues/717
-            for proto in ctx.__connected_client_protos:
-                proto.writer.close()
-            await ctx.wait_closed()
-            await exhaust_callbacks(event_loop)
+        ctx.close()
+        # Close connected protocol objects
+        # https://github.com/FAForever/server/issues/717
+        for proto in ctx.__connected_client_protos:
+            proto.writer.close()
+        await ctx.wait_closed()
+        await exhaust_callbacks(event_loop)
 
 
 @pytest.fixture
