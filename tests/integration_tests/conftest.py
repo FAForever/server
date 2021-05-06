@@ -85,6 +85,10 @@ def jwk_priv_key():
     -----END RSA PRIVATE KEY-----
     """)
 
+@pytest.fixture
+def jwk_header():
+    return {"kid": "L7wdUtrDssMTb57A_TNAI79DQCdp0T2-KUrSUoDJBhk"}
+
 
 @pytest.fixture
 async def lobby_server(
