@@ -520,12 +520,6 @@ class LobbyConnection:
         unique_id = message["unique_id"]
         player_id = await self.oauth_service.get_player_id_from_token(token)
 
-        new_irc_password = hexlify(os.urandom(16)).decode()
-        await self.send({
-            "command": "irc_password",
-            "password": new_irc_password
-        })
-
         async with self._db.acquire() as conn:
             result = await conn.execute(
                 select([t_login.c.login, t_login.c.steamid])
@@ -533,8 +527,17 @@ class LobbyConnection:
             )
             row = await result.fetchone()
 
+            if not row:
+                raise AuthenticationError("User id not in database")
+
             username = row.login
             steamid = row.steamid
+
+        new_irc_password = hexlify(os.urandom(16)).decode()
+        await self.send({
+            "command": "irc_password",
+            "password": new_irc_password
+        })
 
         await self.on_player_login(
             player_id, username, new_irc_password, steamid, unique_id
