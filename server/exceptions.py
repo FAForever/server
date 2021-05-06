@@ -50,6 +50,7 @@ class AuthenticationError(Exception):
     """
     The operation failed to authenticate.
     """
-    def __init__(self, message, *args, **kwargs):
+    def __init__(self, message, method, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.message = message
+        self.method = method
