@@ -14,7 +14,7 @@ from .exceptions import AuthenticationError
 
 
 @with_logger
-class OauthService(Service):
+class OAuthService(Service, name="oauth_service"):
     """
     Service for managing the OAuth token logins and verification.
     """
@@ -32,22 +32,22 @@ class OauthService(Service):
 
     async def retrieve_public_keys(self) -> None:
         """
-            Get the latest jwks from the hydra endpoint
+        Get the latest jwks from the hydra endpoint
         """
         self.public_keys = {}
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.get(config.HYDRA_JWKS_URI) as resp:
                 jwks = await resp.json()
-                for jwk in jwks['keys']:
-                    kid = jwk['kid']
-                    self.public_keys[kid] = RSAAlgorithm.from_jwk(json.dumps(jwk))
+                for jwk in jwks["keys"]:
+                    kid = jwk["kid"]
+                    self.public_keys[kid] = RSAAlgorithm.from_jwk(jwk)
 
     async def get_player_id_from_token(self, token: str) -> int:
         """
-            Decode the JWT to get the player_id
+        Decode the JWT to get the player_id
         """
         try:
-            kid = jwt.get_unverified_header(token)['kid']
+            kid = jwt.get_unverified_header(token)["kid"]
             key = self.public_keys[kid]
             return int(jwt.decode(token, key=key, algorithms="RS256", options={"verify_aud": False})["sub"])
         except (InvalidTokenError, KeyError, ValueError):

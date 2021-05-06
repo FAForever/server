@@ -102,12 +102,10 @@ async def lobby_server(
     policy_server,
     jwks_server
 ):
-    with mock.patch(
-        "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
-        f"http://{policy_server.host}:{policy_server.port}"
-    ), mock.patch("server.oauth_service.config.HYDRA_JWKS_URI",
-                        f"http://{jwks_server.host}:{jwks_server.port}/jwks"
-    ):
+    with mock.patch("server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
+                    f"http://{policy_server.host}:{policy_server.port}"), \
+         mock.patch("server.oauth_service.config.HYDRA_JWKS_URI",
+                    f"http://{jwks_server.host}:{jwks_server.port}/jwks"):
         instance = ServerInstance(
             "UnitTestServer",
             database,
@@ -208,17 +206,16 @@ async def jwks_server():
         def __init__(self):
             self.host = host
             self.port = port
-            self.result = json.loads(textwrap.dedent("""
-            {"keys":[
-            {
-                "kty": "RSA",
-                "e": "AQAB",
-                "use": "sig",
-                "kid": "L7wdUtrDssMTb57A_TNAI79DQCdp0T2-KUrSUoDJBhk",
-                "alg": "RS256",
-                "n": "qJr_9SH_SfC0IjZARqitzi-g_lfH7rwz8Acuy_PF7uou63rj47e8eVin0H3AKXHGne6emEJkN74kjNGJ4LPXhQ"
-            }]}
-            """))
+            self.result = {
+                "keys": [{
+                    "kty": "RSA",
+                    "e": "AQAB",
+                    "use": "sig",
+                    "kid": "L7wdUtrDssMTb57A_TNAI79DQCdp0T2-KUrSUoDJBhk",
+                    "alg": "RS256",
+                    "n": "qJr_9SH_SfC0IjZARqitzi-g_lfH7rwz8Acuy_PF7uou63rj47e8eVin0H3AKXHGne6emEJkN74kjNGJ4LPXhQ"
+                }]
+            }
             self.verify = mock.Mock()
 
     handle = Handle()
