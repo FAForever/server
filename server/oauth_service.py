@@ -1,5 +1,3 @@
-import json
-
 import aiocron
 import aiohttp
 import jwt
