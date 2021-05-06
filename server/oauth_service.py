@@ -35,11 +35,10 @@ class OAuthService(Service, name="oauth_service"):
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.get(config.HYDRA_JWKS_URI) as resp:
                 jwks = await resp.json()
-                new_keys = {}
-                for jwk in jwks["keys"]:
-                    kid = jwk["kid"]
-                    new_keys[kid] = RSAAlgorithm.from_jwk(jwk)
-                self.public_keys = new_keys
+                self.public_keys = {
+                    jwk["kid"]: RSAAlgorithm.from_jwk(jwk)
+                    for jwk in jwks["keys"]
+                }
 
     async def get_player_id_from_token(self, token: str) -> int:
         """

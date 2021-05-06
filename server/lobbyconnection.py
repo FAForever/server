@@ -530,7 +530,8 @@ class LobbyConnection:
             row = await result.fetchone()
 
             if not row:
-                raise AuthenticationError("User id not in database", auth_method)
+                self._logger.error("User id from token not found in database possible fraudulent token")
+                raise AuthenticationError("Cannot find user id", auth_method)
 
             username = row.login
             steamid = row.steamid
@@ -579,7 +580,7 @@ class LobbyConnection:
             return
 
         self._logger.debug(
-            "Login from: %s, %s, %s", player_id, username, self.session
+            "Login from: %s, %s, %s, %s", player_id, username, method, self.session
         )
         metrics.user_logins.labels("success", method).inc()
 

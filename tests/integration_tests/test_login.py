@@ -226,7 +226,7 @@ async def test_server_double_login(lobby_server):
     }
 
 
-async def test_server_valid_login_with_token(lobby_server, jwk_priv_key, jwk_header):
+async def test_server_valid_login_with_token(lobby_server, jwk_priv_key, jwk_kid):
     proto = await connect_client(lobby_server)
     await proto.send_message({
         "command": "auth",
@@ -241,7 +241,7 @@ async def test_server_valid_login_with_token(lobby_server, jwk_priv_key, jwk_hea
           "non_locked": True,
           "jti": "",
           "client_id": ""
-        }, jwk_priv_key, algorithm="RS256", headers=jwk_header),
+        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
         "unique_id": "some_id"
     })
 
@@ -289,7 +289,7 @@ async def test_server_valid_login_with_token(lobby_server, jwk_priv_key, jwk_hea
     }
 
 
-async def test_server_login_bad_id_in_token(lobby_server, jwk_priv_key, jwk_header):
+async def test_server_login_bad_id_in_token(lobby_server, jwk_priv_key, jwk_kid):
     proto = await connect_client(lobby_server)
     await proto.send_message({
         "command": "auth",
@@ -304,7 +304,7 @@ async def test_server_login_bad_id_in_token(lobby_server, jwk_priv_key, jwk_head
             "non_locked": True,
             "jti": "",
             "client_id": ""
-        }, jwk_priv_key, algorithm="RS256", headers=jwk_header),
+        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
         "unique_id": "some_id"
     })
 
@@ -315,7 +315,7 @@ async def test_server_login_bad_id_in_token(lobby_server, jwk_priv_key, jwk_head
     }
 
 
-async def test_server_login_expired_token(lobby_server, jwk_priv_key, jwk_header):
+async def test_server_login_expired_token(lobby_server, jwk_priv_key, jwk_kid):
     proto = await connect_client(lobby_server)
     await proto.send_message({
         "command": "auth",
@@ -325,7 +325,7 @@ async def test_server_login_expired_token(lobby_server, jwk_priv_key, jwk_header
             "sub": 1,
             "user_name": "test",
             "exp": int(time() - 10)
-        }, jwk_priv_key, algorithm="RS256", headers=jwk_header),
+        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
         "unique_id": "some_id"
     })
 
@@ -336,7 +336,7 @@ async def test_server_login_expired_token(lobby_server, jwk_priv_key, jwk_header
     }
 
 
-async def test_server_login_malformed_token(lobby_server, jwk_priv_key, jwk_header):
+async def test_server_login_malformed_token(lobby_server, jwk_priv_key, jwk_kid):
     """This scenario could only happen if the hydra signed a token that
     was missing critical data"""
     proto = await connect_client(lobby_server)
@@ -346,7 +346,7 @@ async def test_server_login_malformed_token(lobby_server, jwk_priv_key, jwk_head
         "user_agent": "faf-client",
         "token": jwt.encode(
             {"exp": int(time() + 10)}, jwk_priv_key, algorithm="RS256",
-            headers=jwk_header
+            headers={"kid": jwk_kid}
         ),
         "unique_id": "some_id"
     })

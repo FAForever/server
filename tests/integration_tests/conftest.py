@@ -85,9 +85,10 @@ def jwk_priv_key():
     -----END RSA PRIVATE KEY-----
     """)
 
+
 @pytest.fixture
-def jwk_header():
-    return {"kid": "L7wdUtrDssMTb57A_TNAI79DQCdp0T2-KUrSUoDJBhk"}
+def jwk_kid():
+    return "L7wdUtrDssMTb57A_TNAI79DQCdp0T2-KUrSUoDJBhk"
 
 
 @pytest.fixture
@@ -200,7 +201,7 @@ async def policy_server():
 
 
 @pytest.fixture
-async def jwks_server():
+async def jwks_server(jwk_kid):
     host = "localhost"
     port = 4080
 
@@ -216,7 +217,7 @@ async def jwks_server():
                     "kty": "RSA",
                     "e": "AQAB",
                     "use": "sig",
-                    "kid": "L7wdUtrDssMTb57A_TNAI79DQCdp0T2-KUrSUoDJBhk",
+                    "kid": jwk_kid,
                     "alg": "RS256",
                     "n": "qJr_9SH_SfC0IjZARqitzi-g_lfH7rwz8Acuy_PF7uou63rj47e8eVin0H3AKXHGne6emEJkN74kjNGJ4LPXhQ"
                 }]

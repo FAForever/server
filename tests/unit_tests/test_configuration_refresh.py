@@ -54,6 +54,17 @@ async def test_config_refresh_empty_file(monkeypatch):
 
 
 @fast_forward(20)
+async def test_configuration_refresh(config_service, monkeypatch):
+    assert config.DB_PASSWORD == "banana"
+    monkeypatch.setenv("CONFIGURATION_FILE", "tests/data/refresh_conf.yaml")
+    assert config.DB_PASSWORD == "banana"
+
+    await asyncio.sleep(3)
+
+    assert config.DB_PASSWORD == "apple"
+
+
+@fast_forward(20)
 async def test_config_callback_on_change(config_service, monkeypatch):
     callback = mock.Mock()
     callback_coroutine = CoroutineMock()
