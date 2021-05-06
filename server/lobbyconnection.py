@@ -166,7 +166,7 @@ class LobbyConnection:
             await handler(message)
 
         except AuthenticationError as ex:
-            metrics.user_logins.labels(f"failure {ex.method}").inc()
+            metrics.user_logins.labels("failure", ex.method).inc()
             await self.send({
                 "command": "authentication_failed",
                 "text": ex.message
@@ -581,7 +581,7 @@ class LobbyConnection:
         self._logger.debug(
             "Login from: %s, %s, %s", player_id, username, self.session
         )
-        metrics.user_logins.labels(f"success {method}").inc()
+        metrics.user_logins.labels("success", method).inc()
 
         async with self._db.acquire() as conn:
             await conn.execute(
