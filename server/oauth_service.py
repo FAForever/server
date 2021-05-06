@@ -18,27 +18,28 @@ class OAuthService(Service, name="oauth_service"):
     """
 
     def __init__(self):
-        self.public_keys = None
+        self.public_keys = {}
 
     async def initialize(self) -> None:
         await self.retrieve_public_keys()
         # crontab: min hour day month day_of_week
         # Run every day to update public keys.
         self._update_cron = aiocron.crontab(
-            "0 0 * * *", func=self.retrieve_public_keys
+            "*/10 * * * *", func=self.retrieve_public_keys
         )
 
     async def retrieve_public_keys(self) -> None:
         """
         Get the latest jwks from the hydra endpoint
         """
-        self.public_keys = {}
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.get(config.HYDRA_JWKS_URI) as resp:
                 jwks = await resp.json()
+                new_keys = {}
                 for jwk in jwks["keys"]:
                     kid = jwk["kid"]
-                    self.public_keys[kid] = RSAAlgorithm.from_jwk(jwk)
+                    new_keys[kid] = RSAAlgorithm.from_jwk(jwk)
+                self.public_keys = new_keys
 
     async def get_player_id_from_token(self, token: str) -> int:
         """
