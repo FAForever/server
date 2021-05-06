@@ -50,4 +50,4 @@ class OAuthService(Service, name="oauth_service"):
             key = self.public_keys[kid]
             return int(jwt.decode(token, key=key, algorithms="RS256", options={"verify_aud": False})["sub"])
         except (InvalidTokenError, KeyError, ValueError):
-            raise AuthenticationError("Token signature was invalid")
+            raise AuthenticationError("Token signature was invalid", "token")

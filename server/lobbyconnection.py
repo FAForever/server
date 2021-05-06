@@ -166,7 +166,7 @@ class LobbyConnection:
             await handler(message)
 
         except AuthenticationError as ex:
-            metrics.user_logins.labels("failure").inc()
+            metrics.user_logins.labels(f"failure {ex.method}").inc()
             await self.send({
                 "command": "authentication_failed",
                 "text": ex.message
@@ -386,10 +386,11 @@ class LobbyConnection:
             .order_by(lobby_ban.c.expires_at.desc())
         )
 
+        auth_method = "password"
         auth_error_message = "Login not found or password incorrect. They are case sensitive."
         row = await result.fetchone()
         if not row:
-            raise AuthenticationError(auth_error_message)
+            raise AuthenticationError(auth_error_message, auth_method)
 
         player_id = row[t_login.c.id]
         real_username = row[t_login.c.login]
@@ -400,7 +401,7 @@ class LobbyConnection:
         ban_expiry = row[lobby_ban.c.expires_at]
 
         if dbPassword != password:
-            raise AuthenticationError(auth_error_message)
+            raise AuthenticationError(auth_error_message, auth_method)
 
         now = datetime.utcnow()
         if ban_reason is not None and now < ban_expiry:
@@ -519,6 +520,7 @@ class LobbyConnection:
         token = message["token"]
         unique_id = message["unique_id"]
         player_id = await self.oauth_service.get_player_id_from_token(token)
+        auth_method = "token"
 
         async with self._db.acquire() as conn:
             result = await conn.execute(
@@ -528,7 +530,7 @@ class LobbyConnection:
             row = await result.fetchone()
 
             if not row:
-                raise AuthenticationError("User id not in database")
+                raise AuthenticationError("User id not in database", auth_method)
 
             username = row.login
             steamid = row.steamid
@@ -540,7 +542,7 @@ class LobbyConnection:
         })
 
         await self.on_player_login(
-            player_id, username, new_irc_password, steamid, unique_id
+            player_id, username, new_irc_password, steamid, unique_id, auth_method
         )
 
     async def command_hello(self, message):
@@ -554,7 +556,7 @@ class LobbyConnection:
             )
 
         await self.on_player_login(
-            player_id, username, password, steamid, unique_id
+            player_id, username, password, steamid, unique_id, "password"
         )
 
     async def on_player_login(
@@ -563,7 +565,8 @@ class LobbyConnection:
         username: str,
         password: str,
         steamid: int,
-        unique_id: str
+        unique_id: str,
+        method: str
     ):
         conforms_policy = await self.check_policy_conformity(
             player_id, unique_id, self.session,
@@ -578,7 +581,7 @@ class LobbyConnection:
         self._logger.debug(
             "Login from: %s, %s, %s", player_id, username, self.session
         )
-        metrics.user_logins.labels("success").inc()
+        metrics.user_logins.labels(f"success {method}").inc()
 
         async with self._db.acquire() as conn:
             await conn.execute(
