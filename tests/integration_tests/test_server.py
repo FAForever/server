@@ -359,12 +359,10 @@ async def test_player_info_broadcast(lobby_server):
 @fast_forward(5)
 async def test_player_info_broadcast_to_rabbitmq(lobby_server, channel):
     mq_proto = await connect_mq_consumer(
-        lobby_server,
         channel,
         "broadcast.playerInfo.update"
     )
     mq_proto_all = await connect_mq_consumer(
-        lobby_server,
         channel,
         "broadcast.*.update"
     )
@@ -599,7 +597,6 @@ async def test_game_info_broadcast_to_players_in_lobby(lobby_server):
 @fast_forward(10)
 async def test_info_broadcast_to_rabbitmq(lobby_server, channel):
     mq_proto_all = await connect_mq_consumer(
-        lobby_server,
         channel,
         "broadcast.*.update"
     )
