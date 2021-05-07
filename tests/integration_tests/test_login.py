@@ -311,7 +311,7 @@ async def test_server_login_bad_id_in_token(lobby_server, jwk_priv_key, jwk_kid)
     msg = await proto.read_message()
     assert msg == {
         "command": "authentication_failed",
-        "text": "User id not in database"
+        "text": "Cannot find user id"
     }
 
 

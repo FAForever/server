@@ -530,7 +530,7 @@ class LobbyConnection:
             row = await result.fetchone()
 
             if not row:
-                self._logger.error("User id from token not found in database possible fraudulent token")
+                self._logger.warning("User id not found in database possible fraudulent token: %s", player_id)
                 raise AuthenticationError("Cannot find user id", auth_method)
 
             username = row.login
