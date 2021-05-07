@@ -9,6 +9,7 @@ import statistics
 from collections import defaultdict
 from typing import Awaitable, Callable, Optional
 
+import aio_pika
 import aiocron
 import humanize
 from sqlalchemy import and_, func, select, text, true
@@ -32,8 +33,9 @@ from server.db.models import (
 )
 from server.decorators import with_logger
 from server.exceptions import DisabledError
+from server.factions import Faction
 from server.game_service import GameService
-from server.games import InitMode, LadderGame
+from server.games import Game, InitMode, LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service.game_name import game_name
 from server.ladder_service.violation_service import ViolationService
@@ -43,9 +45,13 @@ from server.matchmaker import (
     OnMatchedCallback,
     Search
 )
+from server.message_queue_service import MessageQueueService
 from server.metrics import MatchLaunch
+from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
+
+from .types import MQMatchmakingRequest, MQMatchmakingRequestParticipant
 
 
 @with_logger
@@ -59,20 +65,38 @@ class LadderService(Service):
         self,
         database: FAFDatabase,
         game_service: GameService,
+        message_queue_service: MessageQueueService,
+        player_service: PlayerService,
         violation_service: ViolationService,
     ):
         self._db = database
-        self._informed_players: set[Player] = set()
         self.game_service = game_service
-        self.queues = {}
+        self.message_queue_service = message_queue_service
+        self.player_service = player_service
         self.violation_service = violation_service
+        self.queues = {}
 
+        self._initialized = False
+        self._informed_players: set[Player] = set()
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
         self._allow_new_searches = True
 
     async def initialize(self) -> None:
+        if self._initialized:
+            return
+
         await self.update_data()
+        await self.message_queue_service.declare_exchange(
+            config.MQ_EXCHANGE_NAME
+        )
+        await self.message_queue_service.consume(
+            config.MQ_EXCHANGE_NAME,
+            "request.match.create",
+            self.handle_mq_matchmaking_request
+        )
+
         self._update_cron = aiocron.crontab("*/10 * * * *", func=self.update_data)
+        self._initialized = True
 
     async def update_data(self) -> None:
         async with self._db.acquire() as conn:
@@ -439,6 +463,224 @@ class LadderService(Service):
                     )
                 })
 
+    async def handle_mq_matchmaking_request(
+        self,
+        message: aio_pika.IncomingMessage
+    ):
+        try:
+            game = await self._handle_mq_matchmaking_request(message)
+        except Exception as e:
+            if isinstance(e, NotConnectedError):
+                msg = {
+                    "error_code": "launch_failed",
+                    "args": [
+                        {"player_id": player.id}
+                        for player in e.players
+                    ],
+                }
+            elif isinstance(e, InvalidRequestError):
+                msg = {
+                    "error_code": e.code,
+                    "args": e.args,
+                }
+            else:
+                self._logger.exception(
+                    "Unexpected error while handling MQ matchmaking request",
+                )
+                msg = {
+                    "error_code": "unknown",
+                    "args": e.args,
+                }
+
+            await self.message_queue_service.publish(
+                config.MQ_EXCHANGE_NAME,
+                "error.match.create",
+                msg,
+                correlation_id=message.correlation_id
+            )
+        else:
+            await self.message_queue_service.publish(
+                config.MQ_EXCHANGE_NAME,
+                "success.match.create",
+                {"game_id": game.id},
+                correlation_id=message.correlation_id
+            )
+
+    async def _handle_mq_matchmaking_request(
+        self,
+        message: aio_pika.IncomingMessage,
+    ):
+        self._logger.debug(
+            "Got matchmaking request: %s",
+            message.correlation_id,
+        )
+        request = await self._parse_mq_matchmaking_request_message(message)
+        return await self._launch_mq_matchmaking_request(request)
+
+    async def _parse_mq_matchmaking_request_message(
+        self,
+        message: aio_pika.IncomingMessage,
+    ) -> MQMatchmakingRequest:
+        try:
+            request = json.loads(message.body)
+        except json.JSONDecodeError as e:
+            raise InvalidRequestError(
+                "invalid_request",
+                {"message": str(e)},
+            )
+
+        try:
+            # TODO: Use id instead of name?
+            queue_name = request.get("matchmaker_queue")
+            map_name = request["map_name"]
+            game_name = request["game_name"]
+            participants = request["participants"]
+            featured_mod = request.get("featured_mod")
+            game_options = request.get("game_options")
+
+            if not featured_mod and not queue_name:
+                raise KeyError("featured_mod")
+        except KeyError as e:
+            raise InvalidRequestError(
+                "invalid_request",
+                {"message": f"missing '{e.args[0]}'"},
+            )
+
+        queue = self.queues.get(queue_name)
+
+        if queue_name:
+            if queue is None:
+                raise InvalidRequestError(
+                    "invalid_request",
+                    {"message": f"invalid queue '{queue_name}'"},
+                )
+            if featured_mod is None:
+                featured_mod = queue.featured_mod
+
+        if not participants:
+            raise InvalidRequestError(
+                "invalid_request",
+                {"message": "empty participants"},
+            )
+
+        player_ids = [participant["player_id"] for participant in participants]
+        missing_players = [
+            id
+            for id in player_ids
+            if self.player_service[id] is None
+        ]
+        if missing_players:
+            raise InvalidRequestError(
+                "players_not_found",
+                *[{"player_id": id} for id in missing_players]
+            )
+
+        all_players = [
+            player
+            for player_id in player_ids
+            if (player := self.player_service[player_id]) is not None
+        ]
+        non_idle_players = [
+            player for player in all_players
+            if player.state != PlayerState.IDLE
+        ]
+        if non_idle_players:
+            raise InvalidRequestError(
+                "invalid_state",
+                *[
+                    {"player_id": player.id, "state": player.state.name}
+                    for player in all_players
+                ]
+            )
+
+        try:
+            # Avoiding list comprehension so that `i` is available in the
+            # exception handler
+            mq_participants = []
+            for i, (participant, player) in enumerate(
+                zip(participants, all_players),
+            ):
+                mq_participants.append(
+                    MQMatchmakingRequestParticipant(
+                        player=player,
+                        faction=Faction.from_value(participant["faction"]),
+                        team=participant["team"],
+                        slot=participant["slot"],
+                    )
+                )
+        except KeyError as e:
+            raise InvalidRequestError(
+                "invalid_request",
+                {"message": f"missing 'participants.[{i}].{e.args[0]}'"},
+            )
+
+        return MQMatchmakingRequest(
+            game_name=game_name,
+            map=await self.game_service.get_map(map_name),
+            featured_mod=featured_mod,
+            participants=mq_participants,
+            game_options=game_options,
+            queue=queue,
+        )
+
+    async def _launch_mq_matchmaking_request(
+        self,
+        request: MQMatchmakingRequest,
+    ) -> Game:
+        all_players = [participant.player for participant in request.participants]
+        host = all_players[0]
+        guests = all_players[1:]
+
+        for player in all_players:
+            player.state = PlayerState.STARTING_AUTOMATCH
+
+        game = None
+        try:
+            game = self.game_service.create_game(
+                game_class=LadderGame,
+                game_mode=request.featured_mod,
+                host=host,
+                name="Matchmaker Game",
+                map=request.map,
+                matchmaker_queue_id=request.queue.id if request.queue else None,
+                rating_type=request.queue.rating_type if request.queue else None,
+                max_players=len(request.participants)
+            )
+            game.init_mode = InitMode.AUTO_LOBBY
+            game.set_name_unchecked(request.game_name)
+
+            for participant in request.participants:
+                player_id = participant.player.id
+
+                game.set_player_option(player_id, "Faction", participant.faction.value)
+                game.set_player_option(player_id, "Team", participant.team)
+                game.set_player_option(player_id, "StartSpot", participant.slot)
+                game.set_player_option(player_id, "Army", participant.slot)
+                game.set_player_option(player_id, "Color", participant.slot)
+
+            def make_game_options(player: Player) -> GameLaunchOptions:
+                return GameLaunchOptions(
+                    mapname=request.map.folder_name,
+                    expected_players=len(request.participants),
+                    game_options=request.game_options,
+                    team=game.get_player_option(player.id, "Team"),
+                    faction=game.get_player_option(player.id, "Faction"),
+                    map_position=game.get_player_option(player.id, "StartSpot")
+                )
+
+            await self.launch_match(game, host, guests, make_game_options)
+
+            return game
+        except Exception:
+            if game:
+                await game.on_game_finish()
+
+            for player in all_players:
+                if player.state == PlayerState.STARTING_AUTOMATCH:
+                    player.state = PlayerState.IDLE
+
+            raise
+
     def on_match_found(
         self,
         s1: Search,
@@ -734,3 +976,9 @@ class LadderService(Service):
 class NotConnectedError(asyncio.TimeoutError):
     def __init__(self, players: list[Player]):
         self.players = players
+
+
+class InvalidRequestError(Exception):
+    def __init__(self, code: str, *args):
+        super().__init__(*args)
+        self.code = code

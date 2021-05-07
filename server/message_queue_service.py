@@ -4,7 +4,7 @@ Interfaces with RabbitMQ
 
 import asyncio
 import json
-from typing import Iterable
+from typing import Callable, Iterable, Optional
 
 import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
@@ -125,26 +125,29 @@ class MessageQueueService(Service):
     async def publish(
         self,
         exchange_name: str,
-        routing: str,
+        routing_key: str,
         payload: dict,
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        correlation_id: Optional[str] = None,
     ) -> None:
         await self.publish_many(
             exchange_name,
-            routing,
+            routing_key,
             [payload],
             mandatory=mandatory,
-            delivery_mode=delivery_mode
+            delivery_mode=delivery_mode,
+            correlation_id=correlation_id,
         )
 
     async def publish_many(
         self,
         exchange_name: str,
-        routing: str,
+        routing_key: str,
         payloads: Iterable[dict],
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        correlation_id: Optional[str] = None,
     ) -> None:
         if not self._is_ready:
             self._logger.warning(
@@ -152,19 +155,18 @@ class MessageQueueService(Service):
             )
             return
 
-        exchange = self._exchanges.get(exchange_name)
-        if exchange is None:
-            raise KeyError(f"Unknown exchange {exchange_name}.")
+        exchange = self._get_exchange(exchange_name)
 
         async with self._channel.transaction():
             for payload in payloads:
                 message = aio_pika.Message(
                     json.dumps(payload).encode(),
-                    delivery_mode=delivery_mode
+                    delivery_mode=delivery_mode,
+                    correlation_id=correlation_id,
                 )
                 await exchange.publish(
                     message,
-                    routing_key=routing,
+                    routing_key=routing_key,
                     mandatory=mandatory
                 )
                 self._logger.log(
@@ -172,8 +174,38 @@ class MessageQueueService(Service):
                     "Published message %s to %s/%s",
                     payload,
                     exchange_name,
-                    routing
+                    routing_key
                 )
+
+    async def consume(
+        self,
+        exchange_name: str,
+        routing_key: str,
+        process_message: Callable[[aio_pika.IncomingMessage], None],
+    ) -> None:
+        await self.initialize()
+        if not self._is_ready:
+            self._logger.warning(
+                "Not connected to RabbitMQ, unable to declare queue."
+            )
+            return
+
+        exchange = self._get_exchange(exchange_name)
+        queue = await self._channel.declare_queue(
+            None,
+            auto_delete=True,
+            durable=False
+        )
+
+        await queue.bind(exchange, routing_key)
+        await queue.consume(process_message, exclusive=True)
+
+    def _get_exchange(self, exchange_name: str) -> aio_pika.Exchange:
+        exchange = self._exchanges.get(exchange_name)
+        if exchange is None:
+            raise KeyError(f"Unknown exchange {exchange_name}.")
+
+        return exchange
 
     @synchronizedmethod("initialization_lock")
     async def reconnect(self) -> None:
