@@ -229,6 +229,7 @@ INSERT INTO `coop_map` (`type`, `name`, `description`, `version`, `filename`) VA
 insert into game_featuredMods (id, gamemod, name, description, publish, git_url, git_branch, file_extension, allow_override) values
   (1, 'faf', 'FAF', 'Forged Alliance Forever', 1, 'https://github.com/FAForever/fa.git', 'deploy/faf', 'nx2', FALSE),
   (6, 'ladder1v1', 'FAF', 'Ladder games', 1, 'https://github.com/FAForever/fa.git', 'deploy/faf', 'nx2', TRUE),
+  (24, 'gw', '', 'Galactic War', 1, NULL, NULL, NULL, NULL),
   (25, 'coop', 'Coop', 'Multiplayer campaign games', 1, 'https://github.com/FAForever/fa-coop.git', 'master', 'cop', TRUE);
 
 insert into game_stats (id, startTime, gameName, gameType, gameMod, host, mapId, validity) values

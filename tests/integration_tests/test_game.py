@@ -555,10 +555,9 @@ async def test_game_ended_broadcasts_army_results(lobby_server, channel):
         ("Rhiza", "puff_the_magic_dragon"), lobby_server
     )
     await read_until_command(guest_proto, "game_info")
-    ratings = await get_player_ratings(host_proto, "test", "Rhiza")
 
     # Set up the game
-    game_id = await host_game(host_proto)
+    game_id = await host_game(host_proto, mod="gw")
     await join_game(guest_proto, game_id)
     # Set player options
     await send_player_options(
@@ -612,13 +611,6 @@ async def test_game_ended_broadcasts_army_results(lobby_server, channel):
             "command": "GameEnded",
             "args": []
         })
-
-    # Check that the ratings were updated
-    new_ratings = await get_player_ratings(host_proto, "test", "Rhiza")
-
-    assert ratings["test"][0] < new_ratings["test"][0]
-    assert ratings["Rhiza"][0] > new_ratings["Rhiza"][0]
-
     # Now disconnect both players
     for proto in (host_proto, guest_proto):
         await proto.send_message({
@@ -627,19 +619,30 @@ async def test_game_ended_broadcasts_army_results(lobby_server, channel):
             "args": ["Ended"]
         })
 
-    expected_army_results = [
-        [1, 1, "VICTORY", []],
-        [3, 2, "DEFEAT", ["recall"]]
-    ]
-    messages = []
+    message = await asyncio.wait_for(mq_proto_all.read_message(), timeout=5)
 
-    await read_until(
-        mq_proto_all, lambda message: "teams" in message and not messages.append(message)
-    )
+    assert message == {
+        "game_id": 41956,
+        "rating_type": "global",
+        "map_id": 7,
+        "featured_mod": "gw",
+        "sim_mod_ids": [],
+        "commander_kills": {},
+        "validity": "VALID",
+        "teams": [
+            {
+                "outcome": "VICTORY",
+                "player_ids": [1],
+                "army_results": [[1, 1, "VICTORY", []]]
+            },
+            {
+                "outcome": "DEFEAT",
+                "player_ids": [3],
+                "army_results": [[3, 2, "DEFEAT", ["recall"]]]
+            }
+        ]
+    }
 
-    broadcast_army_results = []
-    for message in messages:
-        for team in message["teams"]:
-            broadcast_army_results.append(*team["army_results"])
-
-    assert broadcast_army_results == expected_army_results
+    with pytest.raises(asyncio.TimeoutError):
+        # We expect only one message to be broadcast
+        await asyncio.wait_for(mq_proto_all.read_message(), timeout=5)
