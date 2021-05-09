@@ -560,7 +560,10 @@ class LobbyConnection:
 
         old_player = self.player_service.get_player(self.player.id)
         if old_player:
-            self._logger.debug("player {} already signed in: {}".format(self.player.id, old_player))
+            self._logger.debug(
+                "player %s already signed in: %s",
+                self.player.id, old_player
+            )
             if old_player.lobby_connection is not None:
                 with contextlib.suppress(DisconnectedError):
                     old_player.lobby_connection.write_warning(

@@ -82,7 +82,7 @@ async def queue_player_for_matchmaking(user, lobby_server, queue_name):
         "search_info",
         state="start",
         queue_name=queue_name,
-        timeout=5
+        timeout=10
     )
 
     return proto
