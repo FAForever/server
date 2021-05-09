@@ -13,7 +13,7 @@ from .conftest import (
     connect_and_sign_in,
     connect_mq_consumer,
     read_until,
-    read_until_command,
+    read_until_command
 )
 
 # All test coroutines will be treated as marked.
