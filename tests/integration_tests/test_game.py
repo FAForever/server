@@ -9,7 +9,12 @@ from server.games.game_results import GameOutcome
 from server.protocol import Protocol
 from tests.utils import fast_forward
 
-from .conftest import connect_and_sign_in, read_until, read_until_command
+from .conftest import (
+    connect_and_sign_in,
+    connect_mq_consumer,
+    read_until,
+    read_until_command,
+)
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -532,3 +537,109 @@ async def test_gamestate_ended_clears_references(
 
     assert test.lobby_connection.game_connection is None
     assert rhiza.lobby_connection.game_connection is None
+
+
+@pytest.mark.rabbitmq
+@fast_forward(30)
+async def test_game_ended_broadcasts_army_results(lobby_server, channel):
+    mq_proto_all = await connect_mq_consumer(
+        lobby_server,
+        channel,
+        "success.gameResults.create"
+    )
+
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(guest_proto, "game_info")
+    ratings = await get_player_ratings(host_proto, "test", "Rhiza")
+
+    # Set up the game
+    game_id = await host_game(host_proto)
+    await join_game(guest_proto, game_id)
+    # Set player options
+    await send_player_options(
+        host_proto,
+        [host_id, "Army", 1],
+        [host_id, "Team", 1],
+        [host_id, "StartSpot", 0],
+        [host_id, "Faction", 1],
+        [host_id, "Color", 1],
+        [guest_id, "Army", 2],
+        [guest_id, "Team", 1],
+        [guest_id, "StartSpot", 1],
+        [guest_id, "Faction", 1],
+        [guest_id, "Color", 2],
+    )
+
+    # Launch game
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Launching"]
+    })
+
+    await read_until(
+        host_proto,
+        lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
+    )
+    await host_proto.send_message({
+        "target": "game",
+        "command": "EnforceRating",
+        "args": []
+    })
+
+    # End the game
+    # Reports results
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [1, "victory 10"]
+        })
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [2, "recall defeat -5"]
+        })
+    # Report GameEnded
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameEnded",
+            "args": []
+        })
+
+    # Check that the ratings were updated
+    new_ratings = await get_player_ratings(host_proto, "test", "Rhiza")
+
+    assert ratings["test"][0] < new_ratings["test"][0]
+    assert ratings["Rhiza"][0] > new_ratings["Rhiza"][0]
+
+    # Now disconnect both players
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Ended"]
+        })
+
+    expected_army_results = [
+        [1, 1, "VICTORY", []],
+        [3, 2, "DEFEAT", ["recall"]]
+    ]
+    messages = []
+
+    await read_until(
+        mq_proto_all, lambda message: "teams" in message and not messages.append(message)
+    )
+
+    broadcast_army_results = []
+    for message in messages:
+        for team in message["teams"]:
+            broadcast_army_results.append(*team["army_results"])
+
+    assert broadcast_army_results == expected_army_results

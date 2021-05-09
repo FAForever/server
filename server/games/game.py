@@ -478,19 +478,20 @@ class Game():
         ]
 
         team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
-        team_player_partial_outcomes = [
-            {self.get_player_outcome(player) for player in team}
-            for team in basic_info.teams
-        ]
 
-        try:
-            # TODO: Remove override once game result messages are reliable
-            team_outcomes = (
-                self._outcome_override_hook()
-                or resolve_game(team_player_partial_outcomes)
-            )
-        except GameResolutionError:
-            if self.validity == ValidityState.VALID:
+        if self.validity == ValidityState.VALID:
+            team_player_partial_outcomes = [
+                {self.get_player_outcome(player) for player in team}
+                for team in basic_info.teams
+            ]
+
+            try:
+                # TODO: Remove override once game result messages are reliable
+                team_outcomes = (
+                    self._outcome_override_hook()
+                    or resolve_game(team_player_partial_outcomes)
+                )
+            except GameResolutionError:
                 await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
 
         try:
