@@ -479,7 +479,7 @@ class Game():
 
         team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
 
-        if self.validity == ValidityState.VALID:
+        if self.validity is ValidityState.VALID:
             team_player_partial_outcomes = [
                 {self.get_player_outcome(player) for player in team}
                 for team in basic_info.teams
