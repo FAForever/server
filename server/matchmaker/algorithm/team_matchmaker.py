@@ -72,6 +72,11 @@ class TeamMatchMaker(Matchmaker):
         return self._pick_best_noncolliding_games(list(possible_games))
 
     def _pick_neighboring_players(self, searches: List[Search], index: int) -> List[Search]:
+        """
+        Picks searches from the list starting with the search at the given index and then expanding in both directions
+        until there are enough players for a full game.
+        Raises NotEnoughPlayersException if it can't find enough suitable searches to fill a game.
+        """
         participants = []
         i = 0
         number_of_players = 0
@@ -126,6 +131,7 @@ class TeamMatchMaker(Matchmaker):
 
     def run_karmarkar_karp_algorithm(self, searches):
         self._logger.debug("Running Karmarkar-Karp to partition the teams")
+        # Further reading: https://en.wikipedia.org/wiki/Largest_differencing_method
         containers = []
         for s in searches:
             # Karmarkar-Karp works only for positive integers. By adding 5000 to the rating of each player
@@ -147,6 +153,10 @@ class TeamMatchMaker(Matchmaker):
                 break
         self._logger.debug("Rating disparity: %s", elem1.rating)
 
+        # We now need to open all containers again to get to the searches. A container can hold a single
+        # search or two other containers, so we differentiate the two cases by the length of the content array.
+        # Because each container represent the difference of the two containing elements they have to go in
+        # different teams (The higher one into the team the container is in).
         team_a = []
         team_b = []
         containers_a = []
@@ -189,6 +199,8 @@ class TeamMatchMaker(Matchmaker):
         us closest to the rating average i.e. balanced teams
         If there is no single player search we have hit a search combination that is impossible to
         separate into two teams e.g. (3, 3, 2) for 4v4
+
+        Note: This function modifies the searches_dict!
         """
         team_avg = search.average_rating
         if not searches_dict[1]:
