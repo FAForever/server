@@ -14,6 +14,10 @@ class Container:
         self.content = content
 
 
+class UnevenTeamsException(Exception):
+    pass
+
+
 @with_logger
 class TeamMatchMaker(Matchmaker):
     """
@@ -56,7 +60,7 @@ class TeamMatchMaker(Matchmaker):
                 match = self.make_teams(list(participants))
                 game = self.calculate_game_quality(match)
                 possible_games.add(game)
-            except AssertionError:
+            except UnevenTeamsException:
                 self._logger.warning("failed to assign even teams. Skipping this game...")
         self._logger.debug("got %i games", len(possible_games))
         for game in possible_games:
@@ -114,8 +118,10 @@ class TeamMatchMaker(Matchmaker):
                            team_a, combined_team_a.cumulated_rating, combined_team_a.average_rating)
         self._logger.debug("team b: %s cumulated rating: %s average rating: %s",
                            team_b, combined_team_b.cumulated_rating, combined_team_b.average_rating)
-        assert len(combined_team_a.players) == self.team_size
-        assert len(combined_team_b.players) == self.team_size
+        if not len(combined_team_a.players) == self.team_size:
+            raise UnevenTeamsException
+        if not len(combined_team_b.players) == self.team_size:
+            raise UnevenTeamsException
         return combined_team_a, combined_team_b
 
     def run_karmarkar_karp_algorithm(self, searches):
@@ -187,7 +193,7 @@ class TeamMatchMaker(Matchmaker):
         team_avg = search.average_rating
         if not searches_dict[1]:
             self._logger.warning("given searches are impossible to split in even teams because of party sizes")
-            raise AssertionError
+            raise UnevenTeamsException
         searches_dict[1].sort(key=lambda s: s.cumulated_rating, reverse=True)
         reverse = False
         if avg - team_avg < 0:

@@ -4,7 +4,7 @@ import pytest
 
 from server import config
 from server.matchmaker import CombinedSearch, Search
-from server.matchmaker.algorithm.team_matchmaker import TeamMatchMaker
+from server.matchmaker.algorithm.team_matchmaker import TeamMatchMaker, UnevenTeamsException
 
 
 @pytest.fixture(scope="module")
@@ -200,7 +200,7 @@ def test_handle_impossible_team_splits(player_factory):
     s.append(c2)
     s.append(c3)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(UnevenTeamsException):
         TeamMatchMaker(4).make_teams(s)
 
 
