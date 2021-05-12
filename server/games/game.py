@@ -476,8 +476,6 @@ class Game():
             [self.get_army_results(player) for player in team]
             for team in basic_info.teams
         ]
-        print(basic_info)
-        print(team_army_results)
 
         team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
 
