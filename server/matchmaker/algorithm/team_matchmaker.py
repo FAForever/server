@@ -1,10 +1,10 @@
-import statistics as stats
+import statistics
 from collections import defaultdict
 from typing import Dict, Iterable, List, Tuple
 
 from ...config import config
 from ...decorators import with_logger
-from ..search import CombinedSearch, Game, Match, Search
+from ..search import CombinedSearch, Game, Match, Search, get_average_rating
 from .matchmaker import Matchmaker
 
 
@@ -111,8 +111,15 @@ class TeamMatchMaker(Matchmaker):
         return participants
 
     def make_teams(self, searches: List[Search]) -> Tuple[Search, Search]:
-        avg = CombinedSearch(*searches).average_rating
-        team_target_strength = CombinedSearch(*searches).cumulated_rating / 2
+        """
+        Attempts to partition the given searches into two teams of the appropriate team size
+        while also trying that both teams have the same cumulated rating.
+        Raises UnevenTeamsException if one of the teams doesn't have the right size.
+        :param: The searches to partition. The function will alter this list!
+        :return: The two teams
+        """
+        avg = get_average_rating(searches)
+        team_target_strength = sum(search.cumulated_rating for search in searches) / 2
         searches_dict = self._searches_by_size(searches)
         team_a = []
         team_b = []
@@ -120,17 +127,14 @@ class TeamMatchMaker(Matchmaker):
         if searches_dict[self.team_size]:
             search = searches_dict[self.team_size].pop()
             team_a.append(search)
-            searches.remove(search)
         elif searches_dict[self.team_size - 1]:
             search = searches_dict[self.team_size - 1].pop()
             filler = self._find_most_balanced_filler(avg, search, searches_dict)
             team_a.append(search)
             team_a.append(filler)
-            searches.remove(search)
-            searches.remove(filler)
         else:
             team_a, searches = self.run_karmarkar_karp_algorithm(searches)
-        team_b.extend(searches)
+        team_b.extend(search for search in searches if search not in team_a)
 
         combined_team_a = CombinedSearch(*team_a)
         combined_team_b = CombinedSearch(*team_b)
@@ -148,11 +152,9 @@ class TeamMatchMaker(Matchmaker):
     def run_karmarkar_karp_algorithm(self, searches):
         self._logger.debug("Running Karmarkar-Karp to partition the teams")
         # Further reading: https://en.wikipedia.org/wiki/Largest_differencing_method
-        containers = []
-        for s in searches:
-            # Karmarkar-Karp works only for positive integers. By adding 5000 to the rating of each player
-            # we also strongly incentivise the algorithm to give both teams the same number of players
-            containers.append(Container(5000 * len(s.players) + s.cumulated_rating, [s]))
+        # Karmarkar-Karp works only for positive integers. By adding 5000 to the rating of each player
+        # we also strongly incentivise the algorithm to give both teams the same number of players
+        containers = [Container(5000 * len(s.players) + s.cumulated_rating, [s]) for s in searches]
 
         containers.sort(key=lambda c: c.rating)
         elem1 = containers.pop()
@@ -179,7 +181,7 @@ class TeamMatchMaker(Matchmaker):
         containers_b = []
         containers_a.append(elem1.content[0])
         containers_b.append(elem1.content[1])
-        while len(containers_a) > 0 or len(containers_b) > 0:
+        while containers_a or containers_b:
             for e in containers_a:
                 if len(e.content) == 2:
                     containers_a.append(e.content[0])
@@ -260,7 +262,7 @@ class TeamMatchMaker(Matchmaker):
 
         rating_disparity = abs(match[0].cumulated_rating - match[1].cumulated_rating)
         fairness = max((config.MAXIMUM_RATING_IMBALANCE - rating_disparity) / config.MAXIMUM_RATING_IMBALANCE, 0)
-        deviation = stats.pstdev(ratings)
+        deviation = statistics.pstdev(ratings)
         uniformity = max((config.MAXIMUM_RATING_DEVIATION - deviation) / config.MAXIMUM_RATING_DEVIATION, 0)
 
         quality = fairness * uniformity + newbie_bonus + time_bonus

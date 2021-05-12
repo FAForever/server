@@ -30,6 +30,15 @@ class Game:
         self.quality = match_quality
 
 
+def get_average_rating(searches):
+    ratings = []
+    for s in searches:
+        for mean, dev in s.raw_ratings:
+            rating = mean - 3 * dev
+            ratings.append(rating)
+    return statistics.mean(ratings)
+
+
 @with_logger
 class Search:
     """
@@ -292,12 +301,7 @@ class CombinedSearch(Search):
 
     @property
     def average_rating(self):
-        ratings = []
-        for s in self.searches:
-            for mean, dev in s.raw_ratings:
-                rating = mean - 3 * dev
-                ratings.append(rating)
-        return statistics.mean(ratings)
+        return get_average_rating(self.searches)
 
     @property
     def raw_ratings(self):
