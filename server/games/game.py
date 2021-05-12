@@ -3,7 +3,7 @@ import json
 import logging
 import time
 from collections import defaultdict
-from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, FrozenSet, Iterable, List, Optional, OrderedDict, Set, Tuple
 
 import pymysql
 from sqlalchemy import and_, bindparam
@@ -841,7 +841,7 @@ class Game():
 
         return self._results.outcome(army)
 
-    def get_army_results(self, player: Player) -> ArmyResult:
+    def get_army_results(self, player: Player) -> OrderedDict:
         army = self.get_player_option(player.id, "Army")
         return ArmyResult(
             player.id,

@@ -1,7 +1,7 @@
 from enum import Enum, unique
-from typing import Any, Dict, List, NamedTuple, Optional, Set
+from typing import Any, Dict, List, NamedTuple, Optional, OrderedDict, Set
 
-from server.games.game_results import ArmyResult, GameOutcome
+from server.games.game_results import GameOutcome
 from server.players import Player
 
 
@@ -123,7 +123,7 @@ class BasicGameInfo(NamedTuple):
 class TeamRatingSummary(NamedTuple):
     outcome: GameOutcome
     player_ids: Set[int]
-    army_results: List[ArmyResult]
+    army_results: List[OrderedDict]
 
 
 class EndedGameInfo(NamedTuple):
@@ -155,7 +155,7 @@ class EndedGameInfo(NamedTuple):
         validity: ValidityState,
         team_outcomes: List[GameOutcome],
         commander_kills: Dict[str, int],
-        team_army_results: List[List[Dict]],
+        team_army_results: List[List[OrderedDict]],
     ) -> "EndedGameInfo":
         if len(basic_info.teams) != len(team_outcomes):
             raise ValueError(
