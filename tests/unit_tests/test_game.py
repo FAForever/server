@@ -19,7 +19,7 @@ from server.games import (
     Victory,
     VisibilityState
 )
-from server.games.game_results import ArmyOutcome, ArmyResult
+from server.games.game_results import ArmyOutcome
 from server.games.typedefs import FeaturedModType
 from server.rating import InclusiveRange, RatingType
 from tests.unit_tests.conftest import (
