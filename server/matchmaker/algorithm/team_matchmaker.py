@@ -225,29 +225,24 @@ class TeamMatchMaker(Matchmaker):
             self._logger.warning("given searches are impossible to split in even teams because of party sizes")
             raise UnevenTeamsException
         searches_dict[1].sort(key=lambda s: s.cumulated_rating, reverse=True)
-        reverse = False
+
         if avg - team_avg < 0:
-            pop = searches_dict[1].pop()
-            reverse = True
+            iterator = iter(searches_dict[1][::-1])
         else:
-            pop = searches_dict[1].pop(0)
-        old_pop = pop
-        avg_delta = -1
-        old_avg_delta = 0
-        while avg_delta < old_avg_delta and searches_dict[1]:
-            old_pop = pop
-            if reverse:
-                pop = searches_dict[1].pop()
-            else:
-                pop = searches_dict[1].pop(0)
-            old_team_avg = CombinedSearch(*[search, old_pop]).average_rating
-            old_avg_delta = abs(avg - old_team_avg)
-            self._logger.debug("old delta with %s is %s (avg is %s)", [old_pop], old_avg_delta, old_team_avg)
-            team_avg = CombinedSearch(*[search, pop]).average_rating
+            iterator = iter(searches_dict[1])
+        candidate = next(iterator)
+        for item in iterator:
+            team_avg = get_average_rating([search, candidate])
             avg_delta = abs(avg - team_avg)
-            self._logger.debug("delta with %s is %s (avg is %s)", [pop], avg_delta, team_avg)
-        self._logger.debug("used %s as filler", [old_pop])
-        return old_pop
+            new_team_avg = get_average_rating([search, item])
+            new_avg_delta = abs(avg - new_team_avg)
+            self._logger.debug("delta with %s is %s (avg is %s)", [candidate], avg_delta, team_avg)
+            self._logger.debug("new delta with %s is %s (avg is %s)", [item], new_avg_delta, new_team_avg)
+            if new_avg_delta > avg_delta:
+                break
+            candidate = item
+        self._logger.debug("used %s as filler", [candidate])
+        return candidate
 
     def calculate_game_quality(self, match: Match) -> Game:
         newbie_bonus = 0
