@@ -1,5 +1,6 @@
 import statistics
 from collections import defaultdict
+from sortedcontainers import SortedList
 from typing import Dict, Iterable, List, Tuple
 
 from ...config import config
@@ -55,7 +56,7 @@ class TeamMatchMaker(Matchmaker):
     def find(self, searches: Iterable[Search]) -> List[Match]:
         self._logger.debug("=== starting matching algorithm ===")
 
-        searches = sorted(searches, key=lambda s: s.average_rating)
+        searches = SortedList(searches, key=lambda s: s.average_rating)
         possible_games = set()
         for index, search in enumerate(searches):
 
@@ -154,16 +155,15 @@ class TeamMatchMaker(Matchmaker):
         # Further reading: https://en.wikipedia.org/wiki/Largest_differencing_method
         # Karmarkar-Karp works only for positive integers. By adding 5000 to the rating of each player
         # we also strongly incentivise the algorithm to give both teams the same number of players
-        containers = [Container(5000 * len(s.players) + s.cumulated_rating, [s]) for s in searches]
+        containers = SortedList([Container(5000 * len(s.players) + s.cumulated_rating, [s]) for s in searches],
+                                key=lambda c: c.rating)
 
-        containers.sort(key=lambda c: c.rating)
         elem1 = containers.pop()
         elem2 = containers.pop()
         while True:
             #  elem1 is always bigger than elem2
             container = Container(elem1.rating - elem2.rating, [elem1, elem2])
-            containers.append(container)
-            containers.sort(key=lambda c: c.rating)
+            containers.add(container)
             elem1 = containers.pop()
             try:
                 elem2 = containers.pop()
@@ -217,19 +217,17 @@ class TeamMatchMaker(Matchmaker):
         us closest to the rating average i.e. balanced teams
         If there is no single player search we have hit a search combination that is impossible to
         separate into two teams e.g. (3, 3, 2) for 4v4
-
-        Note: This function modifies the searches_dict!
         """
         team_avg = search.average_rating
         if not searches_dict[1]:
             self._logger.warning("given searches are impossible to split in even teams because of party sizes")
             raise UnevenTeamsException
-        searches_dict[1].sort(key=lambda s: s.cumulated_rating, reverse=True)
+        candidates = SortedList(searches_dict[1], key=lambda s: s.cumulated_rating)
 
         if avg - team_avg < 0:
-            iterator = iter(searches_dict[1][::-1])
+            iterator = iter(candidates)
         else:
-            iterator = iter(searches_dict[1])
+            iterator = iter(candidates[::-1])
         candidate = next(iterator)
         for item in iterator:
             team_avg = get_average_rating([search, candidate])
@@ -272,11 +270,11 @@ class TeamMatchMaker(Matchmaker):
                 games.remove(game)
         self._logger.debug("%i games left after removal of games with quality < %s",
                            len(games), config.MINIMUM_GAME_QUALITY)
-        games.sort(key=lambda gme: gme.quality, reverse=True)
+        games = SortedList(games, key=lambda gme: gme.quality)
 
         matches: List[Match] = []
         while len(games) > 0:
-            g = games.pop(0)
+            g = games.pop()
             matches.append(g.match)
             used_players = set()
             for search in g.match:
