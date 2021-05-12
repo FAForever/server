@@ -1,7 +1,8 @@
 import statistics
 from collections import defaultdict
-from sortedcontainers import SortedList
 from typing import Dict, Iterable, List, Tuple
+
+from sortedcontainers import SortedList
 
 from ...config import config
 from ...decorators import with_logger
