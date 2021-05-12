@@ -155,7 +155,7 @@ class EndedGameInfo(NamedTuple):
         validity: ValidityState,
         team_outcomes: List[GameOutcome],
         commander_kills: Dict[str, int],
-        team_army_results: List[List[ArmyResult]],
+        team_army_results: List[List[Dict]],
     ) -> "EndedGameInfo":
         if len(basic_info.teams) != len(team_outcomes):
             raise ValueError(

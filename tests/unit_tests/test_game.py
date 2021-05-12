@@ -955,12 +955,12 @@ async def test_game_results(game: Game, players):
         outcome, army = ("VICTORY", 0) if team["player_ids"] == [host_id] else ("DEFEAT", 1)
         assert team["outcome"] == outcome
         assert team["army_results"] == [
-            ArmyResult(
-                team["player_ids"][0],
-                army,
-                outcome,
-                [],
-            )
+            {
+                "player_id": team["player_ids"][0],
+                "army": army,
+                "army_result": outcome,
+                "metadata": [],
+            }
         ]
     assert result_dict["game_id"] == game.id
     assert result_dict["map_id"] == game.map_id
@@ -986,13 +986,33 @@ async def test_team_game_results(game: Game, game_add_players):
 
     assert result_dict["teams"][0]["outcome"] == "VICTORY"
     assert result_dict["teams"][0]["army_results"] == [
-        ArmyResult(1, 0, "VICTORY", []),
-        ArmyResult(2, 1, "DEFEAT", []),
+        {
+            "player_id": 1,
+            "army": 0,
+            "army_result": "VICTORY",
+            "metadata": [],
+        },
+        {
+            "player_id": 2,
+            "army": 1,
+            "army_result": "DEFEAT",
+            "metadata": [],
+        },
     ]
     assert result_dict["teams"][1]["outcome"] == "DEFEAT"
     assert result_dict["teams"][1]["army_results"] == [
-        ArmyResult(3, 2, "DEFEAT", []),
-        ArmyResult(4, 3, "DEFEAT", []),
+        {
+            "player_id": 3,
+            "army": 2,
+            "army_result": "DEFEAT",
+            "metadata": [],
+        },
+        {
+            "player_id": 4,
+            "army": 3,
+            "army_result": "DEFEAT",
+            "metadata": [],
+        },
     ]
 
 
@@ -1015,13 +1035,33 @@ async def test_army_results_present_for_invalid_games(game: Game, game_add_playe
 
     assert result_dict["teams"][0]["outcome"] == "UNKNOWN"
     assert result_dict["teams"][0]["army_results"] == [
-        ArmyResult(1, 0, "VICTORY", []),
-        ArmyResult(2, 1, "DEFEAT", []),
+        {
+            "player_id": 1,
+            "army": 0,
+            "army_result": "VICTORY",
+            "metadata": [],
+        },
+        {
+            "player_id": 2,
+            "army": 1,
+            "army_result": "DEFEAT",
+            "metadata": [],
+        },
     ]
     assert result_dict["teams"][1]["outcome"] == "UNKNOWN"
     assert result_dict["teams"][1]["army_results"] == [
-        ArmyResult(3, 2, "DEFEAT", []),
-        ArmyResult(4, 3, "DEFEAT", []),
+        {
+            "player_id": 3,
+            "army": 2,
+            "army_result": "DEFEAT",
+            "metadata": [],
+        },
+        {
+            "player_id": 4,
+            "army": 3,
+            "army_result": "DEFEAT",
+            "metadata": [],
+        },
     ]
 
 

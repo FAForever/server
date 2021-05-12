@@ -633,12 +633,26 @@ async def test_galactic_war_1v1_game_ended_broadcasts_army_results(lobby_server,
             {
                 "outcome": "DEFEAT",
                 "player_ids": [3],
-                "army_results": [[3, 2, "DEFEAT", ["recall"]]]
+                "army_results": [
+                    {
+                        "player_id": 3,
+                        "army": 2,
+                        "army_result": "DEFEAT",
+                        "metadata": ["recall"],
+                    },
+                ]
             },
             {
                 "outcome": "VICTORY",
                 "player_ids": [1],
-                "army_results": [[1, 1, "VICTORY", []]]
+                "army_results": [
+                    {
+                        "player_id": 1,
+                        "army": 1,
+                        "army_result": "VICTORY",
+                        "metadata": [],
+                    },
+                ]
             }
         ]
     }
@@ -677,12 +691,12 @@ async def test_galactic_war_2v1_game_ended_broadcasts_army_results(lobby_server,
     await send_player_options(
         host_proto,
         [host_id, "Army", 1],
-        [host_id, "Team", 1],
+        [host_id, "Team", 0],
         [host_id, "StartSpot", 0],
         [host_id, "Faction", 1],
         [host_id, "Color", 1],
         [guest_id, "Army", 2],
-        [guest_id, "Team", 1],
+        [guest_id, "Team", 0],
         [guest_id, "StartSpot", 1],
         [guest_id, "Faction", 1],
         [guest_id, "Color", 2],
@@ -754,22 +768,37 @@ async def test_galactic_war_2v1_game_ended_broadcasts_army_results(lobby_server,
         "sim_mod_ids": [],
         "teams": [
             {
-                "army_results": [[6, 3, "DEFEAT", ["recall"]]],
+                "army_results": [
+                    {
+                        "player_id": 1,
+                        "army": 1,
+                        "army_result": "VICTORY",
+                        "metadata": [],
+                    },
+                    {
+                        "player_id": 3,
+                        "army": 2,
+                        "army_result": "VICTORY",
+                        "metadata": ["recall"],
+                    },
+                ],
+                "outcome": "UNKNOWN",
+                "player_ids": [1, 3]
+            },
+            {
+                "army_results": [
+                    {
+                        "player_id": 6,
+                        "army": 3,
+                        "army_result": "DEFEAT",
+                        "metadata": ["recall"],
+                    },
+                ],
                 "outcome": "UNKNOWN",
                 "player_ids": [6]
             },
-            {
-                "army_results": [[1, 1, "VICTORY", []]],
-                "outcome": "UNKNOWN",
-                "player_ids": [1]
-            },
-            {
-                "army_results": [[3, 2, "VICTORY",  ["recall"]]],
-                "outcome": "UNKNOWN",
-                "player_ids": [3]
-            }
         ],
-        "validity": "FFA_NOT_RANKED",
+        "validity": "UNEVEN_TEAMS_NOT_RANKED",
     }
 
     with pytest.raises(asyncio.TimeoutError):

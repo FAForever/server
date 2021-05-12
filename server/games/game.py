@@ -476,6 +476,8 @@ class Game():
             [self.get_army_results(player) for player in team]
             for team in basic_info.teams
         ]
+        print(basic_info)
+        print(team_army_results)
 
         team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
 
@@ -848,7 +850,7 @@ class Game():
             army,
             self.get_player_outcome(player).name,
             self._results.metadata(army),
-        )
+        )._asdict()
 
     def report_army_stats(self, stats_json):
         self._army_stats_list = json.loads(stats_json)["stats"]
