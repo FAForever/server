@@ -18,6 +18,10 @@ class UnevenTeamsException(Exception):
     pass
 
 
+class NotEnoughPlayersException(Exception):
+    pass
+
+
 @with_logger
 class TeamMatchMaker(Matchmaker):
     """
@@ -49,19 +53,24 @@ class TeamMatchMaker(Matchmaker):
     """
 
     def find(self, searches: Iterable[Search]) -> List[Match]:
-        searches = list(searches)
-        searches.sort(key=lambda s: s.average_rating, reverse=True)
         self._logger.debug("=== starting matching algorithm ===")
+
+        searches = sorted(searches, key=lambda s: s.average_rating)
         possible_games = set()
         for index, search in enumerate(searches):
+
             self._logger.debug("building game for %s", repr(search))
-            participants = self._pick_neighboring_players(searches, index)
+
             try:
-                match = self.make_teams(list(participants))
+                participants = self._pick_neighboring_players(searches, index)
+                match = self.make_teams(participants)
                 game = self.calculate_game_quality(match)
                 possible_games.add(game)
+            except NotEnoughPlayersException:
+                self._logger.warning("Couldn't pick enough players for a full game. Skipping this game...")
             except UnevenTeamsException:
-                self._logger.warning("failed to assign even teams. Skipping this game...")
+                self._logger.warning("Failed to assign even teams. Skipping this game...")
+
         self._logger.debug("got %i games", len(possible_games))
         for game in possible_games:
             self._logger.debug("game: %s vs %s rating disparity: %i quality: %f",
@@ -69,6 +78,7 @@ class TeamMatchMaker(Matchmaker):
                                repr(game.match[1]),
                                game.match[0].cumulated_rating - game.match[1].cumulated_rating,
                                game.quality)
+
         return self._pick_best_noncolliding_games(list(possible_games))
 
     def _pick_neighboring_players(self, searches: List[Search], index: int) -> List[Search]:
@@ -80,18 +90,24 @@ class TeamMatchMaker(Matchmaker):
         participants = []
         i = 0
         number_of_players = 0
-        out_of_bounds_counter = 0
-        while number_of_players < self.team_size * 2 and out_of_bounds_counter < 2:
-            try:
-                candidate = searches[index]
-                out_of_bounds_counter = 0
-                if number_of_players + len(candidate.players) <= self.team_size * 2:
-                    participants.append(candidate)
-                    number_of_players += len(candidate.players)
-            except IndexError:
-                out_of_bounds_counter += 1
+        lower = searches[:index]
+        lower = iter(lower[::-1])
+        higher = iter(searches[index:])
+
+        failed_last_time = False
+        while number_of_players < self.team_size * 2:
+            candidate = next(lower if i % 2 else higher, None)
             i += 1
-            index += i * pow(-1, i)
+            if candidate is None:
+                if failed_last_time:
+                    raise NotEnoughPlayersException
+                else:
+                    failed_last_time = True
+                    continue
+            failed_last_time = False
+            if number_of_players + len(candidate.players) <= self.team_size * 2:
+                participants.append(candidate)
+                number_of_players += len(candidate.players)
         return participants
 
     def make_teams(self, searches: List[Search]) -> Tuple[Search, Search]:
