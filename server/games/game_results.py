@@ -45,7 +45,7 @@ class ArmyResult(NamedTuple):
     """
     player_id: int
     army: Optional[int]
-    army_result: str
+    army_outcome: str
     metadata: List[str]
 
 

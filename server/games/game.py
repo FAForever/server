@@ -10,7 +10,6 @@ from typing import (
     Iterable,
     List,
     Optional,
-    OrderedDict,
     Set,
     Tuple
 )
@@ -851,14 +850,14 @@ class Game():
 
         return self._results.outcome(army)
 
-    def get_army_results(self, player: Player) -> OrderedDict:
+    def get_army_results(self, player: Player) -> ArmyResult:
         army = self.get_player_option(player.id, "Army")
         return ArmyResult(
             player.id,
             army,
             self.get_player_outcome(player).name,
             self._results.metadata(army),
-        )._asdict()
+        )
 
     def report_army_stats(self, stats_json):
         self._army_stats_list = json.loads(stats_json)["stats"]

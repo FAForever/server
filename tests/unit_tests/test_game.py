@@ -958,7 +958,7 @@ async def test_game_results(game: Game, players):
             {
                 "player_id": team["player_ids"][0],
                 "army": army,
-                "army_result": outcome,
+                "army_outcome": outcome,
                 "metadata": [],
             }
         ]
@@ -989,13 +989,13 @@ async def test_team_game_results(game: Game, game_add_players):
         {
             "player_id": 1,
             "army": 0,
-            "army_result": "VICTORY",
+            "army_outcome": "VICTORY",
             "metadata": [],
         },
         {
             "player_id": 2,
             "army": 1,
-            "army_result": "DEFEAT",
+            "army_outcome": "DEFEAT",
             "metadata": [],
         },
     ]
@@ -1004,13 +1004,13 @@ async def test_team_game_results(game: Game, game_add_players):
         {
             "player_id": 3,
             "army": 2,
-            "army_result": "DEFEAT",
+            "army_outcome": "DEFEAT",
             "metadata": [],
         },
         {
             "player_id": 4,
             "army": 3,
-            "army_result": "DEFEAT",
+            "army_outcome": "DEFEAT",
             "metadata": [],
         },
     ]
@@ -1038,13 +1038,13 @@ async def test_army_results_present_for_invalid_games(game: Game, game_add_playe
         {
             "player_id": 1,
             "army": 0,
-            "army_result": "VICTORY",
+            "army_outcome": "VICTORY",
             "metadata": [],
         },
         {
             "player_id": 2,
             "army": 1,
-            "army_result": "DEFEAT",
+            "army_outcome": "DEFEAT",
             "metadata": [],
         },
     ]
@@ -1053,13 +1053,13 @@ async def test_army_results_present_for_invalid_games(game: Game, game_add_playe
         {
             "player_id": 3,
             "army": 2,
-            "army_result": "DEFEAT",
+            "army_outcome": "DEFEAT",
             "metadata": [],
         },
         {
             "player_id": 4,
             "army": 3,
-            "army_result": "DEFEAT",
+            "army_outcome": "DEFEAT",
             "metadata": [],
         },
     ]
