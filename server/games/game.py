@@ -3,16 +3,7 @@ import json
 import logging
 import time
 from collections import defaultdict
-from typing import (
-    Any,
-    Dict,
-    FrozenSet,
-    Iterable,
-    List,
-    Optional,
-    Set,
-    Tuple
-)
+from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
 
 import pymysql
 from sqlalchemy import and_, bindparam
