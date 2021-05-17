@@ -12,7 +12,7 @@ from typing import IO
 
 import aiocron
 import aiohttp
-import geoip2.database
+import maxminddb
 from maxminddb.errors import InvalidDatabaseError
 
 from .config import config
@@ -193,11 +193,16 @@ class GeoIpService(Service):
             # Set the time first, if the file is corrupted we don't need to try
             # loading it again anyways
             self.db_update_time = datetime.now()
-            self.db = geoip2.database.Reader(self.file_path)
+            new_db = maxminddb.open_database(self.file_path)
+
+            if self.db is not None:
+                self.db.close()
+
+            self.db = new_db
             self._logger.info(
                 "File loaded successfully from %s", self.file_path
             )
-        except (InvalidDatabaseError, FileNotFoundError, ValueError):
+        except (InvalidDatabaseError, OSError, ValueError):
             self._logger.exception(
                 "Failed to load maxmind db! Maybe the download was interrupted"
             )
@@ -210,13 +215,15 @@ class GeoIpService(Service):
         if self.db is None:
             return default_value
 
-        try:
-            return str(self.db.country(address).country.iso_code)
-        except geoip2.errors.AddressNotFoundError:
+        entry = self.db.get(address)
+        if entry is None:
             return default_value
-        except ValueError as e:    # pragma: no cover
-            self._logger.exception("ValueError: %s", e)
-            return default_value
+
+        return str(entry.get("country", {}).get("iso_code", default_value))
+
+    async def shutdown(self):
+        if self.db is not None:
+            self.db.close()
 
 
 def extract_file(tar: tarfile.TarFile, name: str) -> IO[bytes]:
@@ -229,9 +236,7 @@ def extract_file(tar: tarfile.TarFile, name: str) -> IO[bytes]:
     Raises `TarError` if the tar archive does not contain the databse file.
     """
     mmdb = next(
-        (m for m in tar.getmembers() if
-            m.name.endswith(name)
-            and m.isfile()),
+        (m for m in tar.getmembers() if m.name.endswith(name) and m.isfile()),
         None
     )
     if mmdb is None:
