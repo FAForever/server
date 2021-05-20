@@ -8,6 +8,7 @@ import os
 import shutil
 import tarfile
 from datetime import datetime
+from tempfile import TemporaryFile
 from typing import IO
 
 import aiocron
@@ -120,25 +121,31 @@ class GeoIpService(Service):
         self._logger.info("Downloading new geoip database")
 
         # Download new file to a temp location
-        temp_file_path = "/tmp/geoip.mmdb.tar.gz"
-        await self._download_file(
-            config.GEO_IP_DATABASE_URL,
-            config.GEO_IP_LICENSE_KEY,
-            temp_file_path
-        )
+        with TemporaryFile() as temp_file:
+            await self._download_file(
+                config.GEO_IP_DATABASE_URL,
+                config.GEO_IP_LICENSE_KEY,
+                temp_file
+            )
+            temp_file.seek(0)
 
-        # Unzip the archive and overwrite the old file
-        try:
-            with tarfile.open(temp_file_path, "r:gz") as tar:
-                f_in = extract_file(tar, "GeoLite2-Country.mmdb")
-                with open(self.file_path, "wb") as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-        except (tarfile.TarError) as e:    # pragma: no cover
-            self._logger.warning("Failed to extract downloaded file!")
-            raise e
+            # Unzip the archive and overwrite the old file
+            try:
+                with tarfile.open(fileobj=temp_file, mode="r:gz") as tar:
+                    with open(self.file_path, "wb") as f_out:
+                        f_in = extract_file(tar, "GeoLite2-Country.mmdb")
+                        shutil.copyfileobj(f_in, f_out)
+            except (tarfile.TarError) as e:    # pragma: no cover
+                self._logger.warning("Failed to extract downloaded file!")
+                raise e
         self._logger.info("New database download complete")
 
-    async def _download_file(self, url: str, license_key: str, file_path: str) -> None:
+    async def _download_file(
+        self,
+        url: str,
+        license_key: str,
+        fileobj: IO[bytes]
+    ) -> None:
         """
         Download a file using aiohttp and save it to a file.
 
@@ -164,13 +171,12 @@ class GeoIpService(Service):
         async def get_db_file_with_checksum(session):
             hasher = hashlib.md5()
             async with session.get(url, params=params, timeout=60 * 20) as resp:
-                with open(file_path, "wb") as f:
-                    while True:
-                        chunk = await resp.content.read(chunk_size)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-                        hasher.update(chunk)
+                while True:
+                    chunk = await resp.content.read(chunk_size)
+                    if not chunk:
+                        break
+                    fileobj.write(chunk)
+                    hasher.update(chunk)
 
             return hasher.hexdigest()
 
