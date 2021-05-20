@@ -189,22 +189,23 @@ class GeoIpService(Service):
         """
         Loads the database into memory.
         """
-        try:
-            # Set the time first, if the file is corrupted we don't need to try
-            # loading it again anyways
-            self.db_update_time = datetime.now()
-            new_db = maxminddb.open_database(self.file_path)
+        # Set the time first, if the file is corrupted we don't need to try
+        # loading it again anyways
+        self.db_update_time = datetime.now()
 
+        try:
+            new_db = maxminddb.open_database(self.file_path)
+        except (InvalidDatabaseError, OSError, ValueError):
+            self._logger.exception(
+                "Failed to load maxmind db! Maybe the download was interrupted"
+            )
+        else:
             if self.db is not None:
                 self.db.close()
 
             self.db = new_db
             self._logger.info(
                 "File loaded successfully from %s", self.file_path
-            )
-        except (InvalidDatabaseError, OSError, ValueError):
-            self._logger.exception(
-                "Failed to load maxmind db! Maybe the download was interrupted"
             )
 
     def country(self, address: str) -> str:
