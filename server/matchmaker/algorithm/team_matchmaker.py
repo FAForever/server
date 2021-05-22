@@ -58,7 +58,7 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug("=== starting matching algorithm ===")
 
         searches = SortedList(searches, key=lambda s: s.average_rating)
-        possible_games = set()
+        possible_games = []
         for index, search in enumerate(searches):
 
             self._logger.debug("building game for %s", repr(search))
@@ -67,7 +67,7 @@ class TeamMatchMaker(Matchmaker):
                 participants = self._pick_neighboring_players(searches, index)
                 match = self.make_teams(participants)
                 game = self.calculate_game_quality(match)
-                possible_games.add(game)
+                possible_games.append(game)
             except NotEnoughPlayersException:
                 self._logger.warning("Couldn't pick enough players for a full game. Skipping this game...")
             except UnevenTeamsException:
@@ -81,7 +81,7 @@ class TeamMatchMaker(Matchmaker):
                                game.match[0].cumulated_rating - game.match[1].cumulated_rating,
                                game.quality)
 
-        return self._pick_best_noncolliding_games(list(possible_games))
+        return self._pick_best_noncolliding_games(possible_games)
 
     def _pick_neighboring_players(self, searches: List[Search], index: int) -> List[Search]:
         """
@@ -89,24 +89,21 @@ class TeamMatchMaker(Matchmaker):
         until there are enough players for a full game.
         Raises NotEnoughPlayersException if it can't find enough suitable searches to fill a game.
         """
-        participants = []
-        i = 0
-        number_of_players = 0
         lower = searches[:index]
         lower = iter(lower[::-1])
         higher = iter(searches[index:])
+        i = 0
+        candidate = next(higher)
+        participants = [candidate]
+        number_of_players = len(candidate.players)
 
-        failed_last_time = False
         while number_of_players < self.team_size * 2:
-            candidate = next(lower if i % 2 else higher, None)
+            candidate, prev = next(lower if i % 2 else higher, None), candidate
             i += 1
             if candidate is None:
-                if failed_last_time:
+                if prev is None:
                     raise NotEnoughPlayersException
-                else:
-                    failed_last_time = True
-                    continue
-            failed_last_time = False
+                continue
             if number_of_players + len(candidate.players) <= self.team_size * 2:
                 participants.append(candidate)
                 number_of_players += len(candidate.players)
@@ -214,32 +211,27 @@ class TeamMatchMaker(Matchmaker):
     def _find_most_balanced_filler(self, avg, search, searches_dict):
         """
         If we simply fetch the highest/lowest rated single player search we may overshoot our
-        goal to get the most balanced teams, so we try them all until we find the one that brings
-        us closest to the rating average i.e. balanced teams
+        goal to get the most balanced teams, so we try them all to find the one that brings us
+        closest to the rating average i.e. balanced teams
         If there is no single player search we have hit a search combination that is impossible to
         separate into two teams e.g. (3, 3, 2) for 4v4
         """
-        team_avg = search.average_rating
         if not searches_dict[1]:
             self._logger.warning("given searches are impossible to split in even teams because of party sizes")
             raise UnevenTeamsException
-        candidates = SortedList(searches_dict[1], key=lambda s: s.cumulated_rating)
 
-        if avg - team_avg < 0:
-            iterator = iter(candidates)
-        else:
-            iterator = iter(candidates[::-1])
+        iterator = iter(searches_dict[1])
         candidate = next(iterator)
+        old_team_avg = get_average_rating([search, candidate])
+        old_avg_delta = abs(avg - old_team_avg)
+        self._logger.debug("delta with %s is %s (avg is %s)", [candidate], old_avg_delta, old_team_avg)
         for item in iterator:
-            team_avg = get_average_rating([search, candidate])
+            team_avg = get_average_rating([search, item])
             avg_delta = abs(avg - team_avg)
-            new_team_avg = get_average_rating([search, item])
-            new_avg_delta = abs(avg - new_team_avg)
-            self._logger.debug("delta with %s is %s (avg is %s)", [candidate], avg_delta, team_avg)
-            self._logger.debug("new delta with %s is %s (avg is %s)", [item], new_avg_delta, new_team_avg)
-            if new_avg_delta > avg_delta:
-                break
-            candidate = item
+            self._logger.debug("delta with %s is %s (avg is %s)", [item], avg_delta, team_avg)
+            if avg_delta < old_avg_delta:
+                candidate = item
+                old_avg_delta = avg_delta
         self._logger.debug("used %s as filler", [candidate])
         return candidate
 
