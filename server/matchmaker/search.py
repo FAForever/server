@@ -31,12 +31,7 @@ class Game:
 
 
 def get_average_rating(searches):
-    ratings = []
-    for s in searches:
-        for mean, dev in s.raw_ratings:
-            rating = mean - 3 * dev
-            ratings.append(rating)
-    return statistics.mean(ratings)
+    return statistics.mean(mean - 3 * dev for s in searches for mean, dev in s.raw_ratings)
 
 
 @with_logger
@@ -105,21 +100,11 @@ class Search:
 
     @property
     def cumulated_rating(self):
-        cumulated_rating = 0
-        for player in self.players:
-            mean, dev = player.ratings[self.rating_type]
-            rating = mean - 3 * dev
-            cumulated_rating += rating
-        return cumulated_rating
+        return sum(mean - 3 * dev for mean, dev in self.raw_ratings)
 
     @property
     def average_rating(self):
-        ratings = []
-        for player in self.players:
-            mean, dev = player.ratings[self.rating_type]
-            rating = mean - 3 * dev
-            ratings.append(rating)
-        return statistics.mean(ratings)
+        return statistics.mean(mean - 3 * dev for mean, dev in self.raw_ratings)
 
     @property
     def raw_ratings(self):

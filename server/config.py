@@ -86,9 +86,12 @@ class ConfigurationStore:
 
         # Values for the custom (i.e. not trueskill) game quality metric used by the matchmaker
         self.MINIMUM_GAME_QUALITY = 0.5
-        self.MAXIMUM_RATING_IMBALANCE = 600  # Difference of cumulated rating of the teams
-        self.MAXIMUM_RATING_DEVIATION = 300  # stdev of the ratings of all participating players
-        self.TIME_BONUS = 0.025  # Quality bonus for each failed matching attempt per player
+        # Difference of cumulated rating of the teams
+        self.MAXIMUM_RATING_IMBALANCE = 600
+        # stdev of the ratings of all participating players
+        self.MAXIMUM_RATING_DEVIATION = 300
+        # Quality bonus for each failed matching attempt per player
+        self.TIME_BONUS = 0.025
         self.MAXIMUM_TIME_BONUS = 0.4
         self.NEWBIE_BONUS = 0.2
 

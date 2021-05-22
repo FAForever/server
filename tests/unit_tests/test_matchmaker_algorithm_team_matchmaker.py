@@ -35,10 +35,7 @@ def player_factory(player_factory):
 
 
 def make_searches(ratings, player_factory):
-    searches = []
-    for i, r in enumerate(ratings):
-        searches.append(Search([player_factory(r + 300, 100, name=f"p{i}")]))
-    return searches
+    return [Search([player_factory(r + 300, 100, name=f"p{i}")]) for i, r in enumerate(ratings)]
 
 
 def test_team_matchmaker_performance(player_factory, bench, caplog):

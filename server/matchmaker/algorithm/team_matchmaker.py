@@ -55,7 +55,7 @@ class TeamMatchMaker(Matchmaker):
     """
 
     def find(self, searches: Iterable[Search]) -> List[Match]:
-        self._logger.debug("=== starting matching algorithm ===")
+        self._logger.debug("========= starting matching algorithm =========")
 
         searches = SortedList(searches, key=lambda s: s.average_rating)
         possible_games = []
@@ -73,13 +73,15 @@ class TeamMatchMaker(Matchmaker):
             except UnevenTeamsException:
                 self._logger.warning("Failed to assign even teams. Skipping this game...")
 
-        self._logger.debug("got %i games", len(possible_games))
-        for game in possible_games:
-            self._logger.debug("game: %s vs %s rating disparity: %i quality: %f",
-                               repr(game.match[0]),
-                               repr(game.match[1]),
-                               game.match[0].cumulated_rating - game.match[1].cumulated_rating,
-                               game.quality)
+        self._logger.debug(
+            "got %i games\n" % len(possible_games) + "\n".join(
+                       "game: %s vs %s rating disparity: %i quality: %f" % (
+                           repr(game.match[0]),
+                           repr(game.match[1]),
+                           game.match[0].cumulated_rating - game.match[1].cumulated_rating,
+                           game.quality) for game in possible_games
+                   )
+            )
 
         return self._pick_best_noncolliding_games(possible_games)
 
@@ -87,10 +89,11 @@ class TeamMatchMaker(Matchmaker):
         """
         Picks searches from the list starting with the search at the given index and then expanding in both directions
         until there are enough players for a full game.
-        Raises NotEnoughPlayersException if it can't find enough suitable searches to fill a game.
+
+        # Errors
+        May raise `NotEnoughPlayersException` if it can't find enough suitable searches to fill a game.
         """
-        lower = searches[:index]
-        lower = iter(lower[::-1])
+        lower = iter(searches[index - 1::-1])
         higher = iter(searches[index:])
         i = 0
         candidate = next(higher)
@@ -114,8 +117,12 @@ class TeamMatchMaker(Matchmaker):
         Attempts to partition the given searches into two teams of the appropriate team size
         while also trying that both teams have the same cumulated rating.
         Raises UnevenTeamsException if one of the teams doesn't have the right size.
-        :param: The searches to partition. The function will alter this list!
-        :return: The two teams
+
+        # Params
+        - `searches`: The searches to partition. The function will alter this list!
+
+        # Return
+        The two teams
         """
         avg = get_average_rating(searches)
         team_target_strength = sum(search.cumulated_rating for search in searches) / 2
@@ -200,12 +207,10 @@ class TeamMatchMaker(Matchmaker):
         searches_by_size: Dict[int, List[Search]] = defaultdict(list)
 
         for search in searches:
-            size = len(search.players)
-            searches_by_size[size].append(search)
+            searches_by_size[len(search.players)].append(search)
 
-        self._logger.debug("participating searches by player size:")
-        for i in range(self.team_size, 0, -1):
-            self._logger.debug("%i players: %s", i, searches_by_size[i])
+        self._logger.debug("participating searches by player size:\n" +
+                           "\n".join("%i players: %s" % (i, searches_by_size[i]) for i in range(1, self.team_size + 1)))
         return searches_by_size
 
     def _find_most_balanced_filler(self, avg, search, searches_dict):
@@ -258,27 +263,22 @@ class TeamMatchMaker(Matchmaker):
         return Game(match, quality)
 
     def _pick_best_noncolliding_games(self, games: List[Game]) -> List[Match]:
-        for game in list(games):
-            if game.quality < config.MINIMUM_GAME_QUALITY:
-                games.remove(game)
+        games = [game for game in games if game.quality >= config.MINIMUM_GAME_QUALITY]
         self._logger.debug("%i games left after removal of games with quality < %s",
                            len(games), config.MINIMUM_GAME_QUALITY)
-        games = SortedList(games, key=lambda gme: gme.quality)
+        games = SortedList(games, key=lambda game: game.quality)
 
-        matches: List[Match] = []
-        while len(games) > 0:
+        matches = []
+        while games:
             g = games.pop()
             matches.append(g.match)
-            used_players = set()
-            for search in g.match:
-                for player in search.players:
-                    used_players.add(player)
+            used_players = set(player for search in g.match for player in search.players)
             self._logger.debug("used players: %s", [p.login for p in used_players])
-            for game in list(games):
-                for search in game.match:
-                    if not set(search.players).isdisjoint(used_players):
-                        games.remove(game)
-                        self._logger.debug("removed game: %s", game.match)
-                        break
+            games = [
+                game for game in games
+                if used_players.isdisjoint(
+                    player for search in game.match for player in search.players
+                )
+            ]
         self._logger.debug("chosen games: " + str(matches))
         return matches
