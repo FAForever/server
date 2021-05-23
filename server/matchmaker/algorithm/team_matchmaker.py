@@ -1,13 +1,15 @@
 import statistics
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from typing import Dict, Iterable, List, Tuple
 
 from sortedcontainers import SortedList
 
 from ...config import config
 from ...decorators import with_logger
-from ..search import CombinedSearch, Game, Match, Search, get_average_rating
+from ..search import CombinedSearch, Match, Search, get_average_rating
 from .matchmaker import Matchmaker
+
+Game = namedtuple('Game', ('match', 'quality'))
 
 
 class Container:
@@ -66,7 +68,7 @@ class TeamMatchMaker(Matchmaker):
             try:
                 participants = self._pick_neighboring_players(searches, index)
                 match = self.make_teams(participants)
-                game = self.calculate_game_quality(match)
+                game = self.assign_game_quality(match)
                 possible_games.append(game)
             except NotEnoughPlayersException:
                 self._logger.warning("Couldn't pick enough players for a full game. Skipping this game...")
@@ -240,7 +242,7 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug("used %s as filler", [candidate])
         return candidate
 
-    def calculate_game_quality(self, match: Match) -> Game:
+    def assign_game_quality(self, match: Match) -> Game:
         newbie_bonus = 0
         time_bonus = 0
         ratings = []

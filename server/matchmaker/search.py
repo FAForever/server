@@ -17,19 +17,6 @@ Match = Tuple["Search", "Search"]
 OnMatchedCallback = Callable[["Search", "Search"], Any]
 
 
-class Game:
-    """
-    Represents a potential game
-    """
-    def __init__(
-        self,
-        match: Match,
-        match_quality: float
-    ):
-        self.match = match
-        self.quality = match_quality
-
-
 def get_average_rating(searches):
     return statistics.mean(mean - 3 * dev for s in searches for mean, dev in s.raw_ratings)
 

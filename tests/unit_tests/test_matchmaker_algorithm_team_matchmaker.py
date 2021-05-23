@@ -71,7 +71,7 @@ def test_team_matchmaker_algorithm(player_factory):
 
     assert len(matches) == 2
     for match in matches:
-        assert matchmaker.calculate_game_quality(match).quality > config.MINIMUM_GAME_QUALITY
+        assert matchmaker.assign_game_quality(match).quality > config.MINIMUM_GAME_QUALITY
         for team in match:
             assert len(team.players) == 4
 
@@ -93,7 +93,7 @@ def test_team_matchmaker_algorithm_2(player_factory):
 
     assert len(matches) == 1
     for match in matches:
-        assert matchmaker.calculate_game_quality(match).quality > config.MINIMUM_GAME_QUALITY
+        assert matchmaker.assign_game_quality(match).quality > config.MINIMUM_GAME_QUALITY
         for team in match:
             assert len(team.players) == 4
 
@@ -225,7 +225,7 @@ def test_game_quality(player_factory):
     s = make_searches([100, 100, 100, 100, 100, 100, 100, 100], player_factory)
     team_a = CombinedSearch(*[s[0], s[1], s[2], s[3]])
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
-    game = matchmaker.calculate_game_quality((team_a, team_b))
+    game = matchmaker.assign_game_quality((team_a, team_b))
 
     assert game.quality == 1.0
 
@@ -234,7 +234,7 @@ def test_game_quality_2(player_factory):
     s = make_searches([100, 100, 400, 400, 400, 400, 100, 100], player_factory)
     team_a = CombinedSearch(*[s[0], s[1], s[2], s[3]])
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
-    game = matchmaker.calculate_game_quality((team_a, team_b))
+    game = matchmaker.assign_game_quality((team_a, team_b))
 
     assert game.quality == 0.5
 
@@ -243,6 +243,6 @@ def test_game_quality_3(player_factory):
     s = make_searches([100, 100, 4000, 4000, 4000, 4000, 100, 100], player_factory)
     team_a = CombinedSearch(*[s[0], s[1], s[2], s[3]])
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
-    game = matchmaker.calculate_game_quality((team_a, team_b))
+    game = matchmaker.assign_game_quality((team_a, team_b))
 
     assert game.quality == 0.0
