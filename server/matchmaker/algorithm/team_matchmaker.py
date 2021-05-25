@@ -56,9 +56,9 @@ class TeamMatchMaker(Matchmaker):
     the full number of theoretically possible games (floor(playersInQueue/(teamSize*2)))
     """
 
-    def find(self, searches: Iterable[Search]) -> List[Match]:
+    def find(self, searches: Iterable[Search]) -> Tuple[List[Match], List[Search]]:
         if not searches:
-            return []
+            return [], []
 
         self._logger.debug("========= starting matching algorithm =========")
 
@@ -88,7 +88,12 @@ class TeamMatchMaker(Matchmaker):
                    )
             )
 
-        return self._pick_best_noncolliding_games(possible_games)
+        matches = self._pick_best_noncolliding_games(possible_games)
+        for match in matches:
+            for team in match:
+                for search in team.get_original_searches():
+                    searches.remove(search)
+        return matches, list(searches)
 
     def pick_neighboring_players(self, searches: List[Search], index: int) -> List[Search]:
         """

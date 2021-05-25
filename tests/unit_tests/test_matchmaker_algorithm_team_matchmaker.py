@@ -77,13 +77,15 @@ def test_team_matchmaker_algorithm(player_factory):
     s.append(c3)
     s.append(c4)
 
-    matches = matchmaker.find(s)
+    matches, unmatched = matchmaker.find(s)
 
-    assert len(matches) == 2
+    assert set(matches[0][0].get_original_searches()) == {c1, s[2], s[5]}
+    assert set(matches[0][1].get_original_searches()) == {c3, s[1], s[6]}
+    assert set(matches[1][0].get_original_searches()) == {c4, s[4]}
+    assert set(matches[1][1].get_original_searches()) == {c2, s[0], s[3]}
+    assert set(unmatched) == {s[7]}
     for match in matches:
         assert matchmaker.assign_game_quality(match).quality > config.MINIMUM_GAME_QUALITY
-        for team in match:
-            assert len(team.players) == 4
 
 
 def test_team_matchmaker_algorithm_2(player_factory):
@@ -99,13 +101,13 @@ def test_team_matchmaker_algorithm_2(player_factory):
     s.append(c3)
     s.append(c4)
 
-    matches = matchmaker.find(s)
+    matches, unmatched = matchmaker.find(s)
 
-    assert len(matches) == 1
+    assert set(matches[0][0].get_original_searches()) == {c4, s[4]}
+    assert set(matches[0][1].get_original_searches()) == {c2, c3}
+    assert set(unmatched) == {s[0], s[1], s[2], s[3], s[5], s[6], s[7], c1}
     for match in matches:
         assert matchmaker.assign_game_quality(match).quality > config.MINIMUM_GAME_QUALITY
-        for team in match:
-            assert len(team.players) == 4
 
 
 @given(
@@ -203,9 +205,10 @@ def test_ignore_impossible_team_splits(player_factory):
     s.append(c2)
     s.append(c3)
 
-    matches = matchmaker.find(s)
+    matches, unmatched = matchmaker.find(s)
 
     assert len(matches) == 0
+    assert set(unmatched) == set(s)
 
 
 @given(team_a=st_searches(4), team_b=st_searches(4))
