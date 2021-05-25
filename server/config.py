@@ -93,7 +93,7 @@ class ConfigurationStore:
         # Quality bonus for each failed matching attempt per player
         self.TIME_BONUS = 0.025
         self.MAXIMUM_TIME_BONUS = 0.4
-        self.NEWBIE_BONUS = 0.2
+        self.NEWBIE_BONUS = 0.3
 
         self.TWILIO_ACCOUNT_SID = ""
         self.TWILIO_TOKEN = ""

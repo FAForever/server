@@ -57,6 +57,9 @@ class TeamMatchMaker(Matchmaker):
     """
 
     def find(self, searches: Iterable[Search]) -> List[Match]:
+        if not searches:
+            return []
+
         self._logger.debug("========= starting matching algorithm =========")
 
         searches = SortedList(searches, key=lambda s: s.average_rating)
@@ -66,7 +69,7 @@ class TeamMatchMaker(Matchmaker):
             self._logger.debug("building game for %s", repr(search))
 
             try:
-                participants = self._pick_neighboring_players(searches, index)
+                participants = self.pick_neighboring_players(searches, index)
                 match = self.make_teams(participants)
                 game = self.assign_game_quality(match)
                 possible_games.append(game)
@@ -87,7 +90,7 @@ class TeamMatchMaker(Matchmaker):
 
         return self._pick_best_noncolliding_games(possible_games)
 
-    def _pick_neighboring_players(self, searches: List[Search], index: int) -> List[Search]:
+    def pick_neighboring_players(self, searches: List[Search], index: int) -> List[Search]:
         """
         Picks searches from the list starting with the search at the given index and then expanding in both directions
         until there are enough players for a full game.
@@ -95,7 +98,9 @@ class TeamMatchMaker(Matchmaker):
         # Errors
         May raise `NotEnoughPlayersException` if it can't find enough suitable searches to fill a game.
         """
-        lower = iter(searches[index - 1::-1])
+        # We need to do this in two steps to ensure that index = 0 gives an empty iterator
+        lower = searches[:index]
+        lower = iter(lower[::-1])
         higher = iter(searches[index:])
         i = 0
         candidate = next(higher)
@@ -126,6 +131,9 @@ class TeamMatchMaker(Matchmaker):
         # Return
         The two teams
         """
+        if len(searches) < 2:
+            raise UnevenTeamsException
+
         avg = get_average_rating(searches)
         team_target_strength = sum(search.cumulated_rating for search in searches) / 2
         searches_dict = self._searches_by_size(searches)
@@ -141,7 +149,7 @@ class TeamMatchMaker(Matchmaker):
             team_a.append(search)
             team_a.append(filler)
         else:
-            team_a, searches = self.run_karmarkar_karp_algorithm(searches)
+            team_a, searches = self._run_karmarkar_karp_algorithm(searches)
         team_b.extend(search for search in searches if search not in team_a)
 
         combined_team_a = CombinedSearch(*team_a)
@@ -157,7 +165,7 @@ class TeamMatchMaker(Matchmaker):
             raise UnevenTeamsException
         return combined_team_a, combined_team_b
 
-    def run_karmarkar_karp_algorithm(self, searches):
+    def _run_karmarkar_karp_algorithm(self, searches):
         self._logger.debug("Running Karmarkar-Karp to partition the teams")
         # Further reading: https://en.wikipedia.org/wiki/Largest_differencing_method
         # Karmarkar-Karp works only for positive integers. By adding 5000 to the rating of each player
