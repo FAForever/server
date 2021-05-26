@@ -1,6 +1,6 @@
 import statistics
-from collections import defaultdict, namedtuple
-from typing import Dict, Iterable, List, Tuple
+from collections import defaultdict
+from typing import Dict, Iterable, List, Tuple, NamedTuple
 
 from sortedcontainers import SortedList
 
@@ -9,7 +9,14 @@ from ...decorators import with_logger
 from ..search import CombinedSearch, Match, Search, get_average_rating
 from .matchmaker import Matchmaker
 
-Game = namedtuple('Game', ('match', 'quality'))
+
+class GameCandidate(NamedTuple):
+    """
+    Holds the participating searches and a quality rating for a potential game
+    from the matchmaker. The quality is not the trueskill quality!
+    """
+    match: Match
+    quality: float
 
 
 class Container:
@@ -108,7 +115,7 @@ class TeamMatchMaker(Matchmaker):
         lower = iter(lower[::-1])
         higher = iter(searches[index:])
         i = 0
-        candidate = next(higher)
+        candidate = next(higher, None)
         participants = [candidate]
         number_of_players = len(candidate.players)
 
@@ -117,7 +124,7 @@ class TeamMatchMaker(Matchmaker):
             i += 1
             if candidate is None:
                 if prev is None:
-                    raise NotEnoughPlayersException
+                    raise NotEnoughPlayersException()
                 continue
             if number_of_players + len(candidate.players) <= self.team_size * 2:
                 participants.append(candidate)
@@ -137,7 +144,7 @@ class TeamMatchMaker(Matchmaker):
         The two teams
         """
         if len(searches) < 2:
-            raise UnevenTeamsException
+            raise UnevenTeamsException()
 
         avg = get_average_rating(searches)
         team_target_strength = sum(search.cumulated_rating for search in searches) / 2
@@ -165,9 +172,9 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug("team b: %s cumulated rating: %s average rating: %s",
                            team_b, combined_team_b.cumulated_rating, combined_team_b.average_rating)
         if not len(combined_team_a.players) == self.team_size:
-            raise UnevenTeamsException
+            raise UnevenTeamsException()
         if not len(combined_team_b.players) == self.team_size:
-            raise UnevenTeamsException
+            raise UnevenTeamsException()
         return combined_team_a, combined_team_b
 
     def _run_karmarkar_karp_algorithm(self, searches):
@@ -238,7 +245,7 @@ class TeamMatchMaker(Matchmaker):
         """
         if not searches_dict[1]:
             self._logger.warning("given searches are impossible to split in even teams because of party sizes")
-            raise UnevenTeamsException
+            raise UnevenTeamsException()
 
         iterator = iter(searches_dict[1])
         candidate = next(iterator)
@@ -255,7 +262,7 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug("used %s as filler", [candidate])
         return candidate
 
-    def assign_game_quality(self, match: Match) -> Game:
+    def assign_game_quality(self, match: Match) -> GameCandidate:
         newbie_bonus = 0
         time_bonus = 0
         ratings = []
@@ -276,9 +283,9 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug(
             "bonuses: %s rating disparity: %s -> fairness: %f deviation: %f -> uniformity: %f -> game quality: %f",
             newbie_bonus + time_bonus, rating_disparity, fairness, deviation, uniformity, quality)
-        return Game(match, quality)
+        return GameCandidate(match, quality)
 
-    def _pick_best_noncolliding_games(self, games: List[Game]) -> List[Match]:
+    def _pick_best_noncolliding_games(self, games: List[GameCandidate]) -> List[Match]:
         games = [game for game in games if game.quality >= config.MINIMUM_GAME_QUALITY]
         self._logger.debug("%i games left after removal of games with quality < %s",
                            len(games), config.MINIMUM_GAME_QUALITY)
