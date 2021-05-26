@@ -215,7 +215,7 @@ def test_ignore_impossible_team_splits(player_factory):
 def test_game_quality(team_a, team_b):
     game = matchmaker.assign_game_quality((team_a, team_b))
 
-    assert 0.0 <= game.quality <= 1.0 + (config.NEWBIE_BONUS * 2)
+    assert 0.0 <= game.quality <= 1.0
 
 
 @given(player=st_players())
@@ -225,10 +225,7 @@ def test_maximum_game_quality_for_even_teams(player):
     team_b = CombinedSearch(*[search, search, search, search])
     game = matchmaker.assign_game_quality((team_a, team_b))
 
-    if search.has_newbie():
-        assert game.quality == 1.0 + (config.NEWBIE_BONUS * 2)
-    else:
-        assert game.quality == 1.0
+    assert game.quality == 1.0
 
 
 def test_low_game_quality_for_high_rating_disparity(player_factory):
@@ -260,7 +257,10 @@ def test_game_quality_time_bonus(s):
     team_b.register_failed_matching_attempt()
     quality_after = matchmaker.assign_game_quality((team_a, team_b)).quality
 
-    assert quality_after == quality_before + 6 * config.TIME_BONUS
+    num_newbies = sum(search.has_newbie() for search in team_a.get_original_searches())
+    num_newbies += sum(search.has_newbie() for search in team_b.get_original_searches())
+
+    assert abs(quality_before + 6 * config.TIME_BONUS + num_newbies * config.NEWBIE_BONUS - quality_after) < 0.0000001
 
 
 @given(st_searches_list_with_index(max_players=4))

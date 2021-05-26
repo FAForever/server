@@ -118,7 +118,7 @@ class Search:
 
     @property
     def failed_matching_attempts(self) -> int:
-        return self._failed_matching_attempts * len(self.players)
+        return self._failed_matching_attempts
 
     @property
     def search_expansion(self) -> float:
@@ -281,7 +281,7 @@ class CombinedSearch(Search):
 
     @property
     def failed_matching_attempts(self) -> int:
-        return sum(search.failed_matching_attempts for search in self.searches)
+        return max(search.failed_matching_attempts for search in self.searches)
 
     def register_failed_matching_attempt(self):
         for search in self.searches:

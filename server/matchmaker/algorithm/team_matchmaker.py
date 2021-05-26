@@ -260,11 +260,12 @@ class TeamMatchMaker(Matchmaker):
         time_bonus = 0
         ratings = []
         for team in match:
-            time_bonus += team.failed_matching_attempts * config.TIME_BONUS
-            time_bonus = min(time_bonus, config.MAXIMUM_TIME_BONUS)
-            newbie_bonus += team.has_newbie() * config.NEWBIE_BONUS
             for search in team.get_original_searches():
                 ratings.append(search.average_rating)
+                search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * len(search.players)
+                time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS)
+                search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_BONUS * search.has_newbie()
+                newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_BONUS)
 
         rating_disparity = abs(match[0].cumulated_rating - match[1].cumulated_rating)
         fairness = max((config.MAXIMUM_RATING_IMBALANCE - rating_disparity) / config.MAXIMUM_RATING_IMBALANCE, 0)
