@@ -796,6 +796,9 @@ class LobbyConnection:
         assert isinstance(self.player, Player)
 
         await self.abort_connection_if_banned()
+        
+        if self.player.id in self.host.foes:
+            return;
 
         uuid = int(message["uid"])
         password = message.get("password")
