@@ -796,9 +796,6 @@ class LobbyConnection:
         assert isinstance(self.player, Player)
 
         await self.abort_connection_if_banned()
-        
-        if self.player.id in self.host.foes:
-            return;
 
         uuid = int(message["uid"])
         password = message.get("password")
@@ -813,6 +810,9 @@ class LobbyConnection:
                 "text": "The host has left the game."
             })
             return
+        
+        if self.player.id in self.game.host.foes:
+            raise ClientError("You cannot join games hosted by " + self.game.host.login + ".")
 
         if not game or game.state is not GameState.LOBBY:
             self._logger.debug("Game not in lobby state: %s state %s", game, game.state)
