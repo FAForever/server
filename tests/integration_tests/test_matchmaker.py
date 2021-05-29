@@ -306,7 +306,7 @@ async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
 async def test_anti_map_repetition(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
-    # Play one game so that it exists in the players history
+    # Play one game so that it exists in the players' history
     msg1, _ = await asyncio.gather(
         client_response(proto1),
         client_response(proto2)

@@ -663,7 +663,7 @@ async def test_ratings_initialized_based_on_global_persisted(
         proto3,
         lambda msg: msg["command"] == "player_info"
         and any(player["id"] == test_id for player in msg["players"]),
-        timeout=10
+        timeout=15
     )
 
     async with database.acquire() as conn:

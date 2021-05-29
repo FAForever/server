@@ -9,7 +9,12 @@ from server.games.game_results import GameOutcome
 from server.protocol import Protocol
 from tests.utils import fast_forward
 
-from .conftest import connect_and_sign_in, read_until, read_until_command
+from .conftest import (
+    connect_and_sign_in,
+    connect_mq_consumer,
+    read_until,
+    read_until_command
+)
 
 # All test coroutines will be treated as marked.
 pytestmark = pytest.mark.asyncio
@@ -532,3 +537,270 @@ async def test_gamestate_ended_clears_references(
 
     assert test.lobby_connection.game_connection is None
     assert rhiza.lobby_connection.game_connection is None
+
+
+@pytest.mark.rabbitmq
+@fast_forward(30)
+async def test_galactic_war_1v1_game_ended_broadcasts_army_results(lobby_server, channel):
+    mq_proto_all = await connect_mq_consumer(
+        lobby_server,
+        channel,
+        "success.gameResults.create"
+    )
+
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(guest_proto, "game_info")
+
+    # Set up the game
+    game_id = await host_game(host_proto, mod="gw")
+    await join_game(guest_proto, game_id)
+    # Set player options
+    await send_player_options(
+        host_proto,
+        [host_id, "Army", 1],
+        [host_id, "Team", 1],
+        [host_id, "StartSpot", 1],
+        [host_id, "Faction", 1],
+        [host_id, "Color", 1],
+        [guest_id, "Army", 2],
+        [guest_id, "Team", 2],
+        [guest_id, "StartSpot", 2],
+        [guest_id, "Faction", 2],
+        [guest_id, "Color", 2],
+    )
+
+    # Launch game
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Launching"]
+    })
+
+    await read_until(
+        host_proto,
+        lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
+    )
+    await host_proto.send_message({
+        "target": "game",
+        "command": "EnforceRating",
+        "args": []
+    })
+
+    # End the game
+    # Report results
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [1, "victory 10"]
+        })
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [2, "recall defeat -5"]
+        })
+    # Report GameEnded
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameEnded",
+            "args": []
+        })
+    # Now disconnect both players
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Ended"]
+        })
+
+    message = await asyncio.wait_for(mq_proto_all.read_message(), timeout=5)
+
+    assert message == {
+        "game_id": 41956,
+        "rating_type": "global",
+        "map_id": 7,
+        "featured_mod": "gw",
+        "sim_mod_ids": [],
+        "commander_kills": {},
+        "validity": "VALID",
+        "teams": [
+            {
+                "outcome": "DEFEAT",
+                "player_ids": [3],
+                "army_results": [
+                    {
+                        "player_id": 3,
+                        "army": 2,
+                        "army_outcome": "DEFEAT",
+                        "metadata": ["recall"],
+                    },
+                ]
+            },
+            {
+                "outcome": "VICTORY",
+                "player_ids": [1],
+                "army_results": [
+                    {
+                        "player_id": 1,
+                        "army": 1,
+                        "army_outcome": "VICTORY",
+                        "metadata": [],
+                    },
+                ]
+            }
+        ]
+    }
+
+    with pytest.raises(asyncio.TimeoutError):
+        # We expect only one message to be broadcast
+        await asyncio.wait_for(mq_proto_all.read_message(), timeout=5)
+
+
+@pytest.mark.rabbitmq
+@fast_forward(30)
+async def test_galactic_war_2v1_game_ended_broadcasts_army_results(lobby_server, channel):
+    mq_proto_all = await connect_mq_consumer(
+        lobby_server,
+        channel,
+        "success.gameResults.create"
+    )
+
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    other_guest_id, _, other_guest_proto = await connect_and_sign_in(
+        ("newbie", "password"), lobby_server
+    )
+    await read_until_command(guest_proto, "game_info")
+    await read_until_command(other_guest_proto, "game_info")
+
+    # Set up the game
+    game_id = await host_game(host_proto, mod="gw")
+    await join_game(guest_proto, game_id)
+    await join_game(other_guest_proto, game_id)
+    # Set player options
+    await send_player_options(
+        host_proto,
+        [host_id, "Army", 1],
+        [host_id, "Team", 0],
+        [host_id, "StartSpot", 1],
+        [host_id, "Faction", 1],
+        [host_id, "Color", 1],
+        [guest_id, "Army", 2],
+        [guest_id, "Team", 0],
+        [guest_id, "StartSpot", 2],
+        [guest_id, "Faction", 1],
+        [guest_id, "Color", 2],
+        [other_guest_id, "Army", 3],
+        [other_guest_id, "Team", 2],
+        [other_guest_id, "StartSpot", 3],
+        [other_guest_id, "Faction", 2],
+        [other_guest_id, "Color", 3],
+    )
+
+    # Launch game
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Launching"]
+    })
+
+    await read_until(
+        host_proto,
+        lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
+    )
+    await host_proto.send_message({
+        "target": "game",
+        "command": "EnforceRating",
+        "args": []
+    })
+
+    # End the game
+    # Report results
+    for proto in (host_proto, guest_proto, other_guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [1, "victory 10"]
+        })
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [2, "recall victory 5"]
+        })
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [3, "recall defeat -5"]
+        })
+    # Report GameEnded
+    for proto in (host_proto, guest_proto, other_guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameEnded",
+            "args": []
+        })
+    # Now disconnect all players
+    for proto in (host_proto, guest_proto, other_guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Ended"]
+        })
+
+    message = await asyncio.wait_for(mq_proto_all.read_message(), timeout=5)
+
+    assert message == {
+        "commander_kills": {},
+        "featured_mod": "gw",
+        "game_id": 41956,
+        "map_id": 7,
+        "rating_type": "global",
+        "sim_mod_ids": [],
+        "teams": [
+            {
+                "army_results": [
+                    {
+                        "player_id": 1,
+                        "army": 1,
+                        "army_outcome": "VICTORY",
+                        "metadata": [],
+                    },
+                    {
+                        "player_id": 3,
+                        "army": 2,
+                        "army_outcome": "VICTORY",
+                        "metadata": ["recall"],
+                    },
+                ],
+                "outcome": "UNKNOWN",
+                "player_ids": [1, 3]
+            },
+            {
+                "army_results": [
+                    {
+                        "player_id": 6,
+                        "army": 3,
+                        "army_outcome": "DEFEAT",
+                        "metadata": ["recall"],
+                    },
+                ],
+                "outcome": "UNKNOWN",
+                "player_ids": [6]
+            },
+        ],
+        "validity": "UNEVEN_TEAMS_NOT_RANKED",
+    }
+
+    with pytest.raises(asyncio.TimeoutError):
+        # We expect only one message to be broadcast
+        await asyncio.wait_for(mq_proto_all.read_message(), timeout=5)

@@ -2,7 +2,7 @@ import contextlib
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from enum import Enum
-from typing import Dict, Iterator, List, NamedTuple, Set
+from typing import Dict, FrozenSet, Iterator, List, NamedTuple, Optional, Set
 
 from server.decorators import with_logger
 
@@ -39,6 +39,16 @@ class ArmyReportedOutcome(Enum):
         return ArmyOutcome(value)
 
 
+class ArmyResult(NamedTuple):
+    """
+    Broadcast in the end of game rabbitmq message.
+    """
+    player_id: int
+    army: Optional[int]
+    army_outcome: str
+    metadata: List[str]
+
+
 class GameOutcome(Enum):
     VICTORY = "VICTORY"
     DEFEAT = "DEFEAT"
@@ -57,6 +67,7 @@ class GameResultReport(NamedTuple):
     army: int
     outcome: ArmyReportedOutcome
     score: int
+    metadata: FrozenSet[str] = frozenset()
 
 
 @with_logger
@@ -148,6 +159,38 @@ class GameResultReports(Mapping):
             self._game_id, army, decision, voters,
         )
         return decision
+
+    def metadata(self, army: int) -> List[str]:
+        """
+        If any users have sent metadata tags in their messages about this army
+        this function will compare those tags across all messages trying to find
+        common ones to return.
+        """
+        if army not in self:
+            return []
+
+        all_metadata = [report.metadata for report in self[army]]
+        metadata_count = Counter(all_metadata).most_common()
+
+        if len(metadata_count) == 1:
+            # Everyone agrees!
+            return sorted(list(metadata_count[0][0]))
+
+        most_common, next_most_common, *_ = metadata_count
+        if most_common[1] > next_most_common[1]:
+            resolved_to = sorted(list(most_common[0]))
+            self._logger.info(
+                "Conflicting metadata for game %s army %s resolved to %s. Reports are: %s",
+                self._game_id, army, resolved_to, all_metadata,
+            )
+            return resolved_to
+
+        # We have a tie
+        self._logger.info(
+            "Conflicting metadata for game %s army %s, unable to resolve. Reports are: %s",
+            self._game_id, army, all_metadata,
+        )
+        return []
 
     def score(self, army: int) -> int:
         """
