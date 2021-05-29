@@ -327,11 +327,15 @@ class GameConnection(GpgNetServerProtocol):
     async def handle_game_result(self, army: Any, result: Any):
         army = int(army)
         result = str(result).lower()
+
         try:
-            label, score = result.split(&#34; &#34;)[-2:]
-            await self.game.add_result(self.player.id, army, label, int(score))
-        except (KeyError, ValueError):  # pragma: no cover
+            *metadata, result_type, score = result.split()
+        except ValueError:
             self._logger.warning(&#34;Invalid result for %s reported: %s&#34;, army, result)
+        else:
+            await self.game.add_result(
+                self.player.id, army, result_type, int(score), frozenset(metadata)
+            )
 
     async def handle_operation_complete(
         self, primary: Any, secondary: Any, delta: str
@@ -941,11 +945,15 @@ COMMAND_HANDLERS = {
     async def handle_game_result(self, army: Any, result: Any):
         army = int(army)
         result = str(result).lower()
+
         try:
-            label, score = result.split(&#34; &#34;)[-2:]
-            await self.game.add_result(self.player.id, army, label, int(score))
-        except (KeyError, ValueError):  # pragma: no cover
+            *metadata, result_type, score = result.split()
+        except ValueError:
             self._logger.warning(&#34;Invalid result for %s reported: %s&#34;, army, result)
+        else:
+            await self.game.add_result(
+                self.player.id, army, result_type, int(score), frozenset(metadata)
+            )
 
     async def handle_operation_complete(
         self, primary: Any, secondary: Any, delta: str
@@ -1690,11 +1698,15 @@ included for documentation purposes.</p></div>
 <pre><code class="python">async def handle_game_result(self, army: Any, result: Any):
     army = int(army)
     result = str(result).lower()
+
     try:
-        label, score = result.split(&#34; &#34;)[-2:]
-        await self.game.add_result(self.player.id, army, label, int(score))
-    except (KeyError, ValueError):  # pragma: no cover
-        self._logger.warning(&#34;Invalid result for %s reported: %s&#34;, army, result)</code></pre>
+        *metadata, result_type, score = result.split()
+    except ValueError:
+        self._logger.warning(&#34;Invalid result for %s reported: %s&#34;, army, result)
+    else:
+        await self.game.add_result(
+            self.player.id, army, result_type, int(score), frozenset(metadata)
+        )</code></pre>
 </details>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_game_state"><code class="name flex">

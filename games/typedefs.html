@@ -29,7 +29,7 @@
 <pre><code class="python">from enum import Enum, unique
 from typing import Any, Dict, List, NamedTuple, Optional, Set
 
-from server.games.game_results import GameOutcome
+from server.games.game_results import ArmyResult, GameOutcome
 from server.players import Player
 
 
@@ -151,6 +151,7 @@ class BasicGameInfo(NamedTuple):
 class TeamRatingSummary(NamedTuple):
     outcome: GameOutcome
     player_ids: Set[int]
+    army_results: List[ArmyResult]
 
 
 class EndedGameInfo(NamedTuple):
@@ -182,6 +183,7 @@ class EndedGameInfo(NamedTuple):
         validity: ValidityState,
         team_outcomes: List[GameOutcome],
         commander_kills: Dict[str, int],
+        team_army_results: List[List[ArmyResult]],
     ) -&gt; &#34;EndedGameInfo&#34;:
         if len(basic_info.teams) != len(team_outcomes):
             raise ValueError(
@@ -198,8 +200,9 @@ class EndedGameInfo(NamedTuple):
             commander_kills,
             validity,
             [
-                TeamRatingSummary(outcome, set(player.id for player in team))
-                for outcome, team in zip(team_outcomes, basic_info.teams)
+                TeamRatingSummary(outcome, set(player.id for player in team), army_results)
+                for outcome, team, army_results
+                in zip(team_outcomes, basic_info.teams, team_army_results)
             ],
         )
 
@@ -218,6 +221,7 @@ class EndedGameInfo(NamedTuple):
                 {
                     &#34;outcome&#34;: team_summary.outcome.name,
                     &#34;player_ids&#34;: list(team_summary.player_ids),
+                    &#34;army_results&#34;: [result._asdict() for result in team_summary.army_results],
                 }
                 for team_summary in self.team_summaries
             ],
@@ -371,6 +375,7 @@ on the team and the team's outcome</p></div>
         validity: ValidityState,
         team_outcomes: List[GameOutcome],
         commander_kills: Dict[str, int],
+        team_army_results: List[List[ArmyResult]],
     ) -&gt; &#34;EndedGameInfo&#34;:
         if len(basic_info.teams) != len(team_outcomes):
             raise ValueError(
@@ -387,8 +392,9 @@ on the team and the team's outcome</p></div>
             commander_kills,
             validity,
             [
-                TeamRatingSummary(outcome, set(player.id for player in team))
-                for outcome, team in zip(team_outcomes, basic_info.teams)
+                TeamRatingSummary(outcome, set(player.id for player in team), army_results)
+                for outcome, team, army_results
+                in zip(team_outcomes, basic_info.teams, team_army_results)
             ],
         )
 
@@ -407,6 +413,7 @@ on the team and the team's outcome</p></div>
                 {
                     &#34;outcome&#34;: team_summary.outcome.name,
                     &#34;player_ids&#34;: list(team_summary.player_ids),
+                    &#34;army_results&#34;: [result._asdict() for result in team_summary.army_results],
                 }
                 for team_summary in self.team_summaries
             ],
@@ -419,7 +426,7 @@ on the team and the team's outcome</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="server.games.typedefs.EndedGameInfo.from_basic"><code class="name flex">
-<span>def <span class="ident">from_basic</span></span>(<span>basic_info: <a title="server.games.typedefs.BasicGameInfo" href="#server.games.typedefs.BasicGameInfo">BasicGameInfo</a>, validity: <a title="server.games.typedefs.ValidityState" href="#server.games.typedefs.ValidityState">ValidityState</a>, team_outcomes: List[<a title="server.games.game_results.GameOutcome" href="game_results.html#server.games.game_results.GameOutcome">GameOutcome</a>], commander_kills: Dict[str, int]) ‑> <a title="server.games.typedefs.EndedGameInfo" href="#server.games.typedefs.EndedGameInfo">EndedGameInfo</a></span>
+<span>def <span class="ident">from_basic</span></span>(<span>basic_info: <a title="server.games.typedefs.BasicGameInfo" href="#server.games.typedefs.BasicGameInfo">BasicGameInfo</a>, validity: <a title="server.games.typedefs.ValidityState" href="#server.games.typedefs.ValidityState">ValidityState</a>, team_outcomes: List[<a title="server.games.game_results.GameOutcome" href="game_results.html#server.games.game_results.GameOutcome">GameOutcome</a>], commander_kills: Dict[str, int], team_army_results: List[List[<a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a>]]) ‑> <a title="server.games.typedefs.EndedGameInfo" href="#server.games.typedefs.EndedGameInfo">EndedGameInfo</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -434,6 +441,7 @@ def from_basic(
     validity: ValidityState,
     team_outcomes: List[GameOutcome],
     commander_kills: Dict[str, int],
+    team_army_results: List[List[ArmyResult]],
 ) -&gt; &#34;EndedGameInfo&#34;:
     if len(basic_info.teams) != len(team_outcomes):
         raise ValueError(
@@ -450,8 +458,9 @@ def from_basic(
         commander_kills,
         validity,
         [
-            TeamRatingSummary(outcome, set(player.id for player in team))
-            for outcome, team in zip(team_outcomes, basic_info.teams)
+            TeamRatingSummary(outcome, set(player.id for player in team), army_results)
+            for outcome, team, army_results
+            in zip(team_outcomes, basic_info.teams, team_army_results)
         ],
     )</code></pre>
 </details>
@@ -518,6 +527,7 @@ def from_basic(
             {
                 &#34;outcome&#34;: team_summary.outcome.name,
                 &#34;player_ids&#34;: list(team_summary.player_ids),
+                &#34;army_results&#34;: [result._asdict() for result in team_summary.army_results],
             }
             for team_summary in self.team_summaries
         ],
@@ -788,17 +798,18 @@ def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
 </dd>
 <dt id="server.games.typedefs.TeamRatingSummary"><code class="flex name class">
 <span>class <span class="ident">TeamRatingSummary</span></span>
-<span>(</span><span>outcome: <a title="server.games.game_results.GameOutcome" href="game_results.html#server.games.game_results.GameOutcome">GameOutcome</a>, player_ids: Set[int])</span>
+<span>(</span><span>outcome: <a title="server.games.game_results.GameOutcome" href="game_results.html#server.games.game_results.GameOutcome">GameOutcome</a>, player_ids: Set[int], army_results: List[<a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a>])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>TeamRatingSummary(outcome, player_ids)</p></div>
+<div class="desc"><p>TeamRatingSummary(outcome, player_ids, army_results)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class TeamRatingSummary(NamedTuple):
     outcome: GameOutcome
-    player_ids: Set[int]</code></pre>
+    player_ids: Set[int]
+    army_results: List[ArmyResult]</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -806,6 +817,10 @@ def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
 </ul>
 <h3>Instance variables</h3>
 <dl>
+<dt id="server.games.typedefs.TeamRatingSummary.army_results"><code class="name">var <span class="ident">army_results</span> : List[<a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a>]</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 2</p></div>
+</dd>
 <dt id="server.games.typedefs.TeamRatingSummary.outcome"><code class="name">var <span class="ident">outcome</span> : <a title="server.games.game_results.GameOutcome" href="game_results.html#server.games.game_results.GameOutcome">GameOutcome</a></code></dt>
 <dd>
 <div class="desc"><p>Alias for field number 0</p></div>
@@ -1127,6 +1142,7 @@ def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
 <li>
 <h4><code><a title="server.games.typedefs.TeamRatingSummary" href="#server.games.typedefs.TeamRatingSummary">TeamRatingSummary</a></code></h4>
 <ul class="">
+<li><code><a title="server.games.typedefs.TeamRatingSummary.army_results" href="#server.games.typedefs.TeamRatingSummary.army_results">army_results</a></code></li>
 <li><code><a title="server.games.typedefs.TeamRatingSummary.outcome" href="#server.games.typedefs.TeamRatingSummary.outcome">outcome</a></code></li>
 <li><code><a title="server.games.typedefs.TeamRatingSummary.player_ids" href="#server.games.typedefs.TeamRatingSummary.player_ids">player_ids</a></code></li>
 </ul>

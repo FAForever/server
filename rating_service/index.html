@@ -98,7 +98,9 @@ Fields:
             game_info[&#34;rating_type&#34;],
             [
                 TeamRatingSummary(
-                    getattr(GameOutcome, summary[&#34;outcome&#34;]), set(summary[&#34;player_ids&#34;])
+                    GameOutcome(summary[&#34;outcome&#34;]),
+                    set(summary[&#34;player_ids&#34;]),
+                    summary[&#34;army_results&#34;],
                 )
                 for summary in game_info[&#34;teams&#34;]
             ],
@@ -129,7 +131,9 @@ def from_game_info_dict(cls, game_info: Dict) -&gt; &#34;GameRatingSummary&#34;:
         game_info[&#34;rating_type&#34;],
         [
             TeamRatingSummary(
-                getattr(GameOutcome, summary[&#34;outcome&#34;]), set(summary[&#34;player_ids&#34;])
+                GameOutcome(summary[&#34;outcome&#34;]),
+                set(summary[&#34;player_ids&#34;]),
+                summary[&#34;army_results&#34;],
             )
             for summary in game_info[&#34;teams&#34;]
         ],

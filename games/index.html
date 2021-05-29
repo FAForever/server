@@ -645,7 +645,12 @@ __all__ = (
         )
 
     async def add_result(
-        self, reporter: int, army: int, result_type: str, score: int
+        self,
+        reporter: int,
+        army: int,
+        result_type: str,
+        score: int,
+        result_metadata: FrozenSet[str] = frozenset(),
     ):
         &#34;&#34;&#34;
         As computed by the game.
@@ -655,6 +660,8 @@ __all__ = (
         - `army`: the army number being reported for
         - `result_type`: a string representing the result
         - `score`: an arbitrary number assigned with the result
+        - `result_metadata`: everything preceding the `result_type` in the
+            result message from the game, one or more words, optional
         &#34;&#34;&#34;
         if army not in self.armies:
             self._logger.debug(
@@ -672,7 +679,7 @@ __all__ = (
             )
             return
 
-        result = GameResultReport(reporter, army, outcome, score)
+        result = GameResultReport(reporter, army, outcome, score, result_metadata)
         self._results.add(result)
         self._logger.info(
             &#34;%s reported result for army %s: %s %s&#34;, reporter, army,
@@ -828,14 +835,21 @@ __all__ = (
         await self._run_pre_rate_validity_checks()
 
         basic_info = self.get_basic_info()
+
+        team_army_results = [
+            [self.get_army_results(player) for player in team]
+            for team in basic_info.teams
+        ]
+
         team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
 
         if self.validity is ValidityState.VALID:
+            team_player_partial_outcomes = [
+                {self.get_player_outcome(player) for player in team}
+                for team in basic_info.teams
+            ]
+
             try:
-                team_player_partial_outcomes = [
-                    {self.get_player_outcome(player) for player in team}
-                    for team in basic_info.teams
-                ]
                 # TODO: Remove override once game result messages are reliable
                 team_outcomes = (
                     self._outcome_override_hook()
@@ -853,7 +867,11 @@ __all__ = (
             commander_kills = {}
 
         return EndedGameInfo.from_basic(
-            basic_info, self.validity, team_outcomes, commander_kills
+            basic_info,
+            self.validity,
+            team_outcomes,
+            commander_kills,
+            team_army_results,
         )
 
     def _outcome_override_hook(self) -&gt; Optional[List[GameOutcome]]:
@@ -1186,6 +1204,15 @@ __all__ = (
             return ArmyOutcome.UNKNOWN
 
         return self._results.outcome(army)
+
+    def get_army_results(self, player: Player) -&gt; ArmyResult:
+        army = self.get_player_option(player.id, &#34;Army&#34;)
+        return ArmyResult(
+            player.id,
+            army,
+            self.get_player_outcome(player).name,
+            self._results.metadata(army),
+        )
 
     def report_army_stats(self, stats_json):
         self._army_stats_list = json.loads(stats_json)[&#34;stats&#34;]
@@ -1527,7 +1554,7 @@ def teams(self) -&gt; FrozenSet[int]:
 </details>
 </dd>
 <dt id="server.games.Game.add_result"><code class="name flex">
-<span>async def <span class="ident">add_result</span></span>(<span>self, reporter: int, army: int, result_type: str, score: int)</span>
+<span>async def <span class="ident">add_result</span></span>(<span>self, reporter: int, army: int, result_type: str, score: int, result_metadata: FrozenSet[str] = frozenset())</span>
 </code></dt>
 <dd>
 <div class="desc"><p>As computed by the game.</p>
@@ -1537,13 +1564,20 @@ def teams(self) -&gt; FrozenSet[int]:
 <li><code>army</code>: the army number being reported for</li>
 <li><code>result_type</code>: a string representing the result</li>
 <li><code>score</code>: an arbitrary number assigned with the result</li>
+<li><code>result_metadata</code>: everything preceding the <code>result_type</code> in the
+result message from the game, one or more words, optional</li>
 </ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def add_result(
-    self, reporter: int, army: int, result_type: str, score: int
+    self,
+    reporter: int,
+    army: int,
+    result_type: str,
+    score: int,
+    result_metadata: FrozenSet[str] = frozenset(),
 ):
     &#34;&#34;&#34;
     As computed by the game.
@@ -1553,6 +1587,8 @@ def teams(self) -&gt; FrozenSet[int]:
     - `army`: the army number being reported for
     - `result_type`: a string representing the result
     - `score`: an arbitrary number assigned with the result
+    - `result_metadata`: everything preceding the `result_type` in the
+        result message from the game, one or more words, optional
     &#34;&#34;&#34;
     if army not in self.armies:
         self._logger.debug(
@@ -1570,7 +1606,7 @@ def teams(self) -&gt; FrozenSet[int]:
         )
         return
 
-    result = GameResultReport(reporter, army, outcome, score)
+    result = GameResultReport(reporter, army, outcome, score, result_metadata)
     self._results.add(result)
     self._logger.info(
         &#34;%s reported result for army %s: %s %s&#34;, reporter, army,
@@ -1639,6 +1675,25 @@ assigned an army or team, and deletes any AI's.</p></div>
             to_remove.append(ai)
     for item in to_remove:
         del self.AIs[item]</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.get_army_results"><code class="name flex">
+<span>def <span class="ident">get_army_results</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> <a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_army_results(self, player: Player) -&gt; ArmyResult:
+    army = self.get_player_option(player.id, &#34;Army&#34;)
+    return ArmyResult(
+        player.id,
+        army,
+        self.get_player_outcome(player).name,
+        self._results.metadata(army),
+    )</code></pre>
 </details>
 </dd>
 <dt id="server.games.Game.get_army_score"><code class="name flex">
@@ -2059,14 +2114,21 @@ game.</p></div>
     await self._run_pre_rate_validity_checks()
 
     basic_info = self.get_basic_info()
+
+    team_army_results = [
+        [self.get_army_results(player) for player in team]
+        for team in basic_info.teams
+    ]
+
     team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
 
     if self.validity is ValidityState.VALID:
+        team_player_partial_outcomes = [
+            {self.get_player_outcome(player) for player in team}
+            for team in basic_info.teams
+        ]
+
         try:
-            team_player_partial_outcomes = [
-                {self.get_player_outcome(player) for player in team}
-                for team in basic_info.teams
-            ]
             # TODO: Remove override once game result messages are reliable
             team_outcomes = (
                 self._outcome_override_hook()
@@ -2084,7 +2146,11 @@ game.</p></div>
         commander_kills = {}
 
     return EndedGameInfo.from_basic(
-        basic_info, self.validity, team_outcomes, commander_kills
+        basic_info,
+        self.validity,
+        team_outcomes,
+        commander_kills,
+        team_army_results,
     )</code></pre>
 </details>
 </dd>
@@ -2993,6 +3059,7 @@ as 1 for win and 0 for anything else.</p></div>
 <li><code><a title="server.games.Game.clear_slot" href="#server.games.Game.clear_slot">clear_slot</a></code></li>
 <li><code><a title="server.games.Game.connections" href="#server.games.Game.connections">connections</a></code></li>
 <li><code><a title="server.games.Game.game_type" href="#server.games.Game.game_type">game_type</a></code></li>
+<li><code><a title="server.games.Game.get_army_results" href="#server.games.Game.get_army_results">get_army_results</a></code></li>
 <li><code><a title="server.games.Game.get_army_score" href="#server.games.Game.get_army_score">get_army_score</a></code></li>
 <li><code><a title="server.games.Game.get_basic_info" href="#server.games.Game.get_basic_info">get_basic_info</a></code></li>
 <li><code><a title="server.games.Game.get_player_option" href="#server.games.Game.get_player_option">get_player_option</a></code></li>
