@@ -1,6 +1,6 @@
 import statistics
 from collections import defaultdict
-from typing import Dict, Iterable, List, Tuple, NamedTuple
+from typing import Dict, Iterable, List, NamedTuple, Tuple
 
 from sortedcontainers import SortedList
 
@@ -54,15 +54,7 @@ class TeamMatchMaker(Matchmaker):
     7. remove all games with match quality below threshold then sort by quality descending
     8. pick the first game from the game list and remove all other games that contain the same players
     9. repeat until the list is empty
-
-    for the future:
-    Find combination of potential games that allows for maximal number of games to launch
-    Repeat 8. with an increasing amount of top games removed beforehand to get all possible game combinations
-    If there is more than one solution, pick the one with highest total game quality
-    Optimization: sort by game quality first, abort when you find a solution with
-    the full number of theoretically possible games (floor(playersInQueue/(teamSize*2)))
     """
-
     def find(self, searches: Iterable[Search]) -> Tuple[List[Match], List[Search]]:
         if not searches:
             return [], []
@@ -95,7 +87,7 @@ class TeamMatchMaker(Matchmaker):
                    )
             )
 
-        matches = self._pick_best_noncolliding_games(possible_games)
+        matches = self.pick_noncolliding_games(possible_games)
         for match in matches:
             for team in match:
                 for search in team.get_original_searches():
@@ -285,7 +277,12 @@ class TeamMatchMaker(Matchmaker):
             newbie_bonus + time_bonus, rating_disparity, fairness, deviation, uniformity, quality)
         return GameCandidate(match, quality)
 
-    def _pick_best_noncolliding_games(self, games: List[GameCandidate]) -> List[Match]:
+    def pick_noncolliding_games(self, games: List[GameCandidate]) -> List[Match]:
+        """
+        This greedily picks all matches with disjoint players, starting with the game with the highest quality.
+        This can miss more optimal solutions, but extensive testing showed that over many matchmaker
+        iterations there is no benefit to use a more sophisticated algorithm.
+        """
         games = [game for game in games if game.quality >= config.MINIMUM_GAME_QUALITY]
         self._logger.debug("%i games left after removal of games with quality < %s",
                            len(games), config.MINIMUM_GAME_QUALITY)
@@ -303,5 +300,9 @@ class TeamMatchMaker(Matchmaker):
                     player for search in game.match for player in search.players
                 )
             ]
-        self._logger.debug("chosen games: " + str(matches))
+        self._logger.debug(
+            "Chosen games:\n" + "\n".join(
+                "%s vs %s " % (repr(match[0]), repr(match[1])) for match in matches
+            )
+        )
         return matches

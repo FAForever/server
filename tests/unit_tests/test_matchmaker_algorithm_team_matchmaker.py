@@ -13,6 +13,7 @@ from server.matchmaker.algorithm.team_matchmaker import (
 )
 
 from .strategies import (
+    st_game_candidates_list,
     st_players,
     st_searches,
     st_searches_list,
@@ -297,7 +298,24 @@ def test_pick_neighboring_players_from_end(searches):
     assert set(participants) == set(searches[-8:])
 
 
-def test_pick_best_noncolliding_games():
-    pass
-    # TODO write test once this method is changed from greedy to knapsack solver
-    # assert players disjoint
+@given(st_game_candidates_list())
+def test_pick_noncolliding_games(games):
+    if not games:
+        assert TeamMatchMaker(4).pick_noncolliding_games(games) == []
+        return
+
+    max_quality_game = games[0]
+    for game in games:
+        if game.quality > max_quality_game.quality:
+            max_quality_game = game
+
+    matches = TeamMatchMaker(4).pick_noncolliding_games(games)
+
+    while matches:
+        match = matches.pop()
+        for other_match in matches:
+            assert set(player for search in match for player in search.players).isdisjoint(
+                player for search in other_match for player in search.players
+            )
+    if matches:
+        assert max_quality_game.match == matches[0]
