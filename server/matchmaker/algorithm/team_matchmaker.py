@@ -106,14 +106,14 @@ class TeamMatchMaker(Matchmaker):
         lower = searches[:index]
         lower = iter(lower[::-1])
         higher = iter(searches[index:])
-        i = 0
+        pick_lower = True
         candidate = next(higher, None)
         participants = [candidate]
         number_of_players = len(candidate.players)
 
         while number_of_players < self.team_size * 2:
-            candidate, prev = next(lower if i % 2 else higher, None), candidate
-            i += 1
+            candidate, prev = next(lower if pick_lower else higher, None), candidate
+            pick_lower = not pick_lower
             if candidate is None:
                 if prev is None:
                     raise NotEnoughPlayersException()
