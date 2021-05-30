@@ -811,9 +811,6 @@ class LobbyConnection:
                 "text": "The host has left the game."
             })
             return
-        
-        if self.player.id in self.game.host.foes:
-            raise ClientError("You cannot join games hosted by " + self.game.host.login + ".")
 
         if self.player.id in self.game_service[uuid].host.foes:
             raise ClientError("You cannot join games hosted by this player.")
