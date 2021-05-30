@@ -86,13 +86,6 @@ def mock_protocol():
 def mock_geoip():
     return asynctest.create_autospec(GeoIpService)
 
-
-@pytest.fixture
-def mock_game():
-    return asynctest.create_autospec(Game())
-
-
-
 @pytest.fixture
 def lobbyconnection(
     event_loop,
@@ -243,8 +236,8 @@ async def test_double_login_disconnected(lobbyconnection, mock_players, player_f
 async def test_command_game_host_creates_game(
     lobbyconnection, mock_games, test_game_info, players
 ):
-    players.hosting.state = PlayerState.IDLE
-    lobbyconnection.player = players.hosting
+    players.joining.state = PlayerState.IDLE
+    lobbyconnection.player = players.joining
     await lobbyconnection.on_message_received({
         "command": "game_host",
         **test_game_info
@@ -253,7 +246,7 @@ async def test_command_game_host_creates_game(
         "game_mode": "faf",
         "game_class": CustomGame,
         "name": test_game_info["title"],
-        "host": players.hosting,
+        "host": players.joining,
         "visibility": VisibilityState.PUBLIC,
         "password": test_game_info["password"],
         "mapname": test_game_info["mapname"],
@@ -285,9 +278,8 @@ async def test_launch_game(lobbyconnection, game, player_factory):
 
 async def test_command_game_host_creates_correct_game(
         lobbyconnection, game_service, test_game_info, players):
-    lobbyconnection.player = players.hosting
-    players.hosting.in_game = False
-    players.hosting.state = PlayerState.IDLE
+    lobbyconnection.player = players.joining
+    players.joining.state = PlayerState.IDLE
 
     lobbyconnection.game_service = game_service
     lobbyconnection.launch_game = CoroutineMock()
@@ -321,9 +313,8 @@ async def test_command_game_join_calls_join_game(
     game.name = "Test Game Name"
     game.host = players.hosting
     game_service._games[42] = game
-    lobbyconnection.player = players.hosting
-    players.hosting.in_game = False
-    players.hosting.state = PlayerState.IDLE
+    lobbyconnection.player = players.joining
+    players.joining.state = PlayerState.IDLE
     test_game_info["uid"] = 42
 
     await lobbyconnection.on_message_received({
@@ -361,8 +352,8 @@ async def test_command_game_join_uid_as_str(
     game.name = "Test Game Name"
     game.host = players.hosting
     game_service._games[42] = game
-    lobbyconnection.player = players.hosting
-    players.hosting.state = PlayerState.IDLE
+    lobbyconnection.player = players.joining
+    players.joining.state = PlayerState.IDLE
     players.hosting.in_game = False
     test_game_info["uid"] = "42"  # Pass in uid as string
 
@@ -400,8 +391,8 @@ async def test_command_game_join_without_password(
     game.id = 42
     game.host = players.hosting
     game_service._games[42] = game
-    lobbyconnection.player = players.hosting
-    players.hosting.state = PlayerState.IDLE
+    lobbyconnection.player = players.joining
+    players.joining.state = PlayerState.IDLE
     players.hosting.in_game = False
     test_game_info["uid"] = 42
     del test_game_info["password"]
@@ -425,9 +416,8 @@ async def test_command_game_join_game_not_found(
 ):
     lobbyconnection.send = CoroutineMock()
     lobbyconnection.game_service = game_service
-    lobbyconnection.player = players.hosting
-    players.hosting.in_game = False
-    players.hosting.state = PlayerState.IDLE
+    lobbyconnection.player = players.joining
+    players.joining.state = PlayerState.IDLE
     test_game_info["uid"] = 42
 
     await lobbyconnection.on_message_received({
@@ -455,7 +445,7 @@ async def test_command_game_join_game_bad_init_mode(
     game.id = 42
     game.host = players.hosting
     game_service._games[42] = game
-    lobbyconnection.player = players.hosting
+    lobbyconnection.player = players.joining
     lobbyconnection.player.state = PlayerState.IDLE
     test_game_info["uid"] = 42
 
