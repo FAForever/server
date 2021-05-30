@@ -11,7 +11,7 @@ from server.db.models import (
     leaderboard_rating,
     leaderboard_rating_journal
 )
-from server.games.game_results import GameOutcome
+from server.games.game_results import ArmyResult, GameOutcome
 from server.games.typedefs import (
     EndedGameInfo,
     TeamRatingSummary,
@@ -53,8 +53,12 @@ def game_rating_summary():
         1,
         RatingType.GLOBAL,
         [
-            TeamRatingSummary(GameOutcome.VICTORY, {1}),
-            TeamRatingSummary(GameOutcome.DEFEAT, {2}),
+            TeamRatingSummary(
+                GameOutcome.VICTORY, {1}, [ArmyResult(1, 0, "VICTORY", [])]
+            ),
+            TeamRatingSummary(
+                GameOutcome.DEFEAT, {2}, [ArmyResult(2, 1, "DEFEAT", [])],
+            ),
         ],
     )
 
@@ -70,8 +74,12 @@ def game_info():
         {},
         ValidityState.VALID,
         [
-            TeamRatingSummary(GameOutcome.VICTORY, {1}),
-            TeamRatingSummary(GameOutcome.DEFEAT, {2}),
+            TeamRatingSummary(
+                GameOutcome.VICTORY, {1}, [ArmyResult(1, 0, "VICTORY", [])]
+            ),
+            TeamRatingSummary(
+                GameOutcome.DEFEAT, {2}, [ArmyResult(2, 1, "DEFEAT", [])],
+            ),
         ],
     )
 
@@ -90,8 +98,12 @@ def bad_game_info():
         {},
         ValidityState.VALID,
         [
-            TeamRatingSummary(GameOutcome.VICTORY, {1}),
-            TeamRatingSummary(GameOutcome.VICTORY, {2}),
+            TeamRatingSummary(
+                GameOutcome.VICTORY, {1}, [ArmyResult(1, 0, "VICTORY", [])]
+            ),
+            TeamRatingSummary(
+                GameOutcome.VICTORY, {2}, [ArmyResult(2, 1, "VICTORY", [])],
+            ),
         ],
     )
 
@@ -235,8 +247,16 @@ async def test_get_rating_data(semiinitialized_service):
         game_id,
         RatingType.GLOBAL,
         [
-            TeamRatingSummary(player1_outcome, {player1_id}),
-            TeamRatingSummary(player2_outcome, {player2_id}),
+            TeamRatingSummary(
+                player1_outcome, {1}, [
+                    ArmyResult(player1_id, 0, player1_outcome.name, [])
+                ],
+            ),
+            TeamRatingSummary(
+                player2_outcome, {2}, [
+                    ArmyResult(player2_id, 1, player2_outcome.name, [])
+                ],
+            ),
         ],
     )
 

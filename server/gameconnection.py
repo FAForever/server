@@ -298,11 +298,15 @@ class GameConnection(GpgNetServerProtocol):
     async def handle_game_result(self, army: Any, result: Any):
         army = int(army)
         result = str(result).lower()
+
         try:
-            label, score = result.split(" ")[-2:]
-            await self.game.add_result(self.player.id, army, label, int(score))
-        except (KeyError, ValueError):  # pragma: no cover
+            *metadata, result_type, score = result.split()
+        except ValueError:
             self._logger.warning("Invalid result for %s reported: %s", army, result)
+        else:
+            await self.game.add_result(
+                self.player.id, army, result_type, int(score), frozenset(metadata)
+            )
 
     async def handle_operation_complete(
         self, primary: Any, secondary: Any, delta: str
