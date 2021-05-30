@@ -87,7 +87,8 @@ insert into login (id, login, email, password, steamid, create_time) values
   (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), null, '2000-01-01 00:00:00'),
   (203, 'ban_long_time', 'ban_null_expiration@example.com', SHA2('ban_long_time', 256), null, '2000-01-01 00:00:00'),
   (204, 'ban_46_hour', 'ban_46_hour_expiration@example.com', SHA2('ban_46_hour', 256), null, '2000-01-01 00:00:00'),
-  (300, 'steam_id', 'steam_id@example.com', SHA2('steam_id', 256), 34632, '2000-01-01 00:00:00')
+  (300, 'steam_id', 'steam_id@example.com', SHA2('steam_id', 256), 34632, '2000-01-01 00:00:00'),
+  (400, 'foed_by_test', 'foed_by_test@example.com', SHA2('foe', 256), 34632, '2000-01-01 00:00:00')
 ;
 insert into login (id, login, email, password) values (6, 'newbie', 'noob@example.com', SHA2('password', 256));
 
@@ -337,7 +338,7 @@ insert into matchmaker_queue_map_pool (matchmaker_queue_id, map_pool_id, min_rat
   (4, 4, NULL, NULL);
 
 insert into friends_and_foes (user_id, subject_id, `status`) values
-  (1, 3, 'FOE'),
+  (1, 400, 'FOE'),
   (2, 1, 'FRIEND'),
   (10, 1, 'FRIEND');
 
