@@ -153,7 +153,7 @@ async def test_game_info_not_broadcast_to_foes(lobby_server):
         ("test", "test_password"), lobby_server
     )
     _, _, proto2 = await connect_and_sign_in(
-        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+        ("foed_by_test", "foe"), lobby_server
     )
     await read_until_command(proto1, "game_info")
     await read_until_command(proto2, "game_info")

@@ -88,6 +88,12 @@ def mock_geoip():
 
 
 @pytest.fixture
+def mock_game():
+    return asynctest.create_autospec(Game())
+
+
+
+@pytest.fixture
 def lobbyconnection(
     event_loop,
     database,
@@ -313,6 +319,7 @@ async def test_command_game_join_calls_join_game(
     game.game_mode = "faf"
     game.id = 42
     game.name = "Test Game Name"
+    game.host = players.hosting
     game_service._games[42] = game
     lobbyconnection.player = players.hosting
     players.hosting.in_game = False
@@ -352,6 +359,7 @@ async def test_command_game_join_uid_as_str(
     game.game_mode = "faf"
     game.id = 42
     game.name = "Test Game Name"
+    game.host = players.hosting
     game_service._games[42] = game
     lobbyconnection.player = players.hosting
     players.hosting.state = PlayerState.IDLE
@@ -390,6 +398,7 @@ async def test_command_game_join_without_password(
     game.password = "password"
     game.game_mode = "faf"
     game.id = 42
+    game.host = players.hosting
     game_service._games[42] = game
     lobbyconnection.player = players.hosting
     players.hosting.state = PlayerState.IDLE
@@ -444,6 +453,7 @@ async def test_command_game_join_game_bad_init_mode(
     game.state = GameState.LOBBY
     game.init_mode = InitMode.AUTO_LOBBY
     game.id = 42
+    game.host = players.hosting
     game_service._games[42] = game
     lobbyconnection.player = players.hosting
     lobbyconnection.player.state = PlayerState.IDLE

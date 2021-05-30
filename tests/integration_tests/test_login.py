@@ -138,7 +138,7 @@ async def test_server_valid_login_admin(lobby_server):
         "autojoin": ["#678_clan"],
         "channels": ["#678_clan"],
         "friends": [],
-        "foes": [3],
+        "foes": [400],
         "power": 2
     }
 
