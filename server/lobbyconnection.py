@@ -1,3 +1,4 @@
+
 """
 Handles requests from connected clients
 """
@@ -814,6 +815,9 @@ class LobbyConnection:
         if self.player.id in self.game.host.foes:
             raise ClientError("You cannot join games hosted by " + self.game.host.login + ".")
 
+        if self.player.id in self.game_service[uuid].host.foes:
+            raise ClientError("You cannot join games hosted by this player.")
+
         if not game or game.state is not GameState.LOBBY:
             self._logger.debug("Game not in lobby state: %s state %s", game, game.state)
             await self.send({
@@ -1105,7 +1109,6 @@ class LobbyConnection:
     async def send_warning(self, message: str, fatal: bool = False):
         """
         Display a warning message to the client
-
         # Params
         - `message`: Warning message to display
         - `fatal`: Whether or not the warning is fatal.  If the client receives
