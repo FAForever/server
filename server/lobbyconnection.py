@@ -812,7 +812,7 @@ class LobbyConnection:
             })
             return
 
-        if self.player.id in self.game_service[uuid].host.foes:
+        if self.player.id in game.host.foes:
             raise ClientError("You cannot join games hosted by this player.")
 
         if not game or game.state is not GameState.LOBBY:
