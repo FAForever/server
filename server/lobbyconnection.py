@@ -1105,6 +1105,7 @@ class LobbyConnection:
     async def send_warning(self, message: str, fatal: bool = False):
         """
         Display a warning message to the client
+
         # Params
         - `message`: Warning message to display
         - `fatal`: Whether or not the warning is fatal.  If the client receives
