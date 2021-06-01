@@ -232,7 +232,7 @@ async def test_game_ended_rates_game(lobby_server):
 
 
 @fast_forward(30)
-async def test_game_wit_foed_player(lobby_server):
+async def test_game_with_foed_player(lobby_server):
     host_id, _, host_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )

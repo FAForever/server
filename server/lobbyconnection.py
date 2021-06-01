@@ -1,4 +1,3 @@
-
 """
 Handles requests from connected clients
 """

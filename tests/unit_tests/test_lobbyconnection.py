@@ -86,6 +86,7 @@ def mock_protocol():
 def mock_geoip():
     return asynctest.create_autospec(GeoIpService)
 
+
 @pytest.fixture
 def lobbyconnection(
     event_loop,
