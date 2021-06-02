@@ -237,8 +237,8 @@ async def test_double_login_disconnected(lobbyconnection, mock_players, player_f
 async def test_command_game_host_creates_game(
     lobbyconnection, mock_games, test_game_info, players
 ):
-    players.joining.state = PlayerState.IDLE
-    lobbyconnection.player = players.joining
+    players.hosting.state = PlayerState.IDLE
+    lobbyconnection.player = players.hosting
     await lobbyconnection.on_message_received({
         "command": "game_host",
         **test_game_info
@@ -247,7 +247,7 @@ async def test_command_game_host_creates_game(
         "game_mode": "faf",
         "game_class": CustomGame,
         "name": test_game_info["title"],
-        "host": players.joining,
+        "host": players.hosting,
         "visibility": VisibilityState.PUBLIC,
         "password": test_game_info["password"],
         "mapname": test_game_info["mapname"],
@@ -279,8 +279,8 @@ async def test_launch_game(lobbyconnection, game, player_factory):
 
 async def test_command_game_host_creates_correct_game(
         lobbyconnection, game_service, test_game_info, players):
-    lobbyconnection.player = players.joining
-    players.joining.state = PlayerState.IDLE
+    lobbyconnection.player = players.hosting
+    players.hosting.state = PlayerState.IDLE
 
     lobbyconnection.game_service = game_service
     lobbyconnection.launch_game = CoroutineMock()
@@ -355,7 +355,6 @@ async def test_command_game_join_uid_as_str(
     game_service._games[42] = game
     lobbyconnection.player = players.joining
     players.joining.state = PlayerState.IDLE
-    players.hosting.in_game = False
     test_game_info["uid"] = "42"  # Pass in uid as string
 
     await lobbyconnection.on_message_received({
@@ -394,7 +393,6 @@ async def test_command_game_join_without_password(
     game_service._games[42] = game
     lobbyconnection.player = players.joining
     players.joining.state = PlayerState.IDLE
-    players.hosting.in_game = False
     test_game_info["uid"] = 42
     del test_game_info["password"]
 
