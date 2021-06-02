@@ -1,3 +1,4 @@
+import logging
 import statistics
 from collections import defaultdict
 from typing import Dict, Iterable, List, NamedTuple, Tuple
@@ -77,15 +78,16 @@ class TeamMatchMaker(Matchmaker):
             except UnevenTeamsException:
                 self._logger.warning("Failed to assign even teams. Skipping this game...")
 
-        self._logger.debug(
-            "got %i games\n" % len(possible_games) + "\n".join(
-                       "game: %s vs %s rating disparity: %i quality: %f" % (
-                           repr(game.match[0]),
-                           repr(game.match[1]),
-                           game.match[0].cumulated_rating - game.match[1].cumulated_rating,
-                           game.quality) for game in possible_games
-                   )
-            )
+        if self._logger.isEnabledFor(logging.DEBUG):
+            self._logger.debug("got %i games", len(possible_games))
+            for game in possible_games:
+                self._logger.debug(
+                    "%s vs %s rating disparity: %i quality: %f",
+                    repr(game.match[0]),
+                    repr(game.match[1]),
+                    game.match[0].cumulated_rating - game.match[1].cumulated_rating,
+                    game.quality
+                )
 
         matches = self.pick_noncolliding_games(possible_games)
         for match in matches:
@@ -300,9 +302,10 @@ class TeamMatchMaker(Matchmaker):
                     player for search in game.match for player in search.players
                 )
             ]
-        self._logger.debug(
-            "Chosen games:\n" + "\n".join(
-                "%s vs %s " % (repr(match[0]), repr(match[1])) for match in matches
-            )
-        )
+
+        if self._logger.isEnabledFor(logging.DEBUG):
+            if matches:
+                self._logger.debug("Chosen games:")
+            for match in matches:
+                self._logger.debug("%s vs %s " % (repr(match[0]), repr(match[1])))
         return matches
