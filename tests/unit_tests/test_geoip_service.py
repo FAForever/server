@@ -1,11 +1,12 @@
 import hashlib
 import os
 import random
+import shutil
 import string
 import tarfile
-import tempfile
 from datetime import datetime
 from io import BytesIO
+from pathlib import Path
 from time import time
 from unittest.mock import Mock
 
@@ -19,8 +20,17 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-def fake_geoip_path(geoip_service) -> str:
-    return "/tmp/fake_db.mmdb"
+def fake_geoip_path(tmp_path: Path) -> Path:
+    path = tmp_path / "fake_db.mmdb"
+    path.touch(exist_ok=False)
+    return path
+
+
+@pytest.fixture
+def test_geoip_path(tmp_path: Path) -> Path:
+    path = tmp_path / "test.mmdb"
+    shutil.copy("tests/data/test.mmdb", path)
+    return path
 
 
 @pytest.fixture
@@ -45,33 +55,31 @@ async def test_check_update(fake_geoip_service, fake_geoip_path):
     fake_geoip_service.download_geoip_db.assert_called_once_with()
 
 
-async def test_check_file_exist(fake_geoip_service):
-    with tempfile.NamedTemporaryFile() as f:
-        # Set creation time into the past
-        os.utime(f.name, (time() - 60, time() - 60))
-        fake_geoip_service.file_path = f.name
-        fake_geoip_service.load_db = Mock()
-        fake_geoip_service.db = None
-        fake_geoip_service.db_update_time = None
+async def test_check_file_exist(fake_geoip_service, fake_geoip_path):
+    # Set creation time into the past
+    os.utime(fake_geoip_path, (time() - 60, time() - 60))
+    fake_geoip_service.load_db = Mock()
+    fake_geoip_service.db = None
+    fake_geoip_service.db_update_time = None
 
-        fake_geoip_service.check_geoip_db_file_updated()
+    fake_geoip_service.check_geoip_db_file_updated()
 
-        assert fake_geoip_service.load_db.call_count == 1
-        fake_geoip_service.db = Mock()
-        fake_geoip_service.db_update_time = datetime.now()
+    assert fake_geoip_service.load_db.call_count == 1
+    fake_geoip_service.db = Mock()
+    fake_geoip_service.db_update_time = datetime.now()
 
-        fake_geoip_service.check_geoip_db_file_updated()
-        fake_geoip_service.check_geoip_db_file_updated()
-        fake_geoip_service.check_geoip_db_file_updated()
+    fake_geoip_service.check_geoip_db_file_updated()
+    fake_geoip_service.check_geoip_db_file_updated()
+    fake_geoip_service.check_geoip_db_file_updated()
 
-        # The file shouldn't be reloaded until it is updated
-        assert fake_geoip_service.load_db.call_count == 1
+    # The file shouldn't be reloaded until it is updated
+    assert fake_geoip_service.load_db.call_count == 1
 
-        os.utime(f.name, (time(), time()))
+    os.utime(fake_geoip_path, (time(), time()))
 
-        fake_geoip_service.check_geoip_db_file_updated()
+    fake_geoip_service.check_geoip_db_file_updated()
 
-        assert fake_geoip_service.load_db.call_count == 2
+    assert fake_geoip_service.load_db.call_count == 2
 
 
 async def test_do_update(fake_geoip_service, fake_geoip_path):
@@ -136,5 +144,27 @@ async def test_country_on_failed_db_load(geoip_service):
     assert country_code == ""
 
 
-async def test_load_db_not_raises(geoip_service):
+async def test_load_db(geoip_service, test_geoip_path):
+    old_db = Mock()
+    geoip_service.db = old_db
+    geoip_service.file_path = test_geoip_path
+
     geoip_service.load_db()
+
+    old_db.close.assert_called_once()
+    assert geoip_service.country("1.1.1.1") == "US"
+
+
+async def test_load_db_not_overwrites_on_failed_load(
+    geoip_service,
+    fake_geoip_path
+):
+    db = Mock()
+
+    geoip_service.db = db
+    geoip_service.file_path = fake_geoip_path
+
+    geoip_service.load_db()
+
+    assert geoip_service.db is db
+    geoip_service.db.close.assert_not_called()
