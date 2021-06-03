@@ -37,11 +37,12 @@ import os
 import shutil
 import tarfile
 from datetime import datetime
+from tempfile import TemporaryFile
 from typing import IO
 
 import aiocron
 import aiohttp
-import geoip2.database
+import maxminddb
 from maxminddb.errors import InvalidDatabaseError
 
 from .config import config
@@ -149,25 +150,31 @@ class GeoIpService(Service):
         self._logger.info(&#34;Downloading new geoip database&#34;)
 
         # Download new file to a temp location
-        temp_file_path = &#34;/tmp/geoip.mmdb.tar.gz&#34;
-        await self._download_file(
-            config.GEO_IP_DATABASE_URL,
-            config.GEO_IP_LICENSE_KEY,
-            temp_file_path
-        )
+        with TemporaryFile() as temp_file:
+            await self._download_file(
+                config.GEO_IP_DATABASE_URL,
+                config.GEO_IP_LICENSE_KEY,
+                temp_file
+            )
+            temp_file.seek(0)
 
-        # Unzip the archive and overwrite the old file
-        try:
-            with tarfile.open(temp_file_path, &#34;r:gz&#34;) as tar:
-                f_in = extract_file(tar, &#34;GeoLite2-Country.mmdb&#34;)
-                with open(self.file_path, &#34;wb&#34;) as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-        except (tarfile.TarError) as e:    # pragma: no cover
-            self._logger.warning(&#34;Failed to extract downloaded file!&#34;)
-            raise e
+            # Unzip the archive and overwrite the old file
+            try:
+                with tarfile.open(fileobj=temp_file, mode=&#34;r:gz&#34;) as tar:
+                    with open(self.file_path, &#34;wb&#34;) as f_out:
+                        f_in = extract_file(tar, &#34;GeoLite2-Country.mmdb&#34;)
+                        shutil.copyfileobj(f_in, f_out)
+            except (tarfile.TarError) as e:    # pragma: no cover
+                self._logger.warning(&#34;Failed to extract downloaded file!&#34;)
+                raise e
         self._logger.info(&#34;New database download complete&#34;)
 
-    async def _download_file(self, url: str, license_key: str, file_path: str) -&gt; None:
+    async def _download_file(
+        self,
+        url: str,
+        license_key: str,
+        fileobj: IO[bytes]
+    ) -&gt; None:
         &#34;&#34;&#34;
         Download a file using aiohttp and save it to a file.
 
@@ -193,13 +200,12 @@ class GeoIpService(Service):
         async def get_db_file_with_checksum(session):
             hasher = hashlib.md5()
             async with session.get(url, params=params, timeout=60 * 20) as resp:
-                with open(file_path, &#34;wb&#34;) as f:
-                    while True:
-                        chunk = await resp.content.read(chunk_size)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-                        hasher.update(chunk)
+                while True:
+                    chunk = await resp.content.read(chunk_size)
+                    if not chunk:
+                        break
+                    fileobj.write(chunk)
+                    hasher.update(chunk)
 
             return hasher.hexdigest()
 
@@ -218,17 +224,23 @@ class GeoIpService(Service):
         &#34;&#34;&#34;
         Loads the database into memory.
         &#34;&#34;&#34;
+        # Set the time first, if the file is corrupted we don&#39;t need to try
+        # loading it again anyways
+        self.db_update_time = datetime.now()
+
         try:
-            # Set the time first, if the file is corrupted we don&#39;t need to try
-            # loading it again anyways
-            self.db_update_time = datetime.now()
-            self.db = geoip2.database.Reader(self.file_path)
-            self._logger.info(
-                &#34;File loaded successfully from %s&#34;, self.file_path
-            )
-        except (InvalidDatabaseError, FileNotFoundError, ValueError):
+            new_db = maxminddb.open_database(self.file_path)
+        except (InvalidDatabaseError, OSError, ValueError):
             self._logger.exception(
                 &#34;Failed to load maxmind db! Maybe the download was interrupted&#34;
+            )
+        else:
+            if self.db is not None:
+                self.db.close()
+
+            self.db = new_db
+            self._logger.info(
+                &#34;File loaded successfully from %s&#34;, self.file_path
             )
 
     def country(self, address: str) -&gt; str:
@@ -239,13 +251,15 @@ class GeoIpService(Service):
         if self.db is None:
             return default_value
 
-        try:
-            return str(self.db.country(address).country.iso_code)
-        except geoip2.errors.AddressNotFoundError:
+        entry = self.db.get(address)
+        if entry is None:
             return default_value
-        except ValueError as e:    # pragma: no cover
-            self._logger.exception(&#34;ValueError: %s&#34;, e)
-            return default_value
+
+        return str(entry.get(&#34;country&#34;, {}).get(&#34;iso_code&#34;, default_value))
+
+    async def shutdown(self):
+        if self.db is not None:
+            self.db.close()
 
 
 def extract_file(tar: tarfile.TarFile, name: str) -&gt; IO[bytes]:
@@ -258,9 +272,7 @@ def extract_file(tar: tarfile.TarFile, name: str) -&gt; IO[bytes]:
     Raises `TarError` if the tar archive does not contain the databse file.
     &#34;&#34;&#34;
     mmdb = next(
-        (m for m in tar.getmembers() if
-            m.name.endswith(name)
-            and m.isfile()),
+        (m for m in tar.getmembers() if m.name.endswith(name) and m.isfile()),
         None
     )
     if mmdb is None:
@@ -306,9 +318,7 @@ folder.</p>
     Raises `TarError` if the tar archive does not contain the databse file.
     &#34;&#34;&#34;
     mmdb = next(
-        (m for m in tar.getmembers() if
-            m.name.endswith(name)
-            and m.isfile()),
+        (m for m in tar.getmembers() if m.name.endswith(name) and m.isfile()),
         None
     )
     if mmdb is None:
@@ -439,25 +449,31 @@ the service will try to download a new file from tue url in <code><a title="serv
         self._logger.info(&#34;Downloading new geoip database&#34;)
 
         # Download new file to a temp location
-        temp_file_path = &#34;/tmp/geoip.mmdb.tar.gz&#34;
-        await self._download_file(
-            config.GEO_IP_DATABASE_URL,
-            config.GEO_IP_LICENSE_KEY,
-            temp_file_path
-        )
+        with TemporaryFile() as temp_file:
+            await self._download_file(
+                config.GEO_IP_DATABASE_URL,
+                config.GEO_IP_LICENSE_KEY,
+                temp_file
+            )
+            temp_file.seek(0)
 
-        # Unzip the archive and overwrite the old file
-        try:
-            with tarfile.open(temp_file_path, &#34;r:gz&#34;) as tar:
-                f_in = extract_file(tar, &#34;GeoLite2-Country.mmdb&#34;)
-                with open(self.file_path, &#34;wb&#34;) as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-        except (tarfile.TarError) as e:    # pragma: no cover
-            self._logger.warning(&#34;Failed to extract downloaded file!&#34;)
-            raise e
+            # Unzip the archive and overwrite the old file
+            try:
+                with tarfile.open(fileobj=temp_file, mode=&#34;r:gz&#34;) as tar:
+                    with open(self.file_path, &#34;wb&#34;) as f_out:
+                        f_in = extract_file(tar, &#34;GeoLite2-Country.mmdb&#34;)
+                        shutil.copyfileobj(f_in, f_out)
+            except (tarfile.TarError) as e:    # pragma: no cover
+                self._logger.warning(&#34;Failed to extract downloaded file!&#34;)
+                raise e
         self._logger.info(&#34;New database download complete&#34;)
 
-    async def _download_file(self, url: str, license_key: str, file_path: str) -&gt; None:
+    async def _download_file(
+        self,
+        url: str,
+        license_key: str,
+        fileobj: IO[bytes]
+    ) -&gt; None:
         &#34;&#34;&#34;
         Download a file using aiohttp and save it to a file.
 
@@ -483,13 +499,12 @@ the service will try to download a new file from tue url in <code><a title="serv
         async def get_db_file_with_checksum(session):
             hasher = hashlib.md5()
             async with session.get(url, params=params, timeout=60 * 20) as resp:
-                with open(file_path, &#34;wb&#34;) as f:
-                    while True:
-                        chunk = await resp.content.read(chunk_size)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-                        hasher.update(chunk)
+                while True:
+                    chunk = await resp.content.read(chunk_size)
+                    if not chunk:
+                        break
+                    fileobj.write(chunk)
+                    hasher.update(chunk)
 
             return hasher.hexdigest()
 
@@ -508,17 +523,23 @@ the service will try to download a new file from tue url in <code><a title="serv
         &#34;&#34;&#34;
         Loads the database into memory.
         &#34;&#34;&#34;
+        # Set the time first, if the file is corrupted we don&#39;t need to try
+        # loading it again anyways
+        self.db_update_time = datetime.now()
+
         try:
-            # Set the time first, if the file is corrupted we don&#39;t need to try
-            # loading it again anyways
-            self.db_update_time = datetime.now()
-            self.db = geoip2.database.Reader(self.file_path)
-            self._logger.info(
-                &#34;File loaded successfully from %s&#34;, self.file_path
-            )
-        except (InvalidDatabaseError, FileNotFoundError, ValueError):
+            new_db = maxminddb.open_database(self.file_path)
+        except (InvalidDatabaseError, OSError, ValueError):
             self._logger.exception(
                 &#34;Failed to load maxmind db! Maybe the download was interrupted&#34;
+            )
+        else:
+            if self.db is not None:
+                self.db.close()
+
+            self.db = new_db
+            self._logger.info(
+                &#34;File loaded successfully from %s&#34;, self.file_path
             )
 
     def country(self, address: str) -&gt; str:
@@ -529,13 +550,15 @@ the service will try to download a new file from tue url in <code><a title="serv
         if self.db is None:
             return default_value
 
-        try:
-            return str(self.db.country(address).country.iso_code)
-        except geoip2.errors.AddressNotFoundError:
+        entry = self.db.get(address)
+        if entry is None:
             return default_value
-        except ValueError as e:    # pragma: no cover
-            self._logger.exception(&#34;ValueError: %s&#34;, e)
-            return default_value</code></pre>
+
+        return str(entry.get(&#34;country&#34;, {}).get(&#34;iso_code&#34;, default_value))
+
+    async def shutdown(self):
+        if self.db is not None:
+            self.db.close()</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -636,13 +659,11 @@ and loads it if it has.</p></div>
     if self.db is None:
         return default_value
 
-    try:
-        return str(self.db.country(address).country.iso_code)
-    except geoip2.errors.AddressNotFoundError:
+    entry = self.db.get(address)
+    if entry is None:
         return default_value
-    except ValueError as e:    # pragma: no cover
-        self._logger.exception(&#34;ValueError: %s&#34;, e)
-        return default_value</code></pre>
+
+    return str(entry.get(&#34;country&#34;, {}).get(&#34;iso_code&#34;, default_value))</code></pre>
 </details>
 </dd>
 <dt id="server.geoip_service.GeoIpService.download_geoip_db"><code class="name flex">
@@ -665,22 +686,23 @@ a valid gzip file, then it does NOT overwrite the old file.</p></div>
     self._logger.info(&#34;Downloading new geoip database&#34;)
 
     # Download new file to a temp location
-    temp_file_path = &#34;/tmp/geoip.mmdb.tar.gz&#34;
-    await self._download_file(
-        config.GEO_IP_DATABASE_URL,
-        config.GEO_IP_LICENSE_KEY,
-        temp_file_path
-    )
+    with TemporaryFile() as temp_file:
+        await self._download_file(
+            config.GEO_IP_DATABASE_URL,
+            config.GEO_IP_LICENSE_KEY,
+            temp_file
+        )
+        temp_file.seek(0)
 
-    # Unzip the archive and overwrite the old file
-    try:
-        with tarfile.open(temp_file_path, &#34;r:gz&#34;) as tar:
-            f_in = extract_file(tar, &#34;GeoLite2-Country.mmdb&#34;)
-            with open(self.file_path, &#34;wb&#34;) as f_out:
-                shutil.copyfileobj(f_in, f_out)
-    except (tarfile.TarError) as e:    # pragma: no cover
-        self._logger.warning(&#34;Failed to extract downloaded file!&#34;)
-        raise e
+        # Unzip the archive and overwrite the old file
+        try:
+            with tarfile.open(fileobj=temp_file, mode=&#34;r:gz&#34;) as tar:
+                with open(self.file_path, &#34;wb&#34;) as f_out:
+                    f_in = extract_file(tar, &#34;GeoLite2-Country.mmdb&#34;)
+                    shutil.copyfileobj(f_in, f_out)
+        except (tarfile.TarError) as e:    # pragma: no cover
+            self._logger.warning(&#34;Failed to extract downloaded file!&#34;)
+            raise e
     self._logger.info(&#34;New database download complete&#34;)</code></pre>
 </details>
 </dd>
@@ -697,17 +719,23 @@ a valid gzip file, then it does NOT overwrite the old file.</p></div>
     &#34;&#34;&#34;
     Loads the database into memory.
     &#34;&#34;&#34;
+    # Set the time first, if the file is corrupted we don&#39;t need to try
+    # loading it again anyways
+    self.db_update_time = datetime.now()
+
     try:
-        # Set the time first, if the file is corrupted we don&#39;t need to try
-        # loading it again anyways
-        self.db_update_time = datetime.now()
-        self.db = geoip2.database.Reader(self.file_path)
-        self._logger.info(
-            &#34;File loaded successfully from %s&#34;, self.file_path
-        )
-    except (InvalidDatabaseError, FileNotFoundError, ValueError):
+        new_db = maxminddb.open_database(self.file_path)
+    except (InvalidDatabaseError, OSError, ValueError):
         self._logger.exception(
             &#34;Failed to load maxmind db! Maybe the download was interrupted&#34;
+        )
+    else:
+        if self.db is not None:
+            self.db.close()
+
+        self.db = new_db
+        self._logger.info(
+            &#34;File loaded successfully from %s&#34;, self.file_path
         )</code></pre>
 </details>
 </dd>
