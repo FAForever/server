@@ -840,6 +840,9 @@ class LobbyConnection:
             })
             return
 
+        if self.player.id in game.host.foes:
+            raise ClientError(&#34;You cannot join games hosted by this player.&#34;)
+
         if not game or game.state is not GameState.LOBBY:
             self._logger.debug(&#34;Game not in lobby state: %s state %s&#34;, game, game.state)
             await self.send({
@@ -1973,6 +1976,9 @@ class LobbyConnection:
             })
             return
 
+        if self.player.id in game.host.foes:
+            raise ClientError(&#34;You cannot join games hosted by this player.&#34;)
+
         if not game or game.state is not GameState.LOBBY:
             self._logger.debug(&#34;Game not in lobby state: %s state %s&#34;, game, game.state)
             await self.send({
@@ -2883,6 +2889,9 @@ async def command_game_join(self, message):
             &#34;text&#34;: &#34;The host has left the game.&#34;
         })
         return
+
+    if self.player.id in game.host.foes:
+        raise ClientError(&#34;You cannot join games hosted by this player.&#34;)
 
     if not game or game.state is not GameState.LOBBY:
         self._logger.debug(&#34;Game not in lobby state: %s state %s&#34;, game, game.state)
