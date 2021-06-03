@@ -811,6 +811,9 @@ class LobbyConnection:
             })
             return
 
+        if self.player.id in game.host.foes:
+            raise ClientError("You cannot join games hosted by this player.")
+
         if not game or game.state is not GameState.LOBBY:
             self._logger.debug("Game not in lobby state: %s state %s", game, game.state)
             await self.send({

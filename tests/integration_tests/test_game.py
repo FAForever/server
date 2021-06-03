@@ -231,6 +231,21 @@ async def test_game_ended_rates_game(lobby_server):
         await read_until_command(host_proto, "player_info", timeout=10)
 
 
+@fast_forward(30)
+async def test_game_with_foed_player(lobby_server):
+    _, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    _, _, guest_proto = await connect_and_sign_in(
+        ("foed_by_test", "foe"), lobby_server
+    )
+
+    # Set up the game
+    game_id = await host_game(host_proto)
+    with pytest.raises(asyncio.TimeoutError):
+        await join_game(guest_proto, game_id)
+
+
 @fast_forward(100)
 async def test_partial_game_ended_rates_game(lobby_server, tmp_user):
     """

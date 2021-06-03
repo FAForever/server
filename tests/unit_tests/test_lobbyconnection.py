@@ -280,7 +280,6 @@ async def test_launch_game(lobbyconnection, game, player_factory):
 async def test_command_game_host_creates_correct_game(
         lobbyconnection, game_service, test_game_info, players):
     lobbyconnection.player = players.hosting
-    players.hosting.in_game = False
     players.hosting.state = PlayerState.IDLE
 
     lobbyconnection.game_service = game_service
@@ -313,10 +312,10 @@ async def test_command_game_join_calls_join_game(
     game.game_mode = "faf"
     game.id = 42
     game.name = "Test Game Name"
+    game.host = players.hosting
     game_service._games[42] = game
-    lobbyconnection.player = players.hosting
-    players.hosting.in_game = False
-    players.hosting.state = PlayerState.IDLE
+    lobbyconnection.player = players.joining
+    players.joining.state = PlayerState.IDLE
     test_game_info["uid"] = 42
 
     await lobbyconnection.on_message_received({
@@ -352,10 +351,10 @@ async def test_command_game_join_uid_as_str(
     game.game_mode = "faf"
     game.id = 42
     game.name = "Test Game Name"
+    game.host = players.hosting
     game_service._games[42] = game
-    lobbyconnection.player = players.hosting
-    players.hosting.state = PlayerState.IDLE
-    players.hosting.in_game = False
+    lobbyconnection.player = players.joining
+    players.joining.state = PlayerState.IDLE
     test_game_info["uid"] = "42"  # Pass in uid as string
 
     await lobbyconnection.on_message_received({
@@ -390,10 +389,10 @@ async def test_command_game_join_without_password(
     game.password = "password"
     game.game_mode = "faf"
     game.id = 42
+    game.host = players.hosting
     game_service._games[42] = game
-    lobbyconnection.player = players.hosting
-    players.hosting.state = PlayerState.IDLE
-    players.hosting.in_game = False
+    lobbyconnection.player = players.joining
+    players.joining.state = PlayerState.IDLE
     test_game_info["uid"] = 42
     del test_game_info["password"]
 
@@ -416,9 +415,8 @@ async def test_command_game_join_game_not_found(
 ):
     lobbyconnection.send = CoroutineMock()
     lobbyconnection.game_service = game_service
-    lobbyconnection.player = players.hosting
-    players.hosting.in_game = False
-    players.hosting.state = PlayerState.IDLE
+    lobbyconnection.player = players.joining
+    players.joining.state = PlayerState.IDLE
     test_game_info["uid"] = 42
 
     await lobbyconnection.on_message_received({
@@ -444,8 +442,9 @@ async def test_command_game_join_game_bad_init_mode(
     game.state = GameState.LOBBY
     game.init_mode = InitMode.AUTO_LOBBY
     game.id = 42
+    game.host = players.hosting
     game_service._games[42] = game
-    lobbyconnection.player = players.hosting
+    lobbyconnection.player = players.joining
     lobbyconnection.player.state = PlayerState.IDLE
     test_game_info["uid"] = 42
 
