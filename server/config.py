@@ -58,7 +58,7 @@ class ConfigurationStore:
         self.API_BASE_URL = "https://api.test.faforever.com/"
         self.USE_API = True
         # Location of the OAuth jwks
-        self.HYDRA_JWKS_URI = "https://hydra.test.faforever.com/.well-known/jwks.json"
+        self.HYDRA_JWKS_URI = "https://hydra.faforever.com/.well-known/jwks.json"
 
         self.MQ_USER = "faf-python-server"
         self.MQ_PASSWORD = "banana"
