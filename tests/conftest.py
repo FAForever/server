@@ -46,6 +46,7 @@ logging.getLogger().setLevel(TRACE)
 hypothesis.settings.register_profile(
     "nightly",
     max_examples=10_000,
+    deadline=None,
     print_blob=True
 )
 
