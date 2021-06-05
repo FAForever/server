@@ -23,7 +23,7 @@ class OAuthService(Service, name="oauth_service"):
     async def initialize(self) -> None:
         await self.retrieve_public_keys()
         # crontab: min hour day month day_of_week
-        # Run every day to update public keys.
+        # Run every 10 minutes to update public keys.
         self._update_cron = aiocron.crontab(
             "*/10 * * * *", func=self.retrieve_public_keys
         )
