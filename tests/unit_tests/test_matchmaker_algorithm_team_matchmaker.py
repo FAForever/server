@@ -54,18 +54,18 @@ def test_team_matchmaker_performance(player_factory, bench, caplog):
     # Disable debug logging for performance
     caplog.set_level(logging.INFO)
     num_searches = 200
-    matchmaker = TeamMatchMaker(4)
+    matchmaker = TeamMatchMaker()
 
     searches = [Search([player_factory(1500, 500, ladder_games=1)]) for _ in range(num_searches)]
 
     with bench:
-        matchmaker.find(searches)
+        matchmaker.find(searches, 4)
 
     assert bench.elapsed() < 0.5
 
 
 def test_team_matchmaker_algorithm(player_factory):
-    matchmaker = TeamMatchMaker(4)
+    matchmaker = TeamMatchMaker()
     s = make_searches(
         [1251, 1116, 1038, 1332, 1271, 1142, 1045, 1347, 1359, 1348, 1227, 1118, 1058, 1338, 1271, 1137, 1025],
         player_factory)
@@ -78,7 +78,7 @@ def test_team_matchmaker_algorithm(player_factory):
     s.append(c3)
     s.append(c4)
 
-    matches, unmatched = matchmaker.find(s)
+    matches, unmatched = matchmaker.find(s, 4)
 
     assert set(matches[0][0].get_original_searches()) == {c1, s[2], s[5]}
     assert set(matches[0][1].get_original_searches()) == {c3, s[1], s[6]}
@@ -90,7 +90,7 @@ def test_team_matchmaker_algorithm(player_factory):
 
 
 def test_team_matchmaker_algorithm_2(player_factory):
-    matchmaker = TeamMatchMaker(4)
+    matchmaker = TeamMatchMaker()
     s = make_searches(
         [227, 1531, 1628, 1722, 1415, 1146, 937, 1028, 1315, 1236, 1125, 1252, 1185, 1333, 1263, 1184, 1037],
         player_factory)
@@ -103,7 +103,7 @@ def test_team_matchmaker_algorithm_2(player_factory):
     s.append(c3)
     s.append(c4)
 
-    matches, unmatched = matchmaker.find(s)
+    matches, unmatched = matchmaker.find(s, 4)
 
     assert set(matches[0][0].get_original_searches()) == {c4, s[4]}
     assert set(matches[0][1].get_original_searches()) == {c2, c3}
@@ -121,11 +121,11 @@ def test_team_matchmaker_algorithm_2(player_factory):
 # max players should depend on team size and
 # searches should have team_size * 2 total players
 def test_make_even_teams(searches, team_size):
-    matchmaker = TeamMatchMaker(team_size)
+    matchmaker = TeamMatchMaker()
     try:
-        teams = matchmaker.make_teams(searches)
-        assert len(teams[0].players) == matchmaker.team_size
-        assert len(teams[1].players) == matchmaker.team_size
+        teams = matchmaker.make_teams(searches, team_size)
+        assert len(teams[0].players) == team_size
+        assert len(teams[1].players) == team_size
     except UnevenTeamsException:
         assert True
 
@@ -135,7 +135,7 @@ def test_make_fair_teams(player_factory):
     team_a = CombinedSearch(*[s[1], s[2], s[4], s[7]])
     team_b = CombinedSearch(*[s[0], s[3], s[5], s[6]])
 
-    teams = TeamMatchMaker(4).make_teams(s)
+    teams = TeamMatchMaker().make_teams(s, 4)
 
     # By converting to a set we don't have to worry about order
     assert set(teams[0].players) == set(team_a.players)
@@ -152,7 +152,7 @@ def test_make_fair_teams_2(player_factory):
     team_a = CombinedSearch(*[c2, s[0], s[1]])
     team_b = CombinedSearch(*[c1, s[2], s[3]])
 
-    teams = TeamMatchMaker(4).make_teams(s)
+    teams = TeamMatchMaker().make_teams(s, 4)
 
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
@@ -166,7 +166,7 @@ def test_make_teams_with_negative_rated_players(player_factory):
     team_a = CombinedSearch(*[s[0], s[1], s[3], s[4]])
     team_b = CombinedSearch(*[s[2], s[5], s[6]])
 
-    teams = TeamMatchMaker(4).make_teams(s)
+    teams = TeamMatchMaker().make_teams(s, 4)
 
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
@@ -180,7 +180,7 @@ def test_make_teams_with_full_sized_search(player_factory):
     team_a = CombinedSearch(*[c1])
     team_b = CombinedSearch(*[s[0], s[1], s[2], s[3]])
 
-    teams = TeamMatchMaker(4).make_teams(s)
+    teams = TeamMatchMaker().make_teams(s, 4)
 
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
@@ -193,7 +193,7 @@ def test_make_teams_with_almost_full_sized_search(player_factory):
 
     team_a = CombinedSearch(*[c1, s[3]])
     team_b = CombinedSearch(*[s[0], s[1], s[2], s[4]])
-    teams = TeamMatchMaker(4).make_teams(s)
+    teams = TeamMatchMaker().make_teams(s, 4)
 
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
@@ -208,7 +208,7 @@ def test_ignore_impossible_team_splits(player_factory):
     s.append(c2)
     s.append(c3)
 
-    matches, unmatched = TeamMatchMaker(4).find(s)
+    matches, unmatched = TeamMatchMaker().find(s, 4)
 
     assert len(matches) == 0
     assert set(unmatched) == set(s)
@@ -216,7 +216,7 @@ def test_ignore_impossible_team_splits(player_factory):
 
 @given(team_a=st_searches(4), team_b=st_searches(4))
 def test_game_quality(team_a, team_b):
-    game = TeamMatchMaker(4).assign_game_quality((team_a, team_b))
+    game = TeamMatchMaker().assign_game_quality((team_a, team_b))
 
     assert 0.0 <= game.quality <= 1.0
 
@@ -226,7 +226,7 @@ def test_maximum_game_quality_for_even_teams(player):
     search = Search([player])
     team_a = CombinedSearch(*[search, search, search, search])
     team_b = CombinedSearch(*[search, search, search, search])
-    game = TeamMatchMaker(4).assign_game_quality((team_a, team_b))
+    game = TeamMatchMaker().assign_game_quality((team_a, team_b))
 
     assert game.quality == 1.0
 
@@ -235,7 +235,7 @@ def test_low_game_quality_for_high_rating_disparity(player_factory):
     s = make_searches([100, 100, 4000, 4000, 4000, 4000, 100, 100], player_factory)
     team_a = CombinedSearch(*[s[0], s[1], s[2], s[3]])
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
-    game = TeamMatchMaker(4).assign_game_quality((team_a, team_b))
+    game = TeamMatchMaker().assign_game_quality((team_a, team_b))
 
     assert game.quality == 0.0
 
@@ -244,14 +244,14 @@ def test_low_game_quality_for_unfair_teams(player_factory):
     s = make_searches([100, 100, 100, 100, 4000, 4000, 4000, 4000], player_factory)
     team_a = CombinedSearch(*[s[0], s[1], s[2], s[3]])
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
-    game = TeamMatchMaker(4).assign_game_quality((team_a, team_b))
+    game = TeamMatchMaker().assign_game_quality((team_a, team_b))
 
     assert game.quality == 0.0
 
 
 @given(st_searches_list(max_players=1, min_size=6, max_size=6))
 def test_game_quality_time_bonus(s):
-    matchmaker = TeamMatchMaker(4)
+    matchmaker = TeamMatchMaker()
     team_a = CombinedSearch(*[s.pop(), s.pop(), s.pop()])
     c1 = CombinedSearch(*[s.pop(), s.pop()])
     team_b = CombinedSearch(*[c1, s.pop()])
@@ -272,7 +272,7 @@ def test_pick_neighboring_players(searches_with_index):
     searches = searches_with_index[0]
     index = searches_with_index[1]
     try:
-        participants = TeamMatchMaker(4).pick_neighboring_players(searches, index)
+        participants = TeamMatchMaker().pick_neighboring_players(searches, index, 4)
         assert sum(len(search.players) for search in participants) == 8
     except NotEnoughPlayersException:
         assert True
@@ -281,7 +281,7 @@ def test_pick_neighboring_players(searches_with_index):
 @pytest.mark.slow
 @given(st_searches_list(max_players=1, min_size=8))
 def test_pick_neighboring_players_from_start(searches):
-    participants = TeamMatchMaker(4).pick_neighboring_players(searches, 0)
+    participants = TeamMatchMaker().pick_neighboring_players(searches, 0, 4)
 
     assert sum(len(search.players) for search in participants) == 8
     assert set(participants) == set(searches[:8])
@@ -292,7 +292,7 @@ def test_pick_neighboring_players_from_start(searches):
 def test_pick_neighboring_players_from_end(searches):
     index = len(searches) - 1
 
-    participants = TeamMatchMaker(4).pick_neighboring_players(searches, index)
+    participants = TeamMatchMaker().pick_neighboring_players(searches, index, 4)
 
     assert sum(len(search.players) for search in participants) == 8
     assert set(participants) == set(searches[-8:])
@@ -301,7 +301,7 @@ def test_pick_neighboring_players_from_end(searches):
 @given(st_game_candidates_list())
 def test_pick_noncolliding_games(games):
     if not games:
-        assert TeamMatchMaker(4).pick_noncolliding_games(games) == []
+        assert TeamMatchMaker().pick_noncolliding_games(games) == []
         return
 
     max_quality_game = games[0]
@@ -309,7 +309,7 @@ def test_pick_noncolliding_games(games):
         if game.quality > max_quality_game.quality:
             max_quality_game = game
 
-    matches = TeamMatchMaker(4).pick_noncolliding_games(games)
+    matches = TeamMatchMaker().pick_noncolliding_games(games)
 
     while matches:
         match = matches.pop()

@@ -56,7 +56,7 @@ class TeamMatchMaker(Matchmaker):
     8. pick the first game from the game list and remove all other games that contain the same players
     9. repeat until the list is empty
     """
-    def find(self, searches: Iterable[Search]) -> Tuple[List[Match], List[Search]]:
+    def find(self, searches: Iterable[Search], team_size: int) -> Tuple[List[Match], List[Search]]:
         if not searches:
             return [], []
 
@@ -69,8 +69,8 @@ class TeamMatchMaker(Matchmaker):
             self._logger.debug("building game for %s", repr(search))
 
             try:
-                participants = self.pick_neighboring_players(searches, index)
-                match = self.make_teams(participants)
+                participants = self.pick_neighboring_players(searches, index, team_size)
+                match = self.make_teams(participants, team_size)
                 game = self.assign_game_quality(match)
                 possible_games.append(game)
             except NotEnoughPlayersException:
@@ -96,7 +96,7 @@ class TeamMatchMaker(Matchmaker):
                     searches.remove(search)
         return matches, list(searches)
 
-    def pick_neighboring_players(self, searches: List[Search], index: int) -> List[Search]:
+    def pick_neighboring_players(self, searches: List[Search], index: int, team_size: int) -> List[Search]:
         """
         Picks searches from the list starting with the search at the given index and then expanding in both directions
         until there are enough players for a full game.
@@ -113,19 +113,19 @@ class TeamMatchMaker(Matchmaker):
         participants = [candidate]
         number_of_players = len(candidate.players)
 
-        while number_of_players < self.team_size * 2:
+        while number_of_players < team_size * 2:
             candidate, prev = next(lower if pick_lower else higher, None), candidate
             pick_lower = not pick_lower
             if candidate is None:
                 if prev is None:
                     raise NotEnoughPlayersException()
                 continue
-            if number_of_players + len(candidate.players) <= self.team_size * 2:
+            if number_of_players + len(candidate.players) <= team_size * 2:
                 participants.append(candidate)
                 number_of_players += len(candidate.players)
         return participants
 
-    def make_teams(self, searches: List[Search]) -> Tuple[Search, Search]:
+    def make_teams(self, searches: List[Search], team_size: int) -> Tuple[Search, Search]:
         """
         Attempts to partition the given searches into two teams of the appropriate team size
         while also trying that both teams have the same cumulated rating.
@@ -146,11 +146,11 @@ class TeamMatchMaker(Matchmaker):
         team_a = []
         team_b = []
 
-        if searches_dict[self.team_size]:
-            search = searches_dict[self.team_size].pop()
+        if searches_dict[team_size]:
+            search = searches_dict[team_size].pop()
             team_a.append(search)
-        elif searches_dict[self.team_size - 1]:
-            search = searches_dict[self.team_size - 1].pop()
+        elif searches_dict[team_size - 1]:
+            search = searches_dict[team_size - 1].pop()
             filler = self._find_most_balanced_filler(avg, search, searches_dict)
             team_a.append(search)
             team_a.append(filler)
@@ -165,9 +165,9 @@ class TeamMatchMaker(Matchmaker):
                            team_a, combined_team_a.cumulated_rating, combined_team_a.average_rating)
         self._logger.debug("team b: %s cumulated rating: %s average rating: %s",
                            team_b, combined_team_b.cumulated_rating, combined_team_b.average_rating)
-        if not len(combined_team_a.players) == self.team_size:
+        if not len(combined_team_a.players) == team_size:
             raise UnevenTeamsException()
-        if not len(combined_team_b.players) == self.team_size:
+        if not len(combined_team_b.players) == team_size:
             raise UnevenTeamsException()
         return combined_team_a, combined_team_b
 
@@ -225,8 +225,11 @@ class TeamMatchMaker(Matchmaker):
         for search in searches:
             searches_by_size[len(search.players)].append(search)
 
-        self._logger.debug("participating searches by player size:\n" +
-                           "\n".join("%i players: %s" % (i, searches_by_size[i]) for i in range(1, self.team_size + 1)))
+        if self._logger.isEnabledFor(logging.DEBUG):
+            max_size = max(searches_by_size.keys())
+            self._logger.debug("participating searches by player size:")
+            for i in range(1, max_size + 1):
+                self._logger.debug("%i players: %s" % (i, searches_by_size[i]))
         return searches_by_size
 
     def _find_most_balanced_filler(self, avg, search, searches_dict):
