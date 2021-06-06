@@ -1,7 +1,7 @@
 from typing import Dict, Iterable, List, Tuple
 
 from ..search import Match, Search
-from .matchmaker import Matchmaker, MatchmakingPolicy1v1
+from .matchmaker import MatchmakingPolicy1v1
 
 
 class RandomlyMatchNewbies(MatchmakingPolicy1v1):

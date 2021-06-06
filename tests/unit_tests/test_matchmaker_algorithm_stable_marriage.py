@@ -329,6 +329,7 @@ def test_partial_newbie_team_matched_with_newbie_team(player_factory):
 
     assert matches[partial_newbie] == newbie
     assert matches[newbie] == partial_newbie
+    assert len(unmatched_searches) == 0
 
 
 def test_newbie_and_top_rated_team_not_matched_randomly(player_factory):
@@ -345,6 +346,7 @@ def test_newbie_and_top_rated_team_not_matched_randomly(player_factory):
     matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert not matches
+    assert len(unmatched_searches) == len(searches)
 
 
 def test_unmatched_newbies_forcefully_match_pros(player_factory):
