@@ -433,25 +433,22 @@ async def test_find_matches_synchronized(queue_factory):
         time.sleep(0.2)
 
         is_matching = False
-        return []
+        return [], []
 
-    with mock.patch(
-        "server.matchmaker.matchmaker_queue.StableMarriageMatchmaker.find",
-        find
-    ):
-        queues = [queue_factory(f"Queue{i}") for i in range(5)]
-        # Ensure that find_matches does not short circuit
-        for queue in queues:
-            queue._queue = {
-                mock.Mock(players=[1]): 1,
-                mock.Mock(players=[2]): 2
-            }
-            queue.find_teams = mock.Mock()
-            queue._register_unmatched_searches = mock.Mock()
+    queues = [queue_factory(f"Queue{i}") for i in range(5)]
+    # Ensure that find_matches does not short circuit
+    for queue in queues:
+        queue._queue = {
+            mock.Mock(players=[1]): 1,
+            mock.Mock(players=[2]): 2
+        }
+        queue.find_teams = mock.Mock()
+        queue._register_unmatched_searches = mock.Mock()
+        queue.matchmaker.find = mock.Mock(side_effect=find)
 
-        await asyncio.gather(*[
-            queue.find_matches() for queue in queues
-        ])
+    await asyncio.gather(*[
+        queue.find_matches() for queue in queues
+    ])
 
 
 @pytest.mark.asyncio

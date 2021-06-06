@@ -5,28 +5,10 @@ from typing import Dict, Iterable, List, Set, Tuple
 
 from ...decorators import with_logger
 from ..search import Match, Search
-from .matchmaker import Matchmaker
+from .matchmaker import Matchmaker, MatchmakingPolicy1v1
+from .random_newbies import RandomlyMatchNewbies
 
 WeightedGraph = Dict[Search, List[Tuple[Search, float]]]
-
-
-@with_logger
-class MatchmakingPolicy1v1(object):
-    def __init__(self):
-        self.matches: Dict[Search, Search] = {}
-
-    def _match(self, s1: Search, s2: Search):
-        self._logger.debug(f"Matching %s and %s ({self.__class__})", s1, s2)
-        self.matches[s1] = s2
-        self.matches[s2] = s1
-
-    def _unmatch(self, s1: Search):
-        s2 = self.matches[s1]
-        self._logger.debug(f"Unmatching %s and %s ({self.__class__})", s1, s2)
-        assert self.matches[s2] == s1
-        del self.matches[s1]
-        del self.matches[s2]
-
 
 class StableMarriage(MatchmakingPolicy1v1):
     def find(self, ranks: WeightedGraph) -> Dict[Search, Search]:
@@ -90,72 +72,45 @@ class StableMarriage(MatchmakingPolicy1v1):
             self._match(search, preferred)
 
 
-class RandomlyMatchNewbies(MatchmakingPolicy1v1):
-    def find(self, searches: Iterable[Search]) -> Dict[Search, Search]:
-        self.matches.clear()
-
-        unmatched_newbies = []
-        first_opponent = None
-        for search in searches:
-            if search.has_top_player():
-                continue
-
-            if search.has_newbie():
-                unmatched_newbies.append(search)
-            elif not first_opponent and search.failed_matching_attempts >= 1:
-                first_opponent = search
-
-        while len(unmatched_newbies) >= 2:
-            newbie1 = unmatched_newbies.pop()
-            newbie2 = unmatched_newbies.pop()
-            self._match(newbie1, newbie2)
-
-        if unmatched_newbies and first_opponent:
-            newbie = unmatched_newbies[0]
-            self._match(newbie, first_opponent)
-
-        return self.matches
-
-
 @with_logger
 class StableMarriageMatchmaker(Matchmaker):
     """
     Runs stable marriage to produce a list of matches
     and afterwards adds random matchups for previously unmatched new players.
     """
-
-    def __init__(self, team_size: int):
-        super().__init__(1)
+    def find(
+        self, searches: Iterable[Search], team_size: int
+    ) -> Tuple[List[Match], List[Search]]:
         if team_size != 1:
             self._logger.error(
                 "Invalid team size %i for stable marriage matchmaker will be ignored",
                 team_size,
             )
 
-    def find(self, searches: Iterable[Search]) -> List[Match]:
-        self.searches = searches
-        self.matches: Dict[Search, Search] = {}
+        searches = list(searches)
+        matches: Dict[Search, Search] = {}
 
         self._logger.debug("Matching with stable marriage...")
-        searches = list(self.searches)
         if len(searches) < 30:
             ranks = _MatchingGraph.build_full(searches)
         else:
             ranks = _MatchingGraph.build_fast(searches)
         _MatchingGraph.remove_isolated(ranks)
-        self.matches.update(StableMarriage().find(ranks))
+        matches.update(StableMarriage().find(ranks))
 
         remaining_searches = [
-            search for search in self.searches if search not in self.matches
+            search for search in searches if search not in matches
         ]
         self._logger.debug("Matching randomly for remaining newbies...")
-        self.matches.update(RandomlyMatchNewbies().find(remaining_searches))
 
-        return self._remove_duplicates()
+        randomly_matched_newbies, unmatched_searches = RandomlyMatchNewbies().find(remaining_searches)
+        matches.update(randomly_matched_newbies)
 
-    def _remove_duplicates(self) -> List[Match]:
+        return self._remove_duplicates(matches), unmatched_searches
+
+    def _remove_duplicates(self, matches: Dict[Search, Search]) -> List[Match]:
         matches_set: Set[Match] = set()
-        for s1, s2 in self.matches.items():
+        for s1, s2 in matches.items():
             if (s1, s2) in matches_set or (s2, s1) in matches_set:
                 continue
             matches_set.add((s1, s2))
@@ -234,12 +189,16 @@ class _MatchingGraph:
 
         if search._match_quality_acceptable(other, quality):
             _MatchingGraph._logger.debug(
-                f"{log_string} Will be considered during stable marriage.", *log_args
+                "Quality between %s and %s: %.3f thresholds: [%.3f, %.3f]. "
+                "Will be considered during stable marriage.",
+                *log_args
             )
             return True
         else:
             _MatchingGraph._logger.debug(
-                f"{log_string} Will be discarded for stable marriage.", *log_args
+                "Quality between %s and %s: %.3f thresholds: [%.3f, %.3f]. "
+                "Will be discarded for stable marriage.",
+                *log_args
             )
             return False
 

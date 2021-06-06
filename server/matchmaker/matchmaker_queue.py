@@ -65,7 +65,7 @@ class MatchmakerQueue:
 
         self.timer = PopTimer(self)
 
-        self.matchmaker = BucketTeamMatchmaker(self.team_size)
+        self.matchmaker = BucketTeamMatchmaker()
 
     def add_map_pool(
         self,
@@ -158,15 +158,24 @@ class MatchmakerQueue:
 
         # Call self.match on all matches and filter out the ones that were cancelled
         loop = asyncio.get_running_loop()
-        matches = list(filter(
-            lambda m: self.match(m[0], m[1]),
-            await loop.run_in_executor(None, self.matchmaker.find, searches)
-        ))
-
-        self._register_unmatched_searches(
-            list(self._queue.keys()),
-            matches,
+        proposed_matches, unmatched_searches = await loop.run_in_executor(
+            None,
+            self.matchmaker.find,
+            searches,
+            self.team_size,
         )
+
+
+        # filter out matches that were cancelled
+        matches: List[Match] = []
+        for match in proposed_matches:
+            if self.match(match[0], match[1]):
+                matches.append(match)
+            else:
+                unmatched_searches.append(match[0])
+                unmatched_searches.append(match[1])
+
+        self._register_unmatched_searches(unmatched_searches)
 
         number_of_matches = len(matches)
         metrics.matches.labels(self.name).set(number_of_matches)
@@ -184,22 +193,12 @@ class MatchmakerQueue:
 
     def _register_unmatched_searches(
         self,
-        searches: List[Search],
-        matches: List[Match]
+        unmatched_searches: List[Search],
     ):
         """
         Tells all unmatched searches that they went through a failed matching
         attempt.
         """
-        searches_set = set(searches)
-        matched_searches = set(
-            search
-            for match in matches
-            for combinedSearch in match
-            for search in combinedSearch.get_original_searches()
-        )
-        unmatched_searches = searches_set - matched_searches
-
         for search in unmatched_searches:
             search.register_failed_matching_attempt()
             self._logger.debug(

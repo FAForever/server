@@ -29,28 +29,36 @@ class BucketTeamMatchmaker(Matchmaker):
     to produce a list of matches from these.
     """
 
-    def find(self, searches: Iterable[Search]) -> List[Match]:
-        teams = self._find_teams(searches)
-        matchmaker1v1 = StableMarriageMatchmaker(1)
-        return matchmaker1v1.find(teams)
+    def find(
+        self, searches: Iterable[Search], team_size: int
+    ) -> Tuple[List[Match], List[Search]]:
+        teams, searches_without_team = self._find_teams(searches, team_size)
 
-    def _find_teams(self, searches: Iterable[Search]) -> List[Search]:
+        matchmaker1v1 = StableMarriageMatchmaker()
+        matches, unmatched_searches =  matchmaker1v1.find(teams, 1)
+
+        unmatched_searches.extend(searches_without_team)
+        return matches, unmatched_searches
+
+    def _find_teams(
+        self, searches: Iterable[Search], team_size: int
+    ) -> Tuple[List[Search], List[Search]]:
         full_teams = []
         unmatched = searches
         need_team = []
         for search in unmatched:
-            if len(search.players) == self.team_size:
+            if len(search.players) == team_size:
                 full_teams.append(search)
             else:
                 need_team.append(search)
 
         if all(len(s.players) == 1 for s in need_team):
-            teams, unmatched = _make_teams_from_single(need_team, self.team_size)
+            teams, unmatched = _make_teams_from_single(need_team, team_size)
         else:
-            teams, unmatched = _make_teams(need_team, self.team_size)
+            teams, unmatched = _make_teams(need_team, team_size)
         full_teams.extend(teams)
 
-        return full_teams
+        return full_teams, unmatched
 
 
 def _make_teams_from_single(

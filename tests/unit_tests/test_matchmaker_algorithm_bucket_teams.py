@@ -6,7 +6,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from server import config
-from server.matchmaker import Search, algorithm
+from server.matchmaker import Search, CombinedSearch, algorithm
 from server.matchmaker.algorithm.bucket_teams import (
     BucketTeamMatchmaker,
     _make_teams,
@@ -240,10 +240,11 @@ def test_BucketTeamMatchmaker_1v1(player_factory):
     searches = [Search([player]) for player in players]
 
     team_size = 1
-    matchmaker = BucketTeamMatchmaker(team_size)
-    matches = matchmaker.find(searches)
+    matchmaker = BucketTeamMatchmaker()
+    matches, unmatched_searches = matchmaker.find(searches, team_size)
 
     assert len(matches) == num_players / 2 / team_size
+    assert len(unmatched_searches) == num_players - 2 * team_size * len(matches)
 
 
 def test_BucketTeamMatchmaker_2v2_single_searches(player_factory):
@@ -252,10 +253,11 @@ def test_BucketTeamMatchmaker_2v2_single_searches(player_factory):
     searches = [Search([player]) for player in players]
 
     team_size = 2
-    matchmaker = BucketTeamMatchmaker(team_size)
-    matches = matchmaker.find(searches)
+    matchmaker = BucketTeamMatchmaker()
+    matches, unmatched_searches = matchmaker.find(searches, team_size)
 
     assert len(matches) == num_players / 2 / team_size
+    assert len(unmatched_searches) == num_players - 2 * team_size * len(matches)
 
 
 def test_BucketTeamMatchmaker_2v2_full_party_searches(player_factory):
@@ -264,10 +266,11 @@ def test_BucketTeamMatchmaker_2v2_full_party_searches(player_factory):
     searches = [Search([players[i], players[i + 1]]) for i in range(0, len(players), 2)]
 
     team_size = 2
-    matchmaker = BucketTeamMatchmaker(team_size)
-    matches = matchmaker.find(searches)
+    matchmaker = BucketTeamMatchmaker()
+    matches, unmatched_searches = matchmaker.find(searches, team_size)
 
     assert len(matches) == num_players / 2 / team_size
+    assert len(unmatched_searches) == num_players - 2 * team_size * len(matches)
 
 
 def test_BucketTeammatchmaker_2v2_mixed_party_sizes(player_factory):
@@ -276,10 +279,38 @@ def test_BucketTeammatchmaker_2v2_mixed_party_sizes(player_factory):
     searches = [
         Search([players[i], players[i + 1]]) for i in range(0, len(players) // 2, 2)
     ]
-    searches.extend([Search([player]) for player in players[len(players) // 2 :]])
+    searches.extend([Search([player]) for player in players[len(players) // 2:]])
 
     team_size = 2
-    matchmaker = BucketTeamMatchmaker(team_size)
-    matches = matchmaker.find(searches)
+    matchmaker = BucketTeamMatchmaker()
+    matches, unmatched_searches = matchmaker.find(searches, team_size)
 
     assert len(matches) == num_players / 2 / team_size
+    assert len(unmatched_searches) == num_players - 2 * team_size * len(matches)
+
+
+def test_2v2_count_unmatched_searches(player_factory):
+    players = [
+            player_factory(500, 100, name="lowRating_unmatched_1"),
+            player_factory(500, 100, name="lowRating_unmatched_2"),
+            player_factory(1500, 100, name="midRating_matched_1"),
+            player_factory(1500, 100, name="midRating_matched_2"),
+            player_factory(1500, 100, name="midRating_matched_3"),
+            player_factory(1500, 100, name="midRating_matched_4"),
+            player_factory(2000, 100, name="highRating_unmatched_1"),
+    ]
+    searches = [Search([player]) for player in players]
+
+    team_size = 2
+    matchmaker = BucketTeamMatchmaker()
+    matches, unmatched_searches = matchmaker.find(searches, team_size)
+
+    #FIXME
+    print(f"matches {matches}")
+    print(f"unmat {unmatched_searches}")
+
+    assert len(matches) == 1
+    number_of_unmatched_players = sum(
+        len(search.players) for search in unmatched_searches
+    )
+    assert number_of_unmatched_players == 3
