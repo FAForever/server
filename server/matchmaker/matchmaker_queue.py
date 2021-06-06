@@ -165,7 +165,6 @@ class MatchmakerQueue:
             self.team_size,
         )
 
-
         # filter out matches that were cancelled
         matches: List[Match] = []
         for match in proposed_matches:

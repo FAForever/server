@@ -6,7 +6,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from server import config
-from server.matchmaker import Search, CombinedSearch, algorithm
+from server.matchmaker import Search, algorithm
 from server.matchmaker.algorithm.bucket_teams import (
     BucketTeamMatchmaker,
     _make_teams,
@@ -43,7 +43,7 @@ def player_factory(player_factory):
     size=st.integers(min_value=1, max_value=10),
 )
 def test_make_teams_single_correct_size(searches, size, make_teams_func):
-    matched, non_matched = make_teams_func(searches, size)
+    matched, _ = make_teams_func(searches, size)
 
     for search in matched:
         assert len(search.players) == size
@@ -304,10 +304,6 @@ def test_2v2_count_unmatched_searches(player_factory):
     team_size = 2
     matchmaker = BucketTeamMatchmaker()
     matches, unmatched_searches = matchmaker.find(searches, team_size)
-
-    #FIXME
-    print(f"matches {matches}")
-    print(f"unmat {unmatched_searches}")
 
     assert len(matches) == 1
     number_of_unmatched_players = sum(

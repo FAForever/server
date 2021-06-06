@@ -1,4 +1,4 @@
-from typing import Iterable, List, Tuple
+from typing import Dict, Iterable, List, Set, Tuple
 
 from ...decorators import with_logger
 from ..search import Match, Search

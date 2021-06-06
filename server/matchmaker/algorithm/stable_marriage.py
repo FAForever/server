@@ -108,7 +108,8 @@ class StableMarriageMatchmaker(Matchmaker):
 
         return self._remove_duplicates(matches), unmatched_searches
 
-    def _remove_duplicates(self, matches: Dict[Search, Search]) -> List[Match]:
+    @staticmethod
+    def _remove_duplicates(matches: Dict[Search, Search]) -> List[Match]:
         matches_set: Set[Match] = set()
         for s1, s2 in matches.items():
             if (s1, s2) in matches_set or (s2, s1) in matches_set:
@@ -178,7 +179,6 @@ class _MatchingGraph:
 
     @staticmethod
     def is_possible_match(search: Search, other: Search, quality: float) -> bool:
-        log_string = "Quality between %s and %s: %.3f thresholds: [%.3f, %.3f]."
         log_args = (
             search,
             other,

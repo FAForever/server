@@ -40,8 +40,9 @@ class BucketTeamMatchmaker(Matchmaker):
         unmatched_searches.extend(searches_without_team)
         return matches, unmatched_searches
 
+    @staticmethod
     def _find_teams(
-        self, searches: Iterable[Search], team_size: int
+        searches: Iterable[Search], team_size: int
     ) -> Tuple[List[Search], List[Search]]:
         full_teams = []
         unmatched = searches

@@ -236,13 +236,6 @@ class Search:
         """For debugging"""
         return f"Search({[p.login for p in self.players]})"
 
-    def get_original_searches(self) -> List["Search"]:
-        """
-        Returns the searches of which this Search is comprised,
-        as if it were a CombinedSearch of one
-        """
-        return [self]
-
 
 class CombinedSearch(Search):
     def __init__(self, *searches: Search):
@@ -315,9 +308,3 @@ class CombinedSearch(Search):
 
     def __str__(self):
         return "CombinedSearch({})".format(",".join(str(s) for s in self.searches))
-
-    def get_original_searches(self) -> List[Search]:
-        """
-        Returns the searches of which this CombinedSearch is comprised
-        """
-        return list(self.searches)

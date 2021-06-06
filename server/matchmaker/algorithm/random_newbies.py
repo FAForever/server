@@ -1,6 +1,8 @@
-from .matchmaker import Matchmaker, MatchmakingPolicy1v1
-from typing import Iterable, Tuple, Dict, List
+from typing import Dict, Iterable, List, Tuple
+
 from ..search import Match, Search
+from .matchmaker import Matchmaker, MatchmakingPolicy1v1
+
 
 class RandomlyMatchNewbies(MatchmakingPolicy1v1):
     def find(
@@ -34,20 +36,3 @@ class RandomlyMatchNewbies(MatchmakingPolicy1v1):
             searches_remaining_unmatched.discard(first_opponent)
 
         return self.matches, list(searches_remaining_unmatched)
-
-
-class RandomNewbieMatchmaker(Matchmaker):
-    """
-    Generates random matchups for new players.
-    """
-    def find(
-        self, searches: Iterable[Search], team_size: int
-    ) -> Tuple[List[Match], List[Search]]:
-        if team_size != 1:
-            self._logger.error(
-                "Invalid team size %i for randomly matching newbies will be ignored",
-                team_size,
-            )
-
-        matched_searches, unmatched_searches = RandomlyMatchNewbies().find(searches)
-        return list(matched_searches.items()), unmatched_searches

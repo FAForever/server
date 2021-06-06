@@ -311,6 +311,7 @@ def test_newbie_team_matched_with_newbie_team(player_factory):
 
     assert matches[newbie1] == newbie2
     assert matches[newbie2] == newbie1
+    assert len(unmatched_searches) == 0
 
 
 def test_partial_newbie_team_matched_with_newbie_team(player_factory):
