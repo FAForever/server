@@ -1,4 +1,3 @@
-import aiocron
 import aiohttp
 import jwt
 from jwt import InvalidTokenError
@@ -19,14 +18,6 @@ class OAuthService(Service, name="oauth_service"):
 
     def __init__(self):
         self.public_keys = {}
-
-    async def initialize(self) -> None:
-        await self.retrieve_public_keys()
-        # crontab: min hour day month day_of_week
-        # Run every 10 minutes to update public keys.
-        self._update_cron = aiocron.crontab(
-            "*/10 * * * *", func=self.retrieve_public_keys
-        )
 
     async def retrieve_public_keys(self) -> None:
         """
