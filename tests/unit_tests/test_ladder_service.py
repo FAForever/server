@@ -149,17 +149,23 @@ async def test_start_game_1v1(
     LadderGame.wait_launched.assert_called_once()
 
 
-@fast_forward(35)
+@fast_forward(65)
 async def test_start_game_timeout(
     ladder_service: LadderService,
     player_factory,
+    monkeypatch
 ):
     queue = ladder_service.queues["ladder1v1"]
     p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
     p2 = player_factory("Rhiza", player_id=2, lobby_connection_spec="auto")
 
+    monkeypatch.setattr(LadderGame, "timeout_game", CoroutineMock())
+    monkeypatch.setattr(LadderGame, "on_game_end", CoroutineMock())
+
     await ladder_service.start_game([p1], [p2], queue)
 
+    LadderGame.timeout_game.assert_called_once()
+    LadderGame.on_game_end.assert_called()
     p1.lobby_connection.write.assert_called_once_with({"command": "match_cancelled"})
     p2.lobby_connection.write.assert_called_once_with({"command": "match_cancelled"})
     assert p1.lobby_connection.launch_game.called

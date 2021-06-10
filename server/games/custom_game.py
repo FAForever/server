@@ -15,7 +15,8 @@ class CustomGame(Game):
 
     def __init__(self, id_, *args, **kwargs):
         new_kwargs = {
-            "rating_type": RatingType.GLOBAL
+            "rating_type": RatingType.GLOBAL,
+            "setup_timeout": 30
         }
         new_kwargs.update(kwargs)
         super().__init__(id_, *args, **new_kwargs)
