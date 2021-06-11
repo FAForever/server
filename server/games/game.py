@@ -70,6 +70,7 @@ class Game():
         displayed_rating_range: Optional[InclusiveRange] = None,
         enforce_rating_range: bool = False,
         max_players: int = 12,
+        setup_timeout: int = 60,
     ):
         self._db = database
         self._results = GameResultReports(id_)
@@ -120,8 +121,9 @@ class Game():
         self._launch_fut = asyncio.Future()
 
         self._logger.debug("%s created", self)
+        asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
 
-    async def timeout_game(self, timeout: int = 30):
+    async def timeout_game(self, timeout: int = 60):
         await asyncio.sleep(timeout)
         if self.state is GameState.INITIALIZING:
             self._is_hosted.set_exception(
