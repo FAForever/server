@@ -43,11 +43,11 @@ class CustomGame(Game):
 
     def __init__(self, id_, *args, **kwargs):
         new_kwargs = {
-            &#34;rating_type&#34;: RatingType.GLOBAL
+            &#34;rating_type&#34;: RatingType.GLOBAL,
+            &#34;setup_timeout&#34;: 30
         }
         new_kwargs.update(kwargs)
         super().__init__(id_, *args, **new_kwargs)
-        asyncio.get_event_loop().create_task(self.timeout_game())
 
     async def _run_pre_rate_validity_checks(self):
         limit = len(self.players) * 60
@@ -80,11 +80,11 @@ class CustomGame(Game):
 
     def __init__(self, id_, *args, **kwargs):
         new_kwargs = {
-            &#34;rating_type&#34;: RatingType.GLOBAL
+            &#34;rating_type&#34;: RatingType.GLOBAL,
+            &#34;setup_timeout&#34;: 30
         }
         new_kwargs.update(kwargs)
         super().__init__(id_, *args, **new_kwargs)
-        asyncio.get_event_loop().create_task(self.timeout_game())
 
     async def _run_pre_rate_validity_checks(self):
         limit = len(self.players) * 60

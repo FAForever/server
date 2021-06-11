@@ -138,7 +138,6 @@ __all__ = (
             &#34;Expansion&#34;: &#34;true&#34;
         })
         self.leaderboard_saved = False
-        asyncio.get_event_loop().create_task(self.timeout_game(60))
 
     async def validate_game_mode_settings(self):
         &#34;&#34;&#34;
@@ -260,11 +259,11 @@ __all__ = (
 
     def __init__(self, id_, *args, **kwargs):
         new_kwargs = {
-            &#34;rating_type&#34;: RatingType.GLOBAL
+            &#34;rating_type&#34;: RatingType.GLOBAL,
+            &#34;setup_timeout&#34;: 30
         }
         new_kwargs.update(kwargs)
         super().__init__(id_, *args, **new_kwargs)
-        asyncio.get_event_loop().create_task(self.timeout_game())
 
     async def _run_pre_rate_validity_checks(self):
         limit = len(self.players) * 60
@@ -404,7 +403,7 @@ __all__ = (
 </dd>
 <dt id="server.games.Game"><code class="flex name class">
 <span>class <span class="ident">Game</span></span>
-<span>(</span><span>id_: int, database: FAFDatabase, game_service: GameService, game_stats_service: GameStatsService, host: Union[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, NoneType] = None, name: str = 'None', map_: str = 'SCMP_007', game_mode: str = 'faf', matchmaker_queue_id: Union[int, NoneType] = None, rating_type: Union[str, NoneType] = None, displayed_rating_range: Union[<a title="server.rating.InclusiveRange" href="../rating.html#server.rating.InclusiveRange">InclusiveRange</a>, NoneType] = None, enforce_rating_range: bool = False, max_players: int = 12)</span>
+<span>(</span><span>id_: int, database: FAFDatabase, game_service: GameService, game_stats_service: GameStatsService, host: Union[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, NoneType] = None, name: str = 'None', map_: str = 'SCMP_007', game_mode: str = 'faf', matchmaker_queue_id: Union[int, NoneType] = None, rating_type: Union[str, NoneType] = None, displayed_rating_range: Union[<a title="server.rating.InclusiveRange" href="../rating.html#server.rating.InclusiveRange">InclusiveRange</a>, NoneType] = None, enforce_rating_range: bool = False, max_players: int = 12, setup_timeout: int = 60)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Object that lasts for the lifetime of a game on FAF.</p></div>
@@ -434,6 +433,7 @@ __all__ = (
         displayed_rating_range: Optional[InclusiveRange] = None,
         enforce_rating_range: bool = False,
         max_players: int = 12,
+        setup_timeout: int = 60,
     ):
         self._db = database
         self._results = GameResultReports(id_)
@@ -484,8 +484,9 @@ __all__ = (
         self._launch_fut = asyncio.Future()
 
         self._logger.debug(&#34;%s created&#34;, self)
+        asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
 
-    async def timeout_game(self, timeout: int = 30):
+    async def timeout_game(self, timeout: int = 60):
         await asyncio.sleep(timeout)
         if self.state is GameState.INITIALIZING:
             self._is_hosted.set_exception(
@@ -2223,7 +2224,7 @@ game.</p></div>
 </details>
 </dd>
 <dt id="server.games.Game.timeout_game"><code class="name flex">
-<span>async def <span class="ident">timeout_game</span></span>(<span>self, timeout: int = 30)</span>
+<span>async def <span class="ident">timeout_game</span></span>(<span>self, timeout: int = 60)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -2231,7 +2232,7 @@ game.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def timeout_game(self, timeout: int = 30):
+<pre><code class="python">async def timeout_game(self, timeout: int = 60):
     await asyncio.sleep(timeout)
     if self.state is GameState.INITIALIZING:
         self._is_hosted.set_exception(

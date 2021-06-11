@@ -50,7 +50,6 @@ class CoopGame(Game):
             &#34;Expansion&#34;: &#34;true&#34;
         })
         self.leaderboard_saved = False
-        asyncio.get_event_loop().create_task(self.timeout_game(60))
 
     async def validate_game_mode_settings(self):
         &#34;&#34;&#34;
@@ -110,7 +109,6 @@ class CoopGame(Game):
             &#34;Expansion&#34;: &#34;true&#34;
         })
         self.leaderboard_saved = False
-        asyncio.get_event_loop().create_task(self.timeout_game(60))
 
     async def validate_game_mode_settings(self):
         &#34;&#34;&#34;
