@@ -233,14 +233,14 @@ async def test_server_valid_login_with_token(lobby_server, jwk_priv_key, jwk_kid
         "version": "1.0.0-dev",
         "user_agent": "faf-client",
         "token": jwt.encode({
-          "sub": 3,
-          "user_name": "Rhiza",
-          "scope": [],
-          "exp": int(time() + 1000),
-          "authorities": [],
-          "non_locked": True,
-          "jti": "",
-          "client_id": ""
+            "sub": 3,
+            "user_name": "Rhiza",
+            "scope": [],
+            "exp": int(time() + 1000),
+            "authorities": [],
+            "non_locked": True,
+            "jti": "",
+            "client_id": ""
         }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
         "unique_id": "some_id"
     })
