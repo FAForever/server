@@ -86,6 +86,8 @@ class ConfigurationStore:
         self.API_TOKEN_URI = &#34;https://api.test.faforever.com/oauth/token&#34;
         self.API_BASE_URL = &#34;https://api.test.faforever.com/&#34;
         self.USE_API = True
+        # Location of the OAuth jwks
+        self.HYDRA_JWKS_URI = &#34;https://hydra.faforever.com/.well-known/jwks.json&#34;
 
         self.MQ_USER = &#34;faf-python-server&#34;
         self.MQ_PASSWORD = &#34;banana&#34;
@@ -257,6 +259,8 @@ config.register_callback(&#34;LOG_LEVEL&#34;, set_log_level)</code></pre>
         self.API_TOKEN_URI = &#34;https://api.test.faforever.com/oauth/token&#34;
         self.API_BASE_URL = &#34;https://api.test.faforever.com/&#34;
         self.USE_API = True
+        # Location of the OAuth jwks
+        self.HYDRA_JWKS_URI = &#34;https://hydra.faforever.com/.well-known/jwks.json&#34;
 
         self.MQ_USER = &#34;faf-python-server&#34;
         self.MQ_PASSWORD = &#34;banana&#34;

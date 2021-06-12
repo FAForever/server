@@ -80,7 +80,7 @@ user_connections = Gauge(
 )
 
 user_logins = Counter(
-    &#34;server_user_logins_total&#34;, &#34;Total number of login attempts made&#34;, [&#34;status&#34;]
+    &#34;server_user_logins_total&#34;, &#34;Total number of login attempts made&#34;, [&#34;status&#34;, &#34;method&#34;]
 )
 
 user_agent_version = Counter(

@@ -213,6 +213,7 @@ from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
 from .lobbyconnection import LobbyConnection
 from .message_queue_service import MessageQueueService
+from .oauth_service import OAuthService
 from .party_service import PartyService
 from .player_service import PlayerService
 from .protocol import Protocol, QDataStreamProtocol
@@ -234,6 +235,7 @@ __all__ = (
     &#34;GeoIpService&#34;,
     &#34;LadderService&#34;,
     &#34;MessageQueueService&#34;,
+    &#34;OAuthService&#34;,
     &#34;PartyService&#34;,
     &#34;PlayerService&#34;,
     &#34;RatingService&#34;,
@@ -294,7 +296,8 @@ class ServerInstance(object):
             nts_client=twilio_nts,
             players=self.services[&#34;player_service&#34;],
             ladder_service=self.services[&#34;ladder_service&#34;],
-            party_service=self.services[&#34;party_service&#34;]
+            party_service=self.services[&#34;party_service&#34;],
+            oauth_service=self.services[&#34;oauth_service&#34;]
         )
 
     def write_broadcast(
@@ -458,6 +461,10 @@ class ServerInstance(object):
 <dt><code class="name"><a title="server.metrics" href="metrics.html">server.metrics</a></code></dt>
 <dd>
 <div class="desc"><p>Prometheus metric definitions</p></div>
+</dd>
+<dt><code class="name"><a title="server.oauth_service" href="oauth_service.html">server.oauth_service</a></code></dt>
+<dd>
+<div class="desc"></div>
 </dd>
 <dt><code class="name"><a title="server.party_service" href="party_service.html">server.party_service</a></code></dt>
 <dd>
@@ -4900,6 +4907,115 @@ async def reconnect(self) -&gt; None:
 </li>
 </ul>
 </dd>
+<dt id="server.OAuthService"><code class="flex name class">
+<span>class <span class="ident">OAuthService</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Service for managing the OAuth token logins and verification.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class OAuthService(Service, name=&#34;oauth_service&#34;):
+    &#34;&#34;&#34;
+    Service for managing the OAuth token logins and verification.
+    &#34;&#34;&#34;
+
+    def __init__(self):
+        self.public_keys = {}
+
+    async def initialize(self) -&gt; None:
+        await self.retrieve_public_keys()
+        # crontab: min hour day month day_of_week
+        # Run every 10 minutes to update public keys.
+        self._update_cron = aiocron.crontab(
+            &#34;*/10 * * * *&#34;, func=self.retrieve_public_keys
+        )
+
+    async def retrieve_public_keys(self) -&gt; None:
+        &#34;&#34;&#34;
+        Get the latest jwks from the hydra endpoint
+        &#34;&#34;&#34;
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(config.HYDRA_JWKS_URI) as resp:
+                jwks = await resp.json()
+                self.public_keys = {
+                    jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
+                    for jwk in jwks[&#34;keys&#34;]
+                }
+
+    async def get_player_id_from_token(self, token: str) -&gt; int:
+        &#34;&#34;&#34;
+        Decode the JWT to get the player_id
+        &#34;&#34;&#34;
+        try:
+            kid = jwt.get_unverified_header(token)[&#34;kid&#34;]
+            key = self.public_keys[kid]
+            return int(jwt.decode(token, key=key, algorithms=&#34;RS256&#34;, options={&#34;verify_aud&#34;: False})[&#34;sub&#34;])
+        except (InvalidTokenError, KeyError, ValueError):
+            raise AuthenticationError(&#34;Token signature was invalid&#34;, &#34;token&#34;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="server.OAuthService.get_player_id_from_token"><code class="name flex">
+<span>async def <span class="ident">get_player_id_from_token</span></span>(<span>self, token: str) ‑> int</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Decode the JWT to get the player_id</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def get_player_id_from_token(self, token: str) -&gt; int:
+    &#34;&#34;&#34;
+    Decode the JWT to get the player_id
+    &#34;&#34;&#34;
+    try:
+        kid = jwt.get_unverified_header(token)[&#34;kid&#34;]
+        key = self.public_keys[kid]
+        return int(jwt.decode(token, key=key, algorithms=&#34;RS256&#34;, options={&#34;verify_aud&#34;: False})[&#34;sub&#34;])
+    except (InvalidTokenError, KeyError, ValueError):
+        raise AuthenticationError(&#34;Token signature was invalid&#34;, &#34;token&#34;)</code></pre>
+</details>
+</dd>
+<dt id="server.OAuthService.retrieve_public_keys"><code class="name flex">
+<span>async def <span class="ident">retrieve_public_keys</span></span>(<span>self) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the latest jwks from the hydra endpoint</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def retrieve_public_keys(self) -&gt; None:
+    &#34;&#34;&#34;
+    Get the latest jwks from the hydra endpoint
+    &#34;&#34;&#34;
+    async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with session.get(config.HYDRA_JWKS_URI) as resp:
+            jwks = await resp.json()
+            self.public_keys = {
+                jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
+                for jwk in jwks[&#34;keys&#34;]
+            }</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
+<ul class="hlist">
+<li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
+<li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
+<li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
 <dt id="server.PartyService"><code class="flex name class">
 <span>class <span class="ident">PartyService</span></span>
 <span>(</span><span>game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>)</span>
@@ -6395,7 +6511,8 @@ state, i.e. the same players, games, etc.</p></div>
             nts_client=twilio_nts,
             players=self.services[&#34;player_service&#34;],
             ladder_service=self.services[&#34;ladder_service&#34;],
-            party_service=self.services[&#34;party_service&#34;]
+            party_service=self.services[&#34;party_service&#34;],
+            oauth_service=self.services[&#34;oauth_service&#34;]
         )
 
     def write_broadcast(
@@ -6618,6 +6735,7 @@ state, i.e. the same players, games, etc.</p></div>
 <li><code><a title="server.matchmaker" href="matchmaker/index.html">server.matchmaker</a></code></li>
 <li><code><a title="server.message_queue_service" href="message_queue_service.html">server.message_queue_service</a></code></li>
 <li><code><a title="server.metrics" href="metrics.html">server.metrics</a></code></li>
+<li><code><a title="server.oauth_service" href="oauth_service.html">server.oauth_service</a></code></li>
 <li><code><a title="server.party_service" href="party_service.html">server.party_service</a></code></li>
 <li><code><a title="server.player_service" href="player_service.html">server.player_service</a></code></li>
 <li><code><a title="server.players" href="players.html">server.players</a></code></li>
@@ -6743,6 +6861,13 @@ state, i.e. the same players, games, etc.</p></div>
 <li><code><a title="server.MessageQueueService.declare_exchange" href="#server.MessageQueueService.declare_exchange">declare_exchange</a></code></li>
 <li><code><a title="server.MessageQueueService.publish" href="#server.MessageQueueService.publish">publish</a></code></li>
 <li><code><a title="server.MessageQueueService.reconnect" href="#server.MessageQueueService.reconnect">reconnect</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.OAuthService" href="#server.OAuthService">OAuthService</a></code></h4>
+<ul class="">
+<li><code><a title="server.OAuthService.get_player_id_from_token" href="#server.OAuthService.get_player_id_from_token">get_player_id_from_token</a></code></li>
+<li><code><a title="server.OAuthService.retrieve_public_keys" href="#server.OAuthService.retrieve_public_keys">retrieve_public_keys</a></code></li>
 </ul>
 </li>
 <li>
