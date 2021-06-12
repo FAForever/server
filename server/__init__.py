@@ -108,6 +108,7 @@ from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
 from .lobbyconnection import LobbyConnection
 from .message_queue_service import MessageQueueService
+from .oauth_service import OAuthService
 from .party_service import PartyService
 from .player_service import PlayerService
 from .protocol import Protocol, QDataStreamProtocol
@@ -129,6 +130,7 @@ __all__ = (
     "GeoIpService",
     "LadderService",
     "MessageQueueService",
+    "OAuthService",
     "PartyService",
     "PlayerService",
     "RatingService",
@@ -189,7 +191,8 @@ class ServerInstance(object):
             nts_client=twilio_nts,
             players=self.services["player_service"],
             ladder_service=self.services["ladder_service"],
-            party_service=self.services["party_service"]
+            party_service=self.services["party_service"],
+            oauth_service=self.services["oauth_service"]
         )
 
     def write_broadcast(
