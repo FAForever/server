@@ -15,11 +15,11 @@ class CustomGame(Game):
 
     def __init__(self, id_, *args, **kwargs):
         new_kwargs = {
-            "rating_type": RatingType.GLOBAL
+            "rating_type": RatingType.GLOBAL,
+            "setup_timeout": 30
         }
         new_kwargs.update(kwargs)
         super().__init__(id_, *args, **new_kwargs)
-        asyncio.get_event_loop().create_task(self.timeout_game())
 
     async def _run_pre_rate_validity_checks(self):
         limit = len(self.players) * 60

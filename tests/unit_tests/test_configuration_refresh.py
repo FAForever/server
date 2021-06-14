@@ -2,7 +2,6 @@ import asyncio
 from unittest import mock
 
 import pytest
-import yaml
 from asynctest import CoroutineMock
 
 from server import config

@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import textwrap
 from collections import defaultdict
 from typing import Any, Callable, Dict, Tuple
 from unittest import mock
@@ -71,6 +72,26 @@ async def broadcast_service(
 
 
 @pytest.fixture
+def jwk_priv_key():
+    return textwrap.dedent("""
+    -----BEGIN RSA PRIVATE KEY-----
+    MIIBOgIBAAJBAKia//Uh/0nwtCI2QEaorc4voP5Xx+68M/AHLsvzxe7qLut64+O3
+    vHlYp9B9wClxxp3unphCZDe+JIzRieCz14UCAwEAAQJAWh5G0uox/n5meabPojTE
+    eWFhxrB6j7MOe6wLKj4IvJKWxoxLuMoOWmqWcWLiFw4pXKFtjv6bOGW8uUyDZDQt
+    vQIhANt1HM3WPoFsvdnnqLH6PILfDRzal5Kjv1Ua97b7q2qLAiEAxK4zrououc6a
+    I+uVxvsTnU88DeydN2sTroc36YfC2C8CIQCuZg4i4ZxAnBrvfPKJpXPLCNjR0kDb
+    7rcROeIbjzp06wIgcZfXG5lnwqDTn6lh4QGEC5gGrFgbWTWLsYJBRax2WVsCIFeL
+    KtHOf7sc9jf0k73eooPK8b+g4pssztR4GObEThZh
+    -----END RSA PRIVATE KEY-----
+    """)
+
+
+@pytest.fixture
+def jwk_kid():
+    return "L7wdUtrDssMTb57A_TNAI79DQCdp0T2-KUrSUoDJBhk"
+
+
+@pytest.fixture
 async def lobby_server(
     event_loop,
     database,
@@ -82,12 +103,19 @@ async def lobby_server(
     rating_service,
     message_queue_service,
     party_service,
-    policy_server
+    oauth_service,
+    policy_server,
+    jwks_server
 ):
-    with mock.patch(
+    mock_policy = mock.patch(
         "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
         f"http://{policy_server.host}:{policy_server.port}"
-    ):
+    )
+    mock_jwk = mock.patch(
+        "server.oauth_service.config.HYDRA_JWKS_URI",
+        f"http://{jwks_server.host}:{jwks_server.port}/jwks"
+    )
+    with mock_policy, mock_jwk:
         instance = ServerInstance(
             "UnitTestServer",
             database,
@@ -102,9 +130,9 @@ async def lobby_server(
                 "ladder_service": ladder_service,
                 "rating_service": rating_service,
                 "message_queue_service": message_queue_service,
-                "party_service": party_service
-            }
-        )
+                "party_service": party_service,
+                "oauth_service": oauth_service
+            })
         # Set up the back reference
         broadcast_service.server = instance
 
@@ -162,6 +190,52 @@ async def policy_server():
 
         await request.json()
         return web.json_response({"result": handle.result})
+
+    app.add_routes(routes)
+
+    runner = web.AppRunner(app)
+
+    await runner.setup()
+    site = web.TCPSite(runner, host, port)
+    await site.start()
+
+    yield handle
+
+    await runner.cleanup()
+
+
+@pytest.fixture
+async def jwks_server(jwk_kid):
+    host = "localhost"
+    port = 4080
+
+    app = web.Application()
+    routes = web.RouteTableDef()
+
+    class Handle(object):
+        def __init__(self):
+            self.host = host
+            self.port = port
+            self.result = {
+                "keys": [{
+                    "kty": "RSA",
+                    "e": "AQAB",
+                    "use": "sig",
+                    "kid": jwk_kid,
+                    "alg": "RS256",
+                    "n": "qJr_9SH_SfC0IjZARqitzi-g_lfH7rwz8Acuy_PF7uou63rj47e8eVin0H3AKXHGne6emEJkN74kjNGJ4LPXhQ"
+                }]
+            }
+            self.verify = mock.Mock()
+
+    handle = Handle()
+
+    @routes.get("/jwks")
+    async def get(request):
+        # Register that the endpoint was called using a Mock
+        handle.verify()
+
+        return web.json_response(handle.result)
 
     app.add_routes(routes)
 

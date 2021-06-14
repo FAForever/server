@@ -33,6 +33,7 @@ from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import MatchmakerQueue
 from server.message_queue_service import MessageQueueService
+from server.oauth_service import OAuthService
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.rating import RatingType
@@ -401,6 +402,11 @@ def event_service(api_accessor):
 @pytest.fixture
 def achievement_service(api_accessor):
     return AchievementService(api_accessor)
+
+
+@pytest.fixture
+def oauth_service():
+    return OAuthService()
 
 
 @pytest.fixture

@@ -1,3 +1,6 @@
+from time import time
+
+import jwt
 import pytest
 
 from .conftest import (
@@ -220,4 +223,136 @@ async def test_server_double_login(lobby_server):
         "command": "notice",
         "style": "error",
         "text": "You have been signed out because you signed in elsewhere."
+    }
+
+
+async def test_server_valid_login_with_token(lobby_server, jwk_priv_key, jwk_kid):
+    proto = await connect_client(lobby_server)
+    await proto.send_message({
+        "command": "auth",
+        "version": "1.0.0-dev",
+        "user_agent": "faf-client",
+        "token": jwt.encode({
+            "sub": 3,
+            "user_name": "Rhiza",
+            "scope": [],
+            "exp": int(time() + 1000),
+            "authorities": [],
+            "non_locked": True,
+            "jti": "",
+            "client_id": ""
+        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
+        "unique_id": "some_id"
+    })
+
+    msg = await proto.read_message()
+    assert msg["command"] == "irc_password"
+    msg = await proto.read_message()
+    me = {
+        "id": 3,
+        "login": "Rhiza",
+        "clan": "123",
+        "country": "",
+        "ratings": {
+            "global": {
+                "rating": [1650.0, 62.52],
+                "number_of_games": 2
+            },
+            "ladder_1v1": {
+                "rating": [1650.0, 62.52],
+                "number_of_games": 2
+            }
+        },
+        "global_rating": [1650.0, 62.52],
+        "ladder_rating": [1650.0, 62.52],
+        "number_of_games": 2
+    }
+    assert msg == {
+        "command": "welcome",
+        "me": me,
+        "id": 3,
+        "login": "Rhiza"
+    }
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "player_info",
+        "players": [me]
+    }
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "social",
+        "autojoin": ["#123_clan"],
+        "channels": ["#123_clan"],
+        "friends": [],
+        "foes": [],
+        "power": 0
+    }
+
+
+async def test_server_login_bad_id_in_token(lobby_server, jwk_priv_key, jwk_kid):
+    proto = await connect_client(lobby_server)
+    await proto.send_message({
+        "command": "auth",
+        "version": "1.0.0-dev",
+        "user_agent": "faf-client",
+        "token": jwt.encode({
+            "sub": -1,
+            "user_name": "Rhiza",
+            "scope": [],
+            "exp": int(time() + 1000),
+            "authorities": [],
+            "non_locked": True,
+            "jti": "",
+            "client_id": ""
+        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
+        "unique_id": "some_id"
+    })
+
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "authentication_failed",
+        "text": "Cannot find user id"
+    }
+
+
+async def test_server_login_expired_token(lobby_server, jwk_priv_key, jwk_kid):
+    proto = await connect_client(lobby_server)
+    await proto.send_message({
+        "command": "auth",
+        "version": "1.0.0-dev",
+        "user_agent": "faf-client",
+        "token": jwt.encode({
+            "sub": 1,
+            "user_name": "test",
+            "exp": int(time() - 10)
+        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
+        "unique_id": "some_id"
+    })
+
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "authentication_failed",
+        "text": "Token signature was invalid"
+    }
+
+
+async def test_server_login_malformed_token(lobby_server, jwk_priv_key, jwk_kid):
+    """This scenario could only happen if the hydra signed a token that
+    was missing critical data"""
+    proto = await connect_client(lobby_server)
+    await proto.send_message({
+        "command": "auth",
+        "version": "1.0.0-dev",
+        "user_agent": "faf-client",
+        "token": jwt.encode(
+            {"exp": int(time() + 10)}, jwk_priv_key, algorithm="RS256",
+            headers={"kid": jwk_kid}
+        ),
+        "unique_id": "some_id"
+    })
+
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "authentication_failed",
+        "text": "Token signature was invalid"
     }

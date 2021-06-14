@@ -4,13 +4,15 @@ Handles requests from connected clients
 
 import asyncio
 import contextlib
-import hashlib
 import json
+import os
 import random
 import urllib.parse
 import urllib.request
+from binascii import hexlify
 from datetime import datetime
 from functools import wraps
+from hashlib import md5
 from typing import Optional
 
 import aiohttp
@@ -48,6 +50,7 @@ from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
 from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
+from .oauth_service import OAuthService
 from .party_service import PartyService
 from .player_service import PlayerService
 from .players import Player, PlayerState
@@ -67,7 +70,8 @@ class LobbyConnection:
         nts_client: Optional[TwilioNTS],
         geoip: GeoIpService,
         ladder_service: LadderService,
-        party_service: PartyService
+        party_service: PartyService,
+        oauth_service: OAuthService
     ):
         self._db = database
         self.geoip_service = geoip
@@ -77,6 +81,7 @@ class LobbyConnection:
         self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
         self.party_service = party_service
+        self.oauth_service = oauth_service
         self._authenticated = False
         self.player = None  # type: Player
         self.game_connection = None  # type: GameConnection
@@ -121,7 +126,15 @@ class LobbyConnection:
 
     async def ensure_authenticated(self, cmd):
         if not self._authenticated:
-            if cmd not in ["hello", "ask_session", "create_account", "ping", "pong", "Bottleneck"]:  # Bottleneck is sent by the game during reconnect
+            if cmd not in (
+                "Bottleneck",  # sent by the game during reconnect
+                "ask_session",
+                "auth",
+                "create_account",
+                "hello",
+                "ping",
+                "pong",
+            ):
                 metrics.unauth_messages.labels(cmd).inc()
                 await self.abort("Message invalid for unauthenticated connection: %s" % cmd)
                 return False
@@ -153,6 +166,7 @@ class LobbyConnection:
             await handler(message)
 
         except AuthenticationError as ex:
+            metrics.user_logins.labels("failure", ex.method).inc()
             await self.send({
                 "command": "authentication_failed",
                 "text": ex.message
@@ -372,11 +386,11 @@ class LobbyConnection:
             .order_by(lobby_ban.c.expires_at.desc())
         )
 
+        auth_method = "password"
         auth_error_message = "Login not found or password incorrect. They are case sensitive."
         row = await result.fetchone()
         if not row:
-            metrics.user_logins.labels("failure").inc()
-            raise AuthenticationError(auth_error_message)
+            raise AuthenticationError(auth_error_message, auth_method)
 
         player_id = row[t_login.c.id]
         real_username = row[t_login.c.login]
@@ -387,8 +401,7 @@ class LobbyConnection:
         ban_expiry = row[lobby_ban.c.expires_at]
 
         if dbPassword != password:
-            metrics.user_logins.labels("failure").inc()
-            raise AuthenticationError(auth_error_message)
+            raise AuthenticationError(auth_error_message, auth_method)
 
         now = datetime.utcnow()
         if ban_reason is not None and now < ban_expiry:
@@ -403,8 +416,6 @@ class LobbyConnection:
             raise ClientError(
                 'Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href="{steamlink_url}">{steamlink_url}</a>.'.format(steamlink_url=config.WWW_URL + "/account/link"),
                 recoverable=False)
-
-        self._logger.debug("Login from: %s, %s, %s", player_id, username, self.session)
 
         return player_id, real_username, steamid
 
@@ -505,14 +516,75 @@ class LobbyConnection:
 
         return response.get("result", "") == "honest"
 
+    async def command_auth(self, message):
+        token = message["token"]
+        unique_id = message["unique_id"]
+        player_id = await self.oauth_service.get_player_id_from_token(token)
+        auth_method = "token"
+
+        async with self._db.acquire() as conn:
+            result = await conn.execute(
+                select([t_login.c.login, t_login.c.steamid])
+                .where(t_login.c.id == player_id)
+            )
+            row = await result.fetchone()
+
+            if not row:
+                self._logger.warning("User id not found in database possible fraudulent token: %s", player_id)
+                raise AuthenticationError("Cannot find user id", auth_method)
+
+            username = row.login
+            steamid = row.steamid
+
+        new_irc_password = hexlify(os.urandom(16)).decode()
+        await self.send({
+            "command": "irc_password",
+            "password": new_irc_password
+        })
+
+        await self.on_player_login(
+            player_id, username, new_irc_password, steamid, unique_id, auth_method
+        )
+
     async def command_hello(self, message):
         login = message["login"].strip()
         password = message["password"]
+        unique_id = message["unique_id"]
 
         async with self._db.acquire() as conn:
-            player_id, login, steamid = await self.check_user_login(conn, login, password)
-            metrics.user_logins.labels("success").inc()
+            player_id, username, steamid = await self.check_user_login(
+                conn, login, password
+            )
 
+        await self.on_player_login(
+            player_id, username, password, steamid, unique_id, "password"
+        )
+
+    async def on_player_login(
+        self,
+        player_id: int,
+        username: str,
+        password: str,
+        steamid: int,
+        unique_id: str,
+        method: str
+    ):
+        conforms_policy = await self.check_policy_conformity(
+            player_id, unique_id, self.session,
+            ignore_result=(
+                steamid is not None or
+                self.player_service.is_uniqueid_exempt(player_id)
+            )
+        )
+        if not conforms_policy:
+            return
+
+        self._logger.debug(
+            "Login from: %s, %s, %s, %s", player_id, username, method, self.session
+        )
+        metrics.user_logins.labels("success", method).inc()
+
+        async with self._db.acquire() as conn:
             await conn.execute(
                 t_login.update().where(
                     t_login.c.id == player_id
@@ -522,37 +594,10 @@ class LobbyConnection:
                     last_login=func.now()
                 )
             )
-
-            conforms_policy = await self.check_policy_conformity(
-                player_id, message["unique_id"], self.session,
-                ignore_result=(
-                    steamid is not None or
-                    self.player_service.is_uniqueid_exempt(player_id)
-                )
-            )
-            if not conforms_policy:
-                return
-
-            # Update the user's IRC registration (why the fuck is this here?!)
-            m = hashlib.md5()
-            m.update(password.encode())
-            passwordmd5 = m.hexdigest()
-            m = hashlib.md5()
-            # Since the password is hashed on the client, what we get at this point is really
-            # md5(md5(sha256(password))). This is entirely insane.
-            m.update(passwordmd5.encode())
-            irc_pass = "md5:" + str(m.hexdigest())
-
-            try:
-                await conn.execute(
-                    "UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s",
-                    (irc_pass, login)
-                )
-            except (pymysql.OperationalError, pymysql.ProgrammingError):
-                self._logger.error("Failure updating NickServ password for %s", login)
+            await self.update_irc_password(conn, username, password)
 
         self.player = Player(
-            login=str(login),
+            login=username,
             session=self.session,
             player_id=player_id,
             lobby_connection=self
@@ -588,7 +633,7 @@ class LobbyConnection:
 
             # For backwards compatibility for old clients. For now.
             "id": self.player.id,
-            "login": login
+            "login": username
         })
 
         # Tell player about everybody online. This must happen after "welcome".
@@ -644,6 +689,20 @@ class LobbyConnection:
         await self.send(json_to_send)
 
         await self.send_game_list()
+
+    async def update_irc_password(self, conn, login, password):
+        # Since the password is hashed on the client, what we get at this point
+        # is really md5(md5(sha256(password))). This is entirely insane.
+        temp = md5(password.encode()).hexdigest()
+        irc_pass = "md5:" + md5(temp.encode()).hexdigest()
+
+        try:
+            await conn.execute(
+                "UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s",
+                (irc_pass, login)
+            )
+        except (pymysql.OperationalError, pymysql.ProgrammingError):
+            self._logger.error("Failure updating NickServ password for %s", login)
 
     async def command_restore_game_session(self, message):
         assert self.player is not None
