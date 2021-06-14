@@ -140,7 +140,7 @@ def test_make_fair_teams(player_factory):
     # By converting to a set we don't have to worry about order
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
-    assert abs(teams[0].cumulated_rating - teams[1].cumulated_rating) < 50
+    assert abs(teams[0].cumulative_rating - teams[1].cumulative_rating) < 50
 
 
 def test_make_fair_teams_2(player_factory):
@@ -156,7 +156,7 @@ def test_make_fair_teams_2(player_factory):
 
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
-    assert abs(teams[0].cumulated_rating - teams[1].cumulated_rating) < 50
+    assert abs(teams[0].cumulative_rating - teams[1].cumulative_rating) < 50
 
 
 def test_make_teams_with_negative_rated_players(player_factory):
@@ -170,7 +170,7 @@ def test_make_teams_with_negative_rated_players(player_factory):
 
     assert set(teams[0].players) == set(team_a.players)
     assert set(teams[1].players) == set(team_b.players)
-    assert abs(teams[0].cumulated_rating - teams[1].cumulated_rating) < 50
+    assert abs(teams[0].cumulative_rating - teams[1].cumulative_rating) < 50
 
 
 def test_make_teams_with_full_sized_search(player_factory):
@@ -224,8 +224,8 @@ def test_game_quality(team_a, team_b):
 @given(player=st_players())
 def test_maximum_game_quality_for_even_teams(player):
     search = Search([player])
-    team_a = CombinedSearch(*[search, search, search, search])
-    team_b = CombinedSearch(*[search, search, search, search])
+    team_a = CombinedSearch(*[search] * 4)
+    team_b = CombinedSearch(*[search] * 4)
     game = TeamMatchMaker().assign_game_quality((team_a, team_b))
 
     assert game.quality == 1.0
@@ -264,7 +264,7 @@ def test_game_quality_time_bonus(s):
     num_newbies = sum(search.has_newbie() for search in team_a.get_original_searches())
     num_newbies += sum(search.has_newbie() for search in team_b.get_original_searches())
 
-    assert abs(quality_before + 6 * config.TIME_BONUS + num_newbies * config.NEWBIE_BONUS - quality_after) < 0.0000001
+    assert abs(quality_before + 6 * config.TIME_BONUS + num_newbies * config.NEWBIE_TIME_BONUS - quality_after) < 0.0000001
 
 
 @given(st_searches_list_with_index(max_players=4))

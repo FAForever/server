@@ -86,7 +86,7 @@ class Search:
         return ratings
 
     @property
-    def cumulated_rating(self):
+    def cumulative_rating(self):
         return sum(mean - 3 * dev for mean, dev in self.raw_ratings)
 
     @property
@@ -275,8 +275,8 @@ class CombinedSearch(Search):
         return list(itertools.chain(*[s.ratings for s in self.searches]))
 
     @property
-    def cumulated_rating(self):
-        return sum(s.cumulated_rating for s in self.searches)
+    def cumulative_rating(self):
+        return sum(s.cumulative_rating for s in self.searches)
 
     @property
     def average_rating(self):
