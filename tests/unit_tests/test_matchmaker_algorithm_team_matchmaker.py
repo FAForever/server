@@ -1,8 +1,7 @@
 import logging
 
 import pytest
-from hypothesis import given
-from hypothesis import strategies as st
+from hypothesis import HealthCheck, assume, given, settings
 
 from server import config
 from server.matchmaker import CombinedSearch, Search
@@ -17,7 +16,8 @@ from .strategies import (
     st_players,
     st_searches,
     st_searches_list,
-    st_searches_list_with_index
+    st_searches_list_with_index,
+    st_searches_list_with_player_size
 )
 
 
@@ -113,17 +113,15 @@ def test_team_matchmaker_algorithm_2(player_factory):
 
 
 @pytest.mark.slow
-@given(
-    searches=st_searches_list(min_size=4, max_players=8),
-    team_size=st.integers(min_value=2, max_value=4)
-)
-# To hit more cases that don't cause an exception
-# max players should depend on team size and
-# searches should have team_size * 2 total players
-def test_make_even_teams(searches, team_size):
-    matchmaker = TeamMatchMaker()
+@settings(suppress_health_check=[HealthCheck.filter_too_much])
+@given(st_searches_list_with_player_size(min_size=2, max_players=4, max_size=8))
+def test_make_even_teams(searches_with_player_size):
+    searches = searches_with_player_size[0]
+    team_size = searches_with_player_size[1]
+    assume(sum(len(search.players) for search in searches) == 2 * team_size)
+
     try:
-        teams = matchmaker.make_teams(searches, team_size)
+        teams = TeamMatchMaker().make_teams(searches, team_size)
         assert len(teams[0].players) == team_size
         assert len(teams[1].players) == team_size
     except UnevenTeamsException:
@@ -267,7 +265,8 @@ def test_game_quality_time_bonus(s):
     assert abs(quality_before + 6 * config.TIME_BONUS + num_newbies * config.NEWBIE_TIME_BONUS - quality_after) < 0.0000001
 
 
-@given(st_searches_list_with_index(max_players=4))
+@pytest.mark.slow
+@given(st_searches_list_with_index(max_players=4, min_size=2))
 def test_pick_neighboring_players(searches_with_index):
     searches = searches_with_index[0]
     index = searches_with_index[1]
@@ -275,7 +274,7 @@ def test_pick_neighboring_players(searches_with_index):
         participants = TeamMatchMaker().pick_neighboring_players(searches, index, 4)
         assert sum(len(search.players) for search in participants) == 8
     except NotEnoughPlayersException:
-        assert True
+        assume(False)
 
 
 @pytest.mark.slow
@@ -298,12 +297,12 @@ def test_pick_neighboring_players_from_end(searches):
     assert set(participants) == set(searches[-8:])
 
 
-@given(st_game_candidates_list())
-def test_pick_noncolliding_games(games):
-    if not games:
-        assert TeamMatchMaker().pick_noncolliding_games(games) == []
-        return
+def test_pick_noncolliding_games_no_games():
+    assert TeamMatchMaker().pick_noncolliding_games([]) == []
 
+
+@given(st_game_candidates_list(min_size=1))
+def test_pick_noncolliding_games(games):
     max_quality_game = games[0]
     for game in games:
         if game.quality > max_quality_game.quality:
@@ -314,8 +313,8 @@ def test_pick_noncolliding_games(games):
     while matches:
         match = matches.pop()
         for other_match in matches:
-            assert set(player for search in match for player in search.players).isdisjoint(
-                player for search in other_match for player in search.players
+            assert set(search for team in match for search in team.get_original_searches()).isdisjoint(
+                search for team in other_match for search in team.get_original_searches()
             )
     if matches:
         assert max_quality_game.match == matches[0]

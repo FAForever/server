@@ -1,7 +1,7 @@
 import logging
 import statistics
 from collections import defaultdict
-from typing import Dict, Iterable, List, NamedTuple, Tuple
+from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 
 from sortedcontainers import SortedList
 
@@ -19,11 +19,9 @@ class GameCandidate(NamedTuple):
     match: Match
     quality: float
 
-
-class Container:
-    def __init__(self, rating_difference, content):
-        self.rating = rating_difference
-        self.content = content
+    @property
+    def all_searches(self) -> Set[Search]:
+        return set(search for team in self.match for search in team.get_original_searches())
 
 
 class UnevenTeamsException(Exception):
@@ -107,9 +105,9 @@ class TeamMatchMaker(Matchmaker):
         # We need to do this in two steps to ensure that index = 0 gives an empty iterator
         lower = searches[:index]
         lower = iter(lower[::-1])
-        higher = iter(searches[index:])
+        higher = iter(searches[index+1:])
         pick_lower = True
-        candidate = next(higher, None)
+        candidate = searches[index]
         participants = [candidate]
         number_of_players = len(candidate.players)
 
@@ -151,7 +149,7 @@ class TeamMatchMaker(Matchmaker):
             team_a.append(search)
         elif participants_dict[team_size - 1]:
             search = participants_dict[team_size - 1].pop()
-            filler = self._find_most_balanced_filler(avg, search, participants_dict)
+            filler = self._find_most_balanced_filler(avg, search, participants_dict[1])
             team_a.append(search)
             team_a.append(filler)
         else:
@@ -171,7 +169,15 @@ class TeamMatchMaker(Matchmaker):
             raise UnevenTeamsException()
         return combined_team_a, combined_team_b
 
-    def _run_karmarkar_karp_algorithm(self, searches):
+    def _run_karmarkar_karp_algorithm(self, searches: List[Search]) -> Tuple[List[Search], List[Search]]:
+        class Container:
+            def __init__(self, rating_difference, content):
+                self.rating: int = rating_difference
+                self.content: List = content
+
+            def holds_containers(self):
+                return len(self.content) == 2
+
         self._logger.debug("Running Karmarkar-Karp to partition the teams")
         # Further reading: https://en.wikipedia.org/wiki/Largest_differencing_method
         # Karmarkar-Karp works only for positive integers. By adding 5000 to the rating of each player
@@ -205,20 +211,20 @@ class TeamMatchMaker(Matchmaker):
         containers_a.append(elem1.content[0])
         containers_b.append(elem1.content[1])
         while containers_a or containers_b:
-            for e in containers_a:
-                if len(e.content) == 2:
+            if containers_a:
+                e = containers_a.pop()
+                if e.holds_containers():
                     containers_a.append(e.content[0])
                     containers_b.append(e.content[1])
                 else:
                     team_a.append(e.content[0])
-                containers_a.remove(e)
-            for e in containers_b:
-                if len(e.content) == 2:
+            if containers_b:
+                e = containers_b.pop()
+                if e.holds_containers():
                     containers_b.append(e.content[0])
                     containers_a.append(e.content[1])
                 else:
                     team_b.append(e.content[0])
-                containers_b.remove(e)
         return team_a, team_b
 
     def _searches_by_size(self, searches: List[Search]) -> Dict[int, List[Search]]:
@@ -234,7 +240,7 @@ class TeamMatchMaker(Matchmaker):
                 self._logger.debug("%i players: %s", i, searches_by_size[i])
         return searches_by_size
 
-    def _find_most_balanced_filler(self, avg, search, participants_dict):
+    def _find_most_balanced_filler(self, avg: int, search: Search, single_player_searches: List[Search]) -> Search:
         """
         If we simply fetch the highest/lowest rated single player search we may overshoot our
         goal to get the most balanced teams, so we try them all to find the one that brings us
@@ -242,23 +248,15 @@ class TeamMatchMaker(Matchmaker):
         If there is no single player search we have hit a search combination that is impossible to
         separate into two teams e.g. (3, 3, 2) for 4v4
         """
-        if not participants_dict[1]:
+        if not single_player_searches:
             self._logger.warning("given searches are impossible to split in even teams because of party sizes")
             raise UnevenTeamsException()
 
-        iterator = iter(participants_dict[1])
-        candidate = next(iterator)
-        old_team_avg = get_average_rating([search, candidate])
-        old_avg_delta = abs(avg - old_team_avg)
-        self._logger.debug("delta with %s is %s (avg is %s)", [candidate], old_avg_delta, old_team_avg)
-        for item in iterator:
-            team_avg = get_average_rating([search, item])
-            avg_delta = abs(avg - team_avg)
-            self._logger.debug("delta with %s is %s (avg is %s)", [item], avg_delta, team_avg)
-            if avg_delta < old_avg_delta:
-                candidate = item
-                old_avg_delta = avg_delta
-        self._logger.debug("used %s as filler", [candidate])
+        candidate = min(
+            single_player_searches,
+            key=lambda item: abs(avg - get_average_rating([search, item]))
+        )
+        self._logger.debug("used %s as best filler", [candidate])
         return candidate
 
     def assign_game_quality(self, match: Match) -> GameCandidate:
@@ -298,17 +296,12 @@ class TeamMatchMaker(Matchmaker):
         games = SortedList(games, key=lambda game: game.quality)
 
         matches = []
-        while games:
-            g = games.pop()
-            matches.append(g.match)
-            used_players = set(player for search in g.match for player in search.players)
-            self._logger.debug("used players: %s", [p.login for p in used_players])
-            games = [
-                game for game in games
-                if used_players.isdisjoint(
-                    player for search in game.match for player in search.players
-                )
-            ]
+        used_searches = set()
+        for game in reversed(games):
+            if used_searches.isdisjoint(game.all_searches):
+                matches.append(game.match)
+                used_searches.update(game.all_searches)
+                self._logger.debug("used players: %s", [search for search in used_searches])
 
         if self._logger.isEnabledFor(logging.DEBUG):
             if matches:
