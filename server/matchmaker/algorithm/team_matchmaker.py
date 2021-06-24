@@ -5,11 +5,11 @@ from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 
 from sortedcontainers import SortedList
 
-from .stable_marriage import StableMarriageMatchmaker
 from ...config import config
 from ...decorators import with_logger
 from ..search import CombinedSearch, Match, Search, get_average_rating
 from .matchmaker import Matchmaker
+from .stable_marriage import StableMarriageMatchmaker
 
 
 class GameCandidate(NamedTuple):
