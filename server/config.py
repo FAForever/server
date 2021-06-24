@@ -85,11 +85,11 @@ class ConfigurationStore:
         self.TOP_PLAYER_MIN_RATING = 1600
 
         # Values for the custom (i.e. not trueskill) game quality metric used by the matchmaker
-        self.MINIMUM_GAME_QUALITY = 0.6
+        self.MINIMUM_GAME_QUALITY = 0.4
         # Difference of cumulated rating of the teams
-        self.MAXIMUM_RATING_IMBALANCE = 600
+        self.MAXIMUM_RATING_IMBALANCE = 400
         # stdev of the ratings of all participating players
-        self.MAXIMUM_RATING_DEVIATION = 600
+        self.MAXIMUM_RATING_DEVIATION = 900
         # Quality bonus for each failed matching attempt per player
         self.TIME_BONUS = 0.01
         self.MAXIMUM_TIME_BONUS = 0.2
