@@ -247,7 +247,13 @@ class Search:
 
     def __repr__(self) -> str:
         """For debugging"""
-        return f"Search({[p.login for p in self.players]}, {self.average_rating})"
+        string = f"({len(self.players)} players, {self.average_rating}"
+        if self.failed_matching_attempts > 0:
+            string += f", FMA: {self.failed_matching_attempts}"
+        if self.has_newbie():
+            string += ", has_newbie"
+        string += ")"
+        return string
 
     def get_original_searches(self) -> List["Search"]:
         """
