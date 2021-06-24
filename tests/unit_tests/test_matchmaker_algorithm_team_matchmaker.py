@@ -57,7 +57,7 @@ def make_searches(ratings, player_factory):
     return [Search([player_factory(r + 300, 100, name=f"p{i}")]) for i, r in enumerate(ratings)]
 
 
-def calculate_game_quality(match: Match) -> float:
+def calculate_game_quality(match: Match):
     ratings = []
     for team in match:
         for search in team.get_original_searches():
@@ -69,7 +69,7 @@ def calculate_game_quality(match: Match) -> float:
     uniformity = max((config.MAXIMUM_RATING_DEVIATION - deviation) / config.MAXIMUM_RATING_DEVIATION, 0)
 
     quality = fairness * uniformity
-    return quality
+    return quality, rating_disparity, deviation
 
 
 def get_random_searches_list(player_factory, min_size=0, max_size=10, max_players=4):
@@ -94,6 +94,8 @@ def test_matchmaker(caplog, player_factory):
 
     matchmaker = TeamMatchMaker()
     qualities = []
+    rating_disparities = []
+    deviations = []
     queue_len_before_pop = []
     created_games = []
     queue_len_after_pop = []
@@ -112,8 +114,10 @@ def test_matchmaker(caplog, player_factory):
         for search in unmatched:
             search.register_failed_matching_attempt()
         for match in matches:
-            quality_without_bonuses = calculate_game_quality(match)
+            quality_without_bonuses, rating_disparity, deviation = calculate_game_quality(match)
             qualities.append(quality_without_bonuses)
+            rating_disparities.append(rating_disparity)
+            deviations.append(deviation)
             if i % 10 == 0:
                 print(f"{repr(match[0].get_original_searches())} tot. rating: {match[0].cumulative_rating} vs "
                       f"{repr(match[1].get_original_searches())} tot. rating: {match[1].cumulative_rating} "
@@ -140,20 +144,39 @@ def test_matchmaker(caplog, player_factory):
     best_quality = max(qualities)
     worst_quality = min(qualities)
     avg_quality = statistics.mean(qualities)
+    med_quality = statistics.median(qualities)
     quality_percentile = numpy.percentile(qualities, 75)
+    rating_disparity_90_percentile = numpy.percentile(rating_disparities, 90)
+    max_rating_disparity = max(rating_disparities)
+    avg_rating_disparity = statistics.mean(rating_disparities)
+    med_rating_disparity = statistics.median(rating_disparities)
+    deviations_90_percentile = numpy.percentile(deviations, 90)
+    max_deviations = max(deviations)
+    avg_deviations = statistics.mean(deviations)
+    med_deviations = statistics.median(deviations)
 
     print()
     print(f"quality was between {worst_quality} and {best_quality} "
           f"with average {avg_quality} and 75th percentile {quality_percentile}")
+    print(f"rating disparity was on average {avg_rating_disparity}, median {med_rating_disparity}, "
+          f"90th percentile {rating_disparity_90_percentile} and max {max_rating_disparity}")
+    print(f"rating deviation was on average {avg_deviations}, median {med_deviations}, "
+          f"90th percentile {deviations_90_percentile} and max {max_deviations}")
     print(f"number of unmatched players was between {min_length} and {max_length} "
           f"with average {avg_length} and median {med_length}")
     print(f"matched {len(wait_time)} searches total")
-    #print(wait_time)
     print(f"wait time was on average {avg_wait_time}, median {med_wait_time}, "
           f"90th percentile {wait_time_90_percentile} and max {max_wait_time} cycles")
     print(f"matched {len(newbie_wait_time)} newbie searches")
     print(f"newbie wait time was on average {newbie_avg_wait_time}, median {newbie_med_wait_time}, "
           f"90th percentile {newbie_wait_time_90_percentile} and max {newbie_max_wait_time} cycles")
+    print()
+    print(f"{worst_quality},{best_quality},{avg_quality},{med_quality},{quality_percentile}")
+    print(f" ,{max_rating_disparity},{avg_rating_disparity},{med_rating_disparity},{rating_disparity_90_percentile}")
+    print(f" ,{max_deviations},{avg_deviations},{med_deviations},{deviations_90_percentile}")
+    print(f"{min_length},{max_length},{avg_length},{med_length},")
+    print(f" ,{max_wait_time},{avg_wait_time},{med_wait_time},{wait_time_90_percentile}")
+    print(f" ,{newbie_max_wait_time},{newbie_avg_wait_time},{newbie_med_wait_time},{newbie_wait_time_90_percentile}")
 
     fig, ax = plt.subplots()
     ax.plot(iteration, queue_len_before_pop, label='length before pop')
