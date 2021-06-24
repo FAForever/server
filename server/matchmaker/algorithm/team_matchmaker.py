@@ -5,6 +5,7 @@ from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 
 from sortedcontainers import SortedList
 
+from .stable_marriage import StableMarriageMatchmaker
 from ...config import config
 from ...decorators import with_logger
 from ..search import CombinedSearch, Match, Search, get_average_rating
@@ -57,6 +58,9 @@ class TeamMatchMaker(Matchmaker):
     def find(self, searches: Iterable[Search], team_size: int) -> Tuple[List[Match], List[Search]]:
         if not searches:
             return [], []
+
+        if team_size == 1:
+            return StableMarriageMatchmaker().find(searches, 1)
 
         self._logger.debug("========= starting matching algorithm =========")
 
