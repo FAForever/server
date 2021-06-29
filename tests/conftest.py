@@ -301,8 +301,8 @@ async def player_service(database):
 
 
 @pytest.fixture
-async def rating_service(database, player_service):
-    service = RatingService(database, player_service)
+async def rating_service(database, player_service, message_queue_service):
+    service = RatingService(database, player_service, message_queue_service)
     await service.initialize()
 
     yield service
