@@ -62,10 +62,12 @@ class TeamMatchMaker(Matchmaker):
         if team_size == 1:
             return StableMarriageMatchmaker().find(searches, 1)
 
-        self._logger.debug("========= starting matching algorithm =========")
-
         searches = SortedList(searches, key=lambda s: s.average_rating)
         possible_games = []
+
+        self._logger.debug("========= starting matching algorithm =========")
+        self._logger.debug("Searches in queue: %s", list(searches))
+
         for index, search in enumerate(searches):
 
             self._logger.debug("building game for %r", search)
