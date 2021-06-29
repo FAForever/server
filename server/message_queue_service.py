@@ -51,6 +51,8 @@ class MessageQueueService(Service):
             return
         self._is_ready = True
 
+        await self._declare_exchange(config.MQ_EXCHANGE_NAME, ExchangeType.TOPIC)
+
     async def _connect(self) -> None:
         try:
             self._connection = await aio_pika.connect_robust(

@@ -29,10 +29,6 @@ class BroadcastService(Service):
         self.player_service = player_service
 
     async def initialize(self):
-        await self.message_queue_service.declare_exchange(
-            config.MQ_EXCHANGE_NAME
-        )
-
         # Using a lazy interval timer so that the intervals can be changed
         # without restarting the server.
         self._broadcast_dirties_timer = LazyIntervalTimer(
