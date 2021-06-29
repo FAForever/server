@@ -89,11 +89,11 @@ class ConfigurationStore:
         # Difference of cumulated rating of the teams
         self.MAXIMUM_RATING_IMBALANCE = 400
         # stdev of the ratings of all participating players
-        self.MAXIMUM_RATING_DEVIATION = 900
+        self.MAXIMUM_RATING_DEVIATION = 750
         # Quality bonus for each failed matching attempt per player
         self.TIME_BONUS = 0.01
         self.MAXIMUM_TIME_BONUS = 0.2
-        self.NEWBIE_TIME_BONUS = 0.1
+        self.NEWBIE_TIME_BONUS = 0.0
         self.MAXIMUM_NEWBIE_TIME_BONUS = 0.4
 
         self.TWILIO_ACCOUNT_SID = ""
