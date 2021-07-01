@@ -17,6 +17,7 @@ from server import (
     BroadcastService,
     GameService,
     LadderService,
+    OAuthService,
     PartyService,
     ServerInstance
 )
@@ -72,6 +73,20 @@ async def broadcast_service(
 
 
 @pytest.fixture
+async def oauth_service(mocker, jwks_server):
+    mocker.patch(
+        "server.oauth_service.config.HYDRA_JWKS_URI",
+        f"http://{jwks_server.host}:{jwks_server.port}/jwks"
+    )
+    service = OAuthService()
+    await service.initialize()
+
+    yield service
+
+    await service.shutdown()
+
+
+@pytest.fixture
 def jwk_priv_key():
     return textwrap.dedent("""
     -----BEGIN RSA PRIVATE KEY-----
@@ -111,11 +126,7 @@ async def lobby_server(
         "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
         f"http://{policy_server.host}:{policy_server.port}"
     )
-    mock_jwk = mock.patch(
-        "server.oauth_service.config.HYDRA_JWKS_URI",
-        f"http://{jwks_server.host}:{jwks_server.port}/jwks"
-    )
-    with mock_policy, mock_jwk:
+    with mock_policy:
         instance = ServerInstance(
             "UnitTestServer",
             database,
