@@ -46,7 +46,7 @@ async def join_game(proto: Protocol, uid: int):
         "command": "game_join",
         "uid": uid
     })
-    await read_until_command(proto, "game_launch")
+    await read_until_command(proto, "game_launch", timeout=10)
     await open_fa(proto)
     # HACK: Yield long enough for the server to process our message
     await asyncio.sleep(0.5)
