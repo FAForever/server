@@ -226,13 +226,13 @@ async def test_on_game_end_global_ratings_published(custom_game, players):
     assert host_result["rating_type"] is RatingType.GLOBAL
     assert "new_rating_mean" in host_result
     assert "new_rating_deviation" in host_result
-    assert host_result["outcome"] is GameOutcome.VICTORY
+    assert host_result["outcome"] is GameOutcome.VICTORY.value
 
     join_result = results[players.joining.id]
     assert join_result["rating_type"] is RatingType.GLOBAL
     assert "new_rating_mean" in join_result
     assert "new_rating_deviation" in join_result
-    assert join_result["outcome"] is GameOutcome.DEFEAT
+    assert join_result["outcome"] is GameOutcome.DEFEAT.value
 
 
 async def test_on_game_end_ladder_ratings_persisted(ladder_game, players):
@@ -281,13 +281,13 @@ async def test_on_game_end_ladder_ratings_published(ladder_game, players):
     assert host_result["rating_type"] is RatingType.LADDER_1V1
     assert "new_rating_mean" in host_result
     assert "new_rating_deviation" in host_result
-    assert host_result["outcome"] is GameOutcome.VICTORY
+    assert host_result["outcome"] is GameOutcome.VICTORY.value
 
     join_result = results[players.joining.id]
     assert join_result["rating_type"] is RatingType.LADDER_1V1
     assert "new_rating_mean" in join_result
     assert "new_rating_deviation" in join_result
-    assert join_result["outcome"] is GameOutcome.DEFEAT
+    assert join_result["outcome"] is GameOutcome.DEFEAT.value
 
 
 async def test_on_game_end_ladder_same_rating_published_as_persisted(

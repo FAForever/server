@@ -146,7 +146,7 @@ class RatingService(Service):
             summary.game_id, summary.rating_type, old_ratings, new_ratings, outcome_map
         )
         await self._publish_rating_changes(
-            summary.rating_type, new_ratings, outcome_map
+            summary.rating_type, old_ratings, new_ratings, outcome_map
         )
 
     async def _get_rating_data(self, summary: GameRatingSummary) -> GameRatingData:
@@ -394,6 +394,7 @@ class RatingService(Service):
     async def _publish_rating_changes(
         self,
         rating_type: str,
+        old_ratings: Dict[PlayerID, Rating],
         new_ratings: Dict[PlayerID, Rating],
         outcomes: Dict[PlayerID, GameOutcome],
     ):
@@ -401,18 +402,25 @@ class RatingService(Service):
             if player_id not in outcomes:
                 self._logger.error("Missing outcome for player %i", player_id)
                 continue
+            if player_id not in old_ratings:
+                self._logger.error("Missing old rating for player %i", player_id)
+                continue
+
+            old_rating = old_ratings[player_id]
 
             rating_change_dict = {
                 "player_id": player_id,
                 "rating_type": rating_type,
                 "new_rating_mean": new_rating.mu,
                 "new_rating_deviation": new_rating.sigma,
-                "outcome": outcomes[player_id]
+                "old_rating_mean": old_rating.mu,
+                "old_rating_deviation": old_rating.sigma,
+                "outcome": outcomes[player_id].value
             }
 
             await self._message_queue_service.publish(
                 config.MQ_EXCHANGE_NAME,
-                "success.ratingChange.create",
+                "success.rating.update",
                 rating_change_dict,
             )
 
