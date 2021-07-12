@@ -75,7 +75,7 @@ def test_make_teams_single_2v2_large_pool(player_factory):
         p1, p2 = search.players
         p1_mean, _ = p1.ratings[RatingType.LADDER_1V1]
         p2_mean, _ = p2.ratings[RatingType.LADDER_1V1]
-        #
+
         assert math.fabs(p1_mean - p2_mean) <= 100
 
 
@@ -291,13 +291,13 @@ def test_BucketTeammatchmaker_2v2_mixed_party_sizes(player_factory):
 
 def test_2v2_count_unmatched_searches(player_factory):
     players = [
-            player_factory(500, 100, name="lowRating_unmatched_1"),
-            player_factory(500, 100, name="lowRating_unmatched_2"),
-            player_factory(1500, 100, name="midRating_matched_1"),
-            player_factory(1500, 100, name="midRating_matched_2"),
-            player_factory(1500, 100, name="midRating_matched_3"),
-            player_factory(1500, 100, name="midRating_matched_4"),
-            player_factory(2000, 100, name="highRating_unmatched_1"),
+        player_factory(500, 100, name="lowRating_unmatched_1"),
+        player_factory(500, 100, name="lowRating_unmatched_2"),
+        player_factory(1500, 100, name="midRating_matched_1"),
+        player_factory(1500, 100, name="midRating_matched_2"),
+        player_factory(1500, 100, name="midRating_matched_3"),
+        player_factory(1500, 100, name="midRating_matched_4"),
+        player_factory(2000, 100, name="highRating_unmatched_1"),
     ]
     searches = [Search([player]) for player in players]
 

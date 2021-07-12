@@ -420,8 +420,8 @@ async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
 
 @pytest.mark.asyncio
 async def test_queue_cancel_while_being_matched_registers_failed_attempt(
-        matchmaker_queue, matchmaker_players_all_match
-    ):
+    matchmaker_queue, matchmaker_players_all_match
+):
     p1, p2, p3, p4,  _ = matchmaker_players_all_match
     searches = [Search([p1]), Search([p2]), Search([p3]), Search([p4])]
     for search in searches:

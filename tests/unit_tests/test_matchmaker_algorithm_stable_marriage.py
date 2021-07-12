@@ -525,16 +525,17 @@ def test_find_will_not_match_low_quality_games(player_factory):
     assert len(matches) == 0
     assert len(unmatched_searches) == len(searches)
 
+
 def test_unmatched_searches_without_newbies(player_factory):
     players = [
-            player_factory(100, 10, name="lowRating_unmatched_1"),
-            player_factory(500, 10, name="lowRating_unmatched_2"),
-            player_factory(1500, 10, name="midRating_matched_1"),
-            player_factory(1500, 10, name="midRating_matched_2"),
-            player_factory(1500, 10, name="midRating_matched_3"),
-            player_factory(1500, 10, name="midRating_matched_4"),
-            player_factory(2000, 10, name="highRating_unmatched_1"),
-            player_factory(2500, 10, name="highRating_unmatched_2"),
+        player_factory(100, 10, name="lowRating_unmatched_1"),
+        player_factory(500, 10, name="lowRating_unmatched_2"),
+        player_factory(1500, 10, name="midRating_matched_1"),
+        player_factory(1500, 10, name="midRating_matched_2"),
+        player_factory(1500, 10, name="midRating_matched_3"),
+        player_factory(1500, 10, name="midRating_matched_4"),
+        player_factory(2000, 10, name="highRating_unmatched_1"),
+        player_factory(2500, 10, name="highRating_unmatched_2"),
     ]
     searches = [Search([player]) for player in players]
 
@@ -544,21 +545,22 @@ def test_unmatched_searches_without_newbies(player_factory):
 
     expected_number_of_matches = 2
     assert len(matches) == expected_number_of_matches
-    assert len(unmatched_searches) == len(searches) - 2 *team_size * expected_number_of_matches
+    assert len(unmatched_searches) == len(searches) - 2 * team_size * expected_number_of_matches
+
 
 def test_unmatched_searches_with_newbies(player_factory):
     players = [
-            player_factory(100, 10, name="newbie1", ladder_games=1),
-            player_factory(200, 10, name="newbie2", ladder_games=1),
-            player_factory(300, 10, name="newbie3", ladder_games=1),
-            player_factory(400, 10, name="newbie4", ladder_games=1),
-            player_factory(500, 10, name="newbie5", ladder_games=1),
-            player_factory(1500, 10, name="midRating_matched_1"),
-            player_factory(1500, 10, name="midRating_matched_2"),
-            player_factory(1500, 10, name="midRating_matched_3"),
-            player_factory(1500, 10, name="midRating_matched_4"),
-            player_factory(2000, 10, name="highRating_unmatched_1"),
-            player_factory(2500, 10, name="highRating_unmatched_2"),
+        player_factory(100, 10, name="newbie1", ladder_games=1),
+        player_factory(200, 10, name="newbie2", ladder_games=1),
+        player_factory(300, 10, name="newbie3", ladder_games=1),
+        player_factory(400, 10, name="newbie4", ladder_games=1),
+        player_factory(500, 10, name="newbie5", ladder_games=1),
+        player_factory(1500, 10, name="midRating_matched_1"),
+        player_factory(1500, 10, name="midRating_matched_2"),
+        player_factory(1500, 10, name="midRating_matched_3"),
+        player_factory(1500, 10, name="midRating_matched_4"),
+        player_factory(2000, 10, name="highRating_unmatched_1"),
+        player_factory(2500, 10, name="highRating_unmatched_2"),
     ]
     searches = [Search([player]) for player in players]
 
@@ -573,4 +575,4 @@ def test_unmatched_searches_with_newbies(player_factory):
 
     expected_number_of_matches = 5
     assert len(matches) == expected_number_of_matches
-    assert len(unmatched_searches) == len(searches) - 2 *team_size * expected_number_of_matches
+    assert len(unmatched_searches) == len(searches) - 2 * team_size * expected_number_of_matches
