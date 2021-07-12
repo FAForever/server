@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Dict, Iterable, List, Set, Tuple
 
 from ...decorators import with_logger
@@ -5,13 +6,14 @@ from ..search import Match, Search
 
 
 @with_logger
-class Matchmaker(object):
+class Matchmaker(ABC):
+    @abstractmethod
     def find(
-        self, searches: Iterable[Search], team_size: int
+        self,
+        searches: Iterable[Search],
+        team_size: int
     ) -> Tuple[List[Match], List[Search]]:
-        raise NotImplementedError(
-            "Matchmaker.find should be implemented by concrete subclasses"
-        )
+        pass
 
 
 @with_logger
