@@ -151,10 +151,11 @@ class MatchmakerQueue:
         """
         self._logger.info("Searching for matches: %s", self.name)
 
-        if self.num_players < 2 * self.team_size:
-            return
-
         searches = list(self._queue.keys())
+
+        if self.num_players < 2 * self.team_size:
+            self._register_unmatched_searches(searches)
+            return
 
         # Call self.match on all matches and filter out the ones that were cancelled
         loop = asyncio.get_running_loop()

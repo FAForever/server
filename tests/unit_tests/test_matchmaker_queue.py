@@ -476,13 +476,18 @@ async def test_queue_pop_communicates_failed_attempts(matchmaker_queue, player_f
     s2 = Search([player_factory("Player2", player_id=2, ladder_rating=(1000, 50))])
 
     matchmaker_queue.push(s1)
-    matchmaker_queue.push(s2)
-
     assert s1.failed_matching_attempts == 0
+
+    await matchmaker_queue.find_matches()
+
+    assert s1.failed_matching_attempts == 1
+
+    matchmaker_queue.push(s2)
+    assert s1.failed_matching_attempts == 1
     assert s2.failed_matching_attempts == 0
 
     await matchmaker_queue.find_matches()
 
     # These searches should not have been matched
-    assert s1.failed_matching_attempts == 1
+    assert s1.failed_matching_attempts == 2
     assert s2.failed_matching_attempts == 1
