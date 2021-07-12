@@ -172,8 +172,7 @@ class MatchmakerQueue:
             if self.match(match[0], match[1]):
                 matches.append(match)
             else:
-                unmatched_searches.append(match[0])
-                unmatched_searches.append(match[1])
+                unmatched_searches.extend(match)
 
         self._register_unmatched_searches(unmatched_searches)
 
