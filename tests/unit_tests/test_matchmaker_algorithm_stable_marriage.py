@@ -1,7 +1,7 @@
 import logging
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 
 from server import config
 from server.matchmaker import Search
@@ -167,6 +167,8 @@ def test_stable_marriage_produces_symmetric_matchings(
         ranks = build_func(searches)
 
         matches = stable_marriage.StableMarriage().find(ranks)
+
+        assume(matches != [])
 
         for search in matches:
             opponent = matches[search]

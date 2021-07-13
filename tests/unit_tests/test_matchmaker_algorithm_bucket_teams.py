@@ -2,7 +2,7 @@ import math
 import random
 
 import pytest
-from hypothesis import given
+from hypothesis import assume, given
 from hypothesis import strategies as st
 
 from server import config
@@ -44,6 +44,8 @@ def player_factory(player_factory):
 )
 def test_make_teams_single_correct_size(searches, size, make_teams_func):
     matched, _ = make_teams_func(searches, size)
+
+    assume(matched != [])
 
     for search in matched:
         assert len(search.players) == size
