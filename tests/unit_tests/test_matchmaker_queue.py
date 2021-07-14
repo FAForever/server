@@ -1,7 +1,6 @@
 import asyncio
 import functools
 import time
-from concurrent.futures import CancelledError, TimeoutError
 from unittest import mock
 
 import pytest
@@ -399,7 +398,7 @@ async def test_queue_race(matchmaker_queue, player_factory):
             asyncio.wait_for(matchmaker_queue.search(Search([p3])), 0.1),
             asyncio.create_task(find_matches())
         )
-    except (TimeoutError, CancelledError):
+    except (asyncio.TimeoutError, asyncio.CancelledError):
         pass
 
     assert len(matchmaker_queue._queue) == 0
@@ -412,7 +411,7 @@ async def test_queue_cancel(matchmaker_queue, matchmaker_players):
     s1.cancel()
     try:
         await asyncio.wait_for(matchmaker_queue.search(s2), 0.01)
-    except (TimeoutError, CancelledError):
+    except (asyncio.TimeoutError, asyncio.CancelledError):
         pass
 
     assert not s1.is_matched
@@ -439,7 +438,7 @@ async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
             asyncio.wait_for(matchmaker_queue.search(s3), 0.1),
             asyncio.create_task(find_matches())
         )
-    except CancelledError:
+    except asyncio.CancelledError:
         pass
 
     assert not s1.is_matched
