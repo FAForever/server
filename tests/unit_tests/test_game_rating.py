@@ -4,7 +4,6 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from unittest import mock
 
 import pytest
-from asynctest import CoroutineMock
 
 from server.games import (
     CustomGame,
@@ -42,7 +41,7 @@ class PersistedResults(NamedTuple):
 @pytest.fixture
 async def rating_service(database, player_service):
     mock_message_queue_service = mock.Mock()
-    mock_message_queue_service.publish = CoroutineMock()
+    mock_message_queue_service.publish = mock.AsyncMock()
 
     mock_service = RatingService(
         database,
@@ -50,8 +49,8 @@ async def rating_service(database, player_service):
         mock_message_queue_service
     )
 
-    mock_service._persist_rating_changes = CoroutineMock()
-    mock_service._create_initial_ratings = CoroutineMock()
+    mock_service._persist_rating_changes = mock.AsyncMock()
+    mock_service._create_initial_ratings = mock.AsyncMock()
 
     mock_ratings = defaultdict(dict)
 
@@ -82,9 +81,7 @@ async def rating_service(database, player_service):
         return player_ratings
 
     mock_service.set_mock_rating = set_mock_rating
-    mock_service._get_all_player_ratings = CoroutineMock(
-        wraps=get_mock_ratings
-    )
+    mock_service._get_all_player_ratings = mock.AsyncMock(wraps=get_mock_ratings)
 
     await mock_service.initialize()
 
@@ -1015,7 +1012,7 @@ async def test_single_wrong_report_still_rated_correctly(game: Game, player_fact
     # based on replay with UID 11255492
 
     # Mocking out database calls, since not all player IDs exist.
-    game.update_game_player_stats = CoroutineMock()
+    game.update_game_player_stats = mock.AsyncMock()
 
     game.state = GameState.LOBBY
 

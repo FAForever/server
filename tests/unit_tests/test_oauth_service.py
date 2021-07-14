@@ -1,5 +1,6 @@
+from unittest import mock
+
 import pytest
-from asynctest import CoroutineMock
 
 from server import OAuthService
 
@@ -14,7 +15,7 @@ async def test_get_public_keys(oauth_service):
     def set_public_keys():
         oauth_service.public_keys = {"any": "value"}
 
-    oauth_service.retrieve_public_keys = CoroutineMock(
+    oauth_service.retrieve_public_keys = mock.AsyncMock(
         side_effect=set_public_keys
     )
 
@@ -27,7 +28,7 @@ async def test_get_public_keys(oauth_service):
 @pytest.mark.asyncio
 async def test_get_public_keys_cached(oauth_service):
     oauth_service.public_keys = {"any": "value"}
-    oauth_service.retrieve_public_keys = CoroutineMock()
+    oauth_service.retrieve_public_keys = mock.AsyncMock()
 
     public_keys = await oauth_service.get_public_keys()
 

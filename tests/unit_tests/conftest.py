@@ -2,9 +2,7 @@ from contextlib import AbstractContextManager, asynccontextmanager
 from time import perf_counter
 from unittest import mock
 
-import asynctest
 import pytest
-from asynctest import CoroutineMock
 
 from server import GameStatsService
 from server.game_service import GameService
@@ -29,7 +27,7 @@ def ladder_and_game_service_context(
                     game_stats_service=mock.Mock(),
                     rating_service=mock.Mock(),
                     message_queue_service=mock.Mock(
-                        declare_exchange=CoroutineMock()
+                        declare_exchange=mock.AsyncMock()
                     )
                 )
                 ladder_service = LadderService(database, game_service)
@@ -74,7 +72,7 @@ def game_connection(
         database=database,
         game=game,
         player=players.hosting,
-        protocol=asynctest.create_autospec(QDataStreamProtocol),
+        protocol=mock.create_autospec(QDataStreamProtocol),
         player_service=player_service,
         games=game_service
     )
@@ -97,7 +95,7 @@ def make_mock_game_connection(
     state=GameConnectionState.INITIALIZING,
     player=mock.Mock()
 ):
-    gc = asynctest.create_autospec(GameConnection)
+    gc = mock.create_autospec(GameConnection)
     gc.state = state
     gc.player = player
     gc.finished_sim = False
@@ -107,7 +105,7 @@ def make_mock_game_connection(
 @pytest.fixture
 def game_stats_service():
     service = mock.Mock(spec=GameStatsService)
-    service.process_game_stats = CoroutineMock()
+    service.process_game_stats = mock.AsyncMock()
     service.reset_mock()
     return service
 

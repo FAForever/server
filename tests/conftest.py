@@ -12,10 +12,8 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Iterable
 from unittest import mock
 
-import asynctest
 import hypothesis
 import pytest
-from asynctest import CoroutineMock
 
 from server.api.api_accessor import ApiAccessor
 from server.api.oauth_session import OAuth2Session
@@ -222,13 +220,13 @@ def coop_game(database, players):
 
 
 def make_game(database, uid, players, game_type=Game):
-    mock_parent = CoroutineMock()
-    game = asynctest.create_autospec(
-        spec=game_type(uid, database, mock_parent, CoroutineMock())
+    mock_parent = mock.AsyncMock()
+    game = mock.create_autospec(
+        spec=game_type(uid, database, mock_parent, mock.AsyncMock())
     )
-    players.hosting.getGame = CoroutineMock(return_value=game)
-    players.joining.getGame = CoroutineMock(return_value=game)
-    players.peer.getGame = CoroutineMock(return_value=game)
+    players.hosting.getGame = mock.AsyncMock(return_value=game)
+    players.joining.getGame = mock.AsyncMock(return_value=game)
+    players.peer.getGame = mock.AsyncMock(return_value=game)
     game.host = players.hosting
     game.init_mode = InitMode.NORMAL_LOBBY
     game.name = "Some game name"
@@ -265,7 +263,7 @@ def make_player(
         elif lobby_connection_spec == "mock":
             conn = mock.Mock(spec=LobbyConnection)
         elif lobby_connection_spec == "auto":
-            conn = asynctest.create_autospec(LobbyConnection)
+            conn = mock.create_autospec(LobbyConnection)
         else:
             raise ValueError(f"Unknown spec type '{lobby_connection_spec}'")
 
@@ -341,7 +339,7 @@ async def game_service(
 @pytest.fixture
 async def geoip_service() -> GeoIpService:
     service = GeoIpService()
-    service.download_geoip_db = CoroutineMock()
+    service.download_geoip_db = mock.AsyncMock()
     await service.initialize()
     return service
 
@@ -387,7 +385,7 @@ def matchmaker_queue(game_service) -> MatchmakerQueue:
 
 @pytest.fixture
 def api_accessor():
-    session = asynctest.create_autospec(OAuth2Session)
+    session = mock.create_autospec(OAuth2Session)
     session.request.return_value = (200, "test")
 
     api_accessor = ApiAccessor()

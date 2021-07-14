@@ -5,13 +5,17 @@ import inspect
 import itertools
 from asyncio import Event, Lock
 
-import asynctest
 from hypothesis.internal.reflection import (
     define_function_signature,
     impersonate
 )
 
 from server.db import FAFDatabase
+
+from .exhaust_callbacks import exhaust_callbacks
+
+# Imported for re-export
+_ = exhaust_callbacks
 
 
 # Copied over from PR #113 of pytest-asyncio. It will probably be available in
@@ -69,7 +73,7 @@ def fast_forward(timeout):
             fut = asyncio.create_task(f(*args, **kwargs))
 
             while not fut.done() and time < timeout:
-                await asynctest.exhaust_callbacks(loop)
+                await exhaust_callbacks(loop)
                 await advance_time(0.1)
                 time += 0.1
 

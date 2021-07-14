@@ -2,14 +2,13 @@ import asyncio
 import contextlib
 from unittest import mock
 
-import asynctest
 import pytest
-from asynctest import CoroutineMock, exhaust_callbacks
 
 from server import ServerContext
 from server.core import Service
 from server.lobbyconnection import LobbyConnection
 from server.protocol import DisconnectedError, QDataStreamProtocol
+from tests.utils import exhaust_callbacks
 
 pytestmark = pytest.mark.asyncio
 
@@ -20,7 +19,7 @@ class MockConnection:
         self.peername = None
         self.user_agent = None
         self.version = None
-        self.on_connection_lost = CoroutineMock()
+        self.on_connection_lost = mock.AsyncMock()
 
     async def on_connection_made(self, protocol, peername):
         self.protocol = protocol
@@ -39,7 +38,7 @@ def mock_connection():
 
 @pytest.fixture
 def mock_service():
-    return asynctest.create_autospec(Service)
+    return mock.create_autospec(Service)
 
 
 @pytest.fixture

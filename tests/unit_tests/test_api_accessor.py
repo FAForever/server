@@ -1,7 +1,6 @@
 from unittest import mock
 
 import pytest
-from asynctest import CoroutineMock
 
 from server.api.api_accessor import SessionManager
 from server.config import config
@@ -11,8 +10,8 @@ pytestmark = pytest.mark.asyncio
 
 async def test_session_manager(mocker):
     class MockSession(mock.Mock):
-        fetch_token = CoroutineMock()
-        refresh_tokens = CoroutineMock()
+        fetch_token = mock.AsyncMock()
+        refresh_tokens = mock.AsyncMock()
 
         is_expired = mock.Mock(return_value=True)
         has_refresh_token = mock.Mock(return_value=False)

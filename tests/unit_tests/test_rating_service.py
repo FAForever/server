@@ -1,7 +1,6 @@
 from unittest import mock
 
 import pytest
-from asynctest import CoroutineMock
 from sqlalchemy import and_, select
 
 from server.db import FAFDatabase
@@ -115,7 +114,7 @@ def bad_game_info():
 async def test_enqueue_manual_initialization(uninitialized_service, game_info):
     service = uninitialized_service
     await service.initialize()
-    service._rate = CoroutineMock()
+    service._rate = mock.AsyncMock()
     await service.enqueue(game_info.to_dict())
     await service.shutdown()
 
@@ -132,7 +131,7 @@ async def double_initialization_does_not_start_second_worker(rating_service):
 
 async def test_enqueue_initialized(rating_service, game_info):
     service = rating_service
-    service._rate = CoroutineMock()
+    service._rate = mock.AsyncMock()
 
     await service.enqueue(game_info.to_dict())
     await service.shutdown()
@@ -227,7 +226,7 @@ async def test_new_player_rating_created(semiinitialized_service):
 
 async def test_rating(semiinitialized_service, game_rating_summary):
     service = semiinitialized_service
-    service._persist_rating_changes = CoroutineMock()
+    service._persist_rating_changes = mock.AsyncMock()
 
     await service._rate(game_rating_summary)
 
@@ -303,7 +302,7 @@ async def test_update_player_service_failure_warning(uninitialized_service):
 
 async def test_game_rating_error_handled(rating_service, game_info, bad_game_info):
     service = rating_service
-    service._persist_rating_changes = CoroutineMock()
+    service._persist_rating_changes = mock.AsyncMock()
     service._logger = mock.Mock()
 
     await service.enqueue(bad_game_info.to_dict())

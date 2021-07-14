@@ -8,10 +8,8 @@ from typing import Any, Callable, Dict, Tuple
 from unittest import mock
 
 import aio_pika
-import asynctest
 import pytest
 from aiohttp import web
-from asynctest import exhaust_callbacks
 
 from server import (
     BroadcastService,
@@ -26,11 +24,12 @@ from server.control import ControlServer
 from server.db.models import login
 from server.protocol import Protocol
 from server.servercontext import ServerContext
+from tests.utils import exhaust_callbacks
 
 
 @pytest.fixture
 def mock_games():
-    return asynctest.create_autospec(GameService)
+    return mock.create_autospec(GameService)
 
 
 @pytest.fixture

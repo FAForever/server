@@ -1,6 +1,5 @@
 from unittest import mock
 
-import asynctest
 import pytest
 
 from server.lobbyconnection import LobbyConnection
@@ -120,7 +119,7 @@ async def test_update_data(player_service):
 
 async def test_broadcast_shutdown(player_factory, player_service):
     player = player_factory()
-    lconn = asynctest.create_autospec(LobbyConnection)
+    lconn = mock.create_autospec(LobbyConnection)
     player.lobby_connection = lconn
     player_service[0] = player
 
@@ -131,7 +130,7 @@ async def test_broadcast_shutdown(player_factory, player_service):
 
 async def test_broadcast_shutdown_error(player_factory, player_service):
     player = player_factory()
-    lconn = asynctest.create_autospec(LobbyConnection)
+    lconn = mock.create_autospec(LobbyConnection)
     lconn.send_warning.side_effect = ValueError
     player.lobby_connection = lconn
 

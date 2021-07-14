@@ -1,7 +1,7 @@
 import asyncio
+from unittest import mock
 
 import pytest
-from asynctest import CoroutineMock
 
 from server.asyncio_extensions import (
     SpinLock,
@@ -31,7 +31,7 @@ async def raises_custom_error():
 
 
 async def test_gather_without_exceptions():
-    completes_correctly = CoroutineMock()
+    completes_correctly = mock.AsyncMock()
 
     with pytest.raises(CustomError):
         await gather_without_exceptions([
@@ -44,7 +44,7 @@ async def test_gather_without_exceptions():
 
 
 async def test_gather_without_exceptions_subclass():
-    completes_correctly = CoroutineMock()
+    completes_correctly = mock.AsyncMock()
 
     await gather_without_exceptions([
         raises_connection_error(),

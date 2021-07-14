@@ -3,7 +3,6 @@ from unittest import mock
 
 import aio_pika
 import pytest
-from asynctest import CoroutineMock
 
 from server.message_queue_service import MessageQueueService
 
@@ -53,9 +52,9 @@ async def test_several_initializations_connect_only_once():
     def set_mock_connection(*args, **kwargs):
         service._connection = mock.Mock()
         service._channel = mock.Mock()
-        service._channel.declare_exchange = CoroutineMock()
+        service._channel.declare_exchange = mock.AsyncMock()
 
-    service._connect = CoroutineMock(side_effect=set_mock_connection)
+    service._connect = mock.AsyncMock(side_effect=set_mock_connection)
 
     await asyncio.gather(
         service.declare_exchange("exchange_one"),
