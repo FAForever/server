@@ -1,6 +1,5 @@
 import asyncio
 import gc
-import math
 
 import pytest
 from sqlalchemy import select
@@ -232,7 +231,7 @@ async def test_game_ended_rates_game(lobby_server):
         await read_until_command(host_proto, "player_info", timeout=10)
 
 
-#@pytest.mark.rabbitmq
+@pytest.mark.rabbitmq
 @fast_forward(30)
 async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
     mq_proto_all = await connect_mq_consumer(
@@ -337,28 +336,12 @@ async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
 
     first_id = first_message["player_id"]
     expected_message = expected_messages_by_id[first_id]
-    for key in ["rating_type", "outcome"]:
-        assert first_message[key] == expected_message[key]
-    for key in [
-        "new_rating_mean",
-        "new_rating_deviation",
-        "old_rating_mean",
-        "old_rating_deviation",
-    ]:
-        assert math.isclose(first_message[key], expected_message[key])
+    assert first_message == pytest.approx(expected_message)
 
     second_id = second_message["player_id"]
     assert second_id != first_id
     expected_message = expected_messages_by_id[second_id]
-    for key in ["rating_type", "outcome"]:
-        assert second_message[key] == expected_message[key]
-    for key in [
-        "new_rating_mean",
-        "new_rating_deviation",
-        "old_rating_mean",
-        "old_rating_deviation",
-    ]:
-        assert math.isclose(second_message[key], expected_message[key])
+    assert second_message == pytest.approx(expected_message)
 
     # Now disconnect both players
     for proto in (host_proto, guest_proto):
