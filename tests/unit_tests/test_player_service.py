@@ -1,6 +1,7 @@
+from unittest import mock
+
 import asynctest
 import pytest
-from mock import Mock
 
 from server.lobbyconnection import LobbyConnection
 from server.rating import RatingType
@@ -31,7 +32,7 @@ async def test_fetch_player_data_legacy_rating(player_factory, player_service):
 
 async def test_fetch_ratings_nonexistent(player_factory, player_service):
     player = player_factory(player_id=-1)
-    player_service._logger = Mock()
+    player_service._logger = mock.Mock()
 
     async with player_service._db.acquire() as conn:
         await player_service._fetch_player_ratings(player, conn)
@@ -44,7 +45,7 @@ async def test_fetch_ratings_partially_nonexistent(player_factory, player_servic
     # Player 52 should not have leaderboard_rating entries
     # and no ladder1v1_rating entry, but a global_rating entry
     player = player_factory(player_id=52)
-    player_service._logger = Mock()
+    player_service._logger = mock.Mock()
 
     async with player_service._db.acquire() as conn:
         await player_service._fetch_player_ratings(player, conn)

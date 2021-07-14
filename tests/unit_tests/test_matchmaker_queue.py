@@ -2,8 +2,8 @@ import asyncio
 import functools
 import time
 from concurrent.futures import CancelledError, TimeoutError
+from unittest import mock
 
-import mock
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st

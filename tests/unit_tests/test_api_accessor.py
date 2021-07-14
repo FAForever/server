@@ -1,6 +1,7 @@
+from unittest import mock
+
 import pytest
 from asynctest import CoroutineMock
-from mock import Mock
 
 from server.api.api_accessor import SessionManager
 from server.config import config
@@ -9,12 +10,12 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_session_manager(mocker):
-    class MockSession(Mock):
+    class MockSession(mock.Mock):
         fetch_token = CoroutineMock()
         refresh_tokens = CoroutineMock()
 
-        is_expired = Mock(return_value=True)
-        has_refresh_token = Mock(return_value=False)
+        is_expired = mock.Mock(return_value=True)
+        has_refresh_token = mock.Mock(return_value=False)
 
     manager = SessionManager()
     mocker.patch("server.api.api_accessor.OAuth2Session", MockSession)

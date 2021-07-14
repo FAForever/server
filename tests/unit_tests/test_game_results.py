@@ -1,6 +1,6 @@
 import logging
+from unittest import mock
 
-import mock
 import pytest
 
 from server.games.game_results import (
