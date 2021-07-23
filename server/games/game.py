@@ -908,7 +908,7 @@ class Game():
                     player.login for player in self.players
                     if self.get_player_option(player.id, "Team") == team
                 ]
-                for team in self.teams if team
+                for team in self.teams if team is None
             }
         }
 
