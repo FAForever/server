@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>server.matchmaker.algorithm.stable_marriage API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>server.matchmaker.algorithm.stable_marriage</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import itertools
+import math
+import statistics as stats
+from typing import Dict, Iterable, List, Set, Tuple
+
+from ...decorators import with_logger
+from ..search import Match, Search
+from .matchmaker import Matchmaker, MatchmakingPolicy1v1
+from .random_newbies import RandomlyMatchNewbies
+
+WeightedGraph = Dict[Search, List[Tuple[Search, float]]]
+
+class StableMarriage(MatchmakingPolicy1v1):
+    def find(self, ranks: WeightedGraph) -&gt; Dict[Search, Search]:
+        &#34;&#34;&#34;Perform the stable matching algorithm until a maximal stable matching
+        is found.
+        &#34;&#34;&#34;
+        self.matches.clear()
+
+        max_degree = max((len(edges) for edges in ranks.values()), default=0)
+        for i in range(max_degree):
+            self._logger.debug(
+                &#34;Round %i of stable marriage, currently %i matches&#34;,
+                i,
+                len(self.matches) // 2,
+            )
+            # Do one round of proposals
+            if len(self.matches) == len(ranks):
+                # Everyone found a match so we are done
+                break
+
+            for search in ranks:
+                if search in self.matches:
+                    continue
+
+                if not ranks[search]:
+                    # Preference list exhausted
+                    continue
+
+                preferred, quality = ranks[search].pop()
+
+                self._logger.debug(
+                    &#34;Quality between %s and %s: %f thresholds: [%f, %f]&#34;,
+                    search,
+                    preferred,
+                    quality,
+                    search.match_threshold,
+                    preferred.match_threshold,
+                )
+
+                self._propose(search, preferred, quality)
+
+        return self.matches
+
+    def _propose(self, search: Search, preferred: Search, new_quality: float):
+        &#34;&#34;&#34;An unmatched search proposes to it&#39;s preferred opponent.
+
+        If the opponent is not matched, they become matched. If the opponent is
+        matched, but prefers this new search to its current one, then the opponent
+        unmatches from its previous adversary and matches with the new search instead.
+        &#34;&#34;&#34;
+        if preferred not in self.matches:
+            self._match(search, preferred)
+            return
+
+        current_match = self.matches[preferred]
+        current_quality = preferred.quality_with(current_match)
+
+        if new_quality &gt; current_quality:
+            # Found a better match
+            self._unmatch(preferred)
+            self._match(search, preferred)
+
+
+@with_logger
+class StableMarriageMatchmaker(Matchmaker):
+    &#34;&#34;&#34;
+    Runs stable marriage to produce a list of matches
+    and afterwards adds random matchups for previously unmatched new players.
+    &#34;&#34;&#34;
+    def find(
+        self, searches: Iterable[Search], team_size: int
+    ) -&gt; Tuple[List[Match], List[Search]]:
+        if team_size != 1:
+            self._logger.error(
+                &#34;Invalid team size %i for stable marriage matchmaker will be ignored&#34;,
+                team_size,
+            )
+
+        searches = list(searches)
+        matches: Dict[Search, Search] = {}
+
+        self._logger.debug(&#34;Matching with stable marriage...&#34;)
+        if len(searches) &lt; 30:
+            ranks = _MatchingGraph.build_full(searches)
+        else:
+            ranks = _MatchingGraph.build_fast(searches)
+        _MatchingGraph.remove_isolated(ranks)
+        matches.update(StableMarriage().find(ranks))
+
+        remaining_searches = [
+            search for search in searches if search not in matches
+        ]
+        self._logger.debug(&#34;Matching randomly for remaining newbies...&#34;)
+
+        randomly_matched_newbies, unmatched_searches = RandomlyMatchNewbies().find(remaining_searches)
+        matches.update(randomly_matched_newbies)
+
+        return self._remove_duplicates(matches), unmatched_searches
+
+    @staticmethod
+    def _remove_duplicates(matches: Dict[Search, Search]) -&gt; List[Match]:
+        matches_set: Set[Match] = set()
+        for s1, s2 in matches.items():
+            if (s1, s2) in matches_set or (s2, s1) in matches_set:
+                continue
+            matches_set.add((s1, s2))
+        return list(matches_set)
+
+
+@with_logger
+class _MatchingGraph:
+    @staticmethod
+    def build_full(searches: List[Search]) -&gt; WeightedGraph:
+        &#34;&#34;&#34;A graph in adjacency list representation, whose nodes are the searches
+        and whose edges are the possible matchings for each node. Checks every
+        possible edge for inclusion in the graph.
+
+        Note that the highest quality searches come at the end of the list so that
+        it can be used as a stack with .pop().
+
+        Time complexity: O(n^2)
+        &#34;&#34;&#34;
+        adj_list = {search: [] for search in searches}
+
+        # Generate every edge. There are &#39;len(searches) choose 2&#39; of these.
+        for search, other in itertools.combinations(searches, 2):
+            quality = search.quality_with(other)
+            if not _MatchingGraph.is_possible_match(search, other, quality):
+                continue
+
+            # Add the edge in both directions
+            adj_list[search].append((other, quality))
+            adj_list[other].append((search, quality))
+
+        # Sort edges by their weights i.e. match quality
+        for search, neighbors in adj_list.items():
+            neighbors.sort(key=lambda edge: edge[1])
+
+        return adj_list
+
+    @staticmethod
+    def build_fast(searches: List[Search]) -&gt; WeightedGraph:
+        &#34;&#34;&#34;Builds approximately the same graph as `build_full`, but does not
+        check every possible edge.
+
+        Time complexity: O(n*log(n))
+        &#34;&#34;&#34;
+        adj_list = {search: [] for search in searches}
+        # Sort all searches by players average trueskill mean
+        searches = sorted(searches, key=avg_mean)
+        # Now compute quality with `num_to_check` nearby searches on either side
+        num_to_check = int(math.log(max(16, len(searches)), 2)) // 2
+        for i, search in enumerate(searches):
+            for other in searches[i + 1: i + 1 + num_to_check]:
+                quality = search.quality_with(other)
+                if not _MatchingGraph.is_possible_match(search, other, quality):
+                    continue
+
+                # Add the edge in both directions
+                adj_list[search].append((other, quality))
+                adj_list[other].append((search, quality))
+
+        # Sort edges by their weights i.e. match quality
+        for search, neighbors in adj_list.items():
+            neighbors.sort(key=lambda edge: edge[1])
+
+        return adj_list
+
+    @staticmethod
+    def is_possible_match(search: Search, other: Search, quality: float) -&gt; bool:
+        log_args = (
+            search,
+            other,
+            quality,
+            search.match_threshold,
+            other.match_threshold,
+        )
+
+        if search._match_quality_acceptable(other, quality):
+            _MatchingGraph._logger.debug(
+                &#34;Quality between %s and %s: %.3f thresholds: [%.3f, %.3f]. &#34;
+                &#34;Will be considered during stable marriage.&#34;,
+                *log_args
+            )
+            return True
+        else:
+            _MatchingGraph._logger.debug(
+                &#34;Quality between %s and %s: %.3f thresholds: [%.3f, %.3f]. &#34;
+                &#34;Will be discarded for stable marriage.&#34;,
+                *log_args
+            )
+            return False
+
+    @staticmethod
+    def remove_isolated(graph: WeightedGraph):
+        &#34;&#34;&#34;Remove any searches that have no possible matchings.
+
+        Note: This assumes that edges are undirected. Calling this on directed
+        graphs will produce incorrect results.&#34;&#34;&#34;
+        for search, neighbors in list(graph.items()):
+            if not neighbors:
+                del graph[search]
+
+
+def avg_mean(search: Search) -&gt; float:
+    &#34;&#34;&#34;
+    Get the average of all trueskill means for a search counting means with
+    high deviation as 0.
+    &#34;&#34;&#34;
+    return stats.mean(mean if dev &lt; 250 else 0 for mean, dev in search.ratings)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="server.matchmaker.algorithm.stable_marriage.avg_mean"><code class="name flex">
+<span>def <span class="ident">avg_mean</span></span>(<span>search: <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>) ‑> float</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the average of all trueskill means for a search counting means with
+high deviation as 0.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def avg_mean(search: Search) -&gt; float:
+    &#34;&#34;&#34;
+    Get the average of all trueskill means for a search counting means with
+    high deviation as 0.
+    &#34;&#34;&#34;
+    return stats.mean(mean if dev &lt; 250 else 0 for mean, dev in search.ratings)</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="server.matchmaker.algorithm.stable_marriage.StableMarriage"><code class="flex name class">
+<span>class <span class="ident">StableMarriage</span></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class StableMarriage(MatchmakingPolicy1v1):
+    def find(self, ranks: WeightedGraph) -&gt; Dict[Search, Search]:
+        &#34;&#34;&#34;Perform the stable matching algorithm until a maximal stable matching
+        is found.
+        &#34;&#34;&#34;
+        self.matches.clear()
+
+        max_degree = max((len(edges) for edges in ranks.values()), default=0)
+        for i in range(max_degree):
+            self._logger.debug(
+                &#34;Round %i of stable marriage, currently %i matches&#34;,
+                i,
+                len(self.matches) // 2,
+            )
+            # Do one round of proposals
+            if len(self.matches) == len(ranks):
+                # Everyone found a match so we are done
+                break
+
+            for search in ranks:
+                if search in self.matches:
+                    continue
+
+                if not ranks[search]:
+                    # Preference list exhausted
+                    continue
+
+                preferred, quality = ranks[search].pop()
+
+                self._logger.debug(
+                    &#34;Quality between %s and %s: %f thresholds: [%f, %f]&#34;,
+                    search,
+                    preferred,
+                    quality,
+                    search.match_threshold,
+                    preferred.match_threshold,
+                )
+
+                self._propose(search, preferred, quality)
+
+        return self.matches
+
+    def _propose(self, search: Search, preferred: Search, new_quality: float):
+        &#34;&#34;&#34;An unmatched search proposes to it&#39;s preferred opponent.
+
+        If the opponent is not matched, they become matched. If the opponent is
+        matched, but prefers this new search to its current one, then the opponent
+        unmatches from its previous adversary and matches with the new search instead.
+        &#34;&#34;&#34;
+        if preferred not in self.matches:
+            self._match(search, preferred)
+            return
+
+        current_match = self.matches[preferred]
+        current_quality = preferred.quality_with(current_match)
+
+        if new_quality &gt; current_quality:
+            # Found a better match
+            self._unmatch(preferred)
+            self._match(search, preferred)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.matchmaker.algorithm.matchmaker.MatchmakingPolicy1v1" href="matchmaker.html#server.matchmaker.algorithm.matchmaker.MatchmakingPolicy1v1">MatchmakingPolicy1v1</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="server.matchmaker.algorithm.stable_marriage.StableMarriage.find"><code class="name flex">
+<span>def <span class="ident">find</span></span>(<span>self, ranks: Dict[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, List[Tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, float]]]) ‑> Dict[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Perform the stable matching algorithm until a maximal stable matching
+is found.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find(self, ranks: WeightedGraph) -&gt; Dict[Search, Search]:
+    &#34;&#34;&#34;Perform the stable matching algorithm until a maximal stable matching
+    is found.
+    &#34;&#34;&#34;
+    self.matches.clear()
+
+    max_degree = max((len(edges) for edges in ranks.values()), default=0)
+    for i in range(max_degree):
+        self._logger.debug(
+            &#34;Round %i of stable marriage, currently %i matches&#34;,
+            i,
+            len(self.matches) // 2,
+        )
+        # Do one round of proposals
+        if len(self.matches) == len(ranks):
+            # Everyone found a match so we are done
+            break
+
+        for search in ranks:
+            if search in self.matches:
+                continue
+
+            if not ranks[search]:
+                # Preference list exhausted
+                continue
+
+            preferred, quality = ranks[search].pop()
+
+            self._logger.debug(
+                &#34;Quality between %s and %s: %f thresholds: [%f, %f]&#34;,
+                search,
+                preferred,
+                quality,
+                search.match_threshold,
+                preferred.match_threshold,
+            )
+
+            self._propose(search, preferred, quality)
+
+    return self.matches</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="server.matchmaker.algorithm.stable_marriage.StableMarriageMatchmaker"><code class="flex name class">
+<span>class <span class="ident">StableMarriageMatchmaker</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Runs stable marriage to produce a list of matches
+and afterwards adds random matchups for previously unmatched new players.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class StableMarriageMatchmaker(Matchmaker):
+    &#34;&#34;&#34;
+    Runs stable marriage to produce a list of matches
+    and afterwards adds random matchups for previously unmatched new players.
+    &#34;&#34;&#34;
+    def find(
+        self, searches: Iterable[Search], team_size: int
+    ) -&gt; Tuple[List[Match], List[Search]]:
+        if team_size != 1:
+            self._logger.error(
+                &#34;Invalid team size %i for stable marriage matchmaker will be ignored&#34;,
+                team_size,
+            )
+
+        searches = list(searches)
+        matches: Dict[Search, Search] = {}
+
+        self._logger.debug(&#34;Matching with stable marriage...&#34;)
+        if len(searches) &lt; 30:
+            ranks = _MatchingGraph.build_full(searches)
+        else:
+            ranks = _MatchingGraph.build_fast(searches)
+        _MatchingGraph.remove_isolated(ranks)
+        matches.update(StableMarriage().find(ranks))
+
+        remaining_searches = [
+            search for search in searches if search not in matches
+        ]
+        self._logger.debug(&#34;Matching randomly for remaining newbies...&#34;)
+
+        randomly_matched_newbies, unmatched_searches = RandomlyMatchNewbies().find(remaining_searches)
+        matches.update(randomly_matched_newbies)
+
+        return self._remove_duplicates(matches), unmatched_searches
+
+    @staticmethod
+    def _remove_duplicates(matches: Dict[Search, Search]) -&gt; List[Match]:
+        matches_set: Set[Match] = set()
+        for s1, s2 in matches.items():
+            if (s1, s2) in matches_set or (s2, s1) in matches_set:
+                continue
+            matches_set.add((s1, s2))
+        return list(matches_set)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.matchmaker.algorithm.matchmaker.Matchmaker" href="matchmaker.html#server.matchmaker.algorithm.matchmaker.Matchmaker">Matchmaker</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="server.matchmaker.algorithm.stable_marriage.StableMarriageMatchmaker.find"><code class="name flex">
+<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> Tuple[List[Tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]], List[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find(
+    self, searches: Iterable[Search], team_size: int
+) -&gt; Tuple[List[Match], List[Search]]:
+    if team_size != 1:
+        self._logger.error(
+            &#34;Invalid team size %i for stable marriage matchmaker will be ignored&#34;,
+            team_size,
+        )
+
+    searches = list(searches)
+    matches: Dict[Search, Search] = {}
+
+    self._logger.debug(&#34;Matching with stable marriage...&#34;)
+    if len(searches) &lt; 30:
+        ranks = _MatchingGraph.build_full(searches)
+    else:
+        ranks = _MatchingGraph.build_fast(searches)
+    _MatchingGraph.remove_isolated(ranks)
+    matches.update(StableMarriage().find(ranks))
+
+    remaining_searches = [
+        search for search in searches if search not in matches
+    ]
+    self._logger.debug(&#34;Matching randomly for remaining newbies...&#34;)
+
+    randomly_matched_newbies, unmatched_searches = RandomlyMatchNewbies().find(remaining_searches)
+    matches.update(randomly_matched_newbies)
+
+    return self._remove_duplicates(matches), unmatched_searches</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="server.matchmaker.algorithm" href="index.html">server.matchmaker.algorithm</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="server.matchmaker.algorithm.stable_marriage.avg_mean" href="#server.matchmaker.algorithm.stable_marriage.avg_mean">avg_mean</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="server.matchmaker.algorithm.stable_marriage.StableMarriage" href="#server.matchmaker.algorithm.stable_marriage.StableMarriage">StableMarriage</a></code></h4>
+<ul class="">
+<li><code><a title="server.matchmaker.algorithm.stable_marriage.StableMarriage.find" href="#server.matchmaker.algorithm.stable_marriage.StableMarriage.find">find</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.matchmaker.algorithm.stable_marriage.StableMarriageMatchmaker" href="#server.matchmaker.algorithm.stable_marriage.StableMarriageMatchmaker">StableMarriageMatchmaker</a></code></h4>
+<ul class="">
+<li><code><a title="server.matchmaker.algorithm.stable_marriage.StableMarriageMatchmaker.find" href="#server.matchmaker.algorithm.stable_marriage.StableMarriageMatchmaker.find">find</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>
