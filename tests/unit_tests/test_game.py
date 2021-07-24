@@ -295,6 +295,19 @@ async def test_game_visible_for_rating(game: Game, players):
     assert game.is_visible_to_player(players.joining)
 
 
+async def test_player_team_is_none(game, players, mock_game_connection):
+    game.state = GameState.LOBBY
+    mock_game_connection.player = players.hosting
+    mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
+    game.add_game_connection(mock_game_connection)
+    game.set_player_option(players.hosting.id, "Army", 0)
+    assert game.players == {players.hosting}
+    assert game.get_player_option(players.hosting.id, "Team") is None
+    assert game.get_player_option(players.hosting.id, "Army") == 0
+    assert game.teams == {None}
+    assert game.to_dict()["teams"] == {}
+
+
 async def test_set_player_option(game, players, mock_game_connection):
     game.state = GameState.LOBBY
     mock_game_connection.player = players.hosting
@@ -305,7 +318,7 @@ async def test_set_player_option(game, players, mock_game_connection):
     assert game.get_player_option(players.hosting.id, "Team") == 1
     assert game.teams == {1}
     game.set_player_option(players.hosting.id, "StartSpot", 1)
-    game.get_player_option(players.hosting.id, "StartSpot") == 1
+    assert game.get_player_option(players.hosting.id, "StartSpot") == 1
 
 
 async def test_invalid_get_player_option_key(game: Game, players):
