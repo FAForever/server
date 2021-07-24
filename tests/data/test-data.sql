@@ -11,7 +11,6 @@ DELETE FROM uniqueid;
 DELETE FROM global_rating;
 DELETE FROM ladder1v1_rating;
 DELETE FROM uniqueid_exempt;
-DELETE FROM version_lobby;
 DELETE FROM friends_and_foes;
 DELETE FROM ladder_map;
 DELETE FROM tutorial;
@@ -40,7 +39,6 @@ DELETE FROM game_stats;
 DELETE FROM game_featuredMods;
 DELETE FROM ladder_division_score;
 DELETE FROM ladder_division;
-DELETE FROM lobby_admin;
 DELETE FROM name_history;
 DELETE FROM user_group_assignment;
 DELETE FROM login;
@@ -108,7 +106,6 @@ insert into group_permission_assignment (id, group_id, permission_id) values
   (3, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_JOIN_CHANNEL')),
   (4, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER'));
 
-insert into lobby_admin (user_id, `group`) values (1, 2);
 insert into user_group_assignment(user_id, group_id) values (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'));
 insert into user_group_assignment(user_id, group_id) values (2, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
 insert into user_group_assignment(user_id, group_id) values (20, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
