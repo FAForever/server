@@ -11,7 +11,6 @@ DELETE FROM uniqueid;
 DELETE FROM global_rating;
 DELETE FROM ladder1v1_rating;
 DELETE FROM uniqueid_exempt;
-DELETE FROM version_lobby;
 DELETE FROM friends_and_foes;
 DELETE FROM ladder_map;
 DELETE FROM tutorial;
