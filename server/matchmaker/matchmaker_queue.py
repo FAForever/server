@@ -10,10 +10,10 @@ import server.metrics as metrics
 from ..asyncio_extensions import SpinLock, synchronized
 from ..decorators import with_logger
 from ..players import PlayerState
-from .algorithm import make_matches, make_teams, make_teams_from_single
+from .algorithm.bucket_teams import BucketTeamMatchmaker
 from .map_pool import MapPool
 from .pop_timer import PopTimer
-from .search import Search
+from .search import Match, Search
 
 MatchFoundCallback = Callable[[Search, Search, "MatchmakerQueue"], Any]
 
@@ -64,6 +64,8 @@ class MatchmakerQueue:
         self._is_running = True
 
         self.timer = PopTimer(self)
+
+        self.matchmaker = BucketTeamMatchmaker()
 
     def add_map_pool(
         self,
@@ -149,17 +151,30 @@ class MatchmakerQueue:
         """
         self._logger.info("Searching for matches: %s", self.name)
 
-        if self.num_players < 2 * self.team_size:
-            return
+        searches = list(self._queue.keys())
 
-        searches = self.find_teams()
+        if self.num_players < 2 * self.team_size:
+            self._register_unmatched_searches(searches)
+            return
 
         # Call self.match on all matches and filter out the ones that were cancelled
         loop = asyncio.get_running_loop()
-        matches = list(filter(
-            lambda m: self.match(m[0], m[1]),
-            await loop.run_in_executor(None, make_matches, searches)
-        ))
+        proposed_matches, unmatched_searches = await loop.run_in_executor(
+            None,
+            self.matchmaker.find,
+            searches,
+            self.team_size,
+        )
+
+        # filter out matches that were cancelled
+        matches: List[Match] = []
+        for match in proposed_matches:
+            if self.match(match[0], match[1]):
+                matches.append(match)
+            else:
+                unmatched_searches.extend(match)
+
+        self._register_unmatched_searches(unmatched_searches)
 
         number_of_matches = len(matches)
         metrics.matches.labels(self.name).set(number_of_matches)
@@ -175,23 +190,20 @@ class MatchmakerQueue:
             except Exception:
                 self._logger.exception("Match callback raised an exception!")
 
-    def find_teams(self) -> List[Search]:
-        searches = []
-        unmatched = list(self._queue.keys())
-        need_team = []
-        for search in unmatched:
-            if len(search.players) == self.team_size:
-                searches.append(search)
-            else:
-                need_team.append(search)
-
-        if all(len(s.players) == 1 for s in need_team):
-            teams, unmatched = make_teams_from_single(need_team, self.team_size)
-        else:
-            teams, unmatched = make_teams(need_team, self.team_size)
-        searches.extend(teams)
-
-        return searches
+    def _register_unmatched_searches(
+        self,
+        unmatched_searches: List[Search],
+    ):
+        """
+        Tells all unmatched searches that they went through a failed matching
+        attempt.
+        """
+        for search in unmatched_searches:
+            search.register_failed_matching_attempt()
+            self._logger.debug(
+                "Search %s remained unmatched at threshold %f in attempt number %s",
+                search, search.match_threshold, search.failed_matching_attempts
+            )
 
     def push(self, search: Search):
         """ Push the given search object onto the queue """

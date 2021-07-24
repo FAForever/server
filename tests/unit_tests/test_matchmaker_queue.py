@@ -374,8 +374,6 @@ async def test_queue_race(matchmaker_queue, player_factory):
 
 @pytest.mark.asyncio
 async def test_queue_cancel(matchmaker_queue, matchmaker_players):
-    # Turn list of players into map from ids to players.
-
     s1, s2 = Search([matchmaker_players[1]]), Search([matchmaker_players[2]])
     matchmaker_queue.push(s1)
     s1.cancel()
@@ -391,7 +389,6 @@ async def test_queue_cancel(matchmaker_queue, matchmaker_players):
 
 @pytest.mark.asyncio
 async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
-    # Turn list of players into map from ids to players.
     _, p1, p2, p3, _ = matchmaker_players_all_match
     (s1, s2, s3) = (Search([p1]),
                     Search([p2]),
@@ -403,6 +400,7 @@ async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     async def find_matches():
         await asyncio.sleep(0.01)
         await matchmaker_queue.find_matches()
+
     try:
         await asyncio.gather(
             asyncio.wait_for(matchmaker_queue.search(s3), 0.1),
@@ -421,10 +419,31 @@ async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
 
 
 @pytest.mark.asyncio
+async def test_queue_cancel_while_being_matched_registers_failed_attempt(
+    matchmaker_queue, matchmaker_players_all_match
+):
+    p1, p2, p3, p4,  _ = matchmaker_players_all_match
+    searches = [Search([p1]), Search([p2]), Search([p3]), Search([p4])]
+    for search in searches:
+        asyncio.create_task(matchmaker_queue.search(search))
+
+    searches[0].cancel()
+
+    await asyncio.sleep(0.01)
+    await matchmaker_queue.find_matches()
+
+    for search in searches[1:]:
+        assert search.is_matched ^ (search.failed_matching_attempts == 1)
+
+    assert sum(search.failed_matching_attempts for search in searches[1:]) == 1
+    matchmaker_queue.on_match_found.assert_called_once()
+
+
+@pytest.mark.asyncio
 async def test_find_matches_synchronized(queue_factory):
     is_matching = False
 
-    def make_matches(*args):
+    def find(*args):
         nonlocal is_matching
 
         assert not is_matching, "Function call not synchronized"
@@ -433,21 +452,42 @@ async def test_find_matches_synchronized(queue_factory):
         time.sleep(0.2)
 
         is_matching = False
-        return []
+        return [], []
 
-    with mock.patch(
-        "server.matchmaker.matchmaker_queue.make_matches",
-        make_matches
-    ):
-        queues = [queue_factory(f"Queue{i}") for i in range(5)]
-        # Ensure that find_matches does not short circuit
-        for queue in queues:
-            queue._queue = {
-                mock.Mock(players=[1]): 1,
-                mock.Mock(players=[2]): 2
-            }
-            queue.find_teams = mock.Mock()
+    queues = [queue_factory(f"Queue{i}") for i in range(5)]
+    # Ensure that find_matches does not short circuit
+    for queue in queues:
+        queue._queue = {
+            mock.Mock(players=[1]): 1,
+            mock.Mock(players=[2]): 2
+        }
+        queue.find_teams = mock.Mock()
+        queue._register_unmatched_searches = mock.Mock()
+        queue.matchmaker.find = mock.Mock(side_effect=find)
 
-        await asyncio.gather(*[
-            queue.find_matches() for queue in queues
-        ])
+    await asyncio.gather(*[
+        queue.find_matches() for queue in queues
+    ])
+
+
+@pytest.mark.asyncio
+async def test_queue_pop_communicates_failed_attempts(matchmaker_queue, player_factory):
+    s1 = Search([player_factory("Player1", player_id=1, ladder_rating=(3000, 50))])
+    s2 = Search([player_factory("Player2", player_id=2, ladder_rating=(1000, 50))])
+
+    matchmaker_queue.push(s1)
+    assert s1.failed_matching_attempts == 0
+
+    await matchmaker_queue.find_matches()
+
+    assert s1.failed_matching_attempts == 1
+
+    matchmaker_queue.push(s2)
+    assert s1.failed_matching_attempts == 1
+    assert s2.failed_matching_attempts == 0
+
+    await matchmaker_queue.find_matches()
+
+    # These searches should not have been matched
+    assert s1.failed_matching_attempts == 2
+    assert s2.failed_matching_attempts == 1
