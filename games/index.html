@@ -1271,7 +1271,7 @@ __all__ = (
                     player.login for player in self.players
                     if self.get_player_option(player.id, &#34;Team&#34;) == team
                 ]
-                for team in self.teams
+                for team in self.teams if team is not None
             }
         }
 
@@ -2283,7 +2283,7 @@ game.</p></div>
                 player.login for player in self.players
                 if self.get_player_option(player.id, &#34;Team&#34;) == team
             ]
-            for team in self.teams
+            for team in self.teams if team is not None
         }
     }</code></pre>
 </details>
