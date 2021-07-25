@@ -100,7 +100,8 @@ class TeamMatchMaker(Matchmaker):
                     searches.remove(search)
         return matches, list(searches)
 
-    def pick_neighboring_players(self, searches: List[Search], index: int, team_size: int) -> List[Search]:
+    @staticmethod
+    def pick_neighboring_players(searches: List[Search], index: int, team_size: int) -> List[Search]:
         """
         Picks searches from the list starting with the search at the given index and then expanding in both directions
         until there are enough players for a full game.
