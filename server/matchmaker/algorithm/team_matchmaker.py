@@ -136,7 +136,7 @@ class TeamMatchMaker(Matchmaker):
         Raises UnevenTeamsException if one of the teams doesn't have the right size.
 
         # Params
-        - `searches`: The searches to partition. The function will alter this list!
+        - `participants`: The searches to partition. The function will alter this list!
 
         # Return
         The two teams
