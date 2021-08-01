@@ -53,7 +53,7 @@ async def test_server_ban_revoked_or_expired(lobby_server, user):
     msg = await proto.read_message()
 
     assert msg["command"] == "welcome"
-    assert msg["login"] == user
+    assert msg["me"]["login"] == user
 
 
 async def test_server_valid_login(lobby_server):
@@ -82,8 +82,6 @@ async def test_server_valid_login(lobby_server):
     assert msg == {
         "command": "welcome",
         "me": me,
-        "id": 3,
-        "login": "Rhiza"
     }
     msg = await proto.read_message()
     assert msg == {
@@ -127,8 +125,6 @@ async def test_server_valid_login_admin(lobby_server):
     assert msg == {
         "command": "welcome",
         "me": me,
-        "id": 1,
-        "login": "test"
     }
     msg = await proto.read_message()
     assert msg == {
@@ -171,8 +167,6 @@ async def test_server_valid_login_moderator(lobby_server):
     assert msg == {
         "command": "welcome",
         "me": me,
-        "id": 20,
-        "login": "moderator"
     }
     msg = await proto.read_message()
     assert msg == {
@@ -270,8 +264,6 @@ async def test_server_valid_login_with_token(lobby_server, jwk_priv_key, jwk_kid
     assert msg == {
         "command": "welcome",
         "me": me,
-        "id": 3,
-        "login": "Rhiza"
     }
     msg = await proto.read_message()
     assert msg == {

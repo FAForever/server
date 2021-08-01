@@ -367,7 +367,7 @@ async def connect_and_sign_in(
     session = await get_session(proto)
     await perform_login(proto, credentials)
     hello = await read_until_command(proto, "welcome", timeout=120)
-    player_id = hello["id"]
+    player_id = hello["me"]["id"]
     return player_id, session, proto
 
 

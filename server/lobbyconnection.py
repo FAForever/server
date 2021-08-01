@@ -636,10 +636,6 @@ class LobbyConnection:
         await self.send({
             "command": "welcome",
             "me": self.player.to_dict(),
-
-            # For backwards compatibility for old clients. For now.
-            "id": self.player.id,
-            "login": username
         })
 
         # Tell player about everybody online. This must happen after "welcome".

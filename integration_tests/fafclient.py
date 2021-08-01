@@ -91,8 +91,8 @@ class FAFClient(object):
             "unique_id": unique_id
         })
         msg = await self.read_until_command("welcome")
-        self.player_id = msg["id"]
-        self.player_name = msg["login"]
+        self.player_id = msg["me"]["id"]
+        self.player_name = msg["me"]["login"]
         return msg
 
     def get_unique_id(self, session):
