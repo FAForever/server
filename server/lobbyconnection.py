@@ -130,7 +130,6 @@ class LobbyConnection:
                 "Bottleneck",  # sent by the game during reconnect
                 "ask_session",
                 "auth",
-                "create_account",
                 "hello",
                 "ping",
                 "pong",
@@ -203,9 +202,6 @@ class LobbyConnection:
 
     async def command_pong(self, msg):
         pass
-
-    async def command_create_account(self, message):
-        raise ClientError("FAF no longer supports direct registration. Please use the website to register.", recoverable=True)
 
     async def command_coop_list(self, message):
         """Request for coop map list"""

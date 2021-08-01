@@ -180,21 +180,6 @@ async def test_command_pong_does_nothing(lobbyconnection):
     lobbyconnection.send.assert_not_called()
 
 
-async def test_command_create_account_returns_error(lobbyconnection):
-    lobbyconnection.send = mock.AsyncMock()
-
-    await lobbyconnection.on_message_received({
-        "command": "create_account"
-    })
-
-    lobbyconnection.send.assert_called_once_with({
-        "command": "notice",
-        "style": "error",
-        "text": ("FAF no longer supports direct registration. "
-                 "Please use the website to register.")
-    })
-
-
 async def test_double_login(lobbyconnection, mock_players, player_factory):
     lobbyconnection.check_policy_conformity = mock.AsyncMock(return_value=True)
     old_player = player_factory(lobby_connection_spec="auto")
