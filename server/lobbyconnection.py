@@ -900,9 +900,7 @@ class LobbyConnection:
 
     @ice_only
     async def command_game_matchmaking(self, message):
-        queue_name = str(
-            message.get("queue_name") or message.get("mod", "ladder1v1")
-        )
+        queue_name = str(message.get("queue_name", "ladder1v1"))
         state = str(message["state"])
 
         if state == "stop":

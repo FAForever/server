@@ -73,7 +73,7 @@ async def test_info_message(lobby_server):
         "command": "game_matchmaking",
         "state": "start",
         "faction": "uef",
-        "mod": "tmm2v2"
+        "queue_name": "tmm2v2"
     })
 
     msg = await read_until_command(proto, "matchmaker_info")
@@ -560,7 +560,7 @@ async def test_ratings_initialized_based_on_global(lobby_server):
         "command": "game_matchmaking",
         "state": "start",
         "faction": "uef",
-        "mod": "tmm2v2"
+        "queue_name": "tmm2v2"
     })
 
     # Need to connect another user to guarantee triggering a message containing
@@ -627,7 +627,7 @@ async def test_ratings_initialized_based_on_global_persisted(
         await proto.send_message({
             "command": "game_matchmaking",
             "state": "start",
-            "mod": "tmm2v2"
+            "queue_name": "tmm2v2"
         })
         await read_until_command(proto, "search_info")
 
@@ -714,7 +714,7 @@ async def test_party_cleanup_on_abort(lobby_server):
         await proto.send_message({
             "command": "game_matchmaking",
             "state": "start",
-            "mod": "tmm2v2"
+            "queue_name": "tmm2v2"
         })
         # The queue was successful. This would time out on failure.
         await read_until_command(proto, "search_info", state="start")
