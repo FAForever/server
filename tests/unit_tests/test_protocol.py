@@ -1,6 +1,4 @@
 import asyncio
-import json
-import struct
 from contextlib import asynccontextmanager, closing
 from socket import socketpair
 
@@ -8,27 +6,28 @@ import pytest
 from hypothesis import example, given, settings
 from hypothesis import strategies as st
 
-from server.protocol import (
-    DisconnectedError,
-    QDataStreamProtocol,
-    SimpleJsonProtocol
-)
+from server.protocol import DisconnectedError, SimpleJsonProtocol
 
 pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture(scope="session")
-def qstream_protocol_context():
+def protocol_context():
     @asynccontextmanager
     async def make_protocol():
         rsock, wsock = socketpair()
         with closing(wsock):
             reader, writer = await asyncio.open_connection(sock=rsock)
-            proto = QDataStreamProtocol(reader, writer)
+            proto = SimpleJsonProtocol(reader, writer)
             yield proto
             await proto.close()
 
     return make_protocol
+
+
+@pytest.fixture(scope="session")
+def protocol_class():
+    return SimpleJsonProtocol
 
 
 @pytest.fixture
@@ -60,15 +59,8 @@ def writer(reader_writer):
 
 
 @pytest.fixture
-async def qstream_protocol(reader, writer):
-    proto = QDataStreamProtocol(reader, writer)
-    yield proto
-    await proto.close()
-
-
-@pytest.fixture(params=(QDataStreamProtocol, SimpleJsonProtocol))
-async def protocol(request, reader, writer):
-    proto = request.param(reader, writer)
+async def protocol(reader, writer):
+    proto = SimpleJsonProtocol(reader, writer)
     yield proto
     await proto.close()
 
@@ -90,7 +82,7 @@ async def unix_srv():
 @pytest.fixture
 async def unix_protocol(unix_srv):
     (reader, writer) = await asyncio.open_unix_connection("/tmp/test.sock")
-    proto = QDataStreamProtocol(reader, writer)
+    proto = SimpleJsonProtocol(reader, writer)
     yield proto
     await proto.close()
 
@@ -107,50 +99,12 @@ def st_messages():
     )
 
 
-async def test_types():
-    with pytest.raises(NotImplementedError):
-        QDataStreamProtocol.pack_message({"Not": ["a", "string"]})
-
-
-async def test_QDataStreamProtocol_recv_small_message(qstream_protocol, reader):
-    data = QDataStreamProtocol.pack_block(b"".join([
-        QDataStreamProtocol.pack_qstring('{"some_header": true}'),
-        QDataStreamProtocol.pack_qstring("Goodbye")
-    ]))
-    reader.feed_data(data)
-
-    message = await qstream_protocol.read_message()
-
-    assert message == {"some_header": True, "legacy": ["Goodbye"]}
-
-
-async def test_QDataStreamProtocol_recv_malformed_message(qstream_protocol, reader):
+async def test_recv_malformed_message(protocol, reader):
     reader.feed_data(b"\0")
     reader.feed_eof()
 
-    with pytest.raises(asyncio.IncompleteReadError):
-        await qstream_protocol.read_message()
-
-
-async def test_QDataStreamProtocol_recv_large_array(qstream_protocol, reader):
-    reader.feed_data(QDataStreamProtocol.pack_block(b"".join(
-        [QDataStreamProtocol.pack_qstring('{"some_header": true}')] +
-        [QDataStreamProtocol.pack_qstring(str(i)) for i in range(1520)])))
-    reader.feed_eof()
-
-    message = await qstream_protocol.read_message()
-
-    assert message == {"some_header": True, "legacy": [str(i) for i in range(1520)]}
-
-
-async def test_QDataStreamProtocol_unpacks_evil_qstring(qstream_protocol, reader):
-    reader.feed_data(struct.pack("!I", 64))
-    reader.feed_data(b"\x00\x00\x004\x00{\x00\"\x00c\x00o\x00m\x00m\x00a\x00n\x00d\x00\"\x00:\x00 \x00\"\x00a\x00s\x00k\x00_\x00s\x00e\x00s\x00s\x00i\x00o\x00n\x00\"\x00}\xff\xff\xff\xff\xff\xff\xff\xff")
-    reader.feed_eof()
-
-    message = await qstream_protocol.read_message()
-
-    assert message == {"command": "ask_session"}
+    with pytest.raises(Exception):
+        await protocol.read_message()
 
 
 @given(message=st_messages())
@@ -159,15 +113,14 @@ async def test_QDataStreamProtocol_unpacks_evil_qstring(qstream_protocol, reader
     "Message": ["message", 10],
     "with": 1000
 })
+@example(message={
+    "some_header": True,
+    "array": [str(i) for i in range(1520)]
+})
 @settings(max_examples=300)
-async def test_QDataStreamProtocol_pack_unpack(
-    qstream_protocol_context,
-    message
-):
-    async with qstream_protocol_context() as protocol:
-        protocol.reader.feed_data(
-            QDataStreamProtocol.pack_message(json.dumps(message))
-        )
+async def test_pack_unpack(protocol_context, message):
+    async with protocol_context() as protocol:
+        protocol.reader.feed_data(protocol.encode_message(message))
 
         assert message == await protocol.read_message()
 
@@ -178,19 +131,10 @@ async def test_QDataStreamProtocol_pack_unpack(
     "Message": ["message", 10],
     "with": 1000
 })
-async def test_QDataStreamProtocol_deterministic(message):
-    assert (
-        QDataStreamProtocol.encode_message(message) ==
-        QDataStreamProtocol.encode_message(message) ==
-        QDataStreamProtocol.encode_message(message)
-    )
-
-
-async def test_QDataStreamProtocol_encode_ping_pong():
-    assert QDataStreamProtocol.encode_message({"command": "ping"}) == \
-        b"\x00\x00\x00\x0c\x00\x00\x00\x08\x00P\x00I\x00N\x00G"
-    assert QDataStreamProtocol.encode_message({"command": "pong"}) == \
-        b"\x00\x00\x00\x0c\x00\x00\x00\x08\x00P\x00O\x00N\x00G"
+async def test_deterministic(protocol_class, message):
+    bytes1 = protocol_class.encode_message(message)
+    bytes2 = protocol_class.encode_message(message)
+    assert bytes1 == bytes2
 
 
 async def test_send_message_simultaneous_writes(unix_protocol):

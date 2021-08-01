@@ -165,17 +165,6 @@ You can find an example configuration file under
 The protocol is mainly JSON-encoded maps, containing at minimum a `command` key,
 representing the command to dispatch.
 
-The wire format uses [QDataStream](http://doc.qt.io/qt-5/qdatastream.html) (UTF-16, BigEndian).
-
-For the lobbyconnection, each message is of the form:
-
-    ACTION: QString
-
-With most carrying a footer containing:
-
-    LOGIN: QString
-    SESSION: QString
-
 ## Incoming Packages
 
 ##### Social

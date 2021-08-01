@@ -2,7 +2,7 @@ import asyncio
 import subprocess
 from hashlib import sha256
 
-from server.protocol import QDataStreamProtocol
+from server.protocol import SimpleJsonProtocol
 from tests.integration_tests.conftest import read_until, read_until_command
 
 
@@ -29,7 +29,7 @@ class FAFClient(object):
         await self.proto.close()
 
     async def connect(self, host, port):
-        self.proto = QDataStreamProtocol(
+        self.proto = SimpleJsonProtocol(
             *(await asyncio.open_connection(host, port))
         )
 

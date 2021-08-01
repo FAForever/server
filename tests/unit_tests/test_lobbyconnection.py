@@ -21,7 +21,7 @@ from server.oauth_service import OAuthService
 from server.party_service import PartyService
 from server.player_service import PlayerService
 from server.players import PlayerState
-from server.protocol import DisconnectedError, QDataStreamProtocol
+from server.protocol import DisconnectedError, SimpleJsonProtocol
 from server.rating import InclusiveRange, RatingType
 from server.team_matchmaker import PlayerParty
 from server.types import Address
@@ -77,7 +77,7 @@ def mock_games():
 
 @pytest.fixture
 def mock_protocol():
-    return mock.create_autospec(QDataStreamProtocol(mock.Mock(), mock.Mock()))
+    return mock.create_autospec(SimpleJsonProtocol(mock.Mock(), mock.Mock()))
 
 
 @pytest.fixture

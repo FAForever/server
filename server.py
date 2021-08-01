@@ -26,7 +26,6 @@ from server.game_service import GameService
 from server.ice_servers.nts import TwilioNTS
 from server.player_service import PlayerService
 from server.profiler import Profiler
-from server.protocol import SimpleJsonProtocol
 
 
 async def main():
@@ -109,8 +108,7 @@ async def main():
         )
     config.register_callback("CONTROL_SERVER_PORT", restart_control_server)
 
-    await instance.listen(("", 8001))
-    await instance.listen(("", 8002), SimpleJsonProtocol)
+    await instance.listen(("", 8002))
 
     server.metrics.info.info({
         "version": version,

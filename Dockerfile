@@ -23,7 +23,7 @@ RUN python3 -m pip install -e .
 # Main entrypoint and the default command that will be run
 CMD ["/usr/local/bin/python3", "server.py"]
 
-# lobby server runs on 8001/tcp (QDataStream) and 8002/tcp (JSON)
-EXPOSE 8001 8002
+# lobby server runs on 8002/tcp (JSON)
+EXPOSE 8002
 
 RUN python3 -V

@@ -8,7 +8,7 @@ import pytest
 from server import ServerContext
 from server.core import Service
 from server.lobbyconnection import LobbyConnection
-from server.protocol import DisconnectedError, QDataStreamProtocol
+from server.protocol import DisconnectedError, SimpleJsonProtocol
 from tests.utils import exhaust_callbacks
 
 pytestmark = pytest.mark.asyncio
@@ -80,7 +80,7 @@ async def test_serverside_abort(
     srv, ctx = mock_context
     reader, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())
     with closing(writer):
-        proto = QDataStreamProtocol(reader, writer)
+        proto = SimpleJsonProtocol(reader, writer)
         await proto.send_message({"some_junk": True})
         await exhaust_callbacks(event_loop)
 

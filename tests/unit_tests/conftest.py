@@ -9,7 +9,7 @@ from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
 from server.ladder_service import LadderService
-from server.protocol import QDataStreamProtocol
+from server.protocol import SimpleJsonProtocol
 
 
 @pytest.fixture(scope="session")
@@ -72,7 +72,7 @@ def game_connection(
         database=database,
         game=game,
         player=players.hosting,
-        protocol=mock.create_autospec(QDataStreamProtocol),
+        protocol=mock.create_autospec(SimpleJsonProtocol),
         player_service=player_service,
         games=game_service
     )
