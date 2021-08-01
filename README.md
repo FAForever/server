@@ -178,12 +178,6 @@ With most carrying a footer containing:
 
 ## Incoming Packages
 
-##### Mod Vault
-
-* `{command: modvault, type: start}`: show the last 100 mods
-* `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
-* `{command: modvault, type: download, uid: <uid>}`: notify server about a download (for download counter), does not start the download
-
 ##### Social
 * `{command: social_add, friend|foe: <player_id>}`: Add a friend or foe
 * `{command: social_remove, friend|foe: <player_id>}`: Remove a friend or foe
