@@ -302,12 +302,12 @@ class GameConnection(GpgNetServerProtocol):
         self._mark_dirty()
 
     async def handle_player_option(
-        self, player_id: Any, command: Any, value: Any
+        self, player_id: Any, key: Any, value: Any
     ):
         if not self.is_host():
             return
 
-        self.game.set_player_option(int(player_id), command, value)
+        self.game.set_player_option(int(player_id), key, value)
         self._mark_dirty()
 
     async def handle_ai_option(self, name: Any, key: Any, value: Any):
@@ -920,12 +920,12 @@ COMMAND_HANDLERS = {
         self._mark_dirty()
 
     async def handle_player_option(
-        self, player_id: Any, command: Any, value: Any
+        self, player_id: Any, key: Any, value: Any
     ):
         if not self.is_host():
             return
 
-        self.game.set_player_option(int(player_id), command, value)
+        self.game.set_player_option(int(player_id), key, value)
         self._mark_dirty()
 
     async def handle_ai_option(self, name: Any, key: Any, value: Any):
@@ -1879,7 +1879,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_player_option"><code class="name flex">
-<span>async def <span class="ident">handle_player_option</span></span>(<span>self, player_id: Any, command: Any, value: Any)</span>
+<span>async def <span class="ident">handle_player_option</span></span>(<span>self, player_id: Any, key: Any, value: Any)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1888,12 +1888,12 @@ included for documentation purposes.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def handle_player_option(
-    self, player_id: Any, command: Any, value: Any
+    self, player_id: Any, key: Any, value: Any
 ):
     if not self.is_host():
         return
 
-    self.game.set_player_option(int(player_id), command, value)
+    self.game.set_player_option(int(player_id), key, value)
     self._mark_dirty()</code></pre>
 </details>
 </dd>

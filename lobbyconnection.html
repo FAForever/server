@@ -277,7 +277,10 @@ class LobbyConnection:
     async def send_game_list(self):
         await self.send({
             &#34;command&#34;: &#34;game_info&#34;,
-            &#34;games&#34;: [game.to_dict() for game in self.game_service.open_games]
+            &#34;games&#34;: [
+                game.to_dict() for game in self.game_service.open_games
+                if game.is_visible_to_player(self.player)
+            ]
         })
 
     async def command_social_remove(self, message):
@@ -1469,7 +1472,10 @@ class LobbyConnection:
     async def send_game_list(self):
         await self.send({
             &#34;command&#34;: &#34;game_info&#34;,
-            &#34;games&#34;: [game.to_dict() for game in self.game_service.open_games]
+            &#34;games&#34;: [
+                game.to_dict() for game in self.game_service.open_games
+                if game.is_visible_to_player(self.player)
+            ]
         })
 
     async def command_social_remove(self, message):
@@ -3914,7 +3920,10 @@ is IDLE.</p></div>
 <pre><code class="python">async def send_game_list(self):
     await self.send({
         &#34;command&#34;: &#34;game_info&#34;,
-        &#34;games&#34;: [game.to_dict() for game in self.game_service.open_games]
+        &#34;games&#34;: [
+            game.to_dict() for game in self.game_service.open_games
+            if game.is_visible_to_player(self.player)
+        ]
     })</code></pre>
 </details>
 </dd>
