@@ -273,12 +273,12 @@ class GameConnection(GpgNetServerProtocol):
         self._mark_dirty()
 
     async def handle_player_option(
-        self, player_id: Any, command: Any, value: Any
+        self, player_id: Any, key: Any, value: Any
     ):
         if not self.is_host():
             return
 
-        self.game.set_player_option(int(player_id), command, value)
+        self.game.set_player_option(int(player_id), key, value)
         self._mark_dirty()
 
     async def handle_ai_option(self, name: Any, key: Any, value: Any):
