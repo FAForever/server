@@ -147,67 +147,83 @@ async def test_info_broadcast_authenticated(lobby_server):
 
 
 @fast_forward(5)
-async def test_game_info_not_broadcast_to_foes(lobby_server):
-    # Rhiza is foed by test
+async def test_game_info_not_sent_to_foes(lobby_server):
     _, _, proto1 = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
-    _, _, proto2 = await connect_and_sign_in(
-        ("foed_by_test", "foe"), lobby_server
-    )
     await read_until_command(proto1, "game_info")
-    await read_until_command(proto2, "game_info")
 
-    await proto1.send_message({
-        "command": "game_host",
-        "title": "No Foes Allowed",
-        "mod": "faf",
-        "visibility": "public"
-    })
-
+    await host_game(proto1, title="No Foes Allowed", visibility="public")
     msg = await read_until_command(proto1, "game_info")
 
     assert msg["featured_mod"] == "faf"
     assert msg["title"] == "No Foes Allowed"
     assert msg["visibility"] == "public"
 
+    _, _, proto2 = await connect_and_sign_in(
+        ("foed_by_test", "foe"), lobby_server
+    )
+    # Check game info sent during login
+    msg2 = await read_until_command(proto2, "game_info")
+    assert msg2["games"] == []
+
+    # Trigger a game_info message
+    await proto1.send_message({
+        "target": "game",
+        "command": "ClearSlot",
+        "args": [2]
+    })
+
+    await read_until_command(proto1, "game_info")
+    # Foe should not see the update
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(proto2, "game_info", timeout=1)
 
 
-@fast_forward(5)
-async def test_game_info_broadcast_to_friends(lobby_server):
+@fast_forward(10)
+async def test_game_info_sent_to_friends(lobby_server):
     # test is the friend of friends
     _, _, proto1 = await connect_and_sign_in(
         ("friends", "friends"), lobby_server
     )
+    await read_until_command(proto1, "game_info")
+
+    await host_game(proto1, title="Friends Only", visibility="friends")
+
+    # Host should see their own game
+    msg = await read_until_command(proto1, "game_info")
+    assert msg["featured_mod"] == "faf"
+    assert msg["title"] == "Friends Only"
+    assert msg["visibility"] == "friends"
+
     _, _, proto2 = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
     _, _, proto3 = await connect_and_sign_in(
         ("Rhiza", "puff_the_magic_dragon"), lobby_server
     )
-    await read_until_command(proto1, "game_info")
-    await read_until_command(proto2, "game_info")
-    await read_until_command(proto3, "game_info")
+    # Check game info sent during login
+    msg2 = await read_until_command(proto2, "game_info")
+    msg3 = await read_until_command(proto3, "game_info")
 
+    # The hosts friend should see the game
+    assert msg2["games"]
+    assert msg2["games"][0] == msg
+
+    # However, the other person should not
+    assert msg3["games"] == []
+
+    # Trigger a game_info message
     await proto1.send_message({
-        "command": "game_host",
-        "title": "Friends Only",
-        "mod": "faf",
-        "visibility": "friends"
+        "target": "game",
+        "command": "ClearSlot",
+        "args": [2]
     })
 
-    # The host and his friend should see the game
-    msg = await read_until_command(proto1, "game_info")
-    msg2 = await read_until_command(proto2, "game_info")
+    # The hosts friend should see the update
+    await read_until_command(proto2, "game_info")
 
-    assert msg == msg2
-    assert msg["featured_mod"] == "faf"
-    assert msg["title"] == "Friends Only"
-    assert msg["visibility"] == "friends"
-
-    # However, the other person should not see the game
+    # However, the other person should not
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(proto3, "game_info", timeout=1)
 

@@ -231,7 +231,7 @@ async def test_game_ended_rates_game(lobby_server):
         await read_until_command(host_proto, "player_info", timeout=10)
 
 
-@fast_forward(30)
+@fast_forward(100)
 async def test_game_with_foed_player(lobby_server):
     _, _, host_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
