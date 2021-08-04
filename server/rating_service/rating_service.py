@@ -19,6 +19,7 @@ from server.db.models import (
 )
 from server.decorators import with_logger
 from server.games.game_results import GameOutcome
+from server.message_queue_service import MessageQueueService
 from server.metrics import rating_service_backlog
 from server.player_service import PlayerService
 from server.rating import RatingType, RatingTypeMap
@@ -50,13 +51,19 @@ class RatingService(Service):
     atomic.
     """
 
-    def __init__(self, database: FAFDatabase, player_service: PlayerService):
+    def __init__(
+        self,
+        database: FAFDatabase,
+        player_service: PlayerService,
+        message_queue_service: MessageQueueService
+    ):
         self._db = database
         self._player_service_callback = player_service.signal_player_rating_change
         self._accept_input = False
         self._queue = asyncio.Queue()
         self._task = None
         self._rating_type_ids = None
+        self._message_queue_service = message_queue_service
 
     async def initialize(self) -> None:
         if self._task is not None:
@@ -137,6 +144,9 @@ class RatingService(Service):
         }
         await self._persist_rating_changes(
             summary.game_id, summary.rating_type, old_ratings, new_ratings, outcome_map
+        )
+        await self._publish_rating_changes(
+            summary.rating_type, old_ratings, new_ratings, outcome_map
         )
 
     async def _get_rating_data(self, summary: GameRatingSummary) -> GameRatingData:
@@ -380,6 +390,39 @@ class RatingService(Service):
             "Sending player rating update for player with id %i", player_id
         )
         self._player_service_callback(player_id, rating_type, new_rating)
+
+    async def _publish_rating_changes(
+        self,
+        rating_type: str,
+        old_ratings: Dict[PlayerID, Rating],
+        new_ratings: Dict[PlayerID, Rating],
+        outcomes: Dict[PlayerID, GameOutcome],
+    ):
+        for player_id, new_rating in new_ratings.items():
+            if player_id not in outcomes:
+                self._logger.error("Missing outcome for player %i", player_id)
+                continue
+            if player_id not in old_ratings:
+                self._logger.error("Missing old rating for player %i", player_id)
+                continue
+
+            old_rating = old_ratings[player_id]
+
+            rating_change_dict = {
+                "player_id": player_id,
+                "rating_type": rating_type,
+                "new_rating_mean": new_rating.mu,
+                "new_rating_deviation": new_rating.sigma,
+                "old_rating_mean": old_rating.mu,
+                "old_rating_deviation": old_rating.sigma,
+                "outcome": outcomes[player_id].value
+            }
+
+            await self._message_queue_service.publish(
+                config.MQ_EXCHANGE_NAME,
+                "success.rating.update",
+                rating_change_dict,
+            )
 
     async def _join_rating_queue(self) -> None:
         """

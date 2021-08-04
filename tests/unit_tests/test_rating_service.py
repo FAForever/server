@@ -28,21 +28,25 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture
-async def rating_service(database, player_service):
-    service = RatingService(database, player_service)
+async def rating_service(database, player_service, message_queue_service):
+    service = RatingService(database, player_service, message_queue_service)
     await service.initialize()
     yield service
     service.kill()
 
 
 @pytest.fixture
-def uninitialized_service(database, player_service):
-    return RatingService(database, player_service)
+def uninitialized_service(database, player_service, message_queue_service):
+    return RatingService(database, player_service, message_queue_service)
 
 
 @pytest.fixture
-async def semiinitialized_service(database, player_service):
-    service = RatingService(database, player_service)
+async def semiinitialized_service(
+    database,
+    player_service,
+    message_queue_service
+):
+    service = RatingService(database, player_service, message_queue_service)
     await service.update_data()
     return service
 

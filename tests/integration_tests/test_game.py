@@ -231,6 +231,131 @@ async def test_game_ended_rates_game(lobby_server):
         await read_until_command(host_proto, "player_info", timeout=10)
 
 
+@pytest.mark.rabbitmq
+@fast_forward(30)
+async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
+    mq_proto_all = await connect_mq_consumer(
+        lobby_server,
+        channel,
+        "success.rating.update"
+    )
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(guest_proto, "game_info")
+    old_ratings = await get_player_ratings(host_proto, "test", "Rhiza")
+
+    # Set up the game
+    game_id = await host_game(host_proto)
+    await join_game(guest_proto, game_id)
+    # Set player options
+    await send_player_options(
+        host_proto,
+        [host_id, "Army", 1],
+        [host_id, "Team", 1],
+        [host_id, "StartSpot", 0],
+        [host_id, "Faction", 1],
+        [host_id, "Color", 1],
+        [guest_id, "Army", 2],
+        [guest_id, "Team", 1],
+        [guest_id, "StartSpot", 1],
+        [guest_id, "Faction", 1],
+        [guest_id, "Color", 2],
+    )
+
+    # Launch game
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Launching"]
+    })
+
+    await read_until(
+        host_proto,
+        lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
+    )
+    await host_proto.send_message({
+        "target": "game",
+        "command": "EnforceRating",
+        "args": []
+    })
+
+    # End the game
+    # Reports results
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [1, "victory 10"]
+        })
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [2, "defeat -10"]
+        })
+    # Report GameEnded
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameEnded",
+            "args": []
+        })
+
+    new_persisted_ratings = await get_player_ratings(host_proto, "test", "Rhiza")
+
+    rhiza_message = {
+        "player_id": 3, # Rhiza
+        "rating_type": "global",
+        "new_rating_mean": new_persisted_ratings["Rhiza"][0],
+        "new_rating_deviation": new_persisted_ratings["Rhiza"][1],
+        "old_rating_mean": old_ratings["Rhiza"][0],
+        "old_rating_deviation": old_ratings["Rhiza"][1],
+        "outcome": "DEFEAT"
+    }
+
+    test_message = {
+        "player_id": 1, # test
+        "rating_type": "global",
+        "new_rating_mean": new_persisted_ratings["test"][0],
+        "new_rating_deviation": new_persisted_ratings["test"][1],
+        "old_rating_mean": old_ratings["test"][0],
+        "old_rating_deviation": old_ratings["test"][1],
+        "outcome": "VICTORY"
+    }
+
+    expected_messages_by_id = {
+        message["player_id"]: message
+        for message in [rhiza_message, test_message]
+    }
+
+    first_message = await asyncio.wait_for(mq_proto_all.read_message(), timeout=5)
+    second_message = await asyncio.wait_for(mq_proto_all.read_message(), timeout=5)
+
+    first_id = first_message["player_id"]
+    expected_message = expected_messages_by_id[first_id]
+    assert first_message == pytest.approx(expected_message)
+
+    second_id = second_message["player_id"]
+    assert second_id != first_id
+    expected_message = expected_messages_by_id[second_id]
+    assert second_message == pytest.approx(expected_message)
+
+    # Now disconnect both players
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Ended"]
+        })
+
+    # There should be no further updates
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(mq_proto_all.read_message(), timeout=10)
+
+
 @fast_forward(100)
 async def test_game_with_foed_player(lobby_server):
     _, _, host_proto = await connect_and_sign_in(

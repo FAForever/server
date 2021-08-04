@@ -66,8 +66,6 @@ class GameService(Service):
             "*/10 * * * *", func=self.update_data
         )
 
-        await self._message_queue_service.declare_exchange(config.MQ_EXCHANGE_NAME)
-
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:
             # InnoDB, unusually, doesn't allow insertion of values greater than the next expected
