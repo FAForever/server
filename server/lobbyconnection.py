@@ -935,13 +935,6 @@ class LobbyConnection:
                     recoverable=True
                 )
 
-            # TODO: Remove this legacy behavior, use party instead
-            if "faction" in message:
-                party.set_factions(
-                    self.player,
-                    [Faction.from_value(message["faction"])]
-                )
-
             self.ladder_service.start_search(
                 players,
                 queue_name=queue_name,

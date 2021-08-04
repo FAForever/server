@@ -40,9 +40,15 @@ async def queue_players_for_matchmaking(lobby_server):
 
     await asyncio.gather(*[
         proto.send_message({
+            "command": "set_party_factions",
+            "factions": ["uef"]
+        })
+        for proto in protos
+    ])
+    await asyncio.gather(*[
+        proto.send_message({
             "command": "game_matchmaking",
             "state": "start",
-            "faction": "uef",
             "queue_name": "tmm2v2"
         })
         for proto in protos
@@ -115,17 +121,26 @@ async def test_game_matchmaking_multiqueue(lobby_server):
     ])
 
     await protos[0].send_message({
+        "command": "set_party_factions",
+        "factions": ["uef"]
+    })
+    await protos[0].send_message({
         "command": "game_matchmaking",
         "state": "start",
-        "faction": "uef",
         "queue_name": "ladder1v1"
     })
     await read_until_command(protos[0], "search_info", state="start")
     await asyncio.gather(*[
         proto.send_message({
+            "command": "set_party_factions",
+            "factions": ["aeon"]
+        })
+        for proto in protos
+    ])
+    await asyncio.gather(*[
+        proto.send_message({
             "command": "game_matchmaking",
             "state": "start",
-            "faction": "aeon",
             "queue_name": "tmm2v2"
         })
         for proto in protos
