@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.2" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>server.rating_service.rating_service API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -47,6 +47,7 @@ from server.db.models import (
 )
 from server.decorators import with_logger
 from server.games.game_results import GameOutcome
+from server.message_queue_service import MessageQueueService
 from server.metrics import rating_service_backlog
 from server.player_service import PlayerService
 from server.rating import RatingType, RatingTypeMap
@@ -78,13 +79,19 @@ class RatingService(Service):
     atomic.
     &#34;&#34;&#34;
 
-    def __init__(self, database: FAFDatabase, player_service: PlayerService):
+    def __init__(
+        self,
+        database: FAFDatabase,
+        player_service: PlayerService,
+        message_queue_service: MessageQueueService
+    ):
         self._db = database
         self._player_service_callback = player_service.signal_player_rating_change
         self._accept_input = False
         self._queue = asyncio.Queue()
         self._task = None
         self._rating_type_ids = None
+        self._message_queue_service = message_queue_service
 
     async def initialize(self) -&gt; None:
         if self._task is not None:
@@ -165,6 +172,9 @@ class RatingService(Service):
         }
         await self._persist_rating_changes(
             summary.game_id, summary.rating_type, old_ratings, new_ratings, outcome_map
+        )
+        await self._publish_rating_changes(
+            summary.rating_type, old_ratings, new_ratings, outcome_map
         )
 
     async def _get_rating_data(self, summary: GameRatingSummary) -&gt; GameRatingData:
@@ -408,6 +418,39 @@ class RatingService(Service):
             &#34;Sending player rating update for player with id %i&#34;, player_id
         )
         self._player_service_callback(player_id, rating_type, new_rating)
+
+    async def _publish_rating_changes(
+        self,
+        rating_type: str,
+        old_ratings: Dict[PlayerID, Rating],
+        new_ratings: Dict[PlayerID, Rating],
+        outcomes: Dict[PlayerID, GameOutcome],
+    ):
+        for player_id, new_rating in new_ratings.items():
+            if player_id not in outcomes:
+                self._logger.error(&#34;Missing outcome for player %i&#34;, player_id)
+                continue
+            if player_id not in old_ratings:
+                self._logger.error(&#34;Missing old rating for player %i&#34;, player_id)
+                continue
+
+            old_rating = old_ratings[player_id]
+
+            rating_change_dict = {
+                &#34;player_id&#34;: player_id,
+                &#34;rating_type&#34;: rating_type,
+                &#34;new_rating_mean&#34;: new_rating.mu,
+                &#34;new_rating_deviation&#34;: new_rating.sigma,
+                &#34;old_rating_mean&#34;: old_rating.mu,
+                &#34;old_rating_deviation&#34;: old_rating.sigma,
+                &#34;outcome&#34;: outcomes[player_id].value
+            }
+
+            await self._message_queue_service.publish(
+                config.MQ_EXCHANGE_NAME,
+                &#34;success.rating.update&#34;,
+                rating_change_dict,
+            )
 
     async def _join_rating_queue(self) -&gt; None:
         &#34;&#34;&#34;
@@ -470,7 +513,7 @@ async def acquire_or_default(db, default=None):
 <dl>
 <dt id="server.rating_service.rating_service.RatingService"><code class="flex name class">
 <span>class <span class="ident">RatingService</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="../db/index.html#server.db.FAFDatabase">FAFDatabase</a>, player_service: <a title="server.player_service.PlayerService" href="../player_service.html#server.player_service.PlayerService">PlayerService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="../db/index.html#server.db.FAFDatabase">FAFDatabase</a>, player_service: <a title="server.player_service.PlayerService" href="../player_service.html#server.player_service.PlayerService">PlayerService</a>, message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="../message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Service responsible for calculating and saving trueskill rating updates.
@@ -487,13 +530,19 @@ atomic.</p></div>
     atomic.
     &#34;&#34;&#34;
 
-    def __init__(self, database: FAFDatabase, player_service: PlayerService):
+    def __init__(
+        self,
+        database: FAFDatabase,
+        player_service: PlayerService,
+        message_queue_service: MessageQueueService
+    ):
         self._db = database
         self._player_service_callback = player_service.signal_player_rating_change
         self._accept_input = False
         self._queue = asyncio.Queue()
         self._task = None
         self._rating_type_ids = None
+        self._message_queue_service = message_queue_service
 
     async def initialize(self) -&gt; None:
         if self._task is not None:
@@ -574,6 +623,9 @@ atomic.</p></div>
         }
         await self._persist_rating_changes(
             summary.game_id, summary.rating_type, old_ratings, new_ratings, outcome_map
+        )
+        await self._publish_rating_changes(
+            summary.rating_type, old_ratings, new_ratings, outcome_map
         )
 
     async def _get_rating_data(self, summary: GameRatingSummary) -&gt; GameRatingData:
@@ -818,6 +870,39 @@ atomic.</p></div>
         )
         self._player_service_callback(player_id, rating_type, new_rating)
 
+    async def _publish_rating_changes(
+        self,
+        rating_type: str,
+        old_ratings: Dict[PlayerID, Rating],
+        new_ratings: Dict[PlayerID, Rating],
+        outcomes: Dict[PlayerID, GameOutcome],
+    ):
+        for player_id, new_rating in new_ratings.items():
+            if player_id not in outcomes:
+                self._logger.error(&#34;Missing outcome for player %i&#34;, player_id)
+                continue
+            if player_id not in old_ratings:
+                self._logger.error(&#34;Missing old rating for player %i&#34;, player_id)
+                continue
+
+            old_rating = old_ratings[player_id]
+
+            rating_change_dict = {
+                &#34;player_id&#34;: player_id,
+                &#34;rating_type&#34;: rating_type,
+                &#34;new_rating_mean&#34;: new_rating.mu,
+                &#34;new_rating_deviation&#34;: new_rating.sigma,
+                &#34;old_rating_mean&#34;: old_rating.mu,
+                &#34;old_rating_deviation&#34;: old_rating.sigma,
+                &#34;outcome&#34;: outcomes[player_id].value
+            }
+
+            await self._message_queue_service.publish(
+                config.MQ_EXCHANGE_NAME,
+                &#34;success.rating.update&#34;,
+                rating_change_dict,
+            )
+
     async def _join_rating_queue(self) -&gt; None:
         &#34;&#34;&#34;
         Offers a call that is blocking until the rating queue has been emptied.
@@ -853,7 +938,7 @@ atomic.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.rating_service.rating_service.RatingService.enqueue"><code class="name flex">
-<span>async def <span class="ident">enqueue</span></span>(<span>self, game_info: Dict) ‑> NoneType</span>
+<span>async def <span class="ident">enqueue</span></span>(<span>self, game_info: Dict[~KT, ~VT]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -875,7 +960,7 @@ atomic.</p></div>
 </details>
 </dd>
 <dt id="server.rating_service.rating_service.RatingService.kill"><code class="name flex">
-<span>def <span class="ident">kill</span></span>(<span>self) ‑> NoneType</span>
+<span>def <span class="ident">kill</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Exit without waiting for the queue to join.</p></div>
@@ -894,7 +979,7 @@ atomic.</p></div>
 </details>
 </dd>
 <dt id="server.rating_service.rating_service.RatingService.shutdown"><code class="name flex">
-<span>async def <span class="ident">shutdown</span></span>(<span>self) ‑> NoneType</span>
+<span>async def <span class="ident">shutdown</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Finish rating all remaining games, then exit.</p></div>
@@ -983,7 +1068,7 @@ atomic.</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.2" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>server.team_matchmaker.player_party API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -288,7 +288,7 @@ def players(self) -&gt; List[Player]:
 <h3>Methods</h3>
 <dl>
 <dt id="server.team_matchmaker.player_party.PlayerParty.add_invited_player"><code class="name flex">
-<span>def <span class="ident">add_invited_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> NoneType</span>
+<span>def <span class="ident">add_invited_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -301,7 +301,7 @@ def players(self) -&gt; List[Player]:
 </details>
 </dd>
 <dt id="server.team_matchmaker.player_party.PlayerParty.add_member"><code class="name flex">
-<span>def <span class="ident">add_member</span></span>(<span>self, member: <a title="server.team_matchmaker.party_member.PartyMember" href="party_member.html#server.team_matchmaker.party_member.PartyMember">PartyMember</a>) ‑> NoneType</span>
+<span>def <span class="ident">add_member</span></span>(<span>self, member: <a title="server.team_matchmaker.party_member.PartyMember" href="party_member.html#server.team_matchmaker.party_member.PartyMember">PartyMember</a>) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -314,7 +314,7 @@ def players(self) -&gt; List[Player]:
 </details>
 </dd>
 <dt id="server.team_matchmaker.player_party.PlayerParty.add_player"><code class="name flex">
-<span>def <span class="ident">add_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> NoneType</span>
+<span>def <span class="ident">add_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -341,7 +341,7 @@ def players(self) -&gt; List[Player]:
 </details>
 </dd>
 <dt id="server.team_matchmaker.player_party.PlayerParty.get_member_by_player"><code class="name flex">
-<span>def <span class="ident">get_member_by_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> Union[<a title="server.team_matchmaker.party_member.PartyMember" href="party_member.html#server.team_matchmaker.party_member.PartyMember">PartyMember</a>, NoneType]</span>
+<span>def <span class="ident">get_member_by_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> Optional[<a title="server.team_matchmaker.party_member.PartyMember" href="party_member.html#server.team_matchmaker.party_member.PartyMember">PartyMember</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -367,7 +367,7 @@ def players(self) -&gt; List[Player]:
 </details>
 </dd>
 <dt id="server.team_matchmaker.player_party.PlayerParty.on_matched"><code class="name flex">
-<span>def <span class="ident">on_matched</span></span>(<span>self, search1: <a title="server.matchmaker.search.Search" href="../matchmaker/search.html#server.matchmaker.search.Search">Search</a>, search2: <a title="server.matchmaker.search.Search" href="../matchmaker/search.html#server.matchmaker.search.Search">Search</a>) ‑> NoneType</span>
+<span>def <span class="ident">on_matched</span></span>(<span>self, search1: <a title="server.matchmaker.search.Search" href="../matchmaker/search.html#server.matchmaker.search.Search">Search</a>, search2: <a title="server.matchmaker.search.Search" href="../matchmaker/search.html#server.matchmaker.search.Search">Search</a>) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -381,7 +381,7 @@ def players(self) -&gt; List[Player]:
 </details>
 </dd>
 <dt id="server.team_matchmaker.player_party.PlayerParty.remove_invited_player"><code class="name flex">
-<span>def <span class="ident">remove_invited_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> NoneType</span>
+<span>def <span class="ident">remove_invited_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -396,7 +396,7 @@ def players(self) -&gt; List[Player]:
 </details>
 </dd>
 <dt id="server.team_matchmaker.player_party.PlayerParty.remove_player"><code class="name flex">
-<span>def <span class="ident">remove_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> NoneType</span>
+<span>def <span class="ident">remove_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -413,7 +413,7 @@ def players(self) -&gt; List[Player]:
 </details>
 </dd>
 <dt id="server.team_matchmaker.player_party.PlayerParty.send_party"><code class="name flex">
-<span>async def <span class="ident">send_party</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> NoneType</span>
+<span>async def <span class="ident">send_party</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -429,7 +429,7 @@ def players(self) -&gt; List[Player]:
 </details>
 </dd>
 <dt id="server.team_matchmaker.player_party.PlayerParty.set_factions"><code class="name flex">
-<span>def <span class="ident">set_factions</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, factions: List[<a title="server.factions.Faction" href="../factions.html#server.factions.Faction">Faction</a>]) ‑> NoneType</span>
+<span>def <span class="ident">set_factions</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, factions: List[<a title="server.factions.Faction" href="../factions.html#server.factions.Faction">Faction</a>]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -508,7 +508,7 @@ def players(self) -&gt; List[Player]:
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>
