@@ -168,20 +168,11 @@ async def test_game_matchmaking_start_while_matched(lobby_server):
 async def test_game_matchmaking_timeout(lobby_server, game_service):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
-    msg1, msg2 = await asyncio.gather(
-        read_until_command(proto1, "game_launch", timeout=120),
-        read_until_command(proto2, "game_launch", timeout=120)
-    )
-    # LEGACY BEHAVIOUR: The host does not respond with the appropriate GameState
-    # so the match is cancelled. However, the client does not know how to
-    # handle `match_cancelled` messages so we still send `game_launch` to
-    # prevent the client from showing that it is searching when it really isn't.
+    msg1 = await read_until_command(proto1, "game_launch", timeout=120)
     await read_until_command(proto2, "match_cancelled", timeout=120)
     await read_until_command(proto1, "match_cancelled", timeout=120)
 
-    assert msg1["uid"] == msg2["uid"]
     assert msg1["mod"] == "ladder1v1"
-    assert msg2["mod"] == "ladder1v1"
 
     # Ensure that the game is cleaned up
     await read_until_command(
@@ -192,7 +183,15 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     )
     assert game_service._games == {}
 
-    # Player's state is reset once they leave the game
+    # Player's state is not reset immediately
+    await proto1.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+    })
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto1, "search_info", state="start", timeout=5)
+
+    # Player's state is only reset once they leave the game
     await proto1.send_message({
         "command": "GameState",
         "target": "game",
@@ -201,18 +200,15 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     await proto1.send_message({
         "command": "game_matchmaking",
         "state": "start",
-        "faction": "uef"
     })
     await read_until_command(proto1, "search_info", state="start", timeout=5)
 
-    # And not before they've left the game
+    # But it is reset for the player who didn't make it into the game
     await proto2.send_message({
         "command": "game_matchmaking",
         "state": "start",
-        "faction": "uef"
     })
-    with pytest.raises(asyncio.TimeoutError):
-        await read_until_command(proto2, "search_info", state="start", timeout=5)
+    await read_until_command(proto2, "search_info", state="start", timeout=5)
 
 
 @fast_forward(120)

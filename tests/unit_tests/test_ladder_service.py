@@ -152,7 +152,6 @@ async def test_start_game_1v1(
     game = game_service[game_service.game_id_counter]
 
     assert player1.lobby_connection.launch_game.called
-    # TODO: Once client supports `match_cancelled` change this to `assert not`
     assert player2.lobby_connection.launch_game.called
     assert isinstance(game, LadderGame)
     assert game.rating_type == queue.rating_type
@@ -209,11 +208,9 @@ async def test_start_game_timeout(
     p1.lobby_connection.write.assert_called_once_with({"command": "match_cancelled"})
     p2.lobby_connection.write.assert_called_once_with({"command": "match_cancelled"})
     assert p1.lobby_connection.launch_game.called
-    # TODO: Once client supports `match_cancelled` change this to `assert not`
-    # and uncomment the following lines.
-    assert p2.lobby_connection.launch_game.called
-    # assert p1.state is PlayerState.IDLE
-    # assert p2.state is PlayerState.IDLE
+    assert not p2.lobby_connection.launch_game.called
+    assert p1.state is PlayerState.IDLE
+    assert p2.state is PlayerState.IDLE
 
 
 @given(

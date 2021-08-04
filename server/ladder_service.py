@@ -470,36 +470,24 @@ class LadderService(Service):
                     map_position=game.get_player_option(player.id, "StartSpot")
                 )
 
+            # Tell the host to launch
             await host.lobby_connection.launch_game(
                 game, is_host=True, options=game_options(host)
             )
-            try:
-                await game.wait_hosted(60)
-            finally:
-                # TODO: Once the client supports `match_cancelled`, don't
-                # send `launch_game` to the client if the host timed out. Until
-                # then, failing to send `launch_game` will cause the client to
-                # think it is searching for ladder, even though the server has
-                # already removed it from the queue.
+            await game.wait_hosted(60)
 
-                await asyncio.gather(*[
-                    guest.lobby_connection.launch_game(
-                        game, is_host=False, options=game_options(guest)
-                    )
-                    for guest in all_guests
-                    if guest.lobby_connection is not None
-                ])
-            await game.wait_launched(60 + 10 * len(all_guests))
-            self._logger.debug("Ladder game launched successfully %s", game)
-        except Exception as e:
-            if isinstance(e, asyncio.TimeoutError):
-                self._logger.info(
-                    "Ladder game failed to start! %s setup timed out",
-                    game
+            # Tell the guests to launch
+            await asyncio.gather(*[
+                guest.lobby_connection.launch_game(
+                    game, is_host=False, options=game_options(guest)
                 )
-            else:
-                self._logger.exception("Ladder game failed to start %s", game)
+                for guest in all_guests
+                if guest.lobby_connection is not None
+            ])
+            await game.wait_launched(60 + 10 * len(all_guests))
 
+            self._logger.debug("Ladder game launched successfully %s", game)
+        except Exception:
             if game:
                 await game.on_game_end()
 

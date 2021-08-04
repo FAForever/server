@@ -324,7 +324,6 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
     await protos[0].send_message({
         "command": "game_matchmaking",
         "state": "start",
-        "faction": "cybran",
         "queue_name": "ladder1v1"
     })
     await read_until_command(protos[0], "search_info", state="start")
@@ -332,7 +331,6 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
         proto.send_message({
             "command": "game_matchmaking",
             "state": "start",
-            "faction": "seraphim",
             "queue_name": "tmm2v2"
         })
         for proto in protos
@@ -348,6 +346,14 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
     # Don't send any GPGNet messages so the match times out
     await read_until_command(protos[0], "match_cancelled", timeout=120)
 
+    # Player's state is not reset immediately
+    await protos[0].send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+    })
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(protos[1], "search_info", state="start", timeout=5)
+
     # Player's state is reset once they leave the game
     await protos[0].send_message({
         "command": "GameState",
@@ -357,7 +363,6 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
     await protos[0].send_message({
         "command": "game_matchmaking",
         "state": "start",
-        "faction": "uef"
     })
     await read_until_command(
         protos[0],
@@ -366,15 +371,6 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
         queue_name="ladder1v1",
         timeout=5
     )
-
-    # And not before they've left the game
-    await protos[1].send_message({
-        "command": "game_matchmaking",
-        "state": "start",
-        "faction": "uef"
-    })
-    with pytest.raises(asyncio.TimeoutError):
-        await read_until_command(protos[1], "search_info", state="start", timeout=5)
 
 
 @fast_forward(60)
@@ -397,7 +393,6 @@ async def test_game_matchmaking_multiqueue_multimatch(lobby_server):
         proto.send_message({
             "command": "game_matchmaking",
             "state": "start",
-            "faction": "uef",
             "queue_name": "ladder1v1"
         })
         for proto in protos[:2]
@@ -406,7 +401,6 @@ async def test_game_matchmaking_multiqueue_multimatch(lobby_server):
         proto.send_message({
             "command": "game_matchmaking",
             "state": "start",
-            "faction": "aeon",
             "queue_name": "tmm2v2"
         })
         for proto in protos
@@ -460,7 +454,6 @@ async def test_game_matchmaking_timeout(lobby_server):
     await protos[0].send_message({
         "command": "game_matchmaking",
         "state": "start",
-        "faction": "uef"
     })
     await read_until_command(
         protos[0],
@@ -469,15 +462,6 @@ async def test_game_matchmaking_timeout(lobby_server):
         queue_name="ladder1v1",
         timeout=5
     )
-
-    # And not before they've left the game
-    await protos[1].send_message({
-        "command": "game_matchmaking",
-        "state": "start",
-        "faction": "uef"
-    })
-    with pytest.raises(asyncio.TimeoutError):
-        await read_until_command(protos[1], "search_info", state="start", timeout=5)
 
 
 @fast_forward(120)
