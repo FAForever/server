@@ -35,6 +35,9 @@ class ConfigurationStore:
         """
         self.CONFIGURATION_REFRESH_TIME = 300
         self.LOG_LEVEL = "DEBUG"
+        # Whether or not to use uvloop as a drop-in replacement for asyncio's
+        # default event loop
+        self.USE_UVLOOP = True
         self.PROFILING_COUNT = 300
         self.PROFILING_DURATION = 2
         self.PROFILING_INTERVAL = -1

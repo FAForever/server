@@ -30,6 +30,8 @@ async def main():
     loop = asyncio.get_running_loop()
     done = asyncio.Future()
 
+    logger.info("Event loop: %s", loop)
+
     def signal_handler(sig: int, _frame):
         logger.info(
             "Received signal %s, shutting down",
@@ -128,5 +130,9 @@ if __name__ == "__main__":
     )
     logger.addHandler(stderr_handler)
     logger.setLevel(config.LOG_LEVEL)
+
+    if config.USE_UVLOOP:
+        import uvloop
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
     asyncio.run(main())
