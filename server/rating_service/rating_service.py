@@ -1,6 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
-from typing import Dict, Optional
+from typing import Dict
 
 import aiocron
 from sqlalchemy import and_, func, select
@@ -11,8 +11,6 @@ from server.core import Service
 from server.db import FAFDatabase
 from server.db.models import (
     game_player_stats,
-    global_rating,
-    ladder1v1_rating,
     leaderboard,
     leaderboard_rating,
     leaderboard_rating_journal
@@ -22,7 +20,7 @@ from server.games.game_results import GameOutcome
 from server.message_queue_service import MessageQueueService
 from server.metrics import rating_service_backlog
 from server.player_service import PlayerService
-from server.rating import Leaderboard, RatingType
+from server.rating import Leaderboard, PlayerRatings, RatingType
 
 from .game_rater import GameRater, GameRatingError
 from .typedefs import (
@@ -165,7 +163,11 @@ class RatingService(Service):
             for player_id, rating in team.ratings.items()
         }
         await self._persist_rating_changes(
-            summary.game_id, summary.rating_type, old_ratings, new_ratings, outcome_map
+            summary.game_id,
+            summary.rating_type,
+            old_ratings,
+            new_ratings,
+            outcome_map
         )
         await self._publish_rating_changes(
             summary.rating_type, old_ratings, new_ratings, outcome_map
@@ -201,135 +203,49 @@ class RatingService(Service):
             raise ValueError(f"Unknown rating type {rating_type}.")
 
         async with acquire_or_default(self._db, conn) as conn:
-            rating = await self._do_get_player_rating(
-                conn, player_id, rating_type
+            player_ratings = await self._get_all_player_ratings(
+                conn, player_id
             )
 
-            if rating:
-                return rating
+            if rating_type not in player_ratings:
+                # This player has not played any games using this leaderboard
+                # yet, so we need to create the initial rating. This also
+                # ensures that the journal will show accurate changes.
 
-            initializer = self.leaderboards.get(rating_type).initializer
-            if initializer:
-                return await self._create_initial_rating(
-                    conn, player_id, rating_type, initializer.technical_name
+                # Querying the key will create the value using rating
+                # initialization, sort of like a defaultdict.
+                mean, dev = player_ratings[rating_type]
+
+                insertion_sql = leaderboard_rating.insert().values(
+                    login_id=player_id,
+                    mean=mean,
+                    deviation=dev,
+                    total_games=0,
+                    won_games=0,
+                    leaderboard_id=self._rating_type_ids[rating_type],
                 )
-            else:
-                return await self._create_default_rating(
-                    conn, player_id, rating_type
-                )
+                await conn.execute(insertion_sql)
 
-    async def _do_get_player_rating(
-        self, conn, player_id: int, rating_type: str
-    ) -> Optional[Rating]:
-        rating_type_id = self._rating_type_ids[rating_type]
-        sql = select(
-            [leaderboard_rating.c.mean, leaderboard_rating.c.deviation]
-        ).where(
-            and_(
-                leaderboard_rating.c.login_id == player_id,
-                leaderboard_rating.c.leaderboard_id == rating_type_id,
-            )
-        )
+                return Rating(mean, dev)
 
+            return Rating(*player_ratings[rating_type])
+
+    async def _get_all_player_ratings(
+        self, conn, player_id: int
+    ) -> PlayerRatings:
+        sql = select([
+            leaderboard.c.technical_name,
+            leaderboard_rating.c.mean,
+            leaderboard_rating.c.deviation
+        ]).join(leaderboard).where(leaderboard_rating.c.login_id == player_id)
         result = await conn.execute(sql)
-        row = await result.fetchone()
 
-        if not row:
-            try:
-                return await self._get_player_legacy_rating(
-                    conn, player_id, rating_type
-                )
-            except ValueError:
-                return None
+        player_ratings = PlayerRatings(self.leaderboards, init=False)
 
-        return Rating(row["mean"], row["deviation"])
+        async for row in result:
+            player_ratings[row.technical_name] = (row.mean, row.deviation)
 
-    async def _create_initial_rating(
-        self, conn, player_id: int, rating_type: str, initializer_type: str
-    ) -> Rating:
-        rating = await self._do_get_player_rating(
-            conn, player_id, initializer_type
-        )
-        if not rating:
-            return await self._create_default_rating(
-                conn, player_id, rating_type
-            )
-
-        mean, dev = rating
-        if dev < 250:
-            dev = min(dev + 150, 250)
-
-        insertion_sql = leaderboard_rating.insert().values(
-            login_id=player_id,
-            mean=mean,
-            deviation=dev,
-            total_games=0,
-            won_games=0,
-            leaderboard_id=self._rating_type_ids[rating_type],
-        )
-        await conn.execute(insertion_sql)
-
-        return Rating(mean, dev)
-
-    async def _get_player_legacy_rating(
-        self, conn, player_id: int, rating_type: str
-    ) -> Rating:
-        if rating_type == RatingType.GLOBAL:
-            table = global_rating
-            sql = select([table.c.mean, table.c.deviation, table.c.numGames]).where(
-                table.c.id == player_id
-            )
-        elif rating_type == RatingType.LADDER_1V1:
-            table = ladder1v1_rating
-            sql = select(
-                [table.c.mean, table.c.deviation, table.c.numGames, table.c.winGames]
-            ).where(table.c.id == player_id)
-        else:
-            raise ValueError(f"Unknown rating type {rating_type}.")
-
-        result = await conn.execute(sql)
-        row = await result.fetchone()
-
-        if not row:
-            return await self._create_default_rating(
-                conn, player_id, rating_type
-            )
-
-        if rating_type == RatingType.GLOBAL:
-            won_games = int(row["numGames"] / 2)
-        else:
-            won_games = row["winGames"]
-
-        insertion_sql = leaderboard_rating.insert().values(
-            login_id=player_id,
-            mean=row["mean"],
-            deviation=row["deviation"],
-            total_games=row["numGames"],
-            won_games=won_games,
-            leaderboard_id=self._rating_type_ids[rating_type],
-        )
-        await conn.execute(insertion_sql)
-
-        return Rating(row["mean"], row["deviation"])
-
-    async def _create_default_rating(
-        self, conn, player_id: int, rating_type: str
-    ):
-        default_mean = config.START_RATING_MEAN
-        default_deviation = config.START_RATING_DEV
-        rating_type_id = self._rating_type_ids.get(rating_type)
-
-        insertion_sql = leaderboard_rating.insert().values(
-            login_id=player_id,
-            mean=default_mean,
-            deviation=default_deviation,
-            total_games=0,
-            won_games=0,
-            leaderboard_id=rating_type_id,
-        )
-        await conn.execute(insertion_sql)
-
-        return Rating(default_mean, default_deviation)
+        return player_ratings
 
     async def _persist_rating_changes(
         self,

@@ -3,7 +3,7 @@ Type definitions for player ratings
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, TypeVar, Union
+from typing import Dict, Optional, Set, Tuple, TypeVar, Union
 
 import trueskill
 
@@ -52,44 +52,76 @@ class RatingType():
 
 
 class PlayerRatings(Dict[str, Rating]):
-    def __init__(self, leaderboards: Dict[str, Leaderboard]):
+    def __init__(self, leaderboards: Dict[str, Leaderboard], init: bool = True):
         self.leaderboards = leaderboards
+        # Rating types which are present but should be recomputed.
+        self.transient: Set[str] = set()
+
+        # Initialize known rating types so the client can display them
+        if init:
+            _ = self[RatingType.GLOBAL]
+            _ = self[RatingType.LADDER_1V1]
 
     def __setitem__(
         self,
         rating_type: str,
-        value: Union[Rating, trueskill.Rating]
+        value: Union[Rating, trueskill.Rating],
     ) -> None:
         if isinstance(value, trueskill.Rating):
-            val = (value.mu, value.sigma)
+            rating = (value.mu, value.sigma)
         else:
-            val = value
-        super().__setitem__(rating_type, val)
+            rating = value
 
-    def __getitem__(self, rating_type: str) -> Rating:
-        if rating_type not in self:
-            rating = self._get_initial_rating(rating_type)
+        self.transient.discard(rating_type)
+        super().__setitem__(rating_type, rating)
 
-            self[rating_type] = rating
+    def __getitem__(
+        self,
+        rating_type: str,
+        history: Optional[Set[str]] = None,
+    ) -> Rating:
+        history = history or set()
+        entry = self.get(rating_type)
+
+        if entry is None or rating_type in self.transient:
+            # Check for cycles
+            if rating_type in history:
+                return default_rating()
+
+            rating = self._get_initial_rating(rating_type, history=history)
+
+            self.transient.add(rating_type)
+            super().__setitem__(rating_type, rating)
             return rating
 
         return super().__getitem__(rating_type)
 
-    def _get_initial_rating(self, rating_type: str) -> Rating:
+    def _get_initial_rating(
+        self,
+        rating_type: str,
+        history: Set[str],
+    ) -> Rating:
         """Create an initial rating when no rating exists yet."""
         leaderboard = self.leaderboards.get(rating_type)
         if leaderboard is None or leaderboard.initializer is None:
             return default_rating()
 
-        rating = self.get(leaderboard.initializer.technical_name)
-        if rating is None:
-            return default_rating()
+        history.add(rating_type)
+        mean, dev = self.__getitem__(
+            leaderboard.initializer.technical_name,
+            history=history
+        )
 
-        mean, dev = rating
         if dev > 250:
             return (mean, dev)
 
         return (mean, min(dev + 150, 250))
+
+    def update(self, other: Dict[str, Rating]):
+        self.transient -= set(other)
+        if isinstance(other, PlayerRatings):
+            self.transient |= other.transient
+        super().update(other)
 
 
 def default_rating() -> Rating:

@@ -201,29 +201,6 @@ async def get_all_ratings(db: FAFDatabase, player_id: int):
     return rows
 
 
-async def test_get_player_rating_legacy(semiinitialized_service):
-    service = semiinitialized_service
-    # Player 51 should have no leaderboard_rating entry
-    # but entries in the legacy global_rating and ladder1v1_rating tables
-    player_id = 51
-    legacy_global_rating = Rating(1201, 250)
-    legacy_ladder_rating = Rating(1301, 400)
-
-    db_ratings = await get_all_ratings(service._db, player_id)
-    assert len(db_ratings) == 0  # no new rating entries yet
-
-    rating = await service._get_player_rating(player_id, RatingType.GLOBAL)
-    assert rating == legacy_global_rating
-
-    rating = await service._get_player_rating(player_id, RatingType.LADDER_1V1)
-    assert rating == legacy_ladder_rating
-
-    db_ratings = await get_all_ratings(service._db, player_id)
-    assert len(db_ratings) == 2  # new rating entries were created
-    assert db_ratings[0]["mean"] == 1201
-    assert db_ratings[1]["mean"] == 1301
-
-
 async def test_get_new_player_rating_created(semiinitialized_service):
     """
     Upon rating games of players without a rating entry in both new and legacy
