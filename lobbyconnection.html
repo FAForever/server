@@ -646,7 +646,8 @@ class LobbyConnection:
                     old_player.lobby_connection.write_warning(
                         &#34;You have been signed out because you signed in &#34;
                         &#34;elsewhere.&#34;,
-                        fatal=True
+                        fatal=True,
+                        style=&#34;kick&#34;
                     )
 
         await self.player_service.fetch_player_data(self.player)
@@ -1210,13 +1211,18 @@ class LobbyConnection:
         if fatal:
             await self.abort(message)
 
-    def write_warning(self, message: str, fatal: bool = False):
+    def write_warning(
+        self,
+        message: str,
+        fatal: bool = False,
+        style: Optional[str] = None
+    ):
         &#34;&#34;&#34;
         Like `send_warning`, but does not await the data to be sent.
         &#34;&#34;&#34;
         self.write({
             &#34;command&#34;: &#34;notice&#34;,
-            &#34;style&#34;: &#34;info&#34; if not fatal else &#34;error&#34;,
+            &#34;style&#34;: style or (&#34;info&#34; if not fatal else &#34;error&#34;),
             &#34;text&#34;: message
         })
         if fatal:
@@ -1841,7 +1847,8 @@ class LobbyConnection:
                     old_player.lobby_connection.write_warning(
                         &#34;You have been signed out because you signed in &#34;
                         &#34;elsewhere.&#34;,
-                        fatal=True
+                        fatal=True,
+                        style=&#34;kick&#34;
                     )
 
         await self.player_service.fetch_player_data(self.player)
@@ -2405,13 +2412,18 @@ class LobbyConnection:
         if fatal:
             await self.abort(message)
 
-    def write_warning(self, message: str, fatal: bool = False):
+    def write_warning(
+        self,
+        message: str,
+        fatal: bool = False,
+        style: Optional[str] = None
+    ):
         &#34;&#34;&#34;
         Like `send_warning`, but does not await the data to be sent.
         &#34;&#34;&#34;
         self.write({
             &#34;command&#34;: &#34;notice&#34;,
-            &#34;style&#34;: &#34;info&#34; if not fatal else &#34;error&#34;,
+            &#34;style&#34;: style or (&#34;info&#34; if not fatal else &#34;error&#34;),
             &#34;text&#34;: message
         })
         if fatal:
@@ -3787,7 +3799,8 @@ async def command_kick_player_from_party(self, message):
                 old_player.lobby_connection.write_warning(
                     &#34;You have been signed out because you signed in &#34;
                     &#34;elsewhere.&#34;,
-                    fatal=True
+                    fatal=True,
+                    style=&#34;kick&#34;
                 )
 
     await self.player_service.fetch_player_data(self.player)
@@ -4017,7 +4030,7 @@ a fatal warning it should disconnect and not attempt to reconnect.</li>
 </details>
 </dd>
 <dt id="server.lobbyconnection.LobbyConnection.write_warning"><code class="name flex">
-<span>def <span class="ident">write_warning</span></span>(<span>self, message: str, fatal: bool = False)</span>
+<span>def <span class="ident">write_warning</span></span>(<span>self, message: str, fatal: bool = False, style: Optional[str] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Like <code>send_warning</code>, but does not await the data to be sent.</p></div>
@@ -4025,13 +4038,18 @@ a fatal warning it should disconnect and not attempt to reconnect.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def write_warning(self, message: str, fatal: bool = False):
+<pre><code class="python">def write_warning(
+    self,
+    message: str,
+    fatal: bool = False,
+    style: Optional[str] = None
+):
     &#34;&#34;&#34;
     Like `send_warning`, but does not await the data to be sent.
     &#34;&#34;&#34;
     self.write({
         &#34;command&#34;: &#34;notice&#34;,
-        &#34;style&#34;: &#34;info&#34; if not fatal else &#34;error&#34;,
+        &#34;style&#34;: style or (&#34;info&#34; if not fatal else &#34;error&#34;),
         &#34;text&#34;: message
     })
     if fatal:
