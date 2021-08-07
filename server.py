@@ -28,7 +28,7 @@ from server.protocol import SimpleJsonProtocol
 
 async def main():
     loop = asyncio.get_running_loop()
-    done = asyncio.Future()
+    done = loop.create_future()
 
     logger.info("Event loop: %s", loop)
 
