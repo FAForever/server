@@ -617,7 +617,8 @@ class LobbyConnection:
                     old_player.lobby_connection.write_warning(
                         "You have been signed out because you signed in "
                         "elsewhere.",
-                        fatal=True
+                        fatal=True,
+                        style="kick"
                     )
 
         await self.player_service.fetch_player_data(self.player)
@@ -1181,13 +1182,18 @@ class LobbyConnection:
         if fatal:
             await self.abort(message)
 
-    def write_warning(self, message: str, fatal: bool = False):
+    def write_warning(
+        self,
+        message: str,
+        fatal: bool = False,
+        style: Optional[str] = None
+    ):
         """
         Like `send_warning`, but does not await the data to be sent.
         """
         self.write({
             "command": "notice",
-            "style": "info" if not fatal else "error",
+            "style": style or ("info" if not fatal else "error"),
             "text": message
         })
         if fatal:

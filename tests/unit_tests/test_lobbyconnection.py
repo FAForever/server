@@ -211,7 +211,8 @@ async def test_double_login(lobbyconnection, mock_players, player_factory):
 
     old_player.lobby_connection.write_warning.assert_called_with(
         "You have been signed out because you signed in elsewhere.",
-        fatal=True
+        fatal=True,
+        style="kick"
     )
     # This should only be reset in abort, which is mocked for this test
     assert old_player.lobby_connection.player is not None

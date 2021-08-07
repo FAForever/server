@@ -221,7 +221,7 @@ async def test_server_double_login(lobby_server):
     msg = await read_until_command(proto, "notice")
     assert msg == {
         "command": "notice",
-        "style": "error",
+        "style": "kick",
         "text": "You have been signed out because you signed in elsewhere."
     }
 
