@@ -957,6 +957,10 @@ async def test_command_game_matchmaking_not_party_owner(
 
     lobbyconnection.ladder_service.cancel_search.assert_called_once()
 
+async def test_command_match_ready(
+    await lobbyconnection.on_message_received({
+        "command": "match_ready"
+    })
 
 async def test_command_matchmaker_info(
     lobbyconnection,
