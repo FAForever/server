@@ -36,7 +36,7 @@ class Search:
         self.players = players
         self.rating_type = rating_type
         self.start_time = start_time or time.time()
-        self._match = asyncio.Future()
+        self._match = asyncio.get_event_loop().create_future()
         self._failed_matching_attempts = 0
         self.on_matched = on_matched
 

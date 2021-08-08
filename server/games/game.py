@@ -117,8 +117,9 @@ class Game():
             "RestrictedCategories": 0
         }
         self.mods = {}
-        self._is_hosted = asyncio.Future()
-        self._launch_fut = asyncio.Future()
+        loop = asyncio.get_event_loop()
+        self._is_hosted = loop.create_future()
+        self._launch_fut = loop.create_future()
 
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))

@@ -26,6 +26,7 @@ aiomysql = {editable = true, git = "https://github.com/aio-libs/aiomysql"}
 pyyaml = "*"
 aio_pika = "*"
 pyjwt = {version = ">=2", extras = ["crypto"]}
+uvloop = "*"
 
 [dev-packages]
 pytest = "*"
