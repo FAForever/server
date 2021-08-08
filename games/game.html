@@ -145,8 +145,9 @@ class Game():
             &#34;RestrictedCategories&#34;: 0
         }
         self.mods = {}
-        self._is_hosted = asyncio.Future()
-        self._launch_fut = asyncio.Future()
+        loop = asyncio.get_event_loop()
+        self._is_hosted = loop.create_future()
+        self._launch_fut = loop.create_future()
 
         self._logger.debug(&#34;%s created&#34;, self)
         asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
@@ -1057,8 +1058,9 @@ class Game():
             &#34;RestrictedCategories&#34;: 0
         }
         self.mods = {}
-        self._is_hosted = asyncio.Future()
-        self._launch_fut = asyncio.Future()
+        loop = asyncio.get_event_loop()
+        self._is_hosted = loop.create_future()
+        self._launch_fut = loop.create_future()
 
         self._logger.debug(&#34;%s created&#34;, self)
         asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))

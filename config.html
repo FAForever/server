@@ -64,6 +64,9 @@ class ConfigurationStore:
         &#34;&#34;&#34;
         self.CONFIGURATION_REFRESH_TIME = 300
         self.LOG_LEVEL = &#34;DEBUG&#34;
+        # Whether or not to use uvloop as a drop-in replacement for asyncio&#39;s
+        # default event loop
+        self.USE_UVLOOP = True
         self.PROFILING_COUNT = 300
         self.PROFILING_DURATION = 2
         self.PROFILING_INTERVAL = -1
@@ -237,6 +240,9 @@ config.register_callback(&#34;LOG_LEVEL&#34;, set_log_level)</code></pre>
         &#34;&#34;&#34;
         self.CONFIGURATION_REFRESH_TIME = 300
         self.LOG_LEVEL = &#34;DEBUG&#34;
+        # Whether or not to use uvloop as a drop-in replacement for asyncio&#39;s
+        # default event loop
+        self.USE_UVLOOP = True
         self.PROFILING_COUNT = 300
         self.PROFILING_DURATION = 2
         self.PROFILING_INTERVAL = -1
