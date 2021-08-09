@@ -991,6 +991,13 @@ class LobbyConnection:
         )
         await self.launch_game(game, is_host=True)
 
+    async def command_match_ready(self, message):
+        """
+        Replace with full implementation when implemented in client, see:
+        https://github.com/FAForever/downlords-faf-client/issues/1783
+        """
+        pass
+
     async def launch_game(
         self,
         game,
