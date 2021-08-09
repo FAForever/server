@@ -1020,6 +1020,13 @@ class LobbyConnection:
         )
         await self.launch_game(game, is_host=True)
 
+    async def command_match_ready(self, message):
+        &#34;&#34;&#34;
+        Replace with full implementation when implemented in client, see:
+        https://github.com/FAForever/downlords-faf-client/issues/1783
+        &#34;&#34;&#34;
+        pass
+
     async def launch_game(
         self,
         game,
@@ -2221,6 +2228,13 @@ class LobbyConnection:
         )
         await self.launch_game(game, is_host=True)
 
+    async def command_match_ready(self, message):
+        &#34;&#34;&#34;
+        Replace with full implementation when implemented in client, see:
+        https://github.com/FAForever/downlords-faf-client/issues/1783
+        &#34;&#34;&#34;
+        pass
+
     async def launch_game(
         self,
         game,
@@ -3256,6 +3270,24 @@ async def command_kick_player_from_party(self, message):
     await self.party_service.leave_party(self.player)</code></pre>
 </details>
 </dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_match_ready"><code class="name flex">
+<span>async def <span class="ident">command_match_ready</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Replace with full implementation when implemented in client, see:
+<a href="https://github.com/FAForever/downlords-faf-client/issues/1783">https://github.com/FAForever/downlords-faf-client/issues/1783</a></p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_match_ready(self, message):
+    &#34;&#34;&#34;
+    Replace with full implementation when implemented in client, see:
+    https://github.com/FAForever/downlords-faf-client/issues/1783
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 <dt id="server.lobbyconnection.LobbyConnection.command_matchmaker_info"><code class="name flex">
 <span>async def <span class="ident">command_matchmaker_info</span></span>(<span>self, message)</span>
 </code></dt>
@@ -4097,6 +4129,7 @@ a fatal warning it should disconnect and not attempt to reconnect.</li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.command_invite_to_party" href="#server.lobbyconnection.LobbyConnection.command_invite_to_party">command_invite_to_party</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.command_kick_player_from_party" href="#server.lobbyconnection.LobbyConnection.command_kick_player_from_party">command_kick_player_from_party</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.command_leave_party" href="#server.lobbyconnection.LobbyConnection.command_leave_party">command_leave_party</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_match_ready" href="#server.lobbyconnection.LobbyConnection.command_match_ready">command_match_ready</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.command_matchmaker_info" href="#server.lobbyconnection.LobbyConnection.command_matchmaker_info">command_matchmaker_info</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.command_modvault" href="#server.lobbyconnection.LobbyConnection.command_modvault">command_modvault</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.command_ping" href="#server.lobbyconnection.LobbyConnection.command_ping">command_ping</a></code></li>
