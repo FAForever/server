@@ -963,6 +963,7 @@ async def test_command_match_ready(lobbyconnection):
         "command": "match_ready"
     })
 
+    
 async def test_command_matchmaker_info(
     lobbyconnection,
     ladder_service,
