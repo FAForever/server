@@ -57,7 +57,7 @@ class PlayerRatings(Dict[str, Rating]):
         # Rating types which are present but should be recomputed.
         self.transient: Set[str] = set()
 
-        # Initialize known rating types so the client can display them
+        # DEPRECATED: Initialize known rating types so the client can display them
         if init:
             _ = self[RatingType.GLOBAL]
             _ = self[RatingType.LADDER_1V1]
