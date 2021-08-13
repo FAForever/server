@@ -125,7 +125,7 @@ def test_make_even_teams(searches_with_player_size):
         assert len(teams[0].players) == team_size
         assert len(teams[1].players) == team_size
     except UnevenTeamsException:
-        assert True
+        pass
 
 
 def test_make_fair_teams(player_factory):
@@ -198,7 +198,7 @@ def test_make_teams_with_almost_full_sized_search(player_factory):
 
 
 def test_ignore_impossible_team_splits(player_factory):
-    s = make_searches([1415, 125, 1294, 584, 1303, 1526, 1237, 1218], player_factory)
+    s = make_searches([1415, 1250, 1294, 1584, 1303, 1526, 1237, 1218], player_factory)
     c1 = CombinedSearch(*[s.pop(), s.pop(), s.pop()])
     c2 = CombinedSearch(*[s.pop(), s.pop(), s.pop()])
     c3 = CombinedSearch(*[s.pop(), s.pop()])
@@ -208,7 +208,7 @@ def test_ignore_impossible_team_splits(player_factory):
 
     matches, unmatched = TeamMatchMaker().find(s, 4)
 
-    assert len(matches) == 0
+    assert matches == []
     assert set(unmatched) == set(s)
 
 
@@ -303,10 +303,7 @@ def test_pick_noncolliding_games_no_games():
 
 @given(st_game_candidates_list(min_size=1))
 def test_pick_noncolliding_games(games):
-    max_quality_game = games[0]
-    for game in games:
-        if game.quality > max_quality_game.quality:
-            max_quality_game = game
+    max_quality_game = max(games, key=lambda game: game.quality)
 
     matches = TeamMatchMaker().pick_noncolliding_games(games)
 
