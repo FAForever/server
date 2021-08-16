@@ -29,6 +29,7 @@
 <pre><code class="python">import asyncio
 import itertools
 import math
+import statistics
 import time
 from typing import Any, Callable, List, Optional, Tuple
 
@@ -42,6 +43,10 @@ from ..players import Player
 
 Match = Tuple[&#34;Search&#34;, &#34;Search&#34;]
 OnMatchedCallback = Callable[[&#34;Search&#34;, &#34;Search&#34;], Any]
+
+
+def get_average_rating(searches):
+    return statistics.mean(mean - 3 * dev for s in searches for mean, dev in s.raw_ratings)
 
 
 @with_logger
@@ -107,6 +112,14 @@ class Search:
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
         return ratings
+
+    @property
+    def cumulative_rating(self):
+        return sum(mean - 3 * dev for mean, dev in self.raw_ratings)
+
+    @property
+    def average_rating(self):
+        return statistics.mean(mean - 3 * dev for mean, dev in self.raw_ratings)
 
     @property
     def raw_ratings(self):
@@ -262,7 +275,18 @@ class Search:
 
     def __repr__(self) -&gt; str:
         &#34;&#34;&#34;For debugging&#34;&#34;&#34;
-        return f&#34;Search({[p.login for p in self.players]})&#34;
+        return (
+            f&#34;Search({[p.login for p in self.players]}, {self.average_rating}&#34;
+            f&#34;{f&#39;, FMA: {self.failed_matching_attempts}&#39; if self.failed_matching_attempts else &#39;&#39;}&#34;
+            f&#34;{&#39;, has_newbie)&#39; if self.has_newbie() else &#39;)&#39;}&#34;
+        )
+
+    def get_original_searches(self) -&gt; List[&#34;Search&#34;]:
+        &#34;&#34;&#34;
+        Returns the searches of which this Search is comprised,
+        as if it were a CombinedSearch of one
+        &#34;&#34;&#34;
+        return [self]
 
 
 class CombinedSearch(Search):
@@ -281,6 +305,14 @@ class CombinedSearch(Search):
     @property
     def ratings(self):
         return list(itertools.chain(*[s.ratings for s in self.searches]))
+
+    @property
+    def cumulative_rating(self):
+        return sum(s.cumulative_rating for s in self.searches)
+
+    @property
+    def average_rating(self):
+        return get_average_rating(self.searches)
 
     @property
     def raw_ratings(self):
@@ -335,7 +367,13 @@ class CombinedSearch(Search):
             s.cancel()
 
     def __str__(self):
-        return &#34;CombinedSearch({})&#34;.format(&#34;,&#34;.join(str(s) for s in self.searches))</code></pre>
+        return &#34;CombinedSearch({})&#34;.format(&#34;,&#34;.join(str(s) for s in self.searches))
+
+    def get_original_searches(self) -&gt; List[Search]:
+        &#34;&#34;&#34;
+        Returns the searches of which this CombinedSearch is comprised
+        &#34;&#34;&#34;
+        return list(self.searches)</code></pre>
 </details>
 </section>
 <section>
@@ -343,6 +381,22 @@ class CombinedSearch(Search):
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="server.matchmaker.search.get_average_rating"><code class="name flex">
+<span>def <span class="ident">get_average_rating</span></span>(<span>searches)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_average_rating(searches):
+    return statistics.mean(mean - 3 * dev for s in searches for mean, dev in s.raw_ratings)</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -375,6 +429,14 @@ class CombinedSearch(Search):
         return list(itertools.chain(*[s.ratings for s in self.searches]))
 
     @property
+    def cumulative_rating(self):
+        return sum(s.cumulative_rating for s in self.searches)
+
+    @property
+    def average_rating(self):
+        return get_average_rating(self.searches)
+
+    @property
     def raw_ratings(self):
         return list(itertools.chain(*[s.raw_ratings for s in self.searches]))
 
@@ -427,7 +489,13 @@ class CombinedSearch(Search):
             s.cancel()
 
     def __str__(self):
-        return &#34;CombinedSearch({})&#34;.format(&#34;,&#34;.join(str(s) for s in self.searches))</code></pre>
+        return &#34;CombinedSearch({})&#34;.format(&#34;,&#34;.join(str(s) for s in self.searches))
+
+    def get_original_searches(self) -&gt; List[Search]:
+        &#34;&#34;&#34;
+        Returns the searches of which this CombinedSearch is comprised
+        &#34;&#34;&#34;
+        return list(self.searches)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -435,6 +503,30 @@ class CombinedSearch(Search):
 </ul>
 <h3>Instance variables</h3>
 <dl>
+<dt id="server.matchmaker.search.CombinedSearch.average_rating"><code class="name">var <span class="ident">average_rating</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def average_rating(self):
+    return get_average_rating(self.searches)</code></pre>
+</details>
+</dd>
+<dt id="server.matchmaker.search.CombinedSearch.cumulative_rating"><code class="name">var <span class="ident">cumulative_rating</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def cumulative_rating(self):
+    return sum(s.cumulative_rating for s in self.searches)</code></pre>
+</details>
+</dd>
 <dt id="server.matchmaker.search.CombinedSearch.failed_matching_attempts"><code class="name">var <span class="ident">failed_matching_attempts</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
@@ -538,6 +630,22 @@ def raw_ratings(self):
     return all(s.done() for s in self.searches)</code></pre>
 </details>
 </dd>
+<dt id="server.matchmaker.search.CombinedSearch.get_original_searches"><code class="name flex">
+<span>def <span class="ident">get_original_searches</span></span>(<span>self) ‑> List[<a title="server.matchmaker.search.Search" href="#server.matchmaker.search.Search">Search</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the searches of which this CombinedSearch is comprised</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_original_searches(self) -&gt; List[Search]:
+    &#34;&#34;&#34;
+    Returns the searches of which this CombinedSearch is comprised
+    &#34;&#34;&#34;
+    return list(self.searches)</code></pre>
+</details>
+</dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
@@ -628,6 +736,14 @@ def raw_ratings(self):
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
         return ratings
+
+    @property
+    def cumulative_rating(self):
+        return sum(mean - 3 * dev for mean, dev in self.raw_ratings)
+
+    @property
+    def average_rating(self):
+        return statistics.mean(mean - 3 * dev for mean, dev in self.raw_ratings)
 
     @property
     def raw_ratings(self):
@@ -783,7 +899,18 @@ def raw_ratings(self):
 
     def __repr__(self) -&gt; str:
         &#34;&#34;&#34;For debugging&#34;&#34;&#34;
-        return f&#34;Search({[p.login for p in self.players]})&#34;</code></pre>
+        return (
+            f&#34;Search({[p.login for p in self.players]}, {self.average_rating}&#34;
+            f&#34;{f&#39;, FMA: {self.failed_matching_attempts}&#39; if self.failed_matching_attempts else &#39;&#39;}&#34;
+            f&#34;{&#39;, has_newbie)&#39; if self.has_newbie() else &#39;)&#39;}&#34;
+        )
+
+    def get_original_searches(self) -&gt; List[&#34;Search&#34;]:
+        &#34;&#34;&#34;
+        Returns the searches of which this Search is comprised,
+        as if it were a CombinedSearch of one
+        &#34;&#34;&#34;
+        return [self]</code></pre>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
@@ -791,6 +918,18 @@ def raw_ratings(self):
 </ul>
 <h3>Instance variables</h3>
 <dl>
+<dt id="server.matchmaker.search.Search.average_rating"><code class="name">var <span class="ident">average_rating</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def average_rating(self):
+    return statistics.mean(mean - 3 * dev for mean, dev in self.raw_ratings)</code></pre>
+</details>
+</dd>
 <dt id="server.matchmaker.search.Search.boundary_75"><code class="name">var <span class="ident">boundary_75</span></code></dt>
 <dd>
 <div class="desc"><p>Achieves roughly 75% quality. FIXME - why is it MORE restrictive???</p></div>
@@ -815,6 +954,18 @@ def boundary_75(self):
 def boundary_80(self):
     &#34;&#34;&#34; Achieves roughly 80% quality. &#34;&#34;&#34;
     return self._nearby_rating_range(200)</code></pre>
+</details>
+</dd>
+<dt id="server.matchmaker.search.Search.cumulative_rating"><code class="name">var <span class="ident">cumulative_rating</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def cumulative_rating(self):
+    return sum(mean - 3 * dev for mean, dev in self.raw_ratings)</code></pre>
 </details>
 </dd>
 <dt id="server.matchmaker.search.Search.failed_matching_attempts"><code class="name">var <span class="ident">failed_matching_attempts</span> : int</code></dt>
@@ -1001,6 +1152,24 @@ def search_expansion(self) -&gt; float:
     return self._match.done()</code></pre>
 </details>
 </dd>
+<dt id="server.matchmaker.search.Search.get_original_searches"><code class="name flex">
+<span>def <span class="ident">get_original_searches</span></span>(<span>self) ‑> List[<a title="server.matchmaker.search.Search" href="#server.matchmaker.search.Search">Search</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the searches of which this Search is comprised,
+as if it were a CombinedSearch of one</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_original_searches(self) -&gt; List[&#34;Search&#34;]:
+    &#34;&#34;&#34;
+    Returns the searches of which this Search is comprised,
+    as if it were a CombinedSearch of one
+    &#34;&#34;&#34;
+    return [self]</code></pre>
+</details>
+</dd>
 <dt id="server.matchmaker.search.Search.has_newbie"><code class="name flex">
 <span>def <span class="ident">has_newbie</span></span>(<span>self) ‑> bool</span>
 </code></dt>
@@ -1165,13 +1334,21 @@ and increase internal counter by one.</p></div>
 <li><code><a title="server.matchmaker" href="index.html">server.matchmaker</a></code></li>
 </ul>
 </li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="server.matchmaker.search.get_average_rating" href="#server.matchmaker.search.get_average_rating">get_average_rating</a></code></li>
+</ul>
+</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
 <h4><code><a title="server.matchmaker.search.CombinedSearch" href="#server.matchmaker.search.CombinedSearch">CombinedSearch</a></code></h4>
 <ul class="">
+<li><code><a title="server.matchmaker.search.CombinedSearch.average_rating" href="#server.matchmaker.search.CombinedSearch.average_rating">average_rating</a></code></li>
+<li><code><a title="server.matchmaker.search.CombinedSearch.cumulative_rating" href="#server.matchmaker.search.CombinedSearch.cumulative_rating">cumulative_rating</a></code></li>
 <li><code><a title="server.matchmaker.search.CombinedSearch.done" href="#server.matchmaker.search.CombinedSearch.done">done</a></code></li>
 <li><code><a title="server.matchmaker.search.CombinedSearch.failed_matching_attempts" href="#server.matchmaker.search.CombinedSearch.failed_matching_attempts">failed_matching_attempts</a></code></li>
+<li><code><a title="server.matchmaker.search.CombinedSearch.get_original_searches" href="#server.matchmaker.search.CombinedSearch.get_original_searches">get_original_searches</a></code></li>
 <li><code><a title="server.matchmaker.search.CombinedSearch.is_cancelled" href="#server.matchmaker.search.CombinedSearch.is_cancelled">is_cancelled</a></code></li>
 <li><code><a title="server.matchmaker.search.CombinedSearch.is_matched" href="#server.matchmaker.search.CombinedSearch.is_matched">is_matched</a></code></li>
 <li><code><a title="server.matchmaker.search.CombinedSearch.match_threshold" href="#server.matchmaker.search.CombinedSearch.match_threshold">match_threshold</a></code></li>
@@ -1184,12 +1361,15 @@ and increase internal counter by one.</p></div>
 <h4><code><a title="server.matchmaker.search.Search" href="#server.matchmaker.search.Search">Search</a></code></h4>
 <ul class="">
 <li><code><a title="server.matchmaker.search.Search.adjusted_rating" href="#server.matchmaker.search.Search.adjusted_rating">adjusted_rating</a></code></li>
+<li><code><a title="server.matchmaker.search.Search.average_rating" href="#server.matchmaker.search.Search.average_rating">average_rating</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.await_match" href="#server.matchmaker.search.Search.await_match">await_match</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.boundary_75" href="#server.matchmaker.search.Search.boundary_75">boundary_75</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.boundary_80" href="#server.matchmaker.search.Search.boundary_80">boundary_80</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.cancel" href="#server.matchmaker.search.Search.cancel">cancel</a></code></li>
+<li><code><a title="server.matchmaker.search.Search.cumulative_rating" href="#server.matchmaker.search.Search.cumulative_rating">cumulative_rating</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.done" href="#server.matchmaker.search.Search.done">done</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.failed_matching_attempts" href="#server.matchmaker.search.Search.failed_matching_attempts">failed_matching_attempts</a></code></li>
+<li><code><a title="server.matchmaker.search.Search.get_original_searches" href="#server.matchmaker.search.Search.get_original_searches">get_original_searches</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.has_newbie" href="#server.matchmaker.search.Search.has_newbie">has_newbie</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.has_top_player" href="#server.matchmaker.search.Search.has_top_player">has_top_player</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.is_cancelled" href="#server.matchmaker.search.Search.is_cancelled">is_cancelled</a></code></li>
