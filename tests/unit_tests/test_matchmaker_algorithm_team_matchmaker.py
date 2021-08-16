@@ -31,8 +31,8 @@ def player_factory(player_factory):
         ladder_games: int = config.NEWBIE_MIN_GAMES+1,
         name=None
     ):
-        nonlocal player_id_counter
         """Make a player with the given ratings"""
+        nonlocal player_id_counter
         player = player_factory(
             ladder_rating=(mean, deviation),
             ladder_games=ladder_games,
@@ -262,7 +262,7 @@ def test_game_quality_time_bonus(s):
     num_newbies = sum(search.has_newbie() for search in team_a.get_original_searches())
     num_newbies += sum(search.has_newbie() for search in team_b.get_original_searches())
 
-    assert abs(quality_before + 6 * config.TIME_BONUS + num_newbies * config.NEWBIE_TIME_BONUS - quality_after) < 0.0000001
+    assert quality_before + 6 * config.TIME_BONUS + num_newbies * config.NEWBIE_TIME_BONUS == pytest.approx(quality_after)
 
 
 @pytest.mark.slow
