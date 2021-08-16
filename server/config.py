@@ -84,6 +84,18 @@ class ConfigurationStore:
         self.START_RATING_DEV = 500
         self.TOP_PLAYER_MIN_RATING = 1600
 
+        # Values for the custom (i.e. not trueskill) game quality metric used by the matchmaker
+        self.MINIMUM_GAME_QUALITY = 0.4
+        # Difference of cumulated rating of the teams
+        self.MAXIMUM_RATING_IMBALANCE = 400
+        # stdev of the ratings of all participating players
+        self.MAXIMUM_RATING_DEVIATION = 750
+        # Quality bonus for each failed matching attempt per player
+        self.TIME_BONUS = 0.01
+        self.MAXIMUM_TIME_BONUS = 0.2
+        self.NEWBIE_TIME_BONUS = 0.1
+        self.MAXIMUM_NEWBIE_TIME_BONUS = 0.4
+
         self.TWILIO_ACCOUNT_SID = ""
         self.TWILIO_TOKEN = ""
         self.TWILIO_TTL = 86400

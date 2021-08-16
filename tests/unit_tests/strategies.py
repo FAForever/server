@@ -5,6 +5,7 @@ import string
 from hypothesis import strategies as st
 
 from server.matchmaker import Search
+from server.matchmaker.algorithm.team_matchmaker import GameCandidate
 from tests.conftest import make_player
 
 
@@ -34,15 +35,28 @@ def st_players(draw, name=None, **kwargs):
 
 
 @st.composite
-def st_searches(draw, num_players=1):
+def st_searches(draw, num_players=1, **kwargs):
     """Strategy for generating Search objects"""
     return Search([
-        draw(st_players(f"p{i}")) for i in range(num_players)
+        draw(st_players(f"p{i}", **kwargs)) for i in range(num_players)
     ])
 
 
 @st.composite
-def st_searches_list(draw, min_players=1, max_players=10, max_size=30):
+def st_game_candidates(draw, num_players=1):
+    """Strategy for generating GameCandidate objects"""
+    player_id = draw(st.integers(min_value=0, max_value=10))
+    return GameCandidate(
+        (
+            draw(st_searches(num_players, player_id=player_id)),
+            draw(st_searches(num_players, player_id=player_id + 1))
+        ),
+        draw(st.floats(min_value=0.0, max_value=1.0))
+    )
+
+
+@st.composite
+def st_searches_list(draw, min_players=1, max_players=10, min_size=0, max_size=30):
     """Strategy for generating a list of Search objects"""
     return draw(
         st.lists(
@@ -51,6 +65,56 @@ def st_searches_list(draw, min_players=1, max_players=10, max_size=30):
                     st.integers(min_value=min_players, max_value=max_players)
                 )
             ),
+            min_size=min_size,
+            max_size=max_size
+        )
+    )
+
+
+@st.composite
+def st_searches_list_with_player_size(draw, min_players=1, max_players=10, min_size=1,  max_size=30):
+    """Strategy for generating a list of Search objects and the max player size"""
+    player_size = draw(st.integers(min_value=min_players, max_value=max_players))
+    searches_list = draw(
+        st.lists(
+            st_searches(
+                num_players=draw(
+                    st.integers(min_value=min_players, max_value=player_size)
+                )
+            ),
+            min_size=min_size,
+            max_size=max_size
+        )
+    )
+    return searches_list, player_size
+
+
+@st.composite
+def st_searches_list_with_index(draw, min_players=1, max_players=10, min_size=1,  max_size=30):
+    """Strategy for generating a list of Search objects and an index that points at a location in the list"""
+    searches_list = draw(
+        st_searches_list(
+            min_players=min_players,
+            max_players=max_players,
+            min_size=min_size,
+            max_size=max_size
+        )
+    )
+    index = draw(st.integers(min_value=0, max_value=max(0, len(searches_list) - 1)))
+    return searches_list, index
+
+
+@st.composite
+def st_game_candidates_list(draw, min_players=1, max_players=10, min_size=0, max_size=10):
+    """Strategy for generating a list of GameCandidate objects"""
+    return draw(
+        st.lists(
+            st_game_candidates(
+                num_players=draw(
+                    st.integers(min_value=min_players, max_value=max_players)
+                )
+            ),
+            min_size=min_size,
             max_size=max_size
         )
     )

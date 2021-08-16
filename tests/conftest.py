@@ -93,6 +93,9 @@ def pytest_configure(config):
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
     config.addinivalue_line(
+        "markers", "performance: marks tests as performance tests (deselect with '-m \"not performance\"')"
+    )
+    config.addinivalue_line(
         "markers", "rabbitmq: marks tests as requiring a running instance of RabbitMQ"
     )
 

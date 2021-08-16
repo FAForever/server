@@ -10,7 +10,7 @@ import server.metrics as metrics
 from ..asyncio_extensions import SpinLock, synchronized
 from ..decorators import with_logger
 from ..players import PlayerState
-from .algorithm.bucket_teams import BucketTeamMatchmaker
+from .algorithm.team_matchmaker import TeamMatchMaker
 from .map_pool import MapPool
 from .pop_timer import PopTimer
 from .search import Match, Search
@@ -65,7 +65,7 @@ class MatchmakerQueue:
 
         self.timer = PopTimer(self)
 
-        self.matchmaker = BucketTeamMatchmaker()
+        self.matchmaker = TeamMatchMaker()
 
     def add_map_pool(
         self,

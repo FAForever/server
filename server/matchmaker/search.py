@@ -1,6 +1,7 @@
 import asyncio
 import itertools
 import math
+import statistics
 import time
 from typing import Any, Callable, List, Optional, Tuple
 
@@ -14,6 +15,10 @@ from ..players import Player
 
 Match = Tuple["Search", "Search"]
 OnMatchedCallback = Callable[["Search", "Search"], Any]
+
+
+def get_average_rating(searches):
+    return statistics.mean(mean - 3 * dev for s in searches for mean, dev in s.raw_ratings)
 
 
 @with_logger
@@ -79,6 +84,14 @@ class Search:
                 rating = self.adjusted_rating(player)
             ratings.append(rating)
         return ratings
+
+    @property
+    def cumulative_rating(self):
+        return sum(mean - 3 * dev for mean, dev in self.raw_ratings)
+
+    @property
+    def average_rating(self):
+        return statistics.mean(mean - 3 * dev for mean, dev in self.raw_ratings)
 
     @property
     def raw_ratings(self):
@@ -234,7 +247,18 @@ class Search:
 
     def __repr__(self) -> str:
         """For debugging"""
-        return f"Search({[p.login for p in self.players]})"
+        return (
+            f"Search({[p.login for p in self.players]}, {self.average_rating}"
+            f"{f', FMA: {self.failed_matching_attempts}' if self.failed_matching_attempts else ''}"
+            f"{', has_newbie)' if self.has_newbie() else ')'}"
+        )
+
+    def get_original_searches(self) -> List["Search"]:
+        """
+        Returns the searches of which this Search is comprised,
+        as if it were a CombinedSearch of one
+        """
+        return [self]
 
 
 class CombinedSearch(Search):
@@ -253,6 +277,14 @@ class CombinedSearch(Search):
     @property
     def ratings(self):
         return list(itertools.chain(*[s.ratings for s in self.searches]))
+
+    @property
+    def cumulative_rating(self):
+        return sum(s.cumulative_rating for s in self.searches)
+
+    @property
+    def average_rating(self):
+        return get_average_rating(self.searches)
 
     @property
     def raw_ratings(self):
@@ -308,3 +340,9 @@ class CombinedSearch(Search):
 
     def __str__(self):
         return "CombinedSearch({})".format(",".join(str(s) for s in self.searches))
+
+    def get_original_searches(self) -> List[Search]:
+        """
+        Returns the searches of which this CombinedSearch is comprised
+        """
+        return list(self.searches)
