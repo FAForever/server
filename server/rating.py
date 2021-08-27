@@ -107,12 +107,10 @@ class PlayerRatings(Dict[str, Rating]):
             return default_rating()
 
         history.add(rating_type)
-        mean, dev = self.__getitem__(
-            leaderboard.initializer.technical_name,
-            history=history
-        )
+        init_rating_type = leaderboard.initializer.technical_name
+        mean, dev = self.__getitem__(init_rating_type, history=history)
 
-        if dev > 250:
+        if dev > 250 or init_rating_type in self.transient:
             return (mean, dev)
 
         return (mean, min(dev + 150, 250))

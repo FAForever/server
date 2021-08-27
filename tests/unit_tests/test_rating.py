@@ -98,16 +98,16 @@ def test_long_initialization_cycle(long_cyclic_ratings):
 
 
 def test_initialization_cycle_with_rating(cyclic_ratings):
-    cyclic_ratings["global"] = (1000, 100)
-    assert cyclic_ratings["global"] == (1000, 100)
-    assert cyclic_ratings["tmm_2v2"] == (1000, 250)
+    cyclic_ratings["global"] = (1000, 50)
+    assert cyclic_ratings["global"] == (1000, 50)
+    assert cyclic_ratings["tmm_2v2"] == (1000, 200)
 
 
 def test_long_initialization_cycle_with_rating(long_cyclic_ratings):
-    long_cyclic_ratings["global"] = (1000, 100)
-    assert long_cyclic_ratings["ladder_1v1"] == (1000, 250)
-    assert long_cyclic_ratings["global"] == (1000, 100)
-    assert long_cyclic_ratings["tmm_2v2"] == (1000, 250)
+    long_cyclic_ratings["global"] = (1000, 50)
+    assert long_cyclic_ratings["global"] == (1000, 50)
+    assert long_cyclic_ratings["tmm_2v2"] == (1000, 200)
+    assert long_cyclic_ratings["ladder_1v1"] == (1000, 200)
 
 
 def test_initialization_chain(chained_ratings):
@@ -117,26 +117,39 @@ def test_initialization_chain(chained_ratings):
 
 
 def test_initialization_chain_with_rating(chained_ratings):
-    chained_ratings["ladder_1v1"] = (1000, 100)
-    assert chained_ratings["ladder_1v1"] == (1000, 100)
-    assert chained_ratings["tmm_2v2"] == (1000, 250)
+    chained_ratings["ladder_1v1"] = (1000, 50)
+    assert chained_ratings["ladder_1v1"] == (1000, 50)
+    assert chained_ratings["global"] == (1000, 200)
+    assert chained_ratings["tmm_2v2"] == (1000, 200)
 
 
 def test_initialization_transient(chained_ratings):
-    chained_ratings["global"] = (1000, 100)
-    assert chained_ratings["tmm_2v2"] == (1000, 250)
+    chained_ratings["global"] = (1000, 50)
+    assert chained_ratings["tmm_2v2"] == (1000, 200)
 
-    chained_ratings["global"] = (700, 100)
-    assert chained_ratings["tmm_2v2"] == (700, 250)
+    chained_ratings["global"] = (700, 50)
+    assert chained_ratings["tmm_2v2"] == (700, 200)
 
     chained_ratings["global"] = (500, 100)
     chained_ratings["tmm_2v2"] = (300, 200)
     assert chained_ratings["tmm_2v2"] == (300, 200)
 
 
+def test_initialization_with_high_deviation(chained_ratings):
+    chained_ratings["ladder_1v1"] = (1000, 150)
+    assert chained_ratings["ladder_1v1"] == (1000, 150)
+    assert chained_ratings["tmm_2v2"] == (1000, 250)
+
+
+def test_initialization_with_very_high_deviation(chained_ratings):
+    chained_ratings["ladder_1v1"] = (1000, 350)
+    assert chained_ratings["ladder_1v1"] == (1000, 350)
+    assert chained_ratings["tmm_2v2"] == (1000, 350)
+
+
 def test_dict_update(chained_ratings):
-    chained_ratings["ladder_1v1"] = (1000, 100)
-    assert chained_ratings["global"] == (1000, 250)
+    chained_ratings["ladder_1v1"] = (1000, 50)
+    assert chained_ratings["global"] == (1000, 200)
 
     chained_ratings.update({
         "ladder_1v1": (500, 100),
@@ -152,21 +165,21 @@ def test_ratings_update_same_leaderboards(chained_leaderboards):
     ratings1 = PlayerRatings(chained_leaderboards)
     ratings2 = PlayerRatings(chained_leaderboards)
     # Global is initialized based on ladder, and should be marked as transient
-    ratings1["ladder_1v1"] = (1000, 100)
-    assert ratings1["global"] == (1000, 250)
+    ratings1["ladder_1v1"] = (1000, 50)
+    assert ratings1["global"] == (1000, 200)
 
     ratings2.update(ratings1)
     # Existing keys should be copied
     assert ratings2 == {
-        "ladder_1v1": (1000, 100),
-        "global": (1000, 250)
+        "ladder_1v1": (1000, 50),
+        "global": (1000, 200)
     }
-    assert ratings2["ladder_1v1"] == (1000, 100)
-    assert ratings2["global"] == (1000, 250)
+    assert ratings2["ladder_1v1"] == (1000, 50)
+    assert ratings2["global"] == (1000, 200)
 
     # Global should be re-initialized
-    ratings2["ladder_1v1"] = (500, 100)
-    assert ratings2["global"] == (500, 250)
+    ratings2["ladder_1v1"] = (500, 50)
+    assert ratings2["global"] == (500, 200)
 
 
 def test_ratings_update_different_leaderboards(
@@ -176,21 +189,21 @@ def test_ratings_update_different_leaderboards(
     ratings1 = PlayerRatings(chained_leaderboards)
     ratings2 = PlayerRatings(cyclic_leaderboards)
     # Global is initialized based on ladder, and should be marked as transient
-    ratings1["ladder_1v1"] = (1000, 100)
-    assert ratings1["global"] == (1000, 250)
+    ratings1["ladder_1v1"] = (1000, 50)
+    assert ratings1["global"] == (1000, 200)
 
     ratings2.update(ratings1)
     # Existing keys should be copied
     assert ratings2 == {
-        "tmm_2v2": (1500, 500),
-        "global": (1000, 250),
-        "ladder_1v1": (1000, 100)
+        "tmm_2v2": DEFAULT_RATING,
+        "global": (1000, 200),
+        "ladder_1v1": (1000, 50)
     }
 
     # Global should be re-initialized based on a the other rating
-    ratings2["ladder_1v1"] = (500, 100)
-    ratings2["tmm_2v2"] = (750, 100)
-    assert ratings2["global"] == (750, 250)
+    ratings2["ladder_1v1"] = (500, 50)
+    ratings2["tmm_2v2"] = (750, 50)
+    assert ratings2["global"] == (750, 200)
 
 
 def test_ratings_update_nontransient_with_transient(chained_leaderboards):
@@ -199,17 +212,17 @@ def test_ratings_update_nontransient_with_transient(chained_leaderboards):
 
     assert ratings_t["ladder_1v1"] == DEFAULT_RATING
     assert ratings_t["global"] == DEFAULT_RATING
-    ratings_nt["ladder_1v1"] = (500, 100)
-    ratings_nt["global"] = (1000, 100)
+    ratings_nt["ladder_1v1"] = (500, 50)
+    ratings_nt["global"] = (1000, 50)
     # Global is not re-initialized
-    assert ratings_nt["global"] == (1000, 100)
+    assert ratings_nt["global"] == (1000, 50)
 
     ratings_nt.update(ratings_t)
     assert ratings_nt == {"ladder_1v1": DEFAULT_RATING, "global": DEFAULT_RATING}
 
-    ratings_nt["ladder_1v1"] = (750, 100)
+    ratings_nt["ladder_1v1"] = (750, 50)
     # Now global is re-initialized
-    assert ratings_nt["global"] == (750, 250)
+    assert ratings_nt["global"] == (750, 200)
 
 
 def test_ratings_update_transient_with_nontransient(chained_leaderboards):
@@ -218,14 +231,14 @@ def test_ratings_update_transient_with_nontransient(chained_leaderboards):
 
     assert ratings_t["ladder_1v1"] == DEFAULT_RATING
     assert ratings_t["global"] == DEFAULT_RATING
-    ratings_nt["ladder_1v1"] = (500, 100)
-    ratings_nt["global"] = (1000, 100)
+    ratings_nt["ladder_1v1"] = (500, 50)
+    ratings_nt["global"] = (1000, 50)
     # Global is not re-initialized
-    assert ratings_nt["global"] == (1000, 100)
+    assert ratings_nt["global"] == (1000, 50)
 
     ratings_t.update(ratings_nt)
-    assert ratings_t == {"ladder_1v1": (500, 100), "global": (1000, 100)}
+    assert ratings_t == {"ladder_1v1": (500, 50), "global": (1000, 50)}
 
-    ratings_t["ladder_1v1"] = (750, 100)
+    ratings_t["ladder_1v1"] = (750, 50)
     # Global is still not re-initialized
-    assert ratings_t["global"] == (1000, 100)
+    assert ratings_t["global"] == (1000, 50)
