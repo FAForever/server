@@ -375,11 +375,7 @@ async def connect_and_sign_in(
 @pytest.fixture
 async def channel():
     connection = await aio_pika.connect(
-        "amqp://{user}:{password}@localhost/{vhost}".format(
-            user=config.MQ_USER,
-            password=config.MQ_PASSWORD,
-            vhost=config.MQ_VHOST
-        )
+        f"amqp://{config.MQ_USER}:{config.MQ_PASSWORD}@localhost/{config.MQ_VHOST}"
     )
     channel = await connection.channel()
 

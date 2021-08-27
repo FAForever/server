@@ -82,7 +82,7 @@ class Game():
         self.launched_at = None
         self.ended = False
         self._logger = logging.getLogger(
-            "{}.{}".format(self.__class__.__qualname__, id_)
+            f"{self.__class__.__qualname__}.{id_}"
         )
         self.id = id_
         self.visibility = VisibilityState.PUBLIC
