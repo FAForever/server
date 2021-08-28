@@ -111,12 +111,15 @@ class MatchmakerQueue:
                 # match this round and will have higher priority next round.
 
                 self.game_service.mark_dirty(self)
+            except asyncio.CancelledError:
+                break
             except Exception:
                 self._logger.exception(
                     "Unexpected error during queue pop timer loop!"
                 )
                 # To avoid potential busy loops
                 await asyncio.sleep(1)
+        self._logger.info("%s queue stopped", self.name)
 
     async def search(self, search: Search) -> None:
         """

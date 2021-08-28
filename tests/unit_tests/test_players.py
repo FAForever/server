@@ -7,11 +7,21 @@ from trueskill import Rating
 from server.factions import Faction
 from server.players import Player
 from server.protocol import DisconnectedError
-from server.rating import RatingType
+from server.rating import Leaderboard, RatingType
 
 
-def test_ratings():
-    p = Player("Schroedinger")
+@pytest.fixture
+def leaderboards():
+    global_ = Leaderboard(1, "global")
+    return {
+        "global": global_,
+        "ladder_1v1": Leaderboard(2, "ladder_1v1"),
+        "tmm_2v2": Leaderboard(3, "tmm_2v2", global_)
+    }
+
+
+def test_ratings(leaderboards):
+    p = Player("Schroedinger", leaderboards=leaderboards)
     p.ratings[RatingType.GLOBAL] = (1500, 20)
     assert p.ratings[RatingType.GLOBAL] == (1500, 20)
     p.ratings[RatingType.GLOBAL] = Rating(1700, 20)
@@ -43,7 +53,7 @@ def test_equality_by_id():
 
 
 def test_weak_references():
-    p = Player(login="Test")
+    p = Player("Test")
     weak_properties = ["lobby_connection", "game", "game_connection"]
     referent = mock.Mock()
     for prop in weak_properties:
@@ -57,7 +67,7 @@ def test_weak_references():
 
 
 def test_unlink_weakref():
-    p = Player(login="Test")
+    p = Player("Test")
     mock_game = mock.Mock()
     p.game = mock_game
     assert p.game == mock_game
@@ -98,7 +108,7 @@ def test_serialize():
 
 @pytest.mark.asyncio
 async def test_send_message():
-    p = Player(login="Test")
+    p = Player("Test")
 
     assert p.lobby_connection is None
     with pytest.raises(DisconnectedError):
@@ -106,7 +116,7 @@ async def test_send_message():
 
 
 def test_write_message():
-    p = Player(login="Test")
+    p = Player("Test")
 
     assert p.lobby_connection is None
     # Should not raise

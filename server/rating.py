@@ -2,58 +2,128 @@
 Type definitions for player ratings
 """
 
-from typing import DefaultDict, Optional, Tuple, TypeVar, Union
+from dataclasses import dataclass
+from typing import Dict, Optional, Set, Tuple, TypeVar, Union
 
-from trueskill import Rating
+import trueskill
 
+from server.config import config
+from server.weakattr import WeakAttribute
 
-# Values correspond to legacy table names. This will be fixed when db gets
-# migrated.
-class RatingType():
-    GLOBAL = "global"
-    LADDER_1V1 = "ladder_1v1"
-    TMM_2V2 = "tmm_2v2"
-
-
-K = Union[RatingType, str]
+Rating = Tuple[float, float]
 V = TypeVar("V")
 
 
-class RatingTypeMap(DefaultDict[K, V]):
-    """
-    A thin wrapper around `defaultdict` which stores RatingType keys as strings.
-    """
-    def __init__(self, default_factory, *args, **kwargs):
-        super().__init__(default_factory, *args, **kwargs)
+@dataclass(init=False)
+class Leaderboard():
+    id: int
+    technical_name: str
+    # Need the type annotation here so that the dataclass decorator sees it as
+    # a field and includes it in generated methods (such as __eq__)
+    initializer: WeakAttribute["Leaderboard"] = WeakAttribute["Leaderboard"]()
 
-        # Initialize defaults for enumerated rating types
-        for rating in (RatingType.GLOBAL, RatingType.LADDER_1V1):
-            self.__getitem__(rating)
+    def __init__(
+        self,
+        id: int,
+        technical_name: str,
+        initializer: Optional["Leaderboard"] = None
+    ):
+        self.id = id
+        self.technical_name = technical_name
+        if initializer:
+            self.initializer = initializer
+
+    def __repr__(self) -> str:
+        initializer = self.initializer
+        initializer_name = "None"
+        if initializer:
+            initializer_name = initializer.technical_name
+        return (
+            f"{self.__class__.__name__}("
+            f"id={self.id}, technical_name={self.technical_name}, "
+            f"initializer={initializer_name})"
+        )
 
 
-# Only used to coerce rating type.
-class PlayerRatings(RatingTypeMap[Tuple[float, float]]):
-    def __setitem__(self, key: K, value: Tuple[float, float]) -> None:
-        if isinstance(value, Rating):
-            val = (value.mu, value.sigma)
+# Some places have references to these ratings hardcoded.
+class RatingType():
+    GLOBAL = "global"
+    LADDER_1V1 = "ladder_1v1"
+
+
+class PlayerRatings(Dict[str, Rating]):
+    def __init__(self, leaderboards: Dict[str, Leaderboard], init: bool = True):
+        self.leaderboards = leaderboards
+        # Rating types which are present but should be recomputed.
+        self.transient: Set[str] = set()
+
+        # DEPRECATED: Initialize known rating types so the client can display them
+        if init:
+            _ = self[RatingType.GLOBAL]
+            _ = self[RatingType.LADDER_1V1]
+
+    def __setitem__(
+        self,
+        rating_type: str,
+        value: Union[Rating, trueskill.Rating],
+    ) -> None:
+        if isinstance(value, trueskill.Rating):
+            rating = (value.mu, value.sigma)
         else:
-            val = value
-        super().__setitem__(key, val)
+            rating = value
 
-    def __getitem__(self, key: K) -> Tuple[float, float]:
-        # TODO: Generalize for arbitrary ratings
-        # https://github.com/FAForever/server/issues/727
-        if key == RatingType.TMM_2V2 and key not in self:
-            mean, dev = self[RatingType.GLOBAL]
-            if dev > 250:
-                tmm_2v2_rating = (mean, dev)
-            else:
-                tmm_2v2_rating = (mean, min(dev + 150, 250))
+        self.transient.discard(rating_type)
+        super().__setitem__(rating_type, rating)
 
-            self[key] = tmm_2v2_rating
-            return tmm_2v2_rating
-        else:
-            return super().__getitem__(key)
+    def __getitem__(
+        self,
+        rating_type: str,
+        history: Optional[Set[str]] = None,
+    ) -> Rating:
+        history = history or set()
+        entry = self.get(rating_type)
+
+        if entry is None or rating_type in self.transient:
+            # Check for cycles
+            if rating_type in history:
+                return default_rating()
+
+            rating = self._get_initial_rating(rating_type, history=history)
+
+            self.transient.add(rating_type)
+            super().__setitem__(rating_type, rating)
+            return rating
+
+        return super().__getitem__(rating_type)
+
+    def _get_initial_rating(
+        self,
+        rating_type: str,
+        history: Set[str],
+    ) -> Rating:
+        """Create an initial rating when no rating exists yet."""
+        leaderboard = self.leaderboards.get(rating_type)
+        if leaderboard is None or leaderboard.initializer is None:
+            return default_rating()
+
+        history.add(rating_type)
+        init_rating_type = leaderboard.initializer.technical_name
+        mean, dev = self.__getitem__(init_rating_type, history=history)
+
+        if dev > 250 or init_rating_type in self.transient:
+            return (mean, dev)
+
+        return (mean, min(dev + 150, 250))
+
+    def update(self, other: Dict[str, Rating]):
+        self.transient -= set(other)
+        if isinstance(other, PlayerRatings):
+            self.transient |= other.transient
+        super().update(other)
+
+
+def default_rating() -> Rating:
+    return (config.START_RATING_MEAN, config.START_RATING_DEV)
 
 
 class InclusiveRange():

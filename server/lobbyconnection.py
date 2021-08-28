@@ -56,6 +56,7 @@ from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, Protocol
 from .rating import InclusiveRange, RatingType
+from .rating_service import RatingService
 from .types import Address, GameLaunchOptions
 
 
@@ -71,7 +72,8 @@ class LobbyConnection:
         geoip: GeoIpService,
         ladder_service: LadderService,
         party_service: PartyService,
-        oauth_service: OAuthService
+        rating_service: RatingService,
+        oauth_service: OAuthService,
     ):
         self._db = database
         self.geoip_service = geoip
@@ -81,6 +83,7 @@ class LobbyConnection:
         self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
         self.party_service = party_service
+        self.rating_service = rating_service
         self.oauth_service = oauth_service
         self._authenticated = False
         self.player = None  # type: Player
@@ -603,7 +606,8 @@ class LobbyConnection:
             login=username,
             session=self.session,
             player_id=player_id,
-            lobby_connection=self
+            lobby_connection=self,
+            leaderboards=self.rating_service.leaderboards
         )
 
         old_player = self.player_service.get_player(self.player.id)

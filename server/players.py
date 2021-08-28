@@ -2,15 +2,14 @@
 Player type definitions
 """
 
+from collections import defaultdict
 from contextlib import suppress
 from enum import Enum, unique
-from typing import Optional, Union
-
-from server.config import config
-from server.rating import PlayerRatings, RatingType, RatingTypeMap
+from typing import Dict, Optional, Union
 
 from .factions import Faction
 from .protocol import DisconnectedError
+from .rating import Leaderboard, PlayerRatings, RatingType
 from .weakattr import WeakAttribute
 
 
@@ -41,6 +40,7 @@ class Player:
         login: str = None,
         session: int = 0,
         player_id: int = 0,
+        leaderboards: Dict[str, Leaderboard] = {},
         ratings=None,
         clan=None,
         game_count=None,
@@ -54,13 +54,11 @@ class Player:
         # The player_id of the user in the `login` table of the database.
         self.session = session
 
-        self.ratings = PlayerRatings(
-            lambda: (config.START_RATING_MEAN, config.START_RATING_DEV)
-        )
+        self.ratings = PlayerRatings(leaderboards)
         if ratings is not None:
             self.ratings.update(ratings)
 
-        self.game_count = RatingTypeMap(int)
+        self.game_count = defaultdict(int)
         if game_count is not None:
             self.game_count.update(game_count)
 

@@ -110,10 +110,10 @@ insert into user_group_assignment(user_id, group_id) values (1, (SELECT id from 
 insert into user_group_assignment(user_id, group_id) values (2, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
 insert into user_group_assignment(user_id, group_id) values (20, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
 
-insert into leaderboard (id, technical_name, name_key, description_key) values
-  (1, "global", "leaderboard.global.name", "leaderboard.global.desc"),
-  (2, "ladder_1v1", "leaderboard.ladder_1v1.name", "leaderboard.ladder_1v1.desc"),
-  (3, "tmm_2v2", "leaderboard.tmm_2v2.name", "leaderboard.tmm_2v2.desc");
+insert into leaderboard (id, initializer_id, technical_name, name_key, description_key) values
+  (1, NULL, "global", "leaderboard.global.name", "leaderboard.global.desc"),
+  (2, NULL, "ladder_1v1", "leaderboard.ladder_1v1.name", "leaderboard.ladder_1v1.desc"),
+  (3, 1, "tmm_2v2", "leaderboard.tmm_2v2.name", "leaderboard.tmm_2v2.desc");
 
 
 insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderboard_id) values
