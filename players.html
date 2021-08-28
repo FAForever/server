@@ -31,15 +31,14 @@
 Player type definitions
 &#34;&#34;&#34;
 
+from collections import defaultdict
 from contextlib import suppress
 from enum import Enum, unique
-from typing import Optional, Union
-
-from server.config import config
-from server.rating import PlayerRatings, RatingType, RatingTypeMap
+from typing import Dict, Optional, Union
 
 from .factions import Faction
 from .protocol import DisconnectedError
+from .rating import Leaderboard, PlayerRatings, RatingType
 from .weakattr import WeakAttribute
 
 
@@ -70,6 +69,7 @@ class Player:
         login: str = None,
         session: int = 0,
         player_id: int = 0,
+        leaderboards: Dict[str, Leaderboard] = {},
         ratings=None,
         clan=None,
         game_count=None,
@@ -83,13 +83,11 @@ class Player:
         # The player_id of the user in the `login` table of the database.
         self.session = session
 
-        self.ratings = PlayerRatings(
-            lambda: (config.START_RATING_MEAN, config.START_RATING_DEV)
-        )
+        self.ratings = PlayerRatings(leaderboards)
         if ratings is not None:
             self.ratings.update(ratings)
 
-        self.game_count = RatingTypeMap(int)
+        self.game_count = defaultdict(int)
         if game_count is not None:
             self.game_count.update(game_count)
 
@@ -221,7 +219,7 @@ class Player:
 <dl>
 <dt id="server.players.Player"><code class="flex name class">
 <span>class <span class="ident">Player</span></span>
-<span>(</span><span>login: str = None, session: int = 0, player_id: int = 0, ratings=None, clan=None, game_count=None, lobby_connection: Optional[ForwardRef('LobbyConnection')] = None)</span>
+<span>(</span><span>login: str = None, session: int = 0, player_id: int = 0, leaderboards: Dict[str, <a title="server.rating.Leaderboard" href="rating.html#server.rating.Leaderboard">Leaderboard</a>] = {}, ratings=None, clan=None, game_count=None, lobby_connection: Optional[ForwardRef('LobbyConnection')] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Standard player object used for representing signed-in players.</p>
@@ -248,6 +246,7 @@ information about players.</p></div>
         login: str = None,
         session: int = 0,
         player_id: int = 0,
+        leaderboards: Dict[str, Leaderboard] = {},
         ratings=None,
         clan=None,
         game_count=None,
@@ -261,13 +260,11 @@ information about players.</p></div>
         # The player_id of the user in the `login` table of the database.
         self.session = session
 
-        self.ratings = PlayerRatings(
-            lambda: (config.START_RATING_MEAN, config.START_RATING_DEV)
-        )
+        self.ratings = PlayerRatings(leaderboards)
         if ratings is not None:
             self.ratings.update(ratings)
 
-        self.game_count = RatingTypeMap(int)
+        self.game_count = defaultdict(int)
         if game_count is not None:
             self.game_count.update(game_count)
 

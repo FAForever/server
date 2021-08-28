@@ -228,7 +228,8 @@ ladder1v1_rating = Table(
 leaderboard = Table(
     &#34;leaderboard&#34;, metadata,
     Column(&#34;id&#34;,                Integer, primary_key=True),
-    Column(&#34;technical_name&#34;,    String, nullable=False, unique=True),
+    Column(&#34;technical_name&#34;,    String,  nullable=False, unique=True),
+    Column(&#34;initializer_id&#34;,    Integer, ForeignKey(&#34;leaderboard.id&#34;)),
 )
 
 leaderboard_rating = Table(

@@ -85,6 +85,7 @@ from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, Protocol
 from .rating import InclusiveRange, RatingType
+from .rating_service import RatingService
 from .types import Address, GameLaunchOptions
 
 
@@ -100,7 +101,8 @@ class LobbyConnection:
         geoip: GeoIpService,
         ladder_service: LadderService,
         party_service: PartyService,
-        oauth_service: OAuthService
+        rating_service: RatingService,
+        oauth_service: OAuthService,
     ):
         self._db = database
         self.geoip_service = geoip
@@ -110,6 +112,7 @@ class LobbyConnection:
         self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
         self.party_service = party_service
+        self.rating_service = rating_service
         self.oauth_service = oauth_service
         self._authenticated = False
         self.player = None  # type: Player
@@ -632,7 +635,8 @@ class LobbyConnection:
             login=username,
             session=self.session,
             player_id=player_id,
-            lobby_connection=self
+            lobby_connection=self,
+            leaderboards=self.rating_service.leaderboards
         )
 
         old_player = self.player_service.get_player(self.player.id)
@@ -1289,7 +1293,7 @@ class LobbyConnection:
 <dl>
 <dt id="server.lobbyconnection.LobbyConnection"><code class="flex name class">
 <span>class <span class="ident">LobbyConnection</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>, players: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, nts_client: Optional[<a title="server.ice_servers.nts.TwilioNTS" href="ice_servers/nts.html#server.ice_servers.nts.TwilioNTS">TwilioNTS</a>], geoip: <a title="server.geoip_service.GeoIpService" href="geoip_service.html#server.geoip_service.GeoIpService">GeoIpService</a>, ladder_service: <a title="server.ladder_service.LadderService" href="ladder_service.html#server.ladder_service.LadderService">LadderService</a>, party_service: <a title="server.party_service.PartyService" href="party_service.html#server.party_service.PartyService">PartyService</a>, oauth_service: <a title="server.oauth_service.OAuthService" href="oauth_service.html#server.oauth_service.OAuthService">OAuthService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>, players: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, nts_client: Optional[<a title="server.ice_servers.nts.TwilioNTS" href="ice_servers/nts.html#server.ice_servers.nts.TwilioNTS">TwilioNTS</a>], geoip: <a title="server.geoip_service.GeoIpService" href="geoip_service.html#server.geoip_service.GeoIpService">GeoIpService</a>, ladder_service: <a title="server.ladder_service.LadderService" href="ladder_service.html#server.ladder_service.LadderService">LadderService</a>, party_service: <a title="server.party_service.PartyService" href="party_service.html#server.party_service.PartyService">PartyService</a>, rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>, oauth_service: <a title="server.oauth_service.OAuthService" href="oauth_service.html#server.oauth_service.OAuthService">OAuthService</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1308,7 +1312,8 @@ class LobbyConnection:
         geoip: GeoIpService,
         ladder_service: LadderService,
         party_service: PartyService,
-        oauth_service: OAuthService
+        rating_service: RatingService,
+        oauth_service: OAuthService,
     ):
         self._db = database
         self.geoip_service = geoip
@@ -1318,6 +1323,7 @@ class LobbyConnection:
         self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
         self.party_service = party_service
+        self.rating_service = rating_service
         self.oauth_service = oauth_service
         self._authenticated = False
         self.player = None  # type: Player
@@ -1840,7 +1846,8 @@ class LobbyConnection:
             login=username,
             session=self.session,
             player_id=player_id,
-            lobby_connection=self
+            lobby_connection=self,
+            leaderboards=self.rating_service.leaderboards
         )
 
         old_player = self.player_service.get_player(self.player.id)
@@ -3817,7 +3824,8 @@ async def command_kick_player_from_party(self, message):
         login=username,
         session=self.session,
         player_id=player_id,
-        lobby_connection=self
+        lobby_connection=self,
+        leaderboards=self.rating_service.leaderboards
     )
 
     old_player = self.player_service.get_player(self.player.id)

@@ -139,12 +139,15 @@ class MatchmakerQueue:
                 # match this round and will have higher priority next round.
 
                 self.game_service.mark_dirty(self)
+            except asyncio.CancelledError:
+                break
             except Exception:
                 self._logger.exception(
                     &#34;Unexpected error during queue pop timer loop!&#34;
                 )
                 # To avoid potential busy loops
                 await asyncio.sleep(1)
+        self._logger.info(&#34;%s queue stopped&#34;, self.name)
 
     async def search(self, search: Search) -&gt; None:
         &#34;&#34;&#34;
@@ -388,12 +391,15 @@ class MatchmakerQueue:
                 # match this round and will have higher priority next round.
 
                 self.game_service.mark_dirty(self)
+            except asyncio.CancelledError:
+                break
             except Exception:
                 self._logger.exception(
                     &#34;Unexpected error during queue pop timer loop!&#34;
                 )
                 # To avoid potential busy loops
                 await asyncio.sleep(1)
+        self._logger.info(&#34;%s queue stopped&#34;, self.name)
 
     async def search(self, search: Search) -&gt; None:
         &#34;&#34;&#34;
@@ -768,12 +774,15 @@ in the queue.</p></div>
             # match this round and will have higher priority next round.
 
             self.game_service.mark_dirty(self)
+        except asyncio.CancelledError:
+            break
         except Exception:
             self._logger.exception(
                 &#34;Unexpected error during queue pop timer loop!&#34;
             )
             # To avoid potential busy loops
-            await asyncio.sleep(1)</code></pre>
+            await asyncio.sleep(1)
+    self._logger.info(&#34;%s queue stopped&#34;, self.name)</code></pre>
 </details>
 </dd>
 <dt id="server.matchmaker.matchmaker_queue.MatchmakerQueue.search"><code class="name flex">

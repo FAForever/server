@@ -31,58 +31,128 @@
 Type definitions for player ratings
 &#34;&#34;&#34;
 
-from typing import DefaultDict, Optional, Tuple, TypeVar, Union
+from dataclasses import dataclass
+from typing import Dict, Optional, Set, Tuple, TypeVar, Union
 
-from trueskill import Rating
+import trueskill
 
+from server.config import config
+from server.weakattr import WeakAttribute
 
-# Values correspond to legacy table names. This will be fixed when db gets
-# migrated.
-class RatingType():
-    GLOBAL = &#34;global&#34;
-    LADDER_1V1 = &#34;ladder_1v1&#34;
-    TMM_2V2 = &#34;tmm_2v2&#34;
-
-
-K = Union[RatingType, str]
+Rating = Tuple[float, float]
 V = TypeVar(&#34;V&#34;)
 
 
-class RatingTypeMap(DefaultDict[K, V]):
-    &#34;&#34;&#34;
-    A thin wrapper around `defaultdict` which stores RatingType keys as strings.
-    &#34;&#34;&#34;
-    def __init__(self, default_factory, *args, **kwargs):
-        super().__init__(default_factory, *args, **kwargs)
+@dataclass(init=False)
+class Leaderboard():
+    id: int
+    technical_name: str
+    # Need the type annotation here so that the dataclass decorator sees it as
+    # a field and includes it in generated methods (such as __eq__)
+    initializer: WeakAttribute[&#34;Leaderboard&#34;] = WeakAttribute[&#34;Leaderboard&#34;]()
 
-        # Initialize defaults for enumerated rating types
-        for rating in (RatingType.GLOBAL, RatingType.LADDER_1V1):
-            self.__getitem__(rating)
+    def __init__(
+        self,
+        id: int,
+        technical_name: str,
+        initializer: Optional[&#34;Leaderboard&#34;] = None
+    ):
+        self.id = id
+        self.technical_name = technical_name
+        if initializer:
+            self.initializer = initializer
+
+    def __repr__(self) -&gt; str:
+        initializer = self.initializer
+        initializer_name = &#34;None&#34;
+        if initializer:
+            initializer_name = initializer.technical_name
+        return (
+            f&#34;{self.__class__.__name__}(&#34;
+            f&#34;id={self.id}, technical_name={self.technical_name}, &#34;
+            f&#34;initializer={initializer_name})&#34;
+        )
 
 
-# Only used to coerce rating type.
-class PlayerRatings(RatingTypeMap[Tuple[float, float]]):
-    def __setitem__(self, key: K, value: Tuple[float, float]) -&gt; None:
-        if isinstance(value, Rating):
-            val = (value.mu, value.sigma)
+# Some places have references to these ratings hardcoded.
+class RatingType():
+    GLOBAL = &#34;global&#34;
+    LADDER_1V1 = &#34;ladder_1v1&#34;
+
+
+class PlayerRatings(Dict[str, Rating]):
+    def __init__(self, leaderboards: Dict[str, Leaderboard], init: bool = True):
+        self.leaderboards = leaderboards
+        # Rating types which are present but should be recomputed.
+        self.transient: Set[str] = set()
+
+        # DEPRECATED: Initialize known rating types so the client can display them
+        if init:
+            _ = self[RatingType.GLOBAL]
+            _ = self[RatingType.LADDER_1V1]
+
+    def __setitem__(
+        self,
+        rating_type: str,
+        value: Union[Rating, trueskill.Rating],
+    ) -&gt; None:
+        if isinstance(value, trueskill.Rating):
+            rating = (value.mu, value.sigma)
         else:
-            val = value
-        super().__setitem__(key, val)
+            rating = value
 
-    def __getitem__(self, key: K) -&gt; Tuple[float, float]:
-        # TODO: Generalize for arbitrary ratings
-        # https://github.com/FAForever/server/issues/727
-        if key == RatingType.TMM_2V2 and key not in self:
-            mean, dev = self[RatingType.GLOBAL]
-            if dev &gt; 250:
-                tmm_2v2_rating = (mean, dev)
-            else:
-                tmm_2v2_rating = (mean, min(dev + 150, 250))
+        self.transient.discard(rating_type)
+        super().__setitem__(rating_type, rating)
 
-            self[key] = tmm_2v2_rating
-            return tmm_2v2_rating
-        else:
-            return super().__getitem__(key)
+    def __getitem__(
+        self,
+        rating_type: str,
+        history: Optional[Set[str]] = None,
+    ) -&gt; Rating:
+        history = history or set()
+        entry = self.get(rating_type)
+
+        if entry is None or rating_type in self.transient:
+            # Check for cycles
+            if rating_type in history:
+                return default_rating()
+
+            rating = self._get_initial_rating(rating_type, history=history)
+
+            self.transient.add(rating_type)
+            super().__setitem__(rating_type, rating)
+            return rating
+
+        return super().__getitem__(rating_type)
+
+    def _get_initial_rating(
+        self,
+        rating_type: str,
+        history: Set[str],
+    ) -&gt; Rating:
+        &#34;&#34;&#34;Create an initial rating when no rating exists yet.&#34;&#34;&#34;
+        leaderboard = self.leaderboards.get(rating_type)
+        if leaderboard is None or leaderboard.initializer is None:
+            return default_rating()
+
+        history.add(rating_type)
+        init_rating_type = leaderboard.initializer.technical_name
+        mean, dev = self.__getitem__(init_rating_type, history=history)
+
+        if dev &gt; 250 or init_rating_type in self.transient:
+            return (mean, dev)
+
+        return (mean, min(dev + 150, 250))
+
+    def update(self, other: Dict[str, Rating]):
+        self.transient -= set(other)
+        if isinstance(other, PlayerRatings):
+            self.transient |= other.transient
+        super().update(other)
+
+
+def default_rating() -&gt; Rating:
+    return (config.START_RATING_MEAN, config.START_RATING_DEV)
 
 
 class InclusiveRange():
@@ -120,6 +190,22 @@ class InclusiveRange():
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="server.rating.default_rating"><code class="name flex">
+<span>def <span class="ident">default_rating</span></span>(<span>) ‑> Tuple[float, float]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def default_rating() -&gt; Rating:
+    return (config.START_RATING_MEAN, config.START_RATING_DEV)</code></pre>
+</details>
+</dd>
+</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -170,46 +256,196 @@ assert 11 not in InclusiveRange(0, 10)</p></div>
         )</code></pre>
 </details>
 </dd>
-<dt id="server.rating.PlayerRatings"><code class="flex name class">
-<span>class <span class="ident">PlayerRatings</span></span>
-<span>(</span><span>default_factory, *args, **kwargs)</span>
+<dt id="server.rating.Leaderboard"><code class="flex name class">
+<span>class <span class="ident">Leaderboard</span></span>
+<span>(</span><span>id: int, technical_name: str, initializer: Optional[ForwardRef('<a title="server.rating.Leaderboard" href="#server.rating.Leaderboard">Leaderboard</a>')] = None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A thin wrapper around <code>defaultdict</code> which stores RatingType keys as strings.</p></div>
+<div class="desc"><p>Leaderboard(id: int, technical_name: str, initializer: Union[ForwardRef('Leaderboard'), NoneType] = None)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class PlayerRatings(RatingTypeMap[Tuple[float, float]]):
-    def __setitem__(self, key: K, value: Tuple[float, float]) -&gt; None:
-        if isinstance(value, Rating):
-            val = (value.mu, value.sigma)
-        else:
-            val = value
-        super().__setitem__(key, val)
+<pre><code class="python">class Leaderboard():
+    id: int
+    technical_name: str
+    # Need the type annotation here so that the dataclass decorator sees it as
+    # a field and includes it in generated methods (such as __eq__)
+    initializer: WeakAttribute[&#34;Leaderboard&#34;] = WeakAttribute[&#34;Leaderboard&#34;]()
 
-    def __getitem__(self, key: K) -&gt; Tuple[float, float]:
-        # TODO: Generalize for arbitrary ratings
-        # https://github.com/FAForever/server/issues/727
-        if key == RatingType.TMM_2V2 and key not in self:
-            mean, dev = self[RatingType.GLOBAL]
-            if dev &gt; 250:
-                tmm_2v2_rating = (mean, dev)
-            else:
-                tmm_2v2_rating = (mean, min(dev + 150, 250))
+    def __init__(
+        self,
+        id: int,
+        technical_name: str,
+        initializer: Optional[&#34;Leaderboard&#34;] = None
+    ):
+        self.id = id
+        self.technical_name = technical_name
+        if initializer:
+            self.initializer = initializer
 
-            self[key] = tmm_2v2_rating
-            return tmm_2v2_rating
+    def __repr__(self) -&gt; str:
+        initializer = self.initializer
+        initializer_name = &#34;None&#34;
+        if initializer:
+            initializer_name = initializer.technical_name
+        return (
+            f&#34;{self.__class__.__name__}(&#34;
+            f&#34;id={self.id}, technical_name={self.technical_name}, &#34;
+            f&#34;initializer={initializer_name})&#34;
+        )</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.rating.Leaderboard.id"><code class="name">var <span class="ident">id</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.rating.Leaderboard.technical_name"><code class="name">var <span class="ident">technical_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="server.rating.Leaderboard.initializer"><code class="name">var <span class="ident">initializer</span> : Optional[~T]</code></dt>
+<dd>
+<div class="desc"><p>Transparently allow an object attribute to reference another object via a
+weak reference.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def __get__(self, obj: object, objclass: type) -&gt; Optional[T]:
+    ref = obj.__dict__.get(self.name)
+    if ref:
+        return ref()
+    return None</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="server.rating.PlayerRatings"><code class="flex name class">
+<span>class <span class="ident">PlayerRatings</span></span>
+<span>(</span><span>leaderboards: Dict[str, <a title="server.rating.Leaderboard" href="#server.rating.Leaderboard">Leaderboard</a>], init: bool = True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>dict() -&gt; new empty dictionary
+dict(mapping) -&gt; new dictionary initialized from a mapping object's
+(key, value) pairs
+dict(iterable) -&gt; new dictionary initialized as if via:
+d = {}
+for k, v in iterable:
+d[k] = v
+dict(**kwargs) -&gt; new dictionary initialized with the name=value pairs
+in the keyword argument list.
+For example:
+dict(one=1, two=2)</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PlayerRatings(Dict[str, Rating]):
+    def __init__(self, leaderboards: Dict[str, Leaderboard], init: bool = True):
+        self.leaderboards = leaderboards
+        # Rating types which are present but should be recomputed.
+        self.transient: Set[str] = set()
+
+        # DEPRECATED: Initialize known rating types so the client can display them
+        if init:
+            _ = self[RatingType.GLOBAL]
+            _ = self[RatingType.LADDER_1V1]
+
+    def __setitem__(
+        self,
+        rating_type: str,
+        value: Union[Rating, trueskill.Rating],
+    ) -&gt; None:
+        if isinstance(value, trueskill.Rating):
+            rating = (value.mu, value.sigma)
         else:
-            return super().__getitem__(key)</code></pre>
+            rating = value
+
+        self.transient.discard(rating_type)
+        super().__setitem__(rating_type, rating)
+
+    def __getitem__(
+        self,
+        rating_type: str,
+        history: Optional[Set[str]] = None,
+    ) -&gt; Rating:
+        history = history or set()
+        entry = self.get(rating_type)
+
+        if entry is None or rating_type in self.transient:
+            # Check for cycles
+            if rating_type in history:
+                return default_rating()
+
+            rating = self._get_initial_rating(rating_type, history=history)
+
+            self.transient.add(rating_type)
+            super().__setitem__(rating_type, rating)
+            return rating
+
+        return super().__getitem__(rating_type)
+
+    def _get_initial_rating(
+        self,
+        rating_type: str,
+        history: Set[str],
+    ) -&gt; Rating:
+        &#34;&#34;&#34;Create an initial rating when no rating exists yet.&#34;&#34;&#34;
+        leaderboard = self.leaderboards.get(rating_type)
+        if leaderboard is None or leaderboard.initializer is None:
+            return default_rating()
+
+        history.add(rating_type)
+        init_rating_type = leaderboard.initializer.technical_name
+        mean, dev = self.__getitem__(init_rating_type, history=history)
+
+        if dev &gt; 250 or init_rating_type in self.transient:
+            return (mean, dev)
+
+        return (mean, min(dev + 150, 250))
+
+    def update(self, other: Dict[str, Rating]):
+        self.transient -= set(other)
+        if isinstance(other, PlayerRatings):
+            self.transient |= other.transient
+        super().update(other)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="server.rating.RatingTypeMap" href="#server.rating.RatingTypeMap">RatingTypeMap</a></li>
-<li>collections.defaultdict</li>
 <li>builtins.dict</li>
 <li>typing.Generic</li>
 </ul>
+<h3>Methods</h3>
+<dl>
+<dt id="server.rating.PlayerRatings.update"><code class="name flex">
+<span>def <span class="ident">update</span></span>(<span>self, other: Dict[str, Tuple[float, float]])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>D.update([E, ]**F) -&gt; None.
+Update D from dict/iterable E and F.
+If E is present and has a .keys() method, then does:
+for k in E: D[k] = E[k]
+If E is present and lacks a .keys() method, then does:
+for k, v in E: D[k] = v
+In either case, this is followed by: for k in F:
+D[k] = F[k]</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update(self, other: Dict[str, Rating]):
+    self.transient -= set(other)
+    if isinstance(other, PlayerRatings):
+        self.transient |= other.transient
+    super().update(other)</code></pre>
+</details>
+</dd>
+</dl>
 </dd>
 <dt id="server.rating.RatingType"><code class="flex name class">
 <span>class <span class="ident">RatingType</span></span>
@@ -222,8 +458,7 @@ assert 11 not in InclusiveRange(0, 10)</p></div>
 </summary>
 <pre><code class="python">class RatingType():
     GLOBAL = &#34;global&#34;
-    LADDER_1V1 = &#34;ladder_1v1&#34;
-    TMM_2V2 = &#34;tmm_2v2&#34;</code></pre>
+    LADDER_1V1 = &#34;ladder_1v1&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
@@ -235,43 +470,7 @@ assert 11 not in InclusiveRange(0, 10)</p></div>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="server.rating.RatingType.TMM_2V2"><code class="name">var <span class="ident">TMM_2V2</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
 </dl>
-</dd>
-<dt id="server.rating.RatingTypeMap"><code class="flex name class">
-<span>class <span class="ident">RatingTypeMap</span></span>
-<span>(</span><span>default_factory, *args, **kwargs)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>A thin wrapper around <code>defaultdict</code> which stores RatingType keys as strings.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class RatingTypeMap(DefaultDict[K, V]):
-    &#34;&#34;&#34;
-    A thin wrapper around `defaultdict` which stores RatingType keys as strings.
-    &#34;&#34;&#34;
-    def __init__(self, default_factory, *args, **kwargs):
-        super().__init__(default_factory, *args, **kwargs)
-
-        # Initialize defaults for enumerated rating types
-        for rating in (RatingType.GLOBAL, RatingType.LADDER_1V1):
-            self.__getitem__(rating)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>collections.defaultdict</li>
-<li>builtins.dict</li>
-<li>typing.Generic</li>
-</ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="server.rating.PlayerRatings" href="#server.rating.PlayerRatings">PlayerRatings</a></li>
-</ul>
 </dd>
 </dl>
 </section>
@@ -287,24 +486,36 @@ assert 11 not in InclusiveRange(0, 10)</p></div>
 <li><code><a title="server" href="index.html">server</a></code></li>
 </ul>
 </li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="server.rating.default_rating" href="#server.rating.default_rating">default_rating</a></code></li>
+</ul>
+</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
 <h4><code><a title="server.rating.InclusiveRange" href="#server.rating.InclusiveRange">InclusiveRange</a></code></h4>
 </li>
 <li>
+<h4><code><a title="server.rating.Leaderboard" href="#server.rating.Leaderboard">Leaderboard</a></code></h4>
+<ul class="">
+<li><code><a title="server.rating.Leaderboard.id" href="#server.rating.Leaderboard.id">id</a></code></li>
+<li><code><a title="server.rating.Leaderboard.initializer" href="#server.rating.Leaderboard.initializer">initializer</a></code></li>
+<li><code><a title="server.rating.Leaderboard.technical_name" href="#server.rating.Leaderboard.technical_name">technical_name</a></code></li>
+</ul>
+</li>
+<li>
 <h4><code><a title="server.rating.PlayerRatings" href="#server.rating.PlayerRatings">PlayerRatings</a></code></h4>
+<ul class="">
+<li><code><a title="server.rating.PlayerRatings.update" href="#server.rating.PlayerRatings.update">update</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="server.rating.RatingType" href="#server.rating.RatingType">RatingType</a></code></h4>
 <ul class="">
 <li><code><a title="server.rating.RatingType.GLOBAL" href="#server.rating.RatingType.GLOBAL">GLOBAL</a></code></li>
 <li><code><a title="server.rating.RatingType.LADDER_1V1" href="#server.rating.RatingType.LADDER_1V1">LADDER_1V1</a></code></li>
-<li><code><a title="server.rating.RatingType.TMM_2V2" href="#server.rating.RatingType.TMM_2V2">TMM_2V2</a></code></li>
 </ul>
-</li>
-<li>
-<h4><code><a title="server.rating.RatingTypeMap" href="#server.rating.RatingTypeMap">RatingTypeMap</a></code></h4>
 </li>
 </ul>
 </li>
