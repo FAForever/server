@@ -170,7 +170,7 @@ __all__ = (
             s.cancel()
 
     def __str__(self):
-        return &#34;CombinedSearch({})&#34;.format(&#34;,&#34;.join(str(s) for s in self.searches))
+        return f&#34;CombinedSearch({&#39;,&#39;.join(str(s) for s in self.searches)})&#34;
 
     def get_original_searches(self) -&gt; List[Search]:
         &#34;&#34;&#34;
