@@ -37,7 +37,7 @@ class ServerContext:
         self.protocol_class = protocol_class
 
     def __repr__(self):
-        return "ServerContext({})".format(self.name)
+        return f"ServerContext({self.name})"
 
     async def listen(self, host, port):
         self._logger.debug("%s: listen(%s, %s)", self.name, host, port)

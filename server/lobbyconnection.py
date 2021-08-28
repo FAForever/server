@@ -136,7 +136,7 @@ class LobbyConnection:
                 "pong",
             ):
                 metrics.unauth_messages.labels(cmd).inc()
-                await self.abort("Message invalid for unauthenticated connection: %s" % cmd)
+                await self.abort(f"Message invalid for unauthenticated connection: {cmd}")
                 return False
         return True
 
@@ -162,7 +162,7 @@ class LobbyConnection:
                 self._attempted_connectivity_test = True
                 raise ClientError("Your client version is no longer supported. Please update to the newest version: https://faforever.com")
 
-            handler = getattr(self, "command_{}".format(cmd))
+            handler = getattr(self, f"command_{cmd}")
             await handler(message)
 
         except AuthenticationError as ex:
@@ -189,7 +189,7 @@ class LobbyConnection:
                 await self.abort(ex.message)
         except (KeyError, ValueError) as ex:
             self._logger.exception(ex)
-            await self.abort("Garbage command: {}".format(message))
+            await self.abort(f"Garbage command: {message}")
         except ConnectionError as e:
             # Propagate connection errors to the ServerContext error handler.
             raise e
@@ -513,7 +513,7 @@ class LobbyConnection:
                         )
                     )
                 except pymysql.MySQLError as e:
-                    raise ClientError("Banning failed: {}".format(e))
+                    raise ClientError(f"Banning failed: {e}")
 
             return False
 
@@ -1062,7 +1062,7 @@ class LobbyConnection:
                                    ui=ui)
                         await self.send(out)
                     except:
-                        self._logger.error("Error handling table_mod row (uid: {})".format(uid), exc_info=True)
+                        self._logger.error(f"Error handling table_mod row (uid: {uid})", exc_info=True)
 
             elif type == "like":
                 canLike = True

@@ -62,7 +62,7 @@ async def test_initialization(game: Game):
 
 
 async def test_instance_logging(database, game_stats_service):
-    logger = logging.getLogger("{}.5".format(Game.__qualname__))
+    logger = logging.getLogger(f"{Game.__qualname__}.5")
     logger.debug = mock.Mock()
     mock_parent = mock.Mock()
     game = Game(5, database, mock_parent, game_stats_service)

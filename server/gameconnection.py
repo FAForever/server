@@ -600,7 +600,7 @@ class GameConnection(GpgNetServerProtocol):
             await self.abort()
 
     def __str__(self):
-        return "GameConnection({}, {})".format(self.player, self.game)
+        return f"GameConnection({self.player}, {self.game})"
 
 
 COMMAND_HANDLERS = {
