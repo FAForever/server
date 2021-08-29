@@ -48,10 +48,11 @@ async def test_load_from_database(ladder_service, queue_factory):
     for _ in range(3):
         await ladder_service.update_data()
 
-        assert len(ladder_service.queues) == 3
+        assert len(ladder_service.queues) == 4
 
         queue = ladder_service.queues["ladder1v1"]
         assert queue.name == "ladder1v1"
+        assert queue.get_game_options() == {}
         assert len(queue.map_pools) == 3
         assert list(queue.map_pools[1][0].maps.values()) == [
             Map(id=15, name="SCMP_015", path="maps/scmp_015.zip"),
@@ -82,6 +83,12 @@ async def test_load_from_database(ladder_service, queue_factory):
                 "type": "neroxis"
             }),
         ]
+
+        queue = ladder_service.queues["gameoptions"]
+        assert queue.get_game_options() == {
+            "Share": "ShareUntilDeath",
+            "UnitCap": 500
+        }
 
 
 @fast_forward(5)

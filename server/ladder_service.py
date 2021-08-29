@@ -74,6 +74,7 @@ class LadderService(Service):
                     featured_mod=info["mod"],
                     rating_type=info["rating_type"],
                     team_size=info["team_size"],
+                    params=info.get("params")
                 )
                 self.queues[name] = queue
                 queue.initialize()
@@ -162,6 +163,7 @@ class LadderService(Service):
                 matchmaker_queue.c.id,
                 matchmaker_queue.c.technical_name,
                 matchmaker_queue.c.team_size,
+                matchmaker_queue.c.params,
                 matchmaker_queue_map_pool.c.map_pool_id,
                 matchmaker_queue_map_pool.c.min_rating,
                 matchmaker_queue_map_pool.c.max_rating,
@@ -175,19 +177,34 @@ class LadderService(Service):
                 .join(leaderboard)
             ).where(matchmaker_queue.c.enabled == true())
         )
+        # So we don't log the same error multiple times when a queue has several
+        # map pools
+        errored = set()
         matchmaker_queues = defaultdict(lambda: defaultdict(list))
         async for row in result:
             name = row.technical_name
+            if name in errored:
+                continue
             info = matchmaker_queues[name]
-            info["id"] = row.id
-            info["mod"] = row.gamemod
-            info["rating_type"] = row.rating_type
-            info["team_size"] = row.team_size
-            info["map_pools"].append((
-                row.map_pool_id,
-                row.min_rating,
-                row.max_rating
-            ))
+            try:
+                info["id"] = row.id
+                info["mod"] = row.gamemod
+                info["rating_type"] = row.rating_type
+                info["team_size"] = row.team_size
+                info["params"] = row.params
+                info["map_pools"].append((
+                    row.map_pool_id,
+                    row.min_rating,
+                    row.max_rating
+                ))
+            except Exception:
+                self._logger.warning(
+                    "Unable to load queue '%s'!",
+                    name,
+                    exc_info=True
+                )
+                del matchmaker_queues[name]
+                errored.add(name)
         return matchmaker_queues
 
     def start_search(

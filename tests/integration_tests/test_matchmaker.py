@@ -409,6 +409,7 @@ async def test_command_matchmaker_info(lobby_server, mocker):
     await proto.send_message({"command": "matchmaker_info"})
     msg = await read_until_command(proto, "matchmaker_info")
     assert "queues" in msg
+    assert len(msg["queues"]) == 4
     for queue in msg["queues"]:
         assert "queue_name" in queue
         assert "team_size" in queue
