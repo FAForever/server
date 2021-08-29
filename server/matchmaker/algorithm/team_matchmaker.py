@@ -279,11 +279,14 @@ class TeamMatchMaker(Matchmaker):
                 newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS)
 
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
-        fairness = max((config.MAXIMUM_RATING_IMBALANCE - rating_disparity) / config.MAXIMUM_RATING_IMBALANCE, 0)
+        fairness = 1 - (rating_disparity / config.MAXIMUM_RATING_IMBALANCE)
         deviation = statistics.pstdev(ratings)
-        uniformity = max((config.MAXIMUM_RATING_DEVIATION - deviation) / config.MAXIMUM_RATING_DEVIATION, 0)
+        uniformity = 1 - (deviation / config.MAXIMUM_RATING_DEVIATION)
 
-        quality = fairness * uniformity + newbie_bonus + time_bonus
+        quality = fairness * uniformity
+        if fairness < 0 and uniformity < 0:
+            quality *= -1
+        quality += newbie_bonus + time_bonus
         self._logger.debug(
             "bonuses: %s rating disparity: %s -> fairness: %f deviation: %f -> uniformity: %f -> game quality: %f",
             newbie_bonus + time_bonus, rating_disparity, fairness, deviation, uniformity, quality)

@@ -216,7 +216,7 @@ def test_ignore_impossible_team_splits(player_factory):
 def test_game_quality(team_a, team_b):
     game = TeamMatchMaker().assign_game_quality((team_a, team_b))
 
-    assert 0.0 <= game.quality <= 1.0
+    assert game.quality <= 1.0
 
 
 @given(player=st_players())
@@ -235,7 +235,7 @@ def test_low_game_quality_for_high_rating_disparity(player_factory):
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
     game = TeamMatchMaker().assign_game_quality((team_a, team_b))
 
-    assert game.quality == 0.0
+    assert game.quality < 0.0
 
 
 def test_low_game_quality_for_unfair_teams(player_factory):
@@ -244,7 +244,7 @@ def test_low_game_quality_for_unfair_teams(player_factory):
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
     game = TeamMatchMaker().assign_game_quality((team_a, team_b))
 
-    assert game.quality == 0.0
+    assert game.quality < 0.0
 
 
 @given(st_searches_list(max_players=1, min_size=6, max_size=6))
