@@ -262,13 +262,14 @@ async def jwks_server(jwk_kid):
 
 
 @pytest.fixture
-async def tmp_user(database):
+def tmp_user(database):
     user_ids = defaultdict(lambda: 1)
     password_plain = "foo"
     password = hashlib.sha256(password_plain.encode()).hexdigest()
 
     async def make_user(name="TempUser"):
         user_id = user_ids[name]
+        user_ids[name] += 1
         login_name = f"{name}{user_id}"
         async with database.acquire() as conn:
             await conn.execute(login.insert().values(
@@ -276,7 +277,6 @@ async def tmp_user(database):
                 email=f"{login_name}@example.com",
                 password=password,
             ))
-        user_ids[name] += 1
         return login_name, password_plain
 
     return make_user

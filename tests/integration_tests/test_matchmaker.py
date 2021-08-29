@@ -45,14 +45,20 @@ async def test_game_launch_message(lobby_server):
 
 @fast_forward(70)
 async def test_game_launch_message_map_generator(lobby_server):
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server, queue_name="neroxis1v1")
+    proto1, proto2 = await queue_players_for_matchmaking(
+        lobby_server,
+        queue_name="neroxis1v1"
+    )
 
     msg1 = await read_until_command(proto1, "game_launch")
     await open_fa(proto1)
     msg2 = await read_until_command(proto2, "game_launch")
 
     assert msg1["mapname"] == msg2["mapname"]
-    assert re.match("neroxis_map_generator_0.0.0_[0-9a-z]{13}_aiea", msg1["mapname"])
+    assert re.match(
+        "neroxis_map_generator_0.0.0_[0-9a-z]{13}_aiea",
+        msg1["mapname"]
+    )
 
 
 @fast_forward(15)
