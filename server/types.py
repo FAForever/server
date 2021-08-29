@@ -4,7 +4,7 @@ General type definitions
 
 import base64
 import random
-from typing import NamedTuple, Optional
+from typing import Any, Dict, NamedTuple, Optional
 
 
 class Address(NamedTuple):
@@ -27,6 +27,7 @@ class GameLaunchOptions(NamedTuple):
     faction: Optional[int] = None
     expected_players: Optional[int] = None
     map_position: Optional[int] = None
+    game_options: Optional[Dict[str, Any]] = None
 
 
 class Map(NamedTuple):

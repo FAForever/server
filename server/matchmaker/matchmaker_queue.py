@@ -86,12 +86,7 @@ class MatchmakerQueue:
             return map_pool
 
     def get_game_options(self) -> Dict[str, Any]:
-        game_options = self.params.get("GameOptions")
-
-        if game_options is None:
-            return {}
-
-        return game_options
+        return self.params.get("GameOptions") or None
 
     def initialize(self):
         asyncio.create_task(self.queue_pop_timer())

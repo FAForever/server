@@ -121,6 +121,34 @@ async def queue_players_for_matchmaking(lobby_server, queue_name: str = "ladder1
     return proto1, proto2
 
 
+async def queue_temp_players_for_matchmaking(
+    lobby_server,
+    tmp_user,
+    num_players,
+    queue_name,
+):
+    """
+    Queue an arbitrary number of players for matchmaking in a particular queue
+    by setting up temp users.
+    """
+    users = await asyncio.gather(*[
+        tmp_user(queue_name)
+        for _ in range(num_players)
+    ])
+    protos = await asyncio.gather(*[
+        queue_player_for_matchmaking(user, lobby_server, queue_name)
+        for user in users
+    ])
+
+    # If the players did not match, this will fail due to a timeout error
+    await asyncio.gather(*[
+        read_until_command(proto, "match_found", timeout=30)
+        for proto in protos
+    ])
+
+    return protos
+
+
 async def get_player_ratings(proto, *names, rating_type="global"):
     """
     Wait for `player_info` messages until all player names have been found.

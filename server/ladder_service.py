@@ -446,6 +446,10 @@ class LadderService(Service):
                 game.set_player_option(player.id, "Army", slot)
                 game.set_player_option(player.id, "Color", slot)
 
+            game_options = queue.get_game_options()
+            if game_options:
+                game.gameOptions.update(game_options)
+
             mapname = re.match("maps/(.+).zip", map_path).group(1)
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
             # Really in the future, just send a better description
@@ -455,6 +459,7 @@ class LadderService(Service):
             options = GameLaunchOptions(
                 mapname=mapname,
                 expected_players=len(all_players),
+                game_options=game_options
             )
 
             def game_options(player: Player) -> GameLaunchOptions:

@@ -52,7 +52,7 @@ async def test_load_from_database(ladder_service, queue_factory):
 
         queue = ladder_service.queues["ladder1v1"]
         assert queue.name == "ladder1v1"
-        assert queue.get_game_options() == {}
+        assert queue.get_game_options() is None
         assert len(queue.map_pools) == 3
         assert list(queue.map_pools[1][0].maps.values()) == [
             Map(id=15, name="SCMP_015", path="maps/scmp_015.zip"),
@@ -152,6 +152,34 @@ async def test_start_game_1v1(
     assert isinstance(game, LadderGame)
     assert game.rating_type == queue.rating_type
     assert game.max_players == 2
+
+    LadderGame.wait_launched.assert_called_once()
+
+
+async def test_start_game_with_game_options(
+    ladder_service,
+    game_service,
+    monkeypatch,
+    player_factory
+):
+    queue = ladder_service.queues["gameoptions"]
+    p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
+    p2 = player_factory("Rhiza", player_id=2, lobby_connection_spec="auto")
+
+    monkeypatch.setattr(LadderGame, "wait_hosted", CoroutineMock())
+    monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
+    monkeypatch.setattr(LadderGame, "timeout_game", CoroutineMock())
+
+    # We're cheating a little bit here for simplicity of the test. The queue
+    # is actually set up to be 3v3 but `start_game` doesn't care.
+    await ladder_service.start_game([p1], [p2], queue)
+
+    game = game_service[game_service.game_id_counter]
+
+    assert game.rating_type == queue.rating_type
+    assert game.max_players == 2
+    assert game.gameOptions["Share"] == "ShareUntilDeath"
+    assert game.gameOptions["UnitCap"] == 500
 
     LadderGame.wait_launched.assert_called_once()
 
