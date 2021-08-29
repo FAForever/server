@@ -71,6 +71,9 @@ class Search:
 
         return False
 
+    def num_newbies(self) -> int:
+        return sum(self.is_newbie(player) for player in self.players)
+
     def has_top_player(self) -> bool:
         max_rating = max(map(lambda rating_tuple: rating_tuple[0], self.ratings))
         return max_rating >= config.TOP_PLAYER_MIN_RATING

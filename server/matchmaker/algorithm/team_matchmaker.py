@@ -75,7 +75,7 @@ class TeamMatchMaker(Matchmaker):
             try:
                 participants = self.pick_neighboring_players(searches, index, team_size)
                 match = self.make_teams(participants, team_size)
-                game = self.assign_game_quality(match)
+                game = self.assign_game_quality(match, team_size)
                 possible_games.append(game)
             except NotEnoughPlayersException:
                 self._logger.warning("Couldn't pick enough players for a full game. Skipping this game...")
@@ -266,17 +266,18 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug("used %s as best filler", [candidate])
         return candidate
 
-    def assign_game_quality(self, match: Match) -> GameCandidate:
+    def assign_game_quality(self, match: Match, team_size: int) -> GameCandidate:
         newbie_bonus = 0
         time_bonus = 0
         ratings = []
         for team in match:
             for search in team.get_original_searches():
                 ratings.append(search.average_rating)
-                search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * len(search.players)
-                time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS)
-                search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * search.has_newbie()
-                newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS)
+                # Time bonus accumulation for a game should not depend on team size or whether the participants are premade or not.
+                search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * len(search.players) / team_size
+                time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS * len(search.players) / team_size)
+                search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * search.num_newbies() / team_size
+                newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * search.num_newbies() / team_size)
 
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
         fairness = 1 - (rating_disparity / config.MAXIMUM_RATING_IMBALANCE)
