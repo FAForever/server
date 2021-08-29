@@ -113,7 +113,7 @@ def test_team_matchmaker_algorithm_2(player_factory):
 
 
 @pytest.mark.slow
-@settings(suppress_health_check=[HealthCheck.filter_too_much])
+@settings(suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
 @given(st_searches_list_with_player_size(min_size=2, max_players=4, max_size=8))
 def test_make_even_teams(searches_with_player_size):
     searches = searches_with_player_size[0]
