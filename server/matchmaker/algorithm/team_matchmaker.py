@@ -276,8 +276,9 @@ class TeamMatchMaker(Matchmaker):
                 # Time bonus accumulation for a game should not depend on team size or whether the participants are premade or not.
                 search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * len(search.players) / team_size
                 time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS * len(search.players) / team_size)
-                search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * search.num_newbies() / team_size
-                newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * search.num_newbies() / team_size)
+                num_newbies = search.num_newbies()
+                search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * num_newbies / team_size
+                newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * num_newbies / team_size)
 
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
         fairness = 1 - (rating_disparity / config.MAXIMUM_RATING_IMBALANCE)
