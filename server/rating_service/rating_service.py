@@ -117,15 +117,17 @@ class RatingService(Service):
                 self._logger.debug("Now rating request %s", summary)
 
                 try:
-                    await self._rate(summary)
+                    # Make sure we finish writing rating changes even if the
+                    # server is shutting down
+                    await asyncio.shield(self._rate(summary))
                 except GameRatingError:
                     self._logger.warning("Error rating game %s", summary)
                 except Exception:  # pragma: no cover
                     self._logger.exception("Failed rating request %s", summary)
                 else:
                     self._logger.debug("Done rating request.")
-
-                self._queue.task_done()
+                finally:
+                    self._queue.task_done()
                 rating_service_backlog.set(self._queue.qsize())
         except asyncio.CancelledError:
             pass
