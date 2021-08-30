@@ -33,4 +33,4 @@ async def exhaust_callbacks(loop):
     :param loop: event loop
     """
     while loop._ready:
-        await asyncio.sleep(0, loop=loop)
+        await asyncio.sleep(0)

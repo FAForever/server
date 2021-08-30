@@ -160,8 +160,8 @@ async def test_synchronizedmethod():
     b = Test()
     # Calls to different instances should not block eachother
     await asyncio.wait(
-        [a.sleep_for_1s() for _ in range(500)] +
-        [b.sleep_for_1s() for _ in range(500)],
+        [asyncio.create_task(a.sleep_for_1s()) for _ in range(500)] +
+        [asyncio.create_task(b.sleep_for_1s()) for _ in range(500)],
         timeout=502
     )
 
@@ -187,7 +187,7 @@ async def test_synchronizedmethod_attrname():
     b = Test()
     # Calls to different instances should not block eachother
     await asyncio.wait(
-        [a.sleep_for_1s() for _ in range(500)] +
-        [b.sleep_for_1s() for _ in range(500)],
+        [asyncio.create_task(a.sleep_for_1s()) for _ in range(500)] +
+        [asyncio.create_task(b.sleep_for_1s()) for _ in range(500)],
         timeout=502
     )
