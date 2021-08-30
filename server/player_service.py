@@ -105,7 +105,10 @@ class PlayerService(Service):
             result = await conn.execute(sql)
             row = result.fetchone()
             if not row:
-                self._logger.warning("Did not find data for player with id %i", player.id)
+                self._logger.warning(
+                    "Did not find data for player with id %i",
+                    player.id
+                )
                 return
 
             row = row._mapping

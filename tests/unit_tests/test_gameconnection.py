@@ -637,8 +637,8 @@ async def test_handle_action_OperationComplete_duplicate(
             game_stats.insert().values(
                 id=coop_game.id,
                 startTime=datetime.utcnow(),
-                gameName='Another test game',
-                gameType='0',
+                gameName="Another test game",
+                gameType="0",
                 gameMod=6,
                 host=1,
                 mapId=1,

@@ -44,8 +44,8 @@ class GameService(Service):
         message_queue_service: MessageQueueService
     ):
         self._db = database
-        self._dirty_games = set()
-        self._dirty_queues = set()
+        self._dirty_games: Set[Game] = set()
+        self._dirty_queues: Set[MatchmakerQueue] = set()
         self.player_service = player_service
         self.game_stats_service = game_stats_service
         self._rating_service = rating_service
@@ -55,8 +55,8 @@ class GameService(Service):
         # Populated below in really_update_static_ish_data.
         self.featured_mods = dict()
 
-        # A set of mod ids that are allowed in ranked games (everyone loves caching)
-        self.ranked_mods = set()
+        # A set of mod ids that are allowed in ranked games
+        self.ranked_mods: Set[str] = set()
 
         # The set of active games
         self._games: Dict[int, Game] = dict()
@@ -111,7 +111,7 @@ class GameService(Service):
             result = await conn.execute("SELECT uid FROM table_mod WHERE ranked = 1")
 
             # Turn resultset into a list of uids
-            self.ranked_mods = set(map(lambda x: x[0], result))
+            self.ranked_mods = {row.uid for row in result}
 
     def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
         if isinstance(obj, Game):

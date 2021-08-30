@@ -211,7 +211,7 @@ class LobbyConnection:
         raise ClientError("FAF no longer supports direct registration. Please use the website to register.", recoverable=True)
 
     async def command_coop_list(self, message):
-        """ Request for coop map list"""
+        """Request for coop map list"""
         async with self._db.acquire() as conn:
             result = await conn.stream(select([coop_map]))
 
@@ -407,16 +407,25 @@ class LobbyConnection:
 
         now = datetime.utcnow()
         if ban_reason is not None and now < ban_expiry:
-            self._logger.debug("Rejected login from banned user: %s, %s, %s",
-                               player_id, username, self.session)
+            self._logger.debug(
+                "Rejected login from banned user: %s, %s, %s",
+                player_id, username, self.session
+            )
             raise BanError(ban_expiry, ban_reason)
 
         # New accounts are prevented from playing if they didn't link to steam
 
         if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() > config.FORCE_STEAM_LINK_AFTER_DATE:
-            self._logger.debug("Rejected login from new user: %s, %s, %s", player_id, username, self.session)
+            self._logger.debug(
+                "Rejected login from new user: %s, %s, %s",
+                player_id, username, self.session
+            )
             raise ClientError(
-                'Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on <a href="{steamlink_url}">{steamlink_url}</a>.'.format(steamlink_url=config.WWW_URL + "/account/link"),
+                "Unfortunately, you must currently link your account to Steam "
+                "in order to play Forged Alliance Forever. You can do so on "
+                '<a href="{steamlink_url}">{steamlink_url}</a>.'.format(
+                    steamlink_url=config.WWW_URL + "/account/link"
+                ),
                 recoverable=False)
 
         return player_id, real_username, steamid
@@ -1253,6 +1262,8 @@ class LobbyConnection:
             ban_expiry = row.expires_at
             ban_reason = row.reason
             if now < ban_expiry:
-                self._logger.debug("Aborting connection of banned user: %s, %s, %s",
-                                   self.player.id, self.player.login, self.session)
+                self._logger.debug(
+                    "Aborting connection of banned user: %s, %s, %s",
+                    self.player.id, self.player.login, self.session
+                )
                 raise BanError(ban_expiry, ban_reason)
