@@ -19,6 +19,7 @@ DELETE FROM map_version_reviews_summary;
 DELETE FROM map_version;
 DELETE FROM `map`;
 DELETE FROM coop_map;
+DELETE FROM coop_leaderboard;
 DELETE FROM mod_version_review;
 DELETE FROM mod_version_reviews_summary;
 DELETE FROM mod_version;
