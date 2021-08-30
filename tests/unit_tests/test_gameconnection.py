@@ -4,10 +4,10 @@ from datetime import datetime
 from unittest import mock
 
 import asynctest
-import pymysql
 import pytest
 from asynctest import CoroutineMock, exhaust_callbacks
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from server import GameConnection
 from server.db.models import coop_leaderboard, game_stats
@@ -329,9 +329,12 @@ async def test_handle_action_GameMods_post_launch_updates_played_cache(
     await game_connection.handle_action("GameState", ["Launching"])
 
     async with database.acquire() as conn:
-        result = await conn.execute("select `played` from table_mod where uid=%s", ("EA040F8E-857A-4566-9879-0D37420A5B9D", ))
-        row = await result.fetchone()
-        assert 2 == row[0]
+        result = await conn.execute(
+            "select `played` from table_mod where uid=:uid",
+            {"uid": "EA040F8E-857A-4566-9879-0D37420A5B9D"}
+        )
+        row = result.fetchone()
+        assert row.played == 2
 
 
 async def test_handle_action_AIOption(
@@ -459,9 +462,12 @@ async def test_handle_action_TeamkillReport(
     await game_connection.handle_action("TeamkillReport", ["200", "2", "Dostya", "3", "Rhiza"])
 
     async with database.acquire() as conn:
-        result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=200",
-                                    game.id)
-        report = await result.fetchone()
+        result = await conn.execute(
+            "select game_id,id from moderation_report where reporter_id=2 and "
+            "game_id=:id and game_incident_timecode=200",
+            {"id": game.id}
+        )
+        report = result.fetchone()
         assert report is None
 
 
@@ -473,10 +479,13 @@ async def test_handle_action_TeamkillHappened(
     await game_connection.handle_action("TeamkillHappened", ["200", "2", "Dostya", "3", "Rhiza"])
 
     async with database.acquire() as conn:
-        result = await conn.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200",
-                                    game.id)
-        row = await result.fetchone()
-        assert game.id == row[0]
+        result = await conn.execute(
+            "select game_id from teamkills where victim=2 and teamkiller=3 and "
+            "game_id=:id and gametime=200",
+            {"id": game.id}
+        )
+        row = result.fetchone()
+        assert game.id == row.game_id
 
 
 async def test_handle_action_TeamkillHappened_AI(
@@ -541,8 +550,8 @@ async def test_handle_action_OperationComplete(
             ).where(coop_leaderboard.c.gameuid == coop_game.id),
         )
 
-        row = await result.fetchone()
-        assert (row[0], row[1]) == (1, coop_game.id)
+        row = result.fetchone()
+        assert (row.secondary, row.gameuid) == (1, coop_game.id)
 
 
 @pytest.mark.parametrize("primary", [0, False, "False", "false"])
@@ -564,7 +573,7 @@ async def test_handle_action_OperationComplete_primary_incomplete(
             ).where(coop_leaderboard.c.gameuid == coop_game.id),
         )
 
-        row = await result.fetchone()
+        row = result.fetchone()
         assert row is None
 
 
@@ -586,7 +595,7 @@ async def test_handle_action_OperationComplete_non_coop_game(
             ).where(coop_leaderboard.c.gameuid == ugame.id),
         )
 
-        row = await result.fetchone()
+        row = result.fetchone()
         assert row is None
 
 
@@ -609,7 +618,7 @@ async def test_handle_action_OperationComplete_invalid(
             ).where(coop_leaderboard.c.gameuid == coop_game.id),
         )
 
-        row = await result.fetchone()
+        row = result.fetchone()
         assert row is None
 
 
@@ -648,7 +657,7 @@ async def test_handle_action_OperationComplete_duplicate(
 
         assert not any(
             record.exc_info
-            and isinstance(record.exc_info[1], pymysql.err.IntegrityError)
+            and isinstance(record.exc_info[1], IntegrityError)
             for record in caplog.records
         )
 

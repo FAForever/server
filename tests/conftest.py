@@ -128,7 +128,7 @@ async def test_data(request):
     db = await global_database(request)
     with open("tests/data/test-data.sql") as f:
         async with db.acquire() as conn:
-            await conn.execute(f.read())
+            await conn.execute(f.read().replace(":", r"\:"))
 
     await db.close()
 
@@ -143,7 +143,7 @@ async def global_database(request):
         opt("--mysql_database"),
         opt("--mysql_port")
     )
-    db = FAFDatabase(asyncio.get_running_loop())
+    db = FAFDatabase()
 
     await db.connect(
         host=host,
@@ -170,7 +170,7 @@ def database_context():
             opt("--mysql_database"),
             opt("--mysql_port")
         )
-        db = MockDatabase(asyncio.get_running_loop())
+        db = MockDatabase()
 
         await db.connect(
             host=host,

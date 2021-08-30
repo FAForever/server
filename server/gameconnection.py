@@ -7,7 +7,7 @@ import contextlib
 import json
 from typing import Any, List
 
-from sqlalchemy import select, text
+from sqlalchemy import select
 
 from server.db import FAFDatabase
 
@@ -262,11 +262,12 @@ class GameConnection(GpgNetServerProtocol):
             uids = str(args).split()
             self.game.mods = {uid: "Unknown sim mod" for uid in uids}
             async with self._db.acquire() as conn:
-                result = await conn.execute(
-                    text("SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids"),
-                    ids=tuple(uids))
-                async for row in result:
-                    self.game.mods[row["uid"]] = row["name"]
+                rows = await conn.execute(
+                    "SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids",
+                    {"ids": tuple(uids)}
+                )
+                for row in rows:
+                    self.game.mods[row.uid] = row.name
         else:
             self._logger.warning("Ignoring game mod: %s, %s", mode, args)
             return
@@ -340,13 +341,13 @@ class GameConnection(GpgNetServerProtocol):
                     coop_map.c.filename == self.game.map_file_path
                 )
             )
-            row = await result.fetchone()
+            row = result.fetchone()
             if not row:
                 self._logger.debug(
                     "can't find coop map: %s", self.game.map_file_path
                 )
                 return
-            mission = row["id"]
+            mission = row.id
 
             # Each player in a co-op game will send the OperationComplete
             # message but we only need to perform this insert once
@@ -494,10 +495,12 @@ class GameConnection(GpgNetServerProtocol):
             if len(self.game.mods.keys()) > 0:
                 async with self._db.acquire() as conn:
                     uids = list(self.game.mods.keys())
-                    await conn.execute(text(
-                        """ UPDATE mod_stats s JOIN mod_version v ON v.mod_id = s.mod_id
-                            SET s.times_played = s.times_played + 1 WHERE v.uid in :ids"""),
-                        ids=tuple(uids)
+                    await conn.execute(
+                        "UPDATE mod_stats s JOIN mod_version v ON "
+                        "v.mod_id = s.mod_id "
+                        "SET s.times_played = s.times_played + 1 "
+                        "WHERE v.uid in :ids",
+                        {"ids": tuple(uids)}
                     )
         elif state == "Ended":
             await self.on_connection_lost()

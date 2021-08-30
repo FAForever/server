@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 import aiocron
 import pymysql
-from sqlalchemy import and_, bindparam, func, or_, select
+from sqlalchemy import and_, bindparam, func, select
 
 from server.config import config
 from server.core import Service
@@ -79,7 +79,7 @@ class RatingService(Service):
                 )
             )
             result = await conn.execute(sql)
-            rows = await result.fetchall()
+            rows = result.fetchall()
 
             self.leaderboards.clear()
             self._rating_type_ids = {}
@@ -288,11 +288,9 @@ class RatingService(Service):
             leaderboard.c.technical_name,
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation
-        ]).join(leaderboard).where(or_(*[
-            leaderboard_rating.c.login_id == player_id
-            for player_id in player_ids
-        ]))
-        # TODO: Use leaderboard_rating.c.login_id.in_(player_ids) instead
+        ]).join(leaderboard).where(
+            leaderboard_rating.c.login_id.in_(player_ids)
+        )
         result = await conn.execute(sql)
 
         player_ratings = {
@@ -300,7 +298,7 @@ class RatingService(Service):
             for player_id in player_ids
         }
 
-        async for row in result:
+        for row in result:
             player_id, rating_type = row.login_id, row.technical_name
             player_ratings[player_id][rating_type] = (row.mean, row.deviation)
 

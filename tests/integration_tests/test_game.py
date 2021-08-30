@@ -602,7 +602,7 @@ async def test_ladder_game_draw_bug(lobby_server, database):
                 game_player_stats.c.gameId == game_id
             )
         )
-        async for row in result:
+        for row in result:
             assert row.result == GameOutcome.DEFEAT
             assert row.score == 0
 

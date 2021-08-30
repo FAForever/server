@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from enum import Enum
 from typing import Dict, FrozenSet, Iterator, List, NamedTuple, Optional, Set
 
+from server.db.typedefs import GameOutcome
 from server.decorators import with_logger
 
 
@@ -47,13 +48,6 @@ class ArmyResult(NamedTuple):
     army: Optional[int]
     army_outcome: str
     metadata: List[str]
-
-
-class GameOutcome(Enum):
-    VICTORY = "VICTORY"
-    DEFEAT = "DEFEAT"
-    DRAW = "DRAW"
-    UNKNOWN = "UNKNOWN"
 
 
 class GameResultReport(NamedTuple):
@@ -227,19 +221,18 @@ class GameResultReports(Mapping):
     async def from_db(cls, database, game_id):
         results = cls(game_id)
         async with database.acquire() as conn:
-            rows = await conn.execute(
+            result = await conn.execute(
                 "SELECT `place`, `score`, `result` "
                 "FROM `game_player_stats` "
-                "WHERE `gameId`=%s",
-                (game_id,),
+                "WHERE `gameId`=:id",
+                {"id": game_id},
             )
 
-            async for row in rows:
-                startspot, score = row[0], row[1]
+            for row in result:
                 # FIXME: Assertion about startspot == army
                 with contextlib.suppress(ValueError):
-                    outcome = ArmyReportedOutcome(row[2])
-                    result = GameResultReport(0, startspot, outcome, score)
+                    outcome = ArmyReportedOutcome(row.result)
+                    result = GameResultReport(0, row.place, outcome, row.score)
                     results.add(result)
         return results
 
@@ -313,3 +306,15 @@ def resolve_game(team_outcomes: List[Set[ArmyOutcome]]) -> List[GameOutcome]:
 
     # Otherwise everyone is DEFEAT, we return a draw
     return [GameOutcome.DRAW, GameOutcome.DRAW]
+
+
+__all__ = (
+    "ArmyOutcome",
+    "ArmyReportedOutcome",
+    "ArmyResult",
+    "GameOutcome",
+    "GameResolutionError",
+    "GameResultReport",
+    "GameResultReports",
+    "resolve_game"
+)

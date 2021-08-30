@@ -506,9 +506,9 @@ async def test_send_game_list(mocker, database, lobbyconnection, game_stats_serv
 async def test_coop_list(mocker, lobbyconnection):
     await lobbyconnection.command_coop_list({})
 
-    args = lobbyconnection.protocol.send_messages.call_args_list
-    assert len(args) == 1
-    coop_maps = args[0][0][0]
+    args = lobbyconnection.protocol.write_message.call_args_list
+    assert len(args) == 5
+    coop_maps = [arg[0][0] for arg in args]
     for info in coop_maps:
         del info["uid"]
     assert coop_maps == [
@@ -636,8 +636,8 @@ async def test_command_avatar_select(mocker, database, lobbyconnection: LobbyCon
 
     async with database.acquire() as conn:
         result = await conn.execute("SELECT selected from avatars where idUser=2")
-        row = await result.fetchone()
-        assert row[0] == 1
+        row = result.fetchone()
+        assert row.selected == 1
 
 
 async def get_friends(player_id, database):
@@ -651,7 +651,7 @@ async def get_friends(player_id, database):
             )
         )
 
-        return [row["subject_id"] async for row in result]
+        return [row["subject_id"] for row in result]
 
 
 async def test_command_social_add_friend(lobbyconnection, database):
@@ -1063,7 +1063,7 @@ async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server
         result = await conn.execute(select([ban.c.reason]).where(
             ban.c.player_id == player_id
         ))
-        rows = await result.fetchall()
+        rows = result.fetchall()
         assert rows is not None
         assert rows[-1][ban.c.reason] == "Auto-banned because of fraudulent login attempt"
 

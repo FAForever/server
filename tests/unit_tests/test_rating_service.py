@@ -174,7 +174,7 @@ async def get_all_ratings(db: FAFDatabase, player_id: int):
 
     async with db.acquire() as conn:
         result = await conn.execute(rating_sql)
-        rows = await result.fetchall()
+        rows = result.fetchall()
 
     return rows
 
@@ -257,8 +257,8 @@ async def test_rating_persistence(semiinitialized_service):
                 game_player_stats.c.playerId == player_id,
             )
         )
-        results = await conn.execute(sql)
-        gps_row = await results.fetchone()
+        result = await conn.execute(sql)
+        gps_row = result.fetchone()
 
         sql = select([leaderboard_rating.c.mean]).where(
             and_(
@@ -266,15 +266,15 @@ async def test_rating_persistence(semiinitialized_service):
                 leaderboard_rating.c.leaderboard_id == rating_type_id,
             )
         )
-        results = await conn.execute(sql)
-        rating_row = await results.fetchone()
+        result = await conn.execute(sql)
+        rating_row = result.fetchone()
 
         sql = select([leaderboard_rating_journal.c.rating_mean_after]).where(
             leaderboard_rating_journal.c.game_player_stats_id
             == gps_row[game_player_stats.c.id]
         )
-        results = await conn.execute(sql)
-        journal_row = await results.fetchone()
+        result = await conn.execute(sql)
+        journal_row = result.fetchone()
 
     assert gps_row[game_player_stats.c.after_mean] == after_mean
     assert rating_row[leaderboard_rating.c.mean] == after_mean
