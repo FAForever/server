@@ -261,9 +261,13 @@ def test_game_quality_time_bonus(s):
 
     num_newbies = team_a.num_newbies() + team_b.num_newbies()
 
-    # player number / team size * time bonus
-    assert quality_before + 6 / 3 * config.TIME_BONUS + num_newbies / 3 * config.NEWBIE_TIME_BONUS \
-           == pytest.approx(quality_after)
+    assert (
+        quality_before
+        # player number / team size * time bonus
+        + 6 / 3 * config.TIME_BONUS
+        + num_newbies / 3 * config.NEWBIE_TIME_BONUS
+        == pytest.approx(quality_after)
+    )
 
 
 @given(st_searches_list(max_players=1, min_size=6, max_size=6))
@@ -282,11 +286,11 @@ def test_game_quality_max_time_bonus(s):
     num_newbies = team_a.num_newbies() + team_b.num_newbies()
 
     assert (
-            quality_before
-            # player number / team size * time bonus
-            + 6 / 3 * config.MAXIMUM_TIME_BONUS
-            + num_newbies / 3 * config.MAXIMUM_NEWBIE_TIME_BONUS
-            == pytest.approx(quality_after)
+        quality_before
+        # player number / team size * time bonus
+        + 6 / 3 * config.MAXIMUM_TIME_BONUS
+        + num_newbies / 3 * config.MAXIMUM_NEWBIE_TIME_BONUS
+        == pytest.approx(quality_after)
     )
 
 

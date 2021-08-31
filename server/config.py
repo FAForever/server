@@ -89,7 +89,7 @@ class ConfigurationStore:
         # Difference of cumulated rating of the teams
         self.MAXIMUM_RATING_IMBALANCE = 500
         # stdev of the ratings of all participating players
-        self.MAXIMUM_RATING_DEVIATION = 900
+        self.MAXIMUM_RATING_DEVIATION = 750
         # Quality bonus for each failed matching attempt per full team
         self.TIME_BONUS = 0.02
         self.MAXIMUM_TIME_BONUS = 0.4
