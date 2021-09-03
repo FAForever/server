@@ -116,14 +116,14 @@ class ConfigurationStore:
         # Values for the custom (i.e. not trueskill) game quality metric used by the matchmaker
         self.MINIMUM_GAME_QUALITY = 0.4
         # Difference of cumulated rating of the teams
-        self.MAXIMUM_RATING_IMBALANCE = 400
+        self.MAXIMUM_RATING_IMBALANCE = 500
         # stdev of the ratings of all participating players
         self.MAXIMUM_RATING_DEVIATION = 750
-        # Quality bonus for each failed matching attempt per player
-        self.TIME_BONUS = 0.01
-        self.MAXIMUM_TIME_BONUS = 0.2
-        self.NEWBIE_TIME_BONUS = 0.1
-        self.MAXIMUM_NEWBIE_TIME_BONUS = 0.4
+        # Quality bonus for each failed matching attempt per full team
+        self.TIME_BONUS = 0.02
+        self.MAXIMUM_TIME_BONUS = 0.4
+        self.NEWBIE_TIME_BONUS = 0.2
+        self.MAXIMUM_NEWBIE_TIME_BONUS = 1.6
 
         self.TWILIO_ACCOUNT_SID = &#34;&#34;
         self.TWILIO_TOKEN = &#34;&#34;
@@ -304,14 +304,14 @@ config.register_callback(&#34;LOG_LEVEL&#34;, set_log_level)</code></pre>
         # Values for the custom (i.e. not trueskill) game quality metric used by the matchmaker
         self.MINIMUM_GAME_QUALITY = 0.4
         # Difference of cumulated rating of the teams
-        self.MAXIMUM_RATING_IMBALANCE = 400
+        self.MAXIMUM_RATING_IMBALANCE = 500
         # stdev of the ratings of all participating players
         self.MAXIMUM_RATING_DEVIATION = 750
-        # Quality bonus for each failed matching attempt per player
-        self.TIME_BONUS = 0.01
-        self.MAXIMUM_TIME_BONUS = 0.2
-        self.NEWBIE_TIME_BONUS = 0.1
-        self.MAXIMUM_NEWBIE_TIME_BONUS = 0.4
+        # Quality bonus for each failed matching attempt per full team
+        self.TIME_BONUS = 0.02
+        self.MAXIMUM_TIME_BONUS = 0.4
+        self.NEWBIE_TIME_BONUS = 0.2
+        self.MAXIMUM_NEWBIE_TIME_BONUS = 1.6
 
         self.TWILIO_ACCOUNT_SID = &#34;&#34;
         self.TWILIO_TOKEN = &#34;&#34;

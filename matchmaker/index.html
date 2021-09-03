@@ -1242,6 +1242,9 @@ on the current rate of ladder queues</p></div>
 
         return False
 
+    def num_newbies(self) -&gt; int:
+        return sum(self.is_newbie(player) for player in self.players)
+
     def has_top_player(self) -&gt; bool:
         max_rating = max(map(lambda rating_tuple: rating_tuple[0], self.ratings))
         return max_rating &gt;= config.TOP_PLAYER_MIN_RATING
@@ -1799,6 +1802,19 @@ to both wishes.</p></div>
     return self._match_quality_acceptable(other, quality)</code></pre>
 </details>
 </dd>
+<dt id="server.matchmaker.Search.num_newbies"><code class="name flex">
+<span>def <span class="ident">num_newbies</span></span>(<span>self) ‑> int</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def num_newbies(self) -&gt; int:
+    return sum(self.is_newbie(player) for player in self.players)</code></pre>
+</details>
+</dd>
 <dt id="server.matchmaker.Search.quality_with"><code class="name flex">
 <span>def <span class="ident">quality_with</span></span>(<span>self, other: <a title="server.matchmaker.Search" href="#server.matchmaker.Search">Search</a>) ‑> float</span>
 </code></dt>
@@ -1932,6 +1948,7 @@ and increase internal counter by one.</p></div>
 <li><code><a title="server.matchmaker.Search.match" href="#server.matchmaker.Search.match">match</a></code></li>
 <li><code><a title="server.matchmaker.Search.match_threshold" href="#server.matchmaker.Search.match_threshold">match_threshold</a></code></li>
 <li><code><a title="server.matchmaker.Search.matches_with" href="#server.matchmaker.Search.matches_with">matches_with</a></code></li>
+<li><code><a title="server.matchmaker.Search.num_newbies" href="#server.matchmaker.Search.num_newbies">num_newbies</a></code></li>
 <li><code><a title="server.matchmaker.Search.quality_with" href="#server.matchmaker.Search.quality_with">quality_with</a></code></li>
 <li><code><a title="server.matchmaker.Search.ratings" href="#server.matchmaker.Search.ratings">ratings</a></code></li>
 <li><code><a title="server.matchmaker.Search.raw_ratings" href="#server.matchmaker.Search.raw_ratings">raw_ratings</a></code></li>
