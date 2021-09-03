@@ -466,11 +466,18 @@ class LadderService(Service):
                     if guest.lobby_connection is not None
                 ])
             await game.wait_launched(60 + 10 * len(all_guests))
-            self._logger.debug("Ladder game launched successfully")
-        except Exception:
+            self._logger.debug("Ladder game launched successfully %s", game)
+        except Exception as e:
+            if isinstance(e, asyncio.TimeoutError):
+                self._logger.info(
+                    "Ladder game failed to start! %s setup timed out",
+                    game
+                )
+            else:
+                self._logger.exception("Ladder game failed to start %s", game)
+
             if game:
                 await game.on_game_end()
-            self._logger.exception("Failed to start ladder game!")
 
             msg = {"command": "match_cancelled"}
             for player in all_players:
