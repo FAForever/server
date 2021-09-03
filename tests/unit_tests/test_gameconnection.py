@@ -27,8 +27,7 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.fixture
 def real_game(event_loop, database, game_service, game_stats_service):
-    game = Game(42, database, game_service, game_stats_service)
-    yield game
+    return Game(42, database, game_service, game_stats_service)
 
 
 def assert_message_sent(game_connection: GameConnection, command, args):
@@ -318,7 +317,10 @@ async def test_handle_action_GameMods_post_launch_updates_played_cache(
         assert 2 == row[0]
 
 
-async def test_handle_action_AIOption(game: Game, game_connection: GameConnection):
+async def test_handle_action_AIOption(
+    game: Game,
+    game_connection: GameConnection
+):
     await game_connection.handle_action("AIOption", ["QAI", "StartSpot", 1])
     game.set_ai_option.assert_called_once_with("QAI", "StartSpot", 1)
 
@@ -333,7 +335,10 @@ async def test_handle_action_AIOption_not_host(
     game.set_ai_option.assert_not_called()
 
 
-async def test_handle_action_ClearSlot(game: Game, game_connection: GameConnection):
+async def test_handle_action_ClearSlot(
+    game: Game,
+    game_connection: GameConnection
+):
     await game_connection.handle_action("ClearSlot", [1])
     game.clear_slot.assert_called_once_with(1)
     await game_connection.handle_action("ClearSlot", ["1"])
@@ -350,14 +355,21 @@ async def test_handle_action_ClearSlot_not_host(
     game.clear_slot.assert_not_called()
 
 
-async def test_handle_action_GameResult_calls_add_result(game: Game, game_connection: GameConnection):
+async def test_handle_action_GameResult_calls_add_result(
+    game: Game,
+    game_connection: GameConnection
+):
     game_connection.connect_to_host = CoroutineMock()
 
     await game_connection.handle_action("GameResult", [0, "score -5"])
     game.add_result.assert_called_once_with(game_connection.player.id, 0, "score", -5, frozenset())
 
 
-async def test_cannot_parse_game_results(game: Game, game_connection: GameConnection, caplog):
+async def test_cannot_parse_game_results(
+    game: Game,
+    game_connection: GameConnection,
+    caplog
+):
     game_connection.connect_to_host = CoroutineMock()
 
     with caplog.at_level(logging.WARNING):
@@ -366,7 +378,10 @@ async def test_cannot_parse_game_results(game: Game, game_connection: GameConnec
         assert 'Invalid result' in caplog.records[0].message
 
 
-async def test_handle_action_GameOption(game: Game, game_connection: GameConnection):
+async def test_handle_action_GameOption(
+    game: Game,
+    game_connection: GameConnection
+):
     game.gameOptions = {"AIReplacement": "Off"}
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
     assert game.gameOptions["Victory"] == Victory.SANDBOX
@@ -394,18 +409,30 @@ async def test_handle_action_GameOption_not_host(
     assert game.gameOptions == {"Victory": "asdf"}
 
 
-async def test_json_stats(game_connection: GameConnection, game_stats_service, players, game):
+async def test_json_stats(
+    real_game: Game,
+    game_connection: GameConnection,
+    game_stats_service
+):
     game_stats_service.process_game_stats = mock.Mock()
     await game_connection.handle_action("JsonStats", ['{"stats": {}}'])
     game.report_army_stats.assert_called_once_with('{"stats": {}}')
 
 
 async def test_handle_action_EnforceRating(game: Game, game_connection: GameConnection):
+async def test_handle_action_EnforceRating(
+    game: Game,
+    game_connection: GameConnection
+):
     await game_connection.handle_action("EnforceRating", [])
     assert game.enforce_rating is True
 
 
-async def test_handle_action_TeamkillReport(game: Game, game_connection: GameConnection, database):
+async def test_handle_action_TeamkillReport(
+    game: Game,
+    game_connection: GameConnection,
+    database
+):
     game.launch = CoroutineMock()
     await game_connection.handle_action("TeamkillReport", ["200", "2", "Dostya", "3", "Rhiza"])
 
@@ -416,7 +443,10 @@ async def test_handle_action_TeamkillReport(game: Game, game_connection: GameCon
         assert report is None
 
 
-async def test_handle_action_TeamkillHappened(game: Game, game_connection: GameConnection, database):
+async def test_handle_action_TeamkillHappened(
+    game: Game,
+    game_connection: GameConnection, database
+):
     game.launch = CoroutineMock()
     await game_connection.handle_action("TeamkillHappened", ["200", "2", "Dostya", "3", "Rhiza"])
 
@@ -427,7 +457,11 @@ async def test_handle_action_TeamkillHappened(game: Game, game_connection: GameC
         assert game.id == row[0]
 
 
-async def test_handle_action_TeamkillHappened_AI(game: Game, game_connection: GameConnection, database):
+async def test_handle_action_TeamkillHappened_AI(
+    game: Game,
+    game_connection: GameConnection,
+    database
+):
     # Should fail with a sql constraint error if this isn't handled correctly
     game_connection.abort = CoroutineMock()
     await game_connection.handle_action("TeamkillHappened", ["200", 0, "Dostya", "0", "Rhiza"])
