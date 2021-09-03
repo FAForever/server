@@ -412,14 +412,19 @@ async def test_handle_action_GameOption_not_host(
 async def test_json_stats(
     real_game: Game,
     game_connection: GameConnection,
-    game_stats_service
 ):
-    game_stats_service.process_game_stats = mock.Mock()
+    game_connection.game = real_game
     await game_connection.handle_action("JsonStats", ['{"stats": {}}'])
-    game.report_army_stats.assert_called_once_with('{"stats": {}}')
 
 
-async def test_handle_action_EnforceRating(game: Game, game_connection: GameConnection):
+async def test_json_stats_malformed(
+    real_game: Game,
+    game_connection: GameConnection,
+):
+    game_connection.game = real_game
+    await game_connection.handle_action("JsonStats", ['{"stats": {}'])
+
+
 async def test_handle_action_EnforceRating(
     game: Game,
     game_connection: GameConnection

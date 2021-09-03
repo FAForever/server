@@ -4,6 +4,7 @@ Game communication over GpgNet
 
 import asyncio
 import contextlib
+import json
 from typing import Any, List
 
 from sqlalchemy import select, text
@@ -362,7 +363,14 @@ class GameConnection(GpgNetServerProtocol):
                 self.game.leaderboard_saved = True
 
     async def handle_json_stats(self, stats: str):
-        self.game.report_army_stats(stats)
+        try:
+            self.game.report_army_stats(stats)
+        except json.JSONDecodeError:
+            self._logger.warning(
+                "Malformed game stats reported by %s: '...%s'",
+                self._player.login,
+                stats[-20:]
+            )
 
     async def handle_enforce_rating(self):
         self.game.enforce_rating = True
