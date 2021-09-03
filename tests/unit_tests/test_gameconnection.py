@@ -242,10 +242,26 @@ async def test_handle_action_GameState_launching_calls_launch(
     game_connection.player = players.hosting
     game_connection.game = game
     game.launch = CoroutineMock()
+    game.state = GameState.LOBBY
 
     await game_connection.handle_action("GameState", ["Launching"])
 
     game.launch.assert_any_call()
+
+
+async def test_handle_action_GameState_launching_when_ended(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
+    game_connection.player = players.hosting
+    game_connection.game = game
+    game.launch = CoroutineMock()
+    game.state = GameState.ENDED
+
+    await game_connection.handle_action("GameState", ["Launching"])
+
+    game.launch.assert_not_called()
 
 
 async def test_handle_action_GameState_ended_calls_on_connection_lost(
@@ -306,6 +322,7 @@ async def test_handle_action_GameMods_post_launch_updates_played_cache(
     database
 ):
     game.launch = CoroutineMock()
+    game.state = GameState.LOBBY
     game.remove_game_connection = CoroutineMock()
 
     await game_connection.handle_action("GameMods", ["uids", "foo bar EA040F8E-857A-4566-9879-0D37420A5B9D"])

@@ -479,11 +479,15 @@ class GameConnection(GpgNetServerProtocol):
             if self.player.state != PlayerState.HOSTING:
                 return
 
-            self._logger.info(
-                "Launching game %s in state %s",
-                self.game,
-                self.game.state
-            )
+            if self.game.state is not GameState.LOBBY:
+                self._logger.warning(
+                    "Trying to launch game %s in invalid state %s",
+                    self.game,
+                    self.game.state
+                )
+                return
+
+            self._logger.info("Launching game %s", self.game)
 
             await self.game.launch()
 
