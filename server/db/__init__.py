@@ -57,7 +57,8 @@ async def deadlock_retry_execute(conn, *args, max_attempts=3):
         try:
             return await conn.execute(*args)
         except OperationalError as e:
-            if any(msg in e.message for msg in (
+            error_text = str(e)
+            if any(msg in error_text for msg in (
                 "Deadlock found",
                 "Lock wait timeout exceeded"
             )):
