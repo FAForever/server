@@ -1,11 +1,12 @@
 import base64
 import json
 import struct
+from asyncio import IncompleteReadError
 from typing import Tuple
 
 from server.decorators import with_logger
 
-from .protocol import Protocol, json_encoder
+from .protocol import DisconnectedError, Protocol, json_encoder
 
 
 @with_logger
@@ -87,9 +88,14 @@ class QDataStreamProtocol(Protocol):
         # Errors
         Raises `IncompleteReadError` on malformed stream.
         """
-        (block_length, ) = struct.unpack("!I", (await self.reader.readexactly(4)))
-        block = await self.reader.readexactly(block_length)
-        # FIXME: New protocol will remove the need for this
+        try:
+            length, *_ = struct.unpack("!I", await self.reader.readexactly(4))
+            block = await self.reader.readexactly(length)
+        except IncompleteReadError as e:
+            if self.reader.at_eof() and not e.partial:
+                raise DisconnectedError()
+            # Otherwise reraise
+            raise
 
         pos, action = self.read_qstring(block)
         if action in ("PING", "PONG"):
