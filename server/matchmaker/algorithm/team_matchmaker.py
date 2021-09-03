@@ -75,7 +75,7 @@ class TeamMatchMaker(Matchmaker):
             try:
                 participants = self.pick_neighboring_players(searches, index, team_size)
                 match = self.make_teams(participants, team_size)
-                game = self.assign_game_quality(match)
+                game = self.assign_game_quality(match, team_size)
                 possible_games.append(game)
             except NotEnoughPlayersException:
                 self._logger.warning("Couldn't pick enough players for a full game. Skipping this game...")
@@ -266,24 +266,29 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug("used %s as best filler", [candidate])
         return candidate
 
-    def assign_game_quality(self, match: Match) -> GameCandidate:
+    def assign_game_quality(self, match: Match, team_size: int) -> GameCandidate:
         newbie_bonus = 0
         time_bonus = 0
         ratings = []
         for team in match:
             for search in team.get_original_searches():
                 ratings.append(search.average_rating)
-                search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * len(search.players)
-                time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS)
-                search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * search.has_newbie()
-                newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS)
+                # Time bonus accumulation for a game should not depend on team size or whether the participants are premade or not.
+                search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * len(search.players) / team_size
+                time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS * len(search.players) / team_size)
+                num_newbies = search.num_newbies()
+                search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * num_newbies / team_size
+                newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * num_newbies / team_size)
 
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
-        fairness = max((config.MAXIMUM_RATING_IMBALANCE - rating_disparity) / config.MAXIMUM_RATING_IMBALANCE, 0)
+        fairness = 1 - (rating_disparity / config.MAXIMUM_RATING_IMBALANCE)
         deviation = statistics.pstdev(ratings)
-        uniformity = max((config.MAXIMUM_RATING_DEVIATION - deviation) / config.MAXIMUM_RATING_DEVIATION, 0)
+        uniformity = 1 - (deviation / config.MAXIMUM_RATING_DEVIATION)
 
-        quality = fairness * uniformity + newbie_bonus + time_bonus
+        quality = fairness * uniformity
+        if fairness < 0 and uniformity < 0:
+            quality *= -1
+        quality += newbie_bonus + time_bonus
         self._logger.debug(
             "bonuses: %s rating disparity: %s -> fairness: %f deviation: %f -> uniformity: %f -> game quality: %f",
             newbie_bonus + time_bonus, rating_disparity, fairness, deviation, uniformity, quality)

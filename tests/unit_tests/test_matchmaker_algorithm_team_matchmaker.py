@@ -86,7 +86,7 @@ def test_team_matchmaker_algorithm(player_factory):
     assert set(matches[1][1].get_original_searches()) == {c2, s[0], s[3]}
     assert set(unmatched) == {s[7]}
     for match in matches:
-        assert matchmaker.assign_game_quality(match).quality > config.MINIMUM_GAME_QUALITY
+        assert matchmaker.assign_game_quality(match, 4).quality > config.MINIMUM_GAME_QUALITY
 
 
 def test_team_matchmaker_algorithm_2(player_factory):
@@ -109,11 +109,11 @@ def test_team_matchmaker_algorithm_2(player_factory):
     assert set(matches[0][1].get_original_searches()) == {c2, c3}
     assert set(unmatched) == {s[0], s[1], s[2], s[3], s[5], s[6], s[7], c1}
     for match in matches:
-        assert matchmaker.assign_game_quality(match).quality > config.MINIMUM_GAME_QUALITY
+        assert matchmaker.assign_game_quality(match, 4).quality > config.MINIMUM_GAME_QUALITY
 
 
 @pytest.mark.slow
-@settings(suppress_health_check=[HealthCheck.filter_too_much])
+@settings(suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow])
 @given(st_searches_list_with_player_size(min_size=2, max_players=4, max_size=8))
 def test_make_even_teams(searches_with_player_size):
     searches = searches_with_player_size[0]
@@ -214,9 +214,9 @@ def test_ignore_impossible_team_splits(player_factory):
 
 @given(team_a=st_searches(4), team_b=st_searches(4))
 def test_game_quality(team_a, team_b):
-    game = TeamMatchMaker().assign_game_quality((team_a, team_b))
+    game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4)
 
-    assert 0.0 <= game.quality <= 1.0
+    assert game.quality <= 1.0
 
 
 @given(player=st_players())
@@ -224,7 +224,7 @@ def test_maximum_game_quality_for_even_teams(player):
     search = Search([player])
     team_a = CombinedSearch(*[search] * 4)
     team_b = CombinedSearch(*[search] * 4)
-    game = TeamMatchMaker().assign_game_quality((team_a, team_b))
+    game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4)
 
     assert game.quality == 1.0
 
@@ -233,18 +233,18 @@ def test_low_game_quality_for_high_rating_disparity(player_factory):
     s = make_searches([100, 100, 4000, 4000, 4000, 4000, 100, 100], player_factory)
     team_a = CombinedSearch(*[s[0], s[1], s[2], s[3]])
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
-    game = TeamMatchMaker().assign_game_quality((team_a, team_b))
+    game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4)
 
-    assert game.quality == 0.0
+    assert game.quality < 0.0
 
 
 def test_low_game_quality_for_unfair_teams(player_factory):
     s = make_searches([100, 100, 100, 100, 4000, 4000, 4000, 4000], player_factory)
     team_a = CombinedSearch(*[s[0], s[1], s[2], s[3]])
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
-    game = TeamMatchMaker().assign_game_quality((team_a, team_b))
+    game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4)
 
-    assert game.quality == 0.0
+    assert game.quality < 0.0
 
 
 @given(st_searches_list(max_players=1, min_size=6, max_size=6))
@@ -253,16 +253,45 @@ def test_game_quality_time_bonus(s):
     team_a = CombinedSearch(*[s.pop(), s.pop(), s.pop()])
     c1 = CombinedSearch(*[s.pop(), s.pop()])
     team_b = CombinedSearch(*[c1, s.pop()])
-    quality_before = matchmaker.assign_game_quality((team_a, team_b)).quality
+    quality_before = matchmaker.assign_game_quality((team_a, team_b), 3).quality
 
     team_a.register_failed_matching_attempt()
     team_b.register_failed_matching_attempt()
-    quality_after = matchmaker.assign_game_quality((team_a, team_b)).quality
+    quality_after = matchmaker.assign_game_quality((team_a, team_b), 3).quality
 
-    num_newbies = sum(search.has_newbie() for search in team_a.get_original_searches())
-    num_newbies += sum(search.has_newbie() for search in team_b.get_original_searches())
+    num_newbies = team_a.num_newbies() + team_b.num_newbies()
 
-    assert quality_before + 6 * config.TIME_BONUS + num_newbies * config.NEWBIE_TIME_BONUS == pytest.approx(quality_after)
+    assert (
+        quality_before
+        # player number / team size * time bonus
+        + 6 / 3 * config.TIME_BONUS
+        + num_newbies / 3 * config.NEWBIE_TIME_BONUS
+        == pytest.approx(quality_after)
+    )
+
+
+@given(st_searches_list(max_players=1, min_size=6, max_size=6))
+def test_game_quality_max_time_bonus(s):
+    matchmaker = TeamMatchMaker()
+    team_a = CombinedSearch(*[s.pop(), s.pop(), s.pop()])
+    c1 = CombinedSearch(*[s.pop(), s.pop()])
+    team_b = CombinedSearch(*[c1, s.pop()])
+    quality_before = matchmaker.assign_game_quality((team_a, team_b), 3).quality
+
+    for _ in range(30):
+        team_a.register_failed_matching_attempt()
+        team_b.register_failed_matching_attempt()
+    quality_after = matchmaker.assign_game_quality((team_a, team_b), 3).quality
+
+    num_newbies = team_a.num_newbies() + team_b.num_newbies()
+
+    assert (
+        quality_before
+        # player number / team size * time bonus
+        + 6 / 3 * config.MAXIMUM_TIME_BONUS
+        + num_newbies / 3 * config.MAXIMUM_NEWBIE_TIME_BONUS
+        == pytest.approx(quality_after)
+    )
 
 
 @pytest.mark.slow
