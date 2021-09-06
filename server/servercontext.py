@@ -11,7 +11,7 @@ import server.metrics as metrics
 from .core import Service
 from .decorators import with_logger
 from .lobbyconnection import LobbyConnection
-from .protocol import Protocol, QDataStreamProtocol
+from .protocol import DisconnectedError, Protocol, QDataStreamProtocol
 from .types import Address
 
 
@@ -96,11 +96,13 @@ class ServerContext:
                 message = await protocol.read_message()
                 with metrics.connection_on_message_received.time():
                     await connection.on_message_received(message)
-        except (ConnectionError, TimeoutError, asyncio.CancelledError):
+        except (
+            ConnectionError,
+            DisconnectedError,
+            TimeoutError,
+            asyncio.CancelledError,
+        ):
             pass
-        except asyncio.IncompleteReadError as ex:
-            if not stream_reader.at_eof():
-                self._logger.exception(ex)
         except Exception as ex:
             self._logger.exception(ex)
         finally:

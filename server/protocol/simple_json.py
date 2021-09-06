@@ -1,6 +1,6 @@
 import json
 
-from .protocol import Protocol, json_encoder
+from .protocol import DisconnectedError, Protocol, json_encoder
 
 
 class SimpleJsonProtocol(Protocol):
@@ -10,4 +10,6 @@ class SimpleJsonProtocol(Protocol):
 
     async def read_message(self) -> dict:
         line = await self.reader.readline()
+        if not line:
+            raise DisconnectedError()
         return json.loads(line.strip())
