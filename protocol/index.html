@@ -831,9 +831,14 @@ incoming messages from other players.</p>
         # Errors
         Raises `IncompleteReadError` on malformed stream.
         &#34;&#34;&#34;
-        (block_length, ) = struct.unpack(&#34;!I&#34;, (await self.reader.readexactly(4)))
-        block = await self.reader.readexactly(block_length)
-        # FIXME: New protocol will remove the need for this
+        try:
+            length, *_ = struct.unpack(&#34;!I&#34;, await self.reader.readexactly(4))
+            block = await self.reader.readexactly(length)
+        except IncompleteReadError as e:
+            if self.reader.at_eof() and not e.partial:
+                raise DisconnectedError()
+            # Otherwise reraise
+            raise
 
         pos, action = self.read_qstring(block)
         if action in (&#34;PING&#34;, &#34;PONG&#34;):
@@ -1012,9 +1017,14 @@ def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
     # Errors
     Raises `IncompleteReadError` on malformed stream.
     &#34;&#34;&#34;
-    (block_length, ) = struct.unpack(&#34;!I&#34;, (await self.reader.readexactly(4)))
-    block = await self.reader.readexactly(block_length)
-    # FIXME: New protocol will remove the need for this
+    try:
+        length, *_ = struct.unpack(&#34;!I&#34;, await self.reader.readexactly(4))
+        block = await self.reader.readexactly(length)
+    except IncompleteReadError as e:
+        if self.reader.at_eof() and not e.partial:
+            raise DisconnectedError()
+        # Otherwise reraise
+        raise
 
     pos, action = self.read_qstring(block)
     if action in (&#34;PING&#34;, &#34;PONG&#34;):
@@ -1071,6 +1081,8 @@ def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
 
     async def read_message(self) -&gt; dict:
         line = await self.reader.readline()
+        if not line:
+            raise DisconnectedError()
         return json.loads(line.strip())</code></pre>
 </details>
 <h3>Ancestors</h3>

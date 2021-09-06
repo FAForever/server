@@ -28,7 +28,7 @@
 </summary>
 <pre><code class="python">import json
 
-from .protocol import Protocol, json_encoder
+from .protocol import DisconnectedError, Protocol, json_encoder
 
 
 class SimpleJsonProtocol(Protocol):
@@ -38,6 +38,8 @@ class SimpleJsonProtocol(Protocol):
 
     async def read_message(self) -&gt; dict:
         line = await self.reader.readline()
+        if not line:
+            raise DisconnectedError()
         return json.loads(line.strip())</code></pre>
 </details>
 </section>
@@ -67,6 +69,8 @@ class SimpleJsonProtocol(Protocol):
 
     async def read_message(self) -&gt; dict:
         line = await self.reader.readline()
+        if not line:
+            raise DisconnectedError()
         return json.loads(line.strip())</code></pre>
 </details>
 <h3>Ancestors</h3>

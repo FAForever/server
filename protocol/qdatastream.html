@@ -29,11 +29,12 @@
 <pre><code class="python">import base64
 import json
 import struct
+from asyncio import IncompleteReadError
 from typing import Tuple
 
 from server.decorators import with_logger
 
-from .protocol import Protocol, json_encoder
+from .protocol import DisconnectedError, Protocol, json_encoder
 
 
 @with_logger
@@ -115,9 +116,14 @@ class QDataStreamProtocol(Protocol):
         # Errors
         Raises `IncompleteReadError` on malformed stream.
         &#34;&#34;&#34;
-        (block_length, ) = struct.unpack(&#34;!I&#34;, (await self.reader.readexactly(4)))
-        block = await self.reader.readexactly(block_length)
-        # FIXME: New protocol will remove the need for this
+        try:
+            length, *_ = struct.unpack(&#34;!I&#34;, await self.reader.readexactly(4))
+            block = await self.reader.readexactly(length)
+        except IncompleteReadError as e:
+            if self.reader.at_eof() and not e.partial:
+                raise DisconnectedError()
+            # Otherwise reraise
+            raise
 
         pos, action = self.read_qstring(block)
         if action in (&#34;PING&#34;, &#34;PONG&#34;):
@@ -240,9 +246,14 @@ PONG_MSG = QDataStreamProtocol.pack_message(&#34;PONG&#34;)</code></pre>
         # Errors
         Raises `IncompleteReadError` on malformed stream.
         &#34;&#34;&#34;
-        (block_length, ) = struct.unpack(&#34;!I&#34;, (await self.reader.readexactly(4)))
-        block = await self.reader.readexactly(block_length)
-        # FIXME: New protocol will remove the need for this
+        try:
+            length, *_ = struct.unpack(&#34;!I&#34;, await self.reader.readexactly(4))
+            block = await self.reader.readexactly(length)
+        except IncompleteReadError as e:
+            if self.reader.at_eof() and not e.partial:
+                raise DisconnectedError()
+            # Otherwise reraise
+            raise
 
         pos, action = self.read_qstring(block)
         if action in (&#34;PING&#34;, &#34;PONG&#34;):
@@ -421,9 +432,14 @@ def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
     # Errors
     Raises `IncompleteReadError` on malformed stream.
     &#34;&#34;&#34;
-    (block_length, ) = struct.unpack(&#34;!I&#34;, (await self.reader.readexactly(4)))
-    block = await self.reader.readexactly(block_length)
-    # FIXME: New protocol will remove the need for this
+    try:
+        length, *_ = struct.unpack(&#34;!I&#34;, await self.reader.readexactly(4))
+        block = await self.reader.readexactly(length)
+    except IncompleteReadError as e:
+        if self.reader.at_eof() and not e.partial:
+            raise DisconnectedError()
+        # Otherwise reraise
+        raise
 
     pos, action = self.read_qstring(block)
     if action in (&#34;PING&#34;, &#34;PONG&#34;):
