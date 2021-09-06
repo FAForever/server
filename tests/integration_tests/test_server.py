@@ -341,7 +341,7 @@ async def test_drain(
     assert "Graceful shutdown period ended! 1 games are still live!" in caplog.messages
 
 
-@fast_forward(5)
+@fast_forward(15)
 async def test_player_info_broadcast(lobby_server):
     p1 = await connect_client(lobby_server)
     p2 = await connect_client(lobby_server)
@@ -350,8 +350,17 @@ async def test_player_info_broadcast(lobby_server):
     await perform_login(p2, ("Rhiza", "puff_the_magic_dragon"))
 
     await read_until(
-        p2, lambda m: "player_info" in m.values()
+        p2, lambda m: m["command"] == "player_info"
         and any(map(lambda d: d["login"] == "test", m["players"]))
+    )
+
+    await p1.close()
+    await read_until(
+        p2, lambda m: m["command"] == "player_info"
+        and any(map(
+            lambda d: d["login"] == "test" and d["state"] == "offline",
+            m["players"]
+        ))
     )
 
 

@@ -62,6 +62,7 @@ async def test_server_valid_login(lobby_server):
         "login": "Rhiza",
         "clan": "123",
         "country": "",
+        "state": "idle",
         "ratings": {
             "global": {
                 "rating": [1650.0, 62.52],
@@ -107,6 +108,7 @@ async def test_server_valid_login_admin(lobby_server):
         "login": "test",
         "clan": "678",
         "country": "",
+        "state": "idle",
         "ratings": {
             "global": {
                 "rating": [2000.0, 125.0],
@@ -151,6 +153,7 @@ async def test_server_valid_login_moderator(lobby_server):
         "id": 20,
         "login": "moderator",
         "country": "",
+        "state": "idle",
         "ratings": {
             "global": {
                 "rating": [1500, 500],
@@ -249,6 +252,7 @@ async def test_server_valid_login_with_token(lobby_server, jwk_priv_key, jwk_kid
         "login": "Rhiza",
         "clan": "123",
         "country": "",
+        "state": "idle",
         "ratings": {
             "global": {
                 "rating": [1650.0, 62.52],

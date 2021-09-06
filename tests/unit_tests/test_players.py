@@ -5,7 +5,7 @@ import pytest
 from trueskill import Rating
 
 from server.factions import Faction
-from server.players import Player
+from server.players import Player, PlayerState
 from server.protocol import DisconnectedError
 from server.rating import Leaderboard, RatingType
 
@@ -91,6 +91,7 @@ def test_serialize():
         "id": 42,
         "login": "Something",
         "clan": "TOAST",
+        "state": "offline",
         "ratings": {
             "global": {
                 "rating": (1234, 68),
@@ -105,6 +106,16 @@ def test_serialize():
         "ladder_rating": (1500, 230),
         "number_of_games": 542,
     }
+
+
+def test_serialize_state():
+    conn = mock.Mock()
+    p = Player(lobby_connection=conn)
+    assert p.to_dict()["state"] == "idle"
+
+    for state in PlayerState:
+        p.state = state
+        assert p.to_dict()["state"] == state.value
 
 
 async def test_send_message():

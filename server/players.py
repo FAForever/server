@@ -15,12 +15,12 @@ from .weakattr import WeakAttribute
 
 @unique
 class PlayerState(Enum):
-    IDLE = 1
-    PLAYING = 2
-    HOSTING = 3
-    JOINING = 4
-    SEARCHING_LADDER = 5
-    STARTING_AUTOMATCH = 6
+    IDLE = "idle"
+    PLAYING = "playing"
+    HOSTING = "hosting"
+    JOINING = "joining"
+    SEARCHING_LADDER = "searching"
+    STARTING_AUTOMATCH = "matching"
 
 
 class Player:
@@ -130,37 +130,30 @@ class Player:
         with suppress(DisconnectedError):
             self.lobby_connection.write(message)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """
         Return a dictionary representing this player object
         """
-
-        def filter_none(t):
-            _, v = t
-            return v is not None
-
-        return dict(
-            filter(
-                filter_none, (
-                    ("id", self.id),
-                    ("login", self.login),
-                    ("avatar", self.avatar),
-                    ("country", self.country),
-                    ("clan", self.clan),
-                    ("ratings", {
-                        rating_type: {
-                            "rating": self.ratings[rating_type],
-                            "number_of_games": self.game_count[rating_type]
-                        }
-                        for rating_type in self.ratings
-                    }),
-                    # Deprecated
-                    ("global_rating", self.ratings[RatingType.GLOBAL]),
-                    ("ladder_rating", self.ratings[RatingType.LADDER_1V1]),
-                    ("number_of_games", self.game_count[RatingType.GLOBAL]),
-                )
-            )
-        )
+        cmd = {
+            "id": self.id,
+            "login": self.login,
+            "avatar": self.avatar,
+            "country": self.country,
+            "clan": self.clan,
+            "state": self.state.value if self.lobby_connection else "offline",
+            "ratings": {
+                rating_type: {
+                    "rating": self.ratings[rating_type],
+                    "number_of_games": self.game_count[rating_type]
+                }
+                for rating_type in self.ratings
+            },
+            # DEPRECATED: Use ratings instead
+            "global_rating": self.ratings[RatingType.GLOBAL],
+            "ladder_rating": self.ratings[RatingType.LADDER_1V1],
+            "number_of_games": self.game_count[RatingType.GLOBAL],
+        }
+        return {k: v for k, v in cmd.items() if v is not None}
 
     def __str__(self) -> str:
         return (f"Player({self.login}, {self.id}, "

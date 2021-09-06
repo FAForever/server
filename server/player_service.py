@@ -148,8 +148,11 @@ class PlayerService(Service):
 
     def remove_player(self, player: Player):
         if player.id in self._players:
+            # This signals that the player is now disconnected
+            del player.lobby_connection
             del self._players[player.id]
             metrics.players_online.set(len(self._players))
+            self.mark_dirty(player)
 
     async def has_permission_role(self, player: Player, role_name: str) -> bool:
         async with self._db.acquire() as conn:
