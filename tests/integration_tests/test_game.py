@@ -679,6 +679,63 @@ async def test_gamestate_ended_clears_references(
     assert rhiza.lobby_connection.game_connection is None
 
 
+@fast_forward(30)
+async def test_gamestate_ended_modifies_player_list(lobby_server):
+    test_id, _, test_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    rhiza_id, _, rhiza_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(test_proto, "game_info")
+    await read_until_command(rhiza_proto, "game_info")
+
+    # Set up the game
+    game_id = await host_game(test_proto)
+    await join_game(rhiza_proto, game_id)
+    # Set player options
+    await send_player_options(
+        test_proto,
+        [test_id, "Army", 1],
+        [test_id, "Team", 1],
+        [test_id, "StartSpot", 1],
+        [test_id, "Faction", 1],
+        [test_id, "Color", 1],
+        [rhiza_id, "Army", 2],
+        [rhiza_id, "Team", 1],
+        [rhiza_id, "StartSpot", 2],
+        [rhiza_id, "Faction", 1],
+        [rhiza_id, "Color", 1],
+    )
+
+    teams = {"1": ["test", "Rhiza"]}
+    await read_until_command(test_proto, "game_info", teams=teams)
+    await read_until_command(rhiza_proto, "game_info", teams=teams)
+
+    # Launch game, trggers another game_info message
+    await test_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Launching"]
+    })
+
+    msg1 = await read_until_command(test_proto, "game_info")
+    msg2 = await read_until_command(rhiza_proto, "game_info")
+    assert msg1["teams"] == msg2["teams"] == {"1": ["test", "Rhiza"]}
+
+    # One player leaves
+    await test_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Ended"]
+    })
+
+    # game_info shows only the connected player
+    msg1 = await read_until_command(test_proto, "game_info")
+    msg2 = await read_until_command(rhiza_proto, "game_info")
+    assert msg1["teams"] == msg2["teams"] == {"1": ["Rhiza"]}
+
+
 @pytest.mark.rabbitmq
 @fast_forward(30)
 async def test_galactic_war_1v1_game_ended_broadcasts_army_results(

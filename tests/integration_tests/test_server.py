@@ -268,7 +268,7 @@ async def test_game_info_not_broadcast_out_of_rating_range(lobby_server, limit):
 @fast_forward(10)
 async def test_game_info_broadcast_to_players_in_lobby(lobby_server):
     # test is the friend of friends
-    _, _, proto1 = await connect_and_sign_in(
+    friends_id, _, proto1 = await connect_and_sign_in(
         ("friends", "friends"), lobby_server
     )
     test_id, _, proto2 = await connect_and_sign_in(
@@ -285,12 +285,17 @@ async def test_game_info_broadcast_to_players_in_lobby(lobby_server):
     })
 
     # The host and his friend should see the game
-    await read_until_command(proto1, "game_info")
-    await read_until_command(proto2, "game_info")
-    await open_fa(proto1)
+    await read_until_command(proto1, "game_info", teams={})
+    await read_until_command(proto2, "game_info", teams={})
     # The host joins which changes the lobby state
-    msg = await read_until_command(proto1, "game_info")
-    msg2 = await read_until_command(proto2, "game_info")
+    await open_fa(proto1)
+    await send_player_options(
+        proto1,
+        [friends_id, "Army", 1],
+        [friends_id, "Team", 1],
+    )
+    msg = await read_until_command(proto1, "game_info", teams={"1": ["friends"]})
+    msg2 = await read_until_command(proto2, "game_info", teams={"1": ["friends"]})
 
     assert msg == msg2
     assert msg["featured_mod"] == "faf"
@@ -301,11 +306,11 @@ async def test_game_info_broadcast_to_players_in_lobby(lobby_server):
     game_id = msg["uid"]
     await join_game(proto2, game_id)
 
-    await read_until_command(proto1, "game_info")
-    await read_until_command(proto2, "game_info")
-    await send_player_options(proto1, [test_id, "Army", 1])
-    await read_until_command(proto1, "game_info")
-    await read_until_command(proto2, "game_info")
+    await read_until_command(proto1, "game_info", teams={"1": ["friends"]})
+    await read_until_command(proto2, "game_info", teams={"1": ["friends"]})
+    await send_player_options(proto1, [test_id, "Army", 1], [test_id, "Team", 1])
+    await read_until_command(proto1, "game_info", teams={"1": ["friends", "test"]})
+    await read_until_command(proto2, "game_info", teams={"1": ["friends", "test"]})
 
     # Now we unfriend the person in the lobby
     await proto1.send_message({
@@ -321,8 +326,8 @@ async def test_game_info_broadcast_to_players_in_lobby(lobby_server):
 
     # The host and the other player in the lobby should see the game even
     # though they are not friends anymore
-    msg = await read_until_command(proto1, "game_info", timeout=2)
-    msg2 = await read_until_command(proto2, "game_info", timeout=2)
+    msg = await read_until_command(proto1, "game_info", timeout=5)
+    msg2 = await read_until_command(proto2, "game_info", timeout=5)
 
     assert msg == msg2
     assert msg["featured_mod"] == "faf"

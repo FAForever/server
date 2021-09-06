@@ -93,7 +93,7 @@ class Game():
         self.map_file_path = f"maps/{map_}.zip"
         self.map_scenario_path = None
         self.password = None
-        self._players = []
+        self._players_at_launch: List[Player] = []
         self.AIs = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
@@ -168,7 +168,7 @@ class Game():
         return self._results.is_mutually_agreed_draw(self.armies)
 
     @property
-    def players(self) -> FrozenSet[Player]:
+    def players(self) -> List[Player]:
         """
         Players in the game
 
@@ -178,19 +178,22 @@ class Game():
           - Empty list
         """
         if self.state is GameState.LOBBY:
-            return frozenset(
-                player for player in self._connections.keys()
-                if player.id in self._player_options
-            )
+            return self.get_connected_players()
         else:
-            return frozenset(
-                player
-                for player, army in (
-                    (player, self.get_player_option(player.id, "Army"))
-                    for player in self._players
-                )
-                if army is not None and army >= 0
-            )
+            return self._players_at_launch
+
+    def get_connected_players(self) -> List[Player]:
+        """
+        Get a collection of all players currently connected to the game.
+        """
+        return [
+            player for player in self._connections.keys()
+            if player.id in self._player_options
+        ]
+
+    def _is_observer(self, player: Player) -> bool:
+        army = self.get_player_option(player.id, "Army")
+        return army is None or army < 0
 
     @property
     def connections(self) -> Iterable["GameConnection"]:
@@ -691,8 +694,13 @@ class Game():
         """
         assert self.state is GameState.LOBBY
         self.launched_at = time.time()
-        self._players = self.players
-        self._players_with_unsent_army_stats = list(self._players)
+        # Freeze currently connected players since we need them for rating when
+        # the game ends.
+        self._players_at_launch = [
+            player for player in self.get_connected_players()
+            if not self._is_observer(player)
+        ]
+        self._players_with_unsent_army_stats = list(self._players_at_launch)
 
         self.state = GameState.LIVE
 
@@ -884,6 +892,7 @@ class Game():
             GameState.ENDED: "closed",
             GameState.INITIALIZING: "closed",
         }.get(self.state, "closed")
+        connected_players = self.get_connected_players()
         return {
             "command": "game_info",
             "visibility": self.visibility.value,
@@ -906,7 +915,7 @@ class Game():
             "enforce_rating_range": self.enforce_rating_range,
             "teams": {
                 team: [
-                    player.login for player in self.players
+                    player.login for player in connected_players
                     if self.get_player_option(player.id, "Team") == team
                 ]
                 for team in self.teams if team is not None
