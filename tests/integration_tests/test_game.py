@@ -307,7 +307,7 @@ async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
     new_persisted_ratings = await get_player_ratings(host_proto, "test", "Rhiza")
 
     rhiza_message = {
-        "player_id": 3, # Rhiza
+        "player_id": 3,  # Rhiza
         "rating_type": "global",
         "new_rating_mean": new_persisted_ratings["Rhiza"][0],
         "new_rating_deviation": new_persisted_ratings["Rhiza"][1],
@@ -317,7 +317,7 @@ async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
     }
 
     test_message = {
-        "player_id": 1, # test
+        "player_id": 1,  # test
         "rating_type": "global",
         "new_rating_mean": new_persisted_ratings["test"][0],
         "new_rating_deviation": new_persisted_ratings["test"][1],
@@ -681,7 +681,10 @@ async def test_gamestate_ended_clears_references(
 
 @pytest.mark.rabbitmq
 @fast_forward(30)
-async def test_galactic_war_1v1_game_ended_broadcasts_army_results(lobby_server, channel):
+async def test_galactic_war_1v1_game_ended_broadcasts_army_results(
+    lobby_server,
+    channel
+):
     mq_proto_all = await connect_mq_consumer(
         lobby_server,
         channel,
