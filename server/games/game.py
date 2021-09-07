@@ -906,7 +906,7 @@ class Game():
             "mapname": self.map_folder_name,
             "map_file_path": self.map_file_path,
             "host": self.host.login if self.host else "",
-            "num_players": len(self.players),
+            "num_players": len(connected_players),
             "max_players": self.max_players,
             "launched_at": self.launched_at,
             "rating_type": self.rating_type,

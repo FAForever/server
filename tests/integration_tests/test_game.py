@@ -584,7 +584,7 @@ async def test_ladder_game_not_joinable(lobby_server):
     }
 
 
-@fast_forward(30)
+@fast_forward(60)
 async def test_gamestate_ended_clears_references(
     lobby_server,
     game_service,
@@ -665,7 +665,7 @@ async def test_gamestate_ended_clears_references(
         test_proto,
         "game_info",
         state="closed",
-        num_players=2
+        num_players=0
     )
     await asyncio.sleep(0.1)
     gc.collect()
