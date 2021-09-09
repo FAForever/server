@@ -121,7 +121,7 @@ class Game():
         self.map_file_path = f&#34;maps/{map_}.zip&#34;
         self.map_scenario_path = None
         self.password = None
-        self._players = []
+        self._players_at_launch: List[Player] = []
         self.AIs = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
@@ -196,7 +196,7 @@ class Game():
         return self._results.is_mutually_agreed_draw(self.armies)
 
     @property
-    def players(self) -&gt; FrozenSet[Player]:
+    def players(self) -&gt; List[Player]:
         &#34;&#34;&#34;
         Players in the game
 
@@ -206,19 +206,22 @@ class Game():
           - Empty list
         &#34;&#34;&#34;
         if self.state is GameState.LOBBY:
-            return frozenset(
-                player for player in self._connections.keys()
-                if player.id in self._player_options
-            )
+            return self.get_connected_players()
         else:
-            return frozenset(
-                player
-                for player, army in (
-                    (player, self.get_player_option(player.id, &#34;Army&#34;))
-                    for player in self._players
-                )
-                if army is not None and army &gt;= 0
-            )
+            return self._players_at_launch
+
+    def get_connected_players(self) -&gt; List[Player]:
+        &#34;&#34;&#34;
+        Get a collection of all players currently connected to the game.
+        &#34;&#34;&#34;
+        return [
+            player for player in self._connections.keys()
+            if player.id in self._player_options
+        ]
+
+    def _is_observer(self, player: Player) -&gt; bool:
+        army = self.get_player_option(player.id, &#34;Army&#34;)
+        return army is None or army &lt; 0
 
     @property
     def connections(self) -&gt; Iterable[&#34;GameConnection&#34;]:
@@ -719,8 +722,13 @@ class Game():
         &#34;&#34;&#34;
         assert self.state is GameState.LOBBY
         self.launched_at = time.time()
-        self._players = self.players
-        self._players_with_unsent_army_stats = list(self._players)
+        # Freeze currently connected players since we need them for rating when
+        # the game ends.
+        self._players_at_launch = [
+            player for player in self.get_connected_players()
+            if not self._is_observer(player)
+        ]
+        self._players_with_unsent_army_stats = list(self._players_at_launch)
 
         self.state = GameState.LIVE
 
@@ -912,6 +920,7 @@ class Game():
             GameState.ENDED: &#34;closed&#34;,
             GameState.INITIALIZING: &#34;closed&#34;,
         }.get(self.state, &#34;closed&#34;)
+        connected_players = self.get_connected_players()
         return {
             &#34;command&#34;: &#34;game_info&#34;,
             &#34;visibility&#34;: self.visibility.value,
@@ -925,7 +934,7 @@ class Game():
             &#34;mapname&#34;: self.map_folder_name,
             &#34;map_file_path&#34;: self.map_file_path,
             &#34;host&#34;: self.host.login if self.host else &#34;&#34;,
-            &#34;num_players&#34;: len(self.players),
+            &#34;num_players&#34;: len(connected_players),
             &#34;max_players&#34;: self.max_players,
             &#34;launched_at&#34;: self.launched_at,
             &#34;rating_type&#34;: self.rating_type,
@@ -934,7 +943,7 @@ class Game():
             &#34;enforce_rating_range&#34;: self.enforce_rating_range,
             &#34;teams&#34;: {
                 team: [
-                    player.login for player in self.players
+                    player.login for player in connected_players
                     if self.get_player_option(player.id, &#34;Team&#34;) == team
                 ]
                 for team in self.teams if team is not None
@@ -1034,7 +1043,7 @@ class Game():
         self.map_file_path = f&#34;maps/{map_}.zip&#34;
         self.map_scenario_path = None
         self.password = None
-        self._players = []
+        self._players_at_launch: List[Player] = []
         self.AIs = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
@@ -1109,7 +1118,7 @@ class Game():
         return self._results.is_mutually_agreed_draw(self.armies)
 
     @property
-    def players(self) -&gt; FrozenSet[Player]:
+    def players(self) -&gt; List[Player]:
         &#34;&#34;&#34;
         Players in the game
 
@@ -1119,19 +1128,22 @@ class Game():
           - Empty list
         &#34;&#34;&#34;
         if self.state is GameState.LOBBY:
-            return frozenset(
-                player for player in self._connections.keys()
-                if player.id in self._player_options
-            )
+            return self.get_connected_players()
         else:
-            return frozenset(
-                player
-                for player, army in (
-                    (player, self.get_player_option(player.id, &#34;Army&#34;))
-                    for player in self._players
-                )
-                if army is not None and army &gt;= 0
-            )
+            return self._players_at_launch
+
+    def get_connected_players(self) -&gt; List[Player]:
+        &#34;&#34;&#34;
+        Get a collection of all players currently connected to the game.
+        &#34;&#34;&#34;
+        return [
+            player for player in self._connections.keys()
+            if player.id in self._player_options
+        ]
+
+    def _is_observer(self, player: Player) -&gt; bool:
+        army = self.get_player_option(player.id, &#34;Army&#34;)
+        return army is None or army &lt; 0
 
     @property
     def connections(self) -&gt; Iterable[&#34;GameConnection&#34;]:
@@ -1632,8 +1644,13 @@ class Game():
         &#34;&#34;&#34;
         assert self.state is GameState.LOBBY
         self.launched_at = time.time()
-        self._players = self.players
-        self._players_with_unsent_army_stats = list(self._players)
+        # Freeze currently connected players since we need them for rating when
+        # the game ends.
+        self._players_at_launch = [
+            player for player in self.get_connected_players()
+            if not self._is_observer(player)
+        ]
+        self._players_with_unsent_army_stats = list(self._players_at_launch)
 
         self.state = GameState.LIVE
 
@@ -1825,6 +1842,7 @@ class Game():
             GameState.ENDED: &#34;closed&#34;,
             GameState.INITIALIZING: &#34;closed&#34;,
         }.get(self.state, &#34;closed&#34;)
+        connected_players = self.get_connected_players()
         return {
             &#34;command&#34;: &#34;game_info&#34;,
             &#34;visibility&#34;: self.visibility.value,
@@ -1838,7 +1856,7 @@ class Game():
             &#34;mapname&#34;: self.map_folder_name,
             &#34;map_file_path&#34;: self.map_file_path,
             &#34;host&#34;: self.host.login if self.host else &#34;&#34;,
-            &#34;num_players&#34;: len(self.players),
+            &#34;num_players&#34;: len(connected_players),
             &#34;max_players&#34;: self.max_players,
             &#34;launched_at&#34;: self.launched_at,
             &#34;rating_type&#34;: self.rating_type,
@@ -1847,7 +1865,7 @@ class Game():
             &#34;enforce_rating_range&#34;: self.enforce_rating_range,
             &#34;teams&#34;: {
                 team: [
-                    player.login for player in self.players
+                    player.login for player in connected_players
                     if self.get_player_option(player.id, &#34;Team&#34;) == team
                 ]
                 for team in self.teams if team is not None
@@ -2051,7 +2069,7 @@ def name(self):
     return self._name</code></pre>
 </details>
 </dd>
-<dt id="server.games.game.Game.players"><code class="name">var <span class="ident">players</span> : FrozenSet[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</code></dt>
+<dt id="server.games.game.Game.players"><code class="name">var <span class="ident">players</span> : List[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</code></dt>
 <dd>
 <div class="desc"><p>Players in the game</p>
 <p>Depending on the state, it is either:
@@ -2063,7 +2081,7 @@ def name(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def players(self) -&gt; FrozenSet[Player]:
+def players(self) -&gt; List[Player]:
     &#34;&#34;&#34;
     Players in the game
 
@@ -2073,19 +2091,9 @@ def players(self) -&gt; FrozenSet[Player]:
       - Empty list
     &#34;&#34;&#34;
     if self.state is GameState.LOBBY:
-        return frozenset(
-            player for player in self._connections.keys()
-            if player.id in self._player_options
-        )
+        return self.get_connected_players()
     else:
-        return frozenset(
-            player
-            for player, army in (
-                (player, self.get_player_option(player.id, &#34;Army&#34;))
-                for player in self._players
-            )
-            if army is not None and army &gt;= 0
-        )</code></pre>
+        return self._players_at_launch</code></pre>
 </details>
 </dd>
 <dt id="server.games.game.Game.teams"><code class="name">var <span class="ident">teams</span> : FrozenSet[int]</code></dt>
@@ -2309,6 +2317,25 @@ assigned an army or team, and deletes any AI's.</p></div>
     )</code></pre>
 </details>
 </dd>
+<dt id="server.games.game.Game.get_connected_players"><code class="name flex">
+<span>def <span class="ident">get_connected_players</span></span>(<span>self) ‑> List[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get a collection of all players currently connected to the game.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_connected_players(self) -&gt; List[Player]:
+    &#34;&#34;&#34;
+    Get a collection of all players currently connected to the game.
+    &#34;&#34;&#34;
+    return [
+        player for player in self._connections.keys()
+        if player.id in self._player_options
+    ]</code></pre>
+</details>
+</dd>
 <dt id="server.games.game.Game.get_player_option"><code class="name flex">
 <span>def <span class="ident">get_player_option</span></span>(<span>self, player_id: int, key: str) ‑> Optional[Any]</span>
 </code></dt>
@@ -2424,8 +2451,13 @@ Note that FFA players will be separated into individual teams.</p></div>
     &#34;&#34;&#34;
     assert self.state is GameState.LOBBY
     self.launched_at = time.time()
-    self._players = self.players
-    self._players_with_unsent_army_stats = list(self._players)
+    # Freeze currently connected players since we need them for rating when
+    # the game ends.
+    self._players_at_launch = [
+        player for player in self.get_connected_players()
+        if not self._is_observer(player)
+    ]
+    self._players_with_unsent_army_stats = list(self._players_at_launch)
 
     self.state = GameState.LIVE
 
@@ -2837,6 +2869,7 @@ game.</p></div>
         GameState.ENDED: &#34;closed&#34;,
         GameState.INITIALIZING: &#34;closed&#34;,
     }.get(self.state, &#34;closed&#34;)
+    connected_players = self.get_connected_players()
     return {
         &#34;command&#34;: &#34;game_info&#34;,
         &#34;visibility&#34;: self.visibility.value,
@@ -2850,7 +2883,7 @@ game.</p></div>
         &#34;mapname&#34;: self.map_folder_name,
         &#34;map_file_path&#34;: self.map_file_path,
         &#34;host&#34;: self.host.login if self.host else &#34;&#34;,
-        &#34;num_players&#34;: len(self.players),
+        &#34;num_players&#34;: len(connected_players),
         &#34;max_players&#34;: self.max_players,
         &#34;launched_at&#34;: self.launched_at,
         &#34;rating_type&#34;: self.rating_type,
@@ -2859,7 +2892,7 @@ game.</p></div>
         &#34;enforce_rating_range&#34;: self.enforce_rating_range,
         &#34;teams&#34;: {
             team: [
-                player.login for player in self.players
+                player.login for player in connected_players
                 if self.get_player_option(player.id, &#34;Team&#34;) == team
             ]
             for team in self.teams if team is not None
@@ -3145,6 +3178,7 @@ care about recording stats for, after all).</p></div>
 <li><code><a title="server.games.game.Game.get_army_results" href="#server.games.game.Game.get_army_results">get_army_results</a></code></li>
 <li><code><a title="server.games.game.Game.get_army_score" href="#server.games.game.Game.get_army_score">get_army_score</a></code></li>
 <li><code><a title="server.games.game.Game.get_basic_info" href="#server.games.game.Game.get_basic_info">get_basic_info</a></code></li>
+<li><code><a title="server.games.game.Game.get_connected_players" href="#server.games.game.Game.get_connected_players">get_connected_players</a></code></li>
 <li><code><a title="server.games.game.Game.get_player_option" href="#server.games.game.Game.get_player_option">get_player_option</a></code></li>
 <li><code><a title="server.games.game.Game.get_player_outcome" href="#server.games.game.Game.get_player_outcome">get_player_outcome</a></code></li>
 <li><code><a title="server.games.game.Game.get_team_sets" href="#server.games.game.Game.get_team_sets">get_team_sets</a></code></li>
