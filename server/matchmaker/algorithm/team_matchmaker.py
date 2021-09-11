@@ -1,6 +1,7 @@
 import logging
 import statistics
 from collections import defaultdict
+from math import sqrt
 from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
 
 from sortedcontainers import SortedList
@@ -281,17 +282,17 @@ class TeamMatchMaker(Matchmaker):
                 newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * num_newbies / team_size)
 
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
-        fairness = 1 - (rating_disparity / config.MAXIMUM_RATING_IMBALANCE)
+        unfairness = rating_disparity / config.MAXIMUM_RATING_IMBALANCE
         deviation = statistics.pstdev(ratings)
-        uniformity = 1 - (deviation / config.MAXIMUM_RATING_DEVIATION)
+        rating_variety = deviation / config.MAXIMUM_RATING_DEVIATION
 
-        quality = fairness * uniformity
-        if fairness < 0 and uniformity < 0:
-            quality *= -1
-        quality += newbie_bonus + time_bonus
+        # Visually this creates a cone in the unfairness-rating_variety plane that slowly raises with the time boni.
+        quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus
+        if not any(team.has_top_player() for team in match):
+            quality += newbie_bonus
         self._logger.debug(
-            "bonuses: %s rating disparity: %s -> fairness: %f deviation: %f -> uniformity: %f -> game quality: %f",
-            newbie_bonus + time_bonus, rating_disparity, fairness, deviation, uniformity, quality)
+            "bonuses: %s rating disparity: %s -> unfairness: %f deviation: %f -> variety: %f -> game quality: %f",
+            newbie_bonus + time_bonus, rating_disparity, unfairness, deviation, rating_variety, quality)
         return GameCandidate(match, quality)
 
     def pick_noncolliding_games(self, games: List[GameCandidate]) -> List[Match]:
