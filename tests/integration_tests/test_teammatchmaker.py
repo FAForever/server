@@ -9,6 +9,7 @@ from server.db.models import (
     leaderboard_rating,
     leaderboard_rating_journal
 )
+from server.factions import Faction
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
@@ -470,7 +471,7 @@ async def test_game_ratings(lobby_server):
                 proto,
                 [player_id, "Army", slot],
                 [player_id, "Color", slot],
-                [player_id, "Faction", msg["faction"]],
+                [player_id, "Faction", Faction.from_string(msg["faction"])],
                 [player_id, "StartSpot", slot],
                 [player_id, "Team", msg["team"]],
             )
