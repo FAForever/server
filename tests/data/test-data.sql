@@ -132,7 +132,7 @@ insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderbo
   (102, 1500, 500, 0, 1),
   (102, 1500, 500, 0, 2),
   (105, 1400, 150, 20, 3),
-  (106, 1500, 75, 20, 3)
+  (106, 900, 75, 20, 3)
 ;
 
 -- legacy table for global rating
