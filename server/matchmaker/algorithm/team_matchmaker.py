@@ -286,7 +286,8 @@ class TeamMatchMaker(Matchmaker):
         deviation = statistics.pstdev(ratings)
         rating_variety = deviation / config.MAXIMUM_RATING_DEVIATION
 
-        # Visually this creates a cone in the unfairness-rating_variety plane that slowly raises with the time boni.
+        # Visually this creates a cone in the unfairness-rating_variety plane
+        # that slowly raises with the time bonuses.
         quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus
         if not any(team.has_top_player() for team in match):
             quality += newbie_bonus
