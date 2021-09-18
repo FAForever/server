@@ -1,4 +1,5 @@
 from sqlalchemy import (
+    JSON,
     TIME,
     TIMESTAMP,
     Boolean,
@@ -261,7 +262,7 @@ map_pool_map_version = Table(
     Column("map_pool_id",    Integer,       ForeignKey("map_pool.id"),      nullable=False),
     Column("map_version_id", Integer,       ForeignKey("map_version.id")),
     Column("weight",         Integer,       nullable=False),
-    Column("map_params",     Text),
+    Column("map_params",     JSON),
     Column("create_time",    TIMESTAMP,     nullable=False),
     Column("update_time",    TIMESTAMP,     nullable=False)
 )

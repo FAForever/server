@@ -3,7 +3,6 @@ Manages interactions between players and matchmakers
 """
 
 import asyncio
-import json
 import random
 import re
 from collections import defaultdict
@@ -133,10 +132,12 @@ class LadderService(Service):
                 )
             elif row.map_params is not None:
                 try:
-                    params = json.loads(row.map_params)
+                    params = row.map_params
                     map_type = params["type"]
                     if map_type == "neroxis":
-                        map_list.append(NeroxisGeneratedMap.of(params, row.weight))
+                        map_list.append(
+                            NeroxisGeneratedMap.of(params, row.weight)
+                        )
                     else:
                         self._logger.warning(
                             "Unsupported map type %s in pool %s",
