@@ -9,6 +9,7 @@ from server.db.models import (
     leaderboard_rating,
     leaderboard_rating_journal
 )
+from server.factions import Faction
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
@@ -98,7 +99,7 @@ async def test_game_matchmaking(lobby_server):
         assert msg["expected_players"] == 4
         assert msg["team"] in (2, 3)
         assert msg["map_position"] in (1, 2, 3, 4)
-        assert msg["faction"] == 1
+        assert msg["faction"] == "uef"
 
 
 @fast_forward(15)
@@ -143,7 +144,7 @@ async def test_game_matchmaking_multiqueue(lobby_server):
         assert msg["expected_players"] == 4
         assert msg["team"] in (2, 3)
         assert msg["map_position"] in (1, 2, 3, 4)
-        assert msg["faction"] == 2
+        assert msg["faction"] == "aeon"
 
 
 @fast_forward(10)
@@ -221,7 +222,7 @@ async def test_game_matchmaking_with_parties(lobby_server):
         assert msg["expected_players"] == 4
         assert msg["team"] in (2, 3)
         assert msg["map_position"] in (1, 2, 3, 4)
-        assert msg["faction"] == i + 1
+        assert msg["faction"] == "uef" if i == 0 else "aeon" if i == 1 else "cybran" if i == 2 else "seraphim"
 
 
 @fast_forward(30)
@@ -470,7 +471,7 @@ async def test_game_ratings(lobby_server):
                 proto,
                 [player_id, "Army", slot],
                 [player_id, "Color", slot],
-                [player_id, "Faction", msg["faction"]],
+                [player_id, "Faction", Faction.from_string(msg["faction"])],
                 [player_id, "StartSpot", slot],
                 [player_id, "Team", msg["team"]],
             )

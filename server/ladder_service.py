@@ -442,7 +442,7 @@ class LadderService(Service):
             def game_options(player: Player) -> GameLaunchOptions:
                 return options._replace(
                     team=game.get_player_option(player.id, "Team"),
-                    faction=player.faction,
+                    faction=player.faction.name,
                     map_position=game.get_player_option(player.id, "StartSpot")
                 )
 

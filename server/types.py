@@ -24,7 +24,7 @@ class GameLaunchOptions(NamedTuple):
 
     mapname: Optional[str] = None
     team: Optional[int] = None
-    faction: Optional[int] = None
+    faction: Optional[str] = None
     expected_players: Optional[int] = None
     map_position: Optional[int] = None
 
