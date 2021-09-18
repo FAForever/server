@@ -80,10 +80,10 @@ def test_team_matchmaker_algorithm(player_factory):
 
     matches, unmatched = matchmaker.find(s, 4)
 
-    assert set(matches[0][0].get_original_searches()) == {c1, s[2], s[5]}
-    assert set(matches[0][1].get_original_searches()) == {c3, s[1], s[6]}
-    assert set(matches[1][0].get_original_searches()) == {c4, s[4]}
-    assert set(matches[1][1].get_original_searches()) == {c2, s[0], s[3]}
+    assert set(matches[1][0].get_original_searches()) == {c1, s[2], s[5]}
+    assert set(matches[1][1].get_original_searches()) == {c3, s[1], s[6]}
+    assert set(matches[0][0].get_original_searches()) == {c4, s[4]}
+    assert set(matches[0][1].get_original_searches()) == {c2, s[0], s[3]}
     assert set(unmatched) == {s[7]}
     for match in matches:
         assert matchmaker.assign_game_quality(match, 4).quality > config.MINIMUM_GAME_QUALITY
@@ -259,7 +259,10 @@ def test_game_quality_time_bonus(s):
     team_b.register_failed_matching_attempt()
     quality_after = matchmaker.assign_game_quality((team_a, team_b), 3).quality
 
-    num_newbies = team_a.num_newbies() + team_b.num_newbies()
+    if team_a.has_top_player() or team_b.has_top_player():
+        num_newbies = 0
+    else:
+        num_newbies = team_a.num_newbies() + team_b.num_newbies()
 
     assert (
         quality_before
@@ -283,7 +286,10 @@ def test_game_quality_max_time_bonus(s):
         team_b.register_failed_matching_attempt()
     quality_after = matchmaker.assign_game_quality((team_a, team_b), 3).quality
 
-    num_newbies = team_a.num_newbies() + team_b.num_newbies()
+    if team_a.has_top_player() or team_b.has_top_player():
+        num_newbies = 0
+    else:
+        num_newbies = team_a.num_newbies() + team_b.num_newbies()
 
     assert (
         quality_before
