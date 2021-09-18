@@ -482,9 +482,8 @@ __all__ = (
             &#34;RestrictedCategories&#34;: 0
         }
         self.mods = {}
-        loop = asyncio.get_event_loop()
-        self._is_hosted = loop.create_future()
-        self._launch_fut = loop.create_future()
+        self._hosted_event = asyncio.Event()
+        self._launched_event = asyncio.Event()
 
         self._logger.debug(&#34;%s created&#34;, self)
         asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
@@ -492,10 +491,7 @@ __all__ = (
     async def timeout_game(self, timeout: int = 60):
         await asyncio.sleep(timeout)
         if self.state is GameState.INITIALIZING:
-            self._is_hosted.set_exception(
-                asyncio.TimeoutError(&#34;Game setup timed out&#34;)
-            )
-            self._logger.debug(&#34;Game setup timed out.. Cancelling game&#34;)
+            self._logger.debug(&#34;Game setup timed out, cancelling game&#34;)
             await self.on_game_end()
 
     @property
@@ -637,17 +633,16 @@ __all__ = (
 
     async def wait_hosted(self, timeout: float):
         return await asyncio.wait_for(
-            asyncio.shield(self._is_hosted),
+            self._hosted_event.wait(),
             timeout=timeout
         )
 
     def set_hosted(self):
-        if not self._is_hosted.done():
-            self._is_hosted.set_result(None)
+        self._hosted_event.set()
 
     async def wait_launched(self, timeout: float):
         return await asyncio.wait_for(
-            asyncio.shield(self._launch_fut),
+            self._launched_event.wait(),
             timeout=timeout
         )
 
@@ -1072,7 +1067,7 @@ __all__ = (
         await self.on_game_launched()
         await self.validate_game_settings()
 
-        self._launch_fut.set_result(None)
+        self._launched_event.set()
         self._logger.info(&#34;Game launched&#34;)
 
     async def on_game_launched(self):
@@ -1879,7 +1874,7 @@ Note that FFA players will be separated into individual teams.</p></div>
     await self.on_game_launched()
     await self.validate_game_settings()
 
-    self._launch_fut.set_result(None)
+    self._launched_event.set()
     self._logger.info(&#34;Game launched&#34;)</code></pre>
 </details>
 </dd>
@@ -2209,8 +2204,7 @@ game.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def set_hosted(self):
-    if not self._is_hosted.done():
-        self._is_hosted.set_result(None)</code></pre>
+    self._hosted_event.set()</code></pre>
 </details>
 </dd>
 <dt id="server.games.Game.set_name_unchecked"><code class="name flex">
@@ -2261,10 +2255,7 @@ game.</p></div>
 <pre><code class="python">async def timeout_game(self, timeout: int = 60):
     await asyncio.sleep(timeout)
     if self.state is GameState.INITIALIZING:
-        self._is_hosted.set_exception(
-            asyncio.TimeoutError(&#34;Game setup timed out&#34;)
-        )
-        self._logger.debug(&#34;Game setup timed out.. Cancelling game&#34;)
+        self._logger.debug(&#34;Game setup timed out, cancelling game&#34;)
         await self.on_game_end()</code></pre>
 </details>
 </dd>
@@ -2522,7 +2513,7 @@ care about recording stats for, after all).</p></div>
 </summary>
 <pre><code class="python">async def wait_hosted(self, timeout: float):
     return await asyncio.wait_for(
-        asyncio.shield(self._is_hosted),
+        self._hosted_event.wait(),
         timeout=timeout
     )</code></pre>
 </details>
@@ -2538,7 +2529,7 @@ care about recording stats for, after all).</p></div>
 </summary>
 <pre><code class="python">async def wait_launched(self, timeout: float):
     return await asyncio.wait_for(
-        asyncio.shield(self._launch_fut),
+        self._launched_event.wait(),
         timeout=timeout
     )</code></pre>
 </details>

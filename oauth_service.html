@@ -26,7 +26,9 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import aiocron
+<pre><code class="python">import time
+
+import aiocron
 import aiohttp
 import jwt
 from jwt import InvalidTokenError
@@ -34,6 +36,7 @@ from jwt.algorithms import RSAAlgorithm
 
 from server.config import config
 
+from .asyncio_extensions import synchronizedmethod
 from .core import Service
 from .decorators import with_logger
 from .exceptions import AuthenticationError
@@ -47,6 +50,7 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
 
     def __init__(self):
         self.public_keys = {}
+        self._last_key_fetch_time = None
 
     async def initialize(self) -&gt; None:
         await self.retrieve_public_keys()
@@ -56,26 +60,60 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
             &#34;*/10 * * * *&#34;, func=self.retrieve_public_keys
         )
 
+    @synchronizedmethod
+    async def get_public_keys(self) -&gt; dict:
+        &#34;&#34;&#34;
+        Return cached keys, or fetch them if they&#39;re missing
+        &#34;&#34;&#34;
+        if not self.public_keys:
+            # Rate limit requests so we don&#39;t spam the endpoint when it&#39;s down
+            if (
+                not self._last_key_fetch_time or
+                time.monotonic() - self._last_key_fetch_time &gt; 5
+            ):
+                await self.retrieve_public_keys()
+
+            if not self.public_keys:
+                raise RuntimeError(&#34;jwks could not be retrieved&#34;)
+
+        return self.public_keys
+
     async def retrieve_public_keys(self) -&gt; None:
         &#34;&#34;&#34;
         Get the latest jwks from the hydra endpoint
         &#34;&#34;&#34;
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(config.HYDRA_JWKS_URI) as resp:
-                jwks = await resp.json()
-                self.public_keys = {
-                    jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
-                    for jwk in jwks[&#34;keys&#34;]
-                }
+        self._last_key_fetch_time = time.monotonic()
+        try:
+            async with aiohttp.ClientSession(raise_for_status=True) as session:
+                async with session.get(config.HYDRA_JWKS_URI) as resp:
+                    jwks = await resp.json()
+                    self.public_keys = {
+                        jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
+                        for jwk in jwks[&#34;keys&#34;]
+                    }
+        except Exception:
+            self._logger.exception(
+                &#34;Unable to retrieve jwks, token login will be unavailable!&#34;
+            )
 
     async def get_player_id_from_token(self, token: str) -&gt; int:
         &#34;&#34;&#34;
         Decode the JWT to get the player_id
         &#34;&#34;&#34;
+        # Ensures that if we&#39;re missing the jwks we will try to fetch them on
+        # each new login request. This way our login functionality will be
+        # restored as soon as possible
+        keys = await self.get_public_keys()
         try:
             kid = jwt.get_unverified_header(token)[&#34;kid&#34;]
-            key = self.public_keys[kid]
-            return int(jwt.decode(token, key=key, algorithms=&#34;RS256&#34;, options={&#34;verify_aud&#34;: False})[&#34;sub&#34;])
+            key = keys[kid]
+            decoded = jwt.decode(
+                token,
+                key=key,
+                algorithms=&#34;RS256&#34;,
+                options={&#34;verify_aud&#34;: False}
+            )
+            return int(decoded[&#34;sub&#34;])
         except (InvalidTokenError, KeyError, ValueError):
             raise AuthenticationError(&#34;Token signature was invalid&#34;, &#34;token&#34;)</code></pre>
 </details>
@@ -105,6 +143,7 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
 
     def __init__(self):
         self.public_keys = {}
+        self._last_key_fetch_time = None
 
     async def initialize(self) -&gt; None:
         await self.retrieve_public_keys()
@@ -114,26 +153,60 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
             &#34;*/10 * * * *&#34;, func=self.retrieve_public_keys
         )
 
+    @synchronizedmethod
+    async def get_public_keys(self) -&gt; dict:
+        &#34;&#34;&#34;
+        Return cached keys, or fetch them if they&#39;re missing
+        &#34;&#34;&#34;
+        if not self.public_keys:
+            # Rate limit requests so we don&#39;t spam the endpoint when it&#39;s down
+            if (
+                not self._last_key_fetch_time or
+                time.monotonic() - self._last_key_fetch_time &gt; 5
+            ):
+                await self.retrieve_public_keys()
+
+            if not self.public_keys:
+                raise RuntimeError(&#34;jwks could not be retrieved&#34;)
+
+        return self.public_keys
+
     async def retrieve_public_keys(self) -&gt; None:
         &#34;&#34;&#34;
         Get the latest jwks from the hydra endpoint
         &#34;&#34;&#34;
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(config.HYDRA_JWKS_URI) as resp:
-                jwks = await resp.json()
-                self.public_keys = {
-                    jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
-                    for jwk in jwks[&#34;keys&#34;]
-                }
+        self._last_key_fetch_time = time.monotonic()
+        try:
+            async with aiohttp.ClientSession(raise_for_status=True) as session:
+                async with session.get(config.HYDRA_JWKS_URI) as resp:
+                    jwks = await resp.json()
+                    self.public_keys = {
+                        jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
+                        for jwk in jwks[&#34;keys&#34;]
+                    }
+        except Exception:
+            self._logger.exception(
+                &#34;Unable to retrieve jwks, token login will be unavailable!&#34;
+            )
 
     async def get_player_id_from_token(self, token: str) -&gt; int:
         &#34;&#34;&#34;
         Decode the JWT to get the player_id
         &#34;&#34;&#34;
+        # Ensures that if we&#39;re missing the jwks we will try to fetch them on
+        # each new login request. This way our login functionality will be
+        # restored as soon as possible
+        keys = await self.get_public_keys()
         try:
             kid = jwt.get_unverified_header(token)[&#34;kid&#34;]
-            key = self.public_keys[kid]
-            return int(jwt.decode(token, key=key, algorithms=&#34;RS256&#34;, options={&#34;verify_aud&#34;: False})[&#34;sub&#34;])
+            key = keys[kid]
+            decoded = jwt.decode(
+                token,
+                key=key,
+                algorithms=&#34;RS256&#34;,
+                options={&#34;verify_aud&#34;: False}
+            )
+            return int(decoded[&#34;sub&#34;])
         except (InvalidTokenError, KeyError, ValueError):
             raise AuthenticationError(&#34;Token signature was invalid&#34;, &#34;token&#34;)</code></pre>
 </details>
@@ -156,12 +229,50 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
     &#34;&#34;&#34;
     Decode the JWT to get the player_id
     &#34;&#34;&#34;
+    # Ensures that if we&#39;re missing the jwks we will try to fetch them on
+    # each new login request. This way our login functionality will be
+    # restored as soon as possible
+    keys = await self.get_public_keys()
     try:
         kid = jwt.get_unverified_header(token)[&#34;kid&#34;]
-        key = self.public_keys[kid]
-        return int(jwt.decode(token, key=key, algorithms=&#34;RS256&#34;, options={&#34;verify_aud&#34;: False})[&#34;sub&#34;])
+        key = keys[kid]
+        decoded = jwt.decode(
+            token,
+            key=key,
+            algorithms=&#34;RS256&#34;,
+            options={&#34;verify_aud&#34;: False}
+        )
+        return int(decoded[&#34;sub&#34;])
     except (InvalidTokenError, KeyError, ValueError):
         raise AuthenticationError(&#34;Token signature was invalid&#34;, &#34;token&#34;)</code></pre>
+</details>
+</dd>
+<dt id="server.oauth_service.OAuthService.get_public_keys"><code class="name flex">
+<span>async def <span class="ident">get_public_keys</span></span>(<span>self) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return cached keys, or fetch them if they're missing</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@synchronizedmethod
+async def get_public_keys(self) -&gt; dict:
+    &#34;&#34;&#34;
+    Return cached keys, or fetch them if they&#39;re missing
+    &#34;&#34;&#34;
+    if not self.public_keys:
+        # Rate limit requests so we don&#39;t spam the endpoint when it&#39;s down
+        if (
+            not self._last_key_fetch_time or
+            time.monotonic() - self._last_key_fetch_time &gt; 5
+        ):
+            await self.retrieve_public_keys()
+
+        if not self.public_keys:
+            raise RuntimeError(&#34;jwks could not be retrieved&#34;)
+
+    return self.public_keys</code></pre>
 </details>
 </dd>
 <dt id="server.oauth_service.OAuthService.retrieve_public_keys"><code class="name flex">
@@ -177,13 +288,19 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
     &#34;&#34;&#34;
     Get the latest jwks from the hydra endpoint
     &#34;&#34;&#34;
-    async with aiohttp.ClientSession(raise_for_status=True) as session:
-        async with session.get(config.HYDRA_JWKS_URI) as resp:
-            jwks = await resp.json()
-            self.public_keys = {
-                jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
-                for jwk in jwks[&#34;keys&#34;]
-            }</code></pre>
+    self._last_key_fetch_time = time.monotonic()
+    try:
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(config.HYDRA_JWKS_URI) as resp:
+                jwks = await resp.json()
+                self.public_keys = {
+                    jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
+                    for jwk in jwks[&#34;keys&#34;]
+                }
+    except Exception:
+        self._logger.exception(
+            &#34;Unable to retrieve jwks, token login will be unavailable!&#34;
+        )</code></pre>
 </details>
 </dd>
 </dl>
@@ -218,6 +335,7 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
 <h4><code><a title="server.oauth_service.OAuthService" href="#server.oauth_service.OAuthService">OAuthService</a></code></h4>
 <ul class="">
 <li><code><a title="server.oauth_service.OAuthService.get_player_id_from_token" href="#server.oauth_service.OAuthService.get_player_id_from_token">get_player_id_from_token</a></code></li>
+<li><code><a title="server.oauth_service.OAuthService.get_public_keys" href="#server.oauth_service.OAuthService.get_public_keys">get_public_keys</a></code></li>
 <li><code><a title="server.oauth_service.OAuthService.retrieve_public_keys" href="#server.oauth_service.OAuthService.retrieve_public_keys">retrieve_public_keys</a></code></li>
 </ul>
 </li>

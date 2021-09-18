@@ -1179,7 +1179,14 @@ interval.</p></div>
                 self.game.leaderboard_saved = True
 
     async def handle_json_stats(self, stats: str):
-        self.game.report_army_stats(stats)
+        try:
+            self.game.report_army_stats(stats)
+        except json.JSONDecodeError:
+            self._logger.warning(
+                &#34;Malformed game stats reported by %s: &#39;...%s&#39;&#34;,
+                self._player.login,
+                stats[-20:]
+            )
 
     async def handle_enforce_rating(self):
         self.game.enforce_rating = True
@@ -1288,11 +1295,15 @@ interval.</p></div>
             if self.player.state != PlayerState.HOSTING:
                 return
 
-            self._logger.info(
-                &#34;Launching game %s in state %s&#34;,
-                self.game,
-                self.game.state
-            )
+            if self.game.state is not GameState.LOBBY:
+                self._logger.warning(
+                    &#34;Trying to launch game %s in invalid state %s&#34;,
+                    self.game,
+                    self.game.state
+                )
+                return
+
+            self._logger.info(&#34;Launching game %s&#34;, self.game)
 
             await self.game.launch()
 
@@ -1909,11 +1920,15 @@ included for documentation purposes.</p></div>
         if self.player.state != PlayerState.HOSTING:
             return
 
-        self._logger.info(
-            &#34;Launching game %s in state %s&#34;,
-            self.game,
-            self.game.state
-        )
+        if self.game.state is not GameState.LOBBY:
+            self._logger.warning(
+                &#34;Trying to launch game %s in invalid state %s&#34;,
+                self.game,
+                self.game.state
+            )
+            return
+
+        self._logger.info(&#34;Launching game %s&#34;, self.game)
 
         await self.game.launch()
 
@@ -1977,7 +1992,14 @@ included for documentation purposes.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def handle_json_stats(self, stats: str):
-    self.game.report_army_stats(stats)</code></pre>
+    try:
+        self.game.report_army_stats(stats)
+    except json.JSONDecodeError:
+        self._logger.warning(
+            &#34;Malformed game stats reported by %s: &#39;...%s&#39;&#34;,
+            self._player.login,
+            stats[-20:]
+        )</code></pre>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_operation_complete"><code class="name flex">
@@ -2815,7 +2837,29 @@ time we need, but which can in principle change over time.</p></div>
         self._event_service = event_service
         self._achievement_service = achievement_service
 
-    async def process_game_stats(self, player: Player, game: Game, army_stats_list: List):
+    async def process_game_stats(
+        self,
+        player: Player,
+        game: Game,
+        army_stats_list: List
+    ):
+        try:
+            await self._process_game_stats(player, game, army_stats_list)
+        except KeyError as e:
+            self._logger.info(&#34;Malformed game stats. KeyError: %s&#34;, e)
+        except Exception:
+            self._logger.exception(
+                &#34;Error processing game stats for %s in game %d&#34;,
+                player.login,
+                game.id
+            )
+
+    async def _process_game_stats(
+        self,
+        player: Player,
+        game: Game,
+        army_stats_list: List
+    ):
         stats = None
         number_of_humans = 0
         highest_score = 0
@@ -3099,99 +3143,22 @@ time we need, but which can in principle change over time.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def process_game_stats(self, player: Player, game: Game, army_stats_list: List):
-    stats = None
-    number_of_humans = 0
-    highest_score = 0
-    highest_scorer = None
-
-    for army_stats in army_stats_list:
-        if army_stats[&#34;type&#34;] == &#34;AI&#34; and army_stats[&#34;name&#34;] != &#34;civilian&#34;:
-            self._logger.debug(&#34;Ignoring AI game reported by %s&#34;, player.login)
-            return
-
-        if army_stats[&#34;type&#34;] == &#34;Human&#34;:
-            number_of_humans += 1
-
-            if highest_score &lt; army_stats[&#34;general&#34;][&#34;score&#34;]:
-                highest_score = army_stats[&#34;general&#34;][&#34;score&#34;]
-                highest_scorer = army_stats[&#34;name&#34;]
-
-        if army_stats[&#34;name&#34;] == player.login:
-            stats = army_stats
-
-    if number_of_humans &lt; 2:
-        self._logger.debug(&#34;Ignoring single player game reported by %s&#34;, player.login)
-        return
-
-    if stats is None:
-        self._logger.warning(&#34;Player %s reported stats of a game he was not part of&#34;, player.login)
-        return
-
-    army_result = game.get_player_outcome(player)
-    if army_result is ArmyOutcome.UNKNOWN:
-        self._logger.warning(&#34;No army result available for player %s&#34;, player.login)
-        return
-
-    self._logger.debug(&#34;Processing game stats for player: %s&#34;, player.login)
-
-    faction = stats[&#34;faction&#34;]
-    # Stores achievements to batch update
-    a_queue = []
-    # Stores events to batch update
-    e_queue = []
-    self._logger.debug(&#34;Army result for %s =&gt; %s &#34;, player, army_result)
-
-    survived = army_result is ArmyOutcome.VICTORY
-    blueprint_stats = stats[&#34;blueprints&#34;]
-    unit_stats = stats[&#34;units&#34;]
-    scored_highest = highest_scorer == player.login
-
-    if survived and game.game_mode == FeaturedModType.LADDER_1V1:
-        self._unlock(ACH_FIRST_SUCCESS, a_queue)
-
-    self._increment(ACH_NOVICE, 1, a_queue)
-    self._increment(ACH_JUNIOR, 1, a_queue)
-    self._increment(ACH_SENIOR, 1, a_queue)
-    self._increment(ACH_VETERAN, 1, a_queue)
-    self._increment(ACH_ADDICT, 1, a_queue)
-
-    self._faction_played(faction, survived, a_queue, e_queue)
-    self._category_stats(unit_stats, survived, a_queue, e_queue)
-    self._killed_acus(unit_stats, survived, a_queue)
-    self._built_mercies(_count_built_units(blueprint_stats, Unit.MERCY), a_queue)
-    self._built_fire_beetles(_count_built_units(blueprint_stats, Unit.FIRE_BEETLE), a_queue)
-    self._built_salvations(_count_built_units(blueprint_stats, Unit.SALVATION), survived, a_queue)
-    self._built_yolona_oss(_count_built_units(blueprint_stats, Unit.YOLONA_OSS), survived, a_queue)
-    self._built_paragons(_count_built_units(blueprint_stats, Unit.PARAGON), survived, a_queue)
-    self._built_atlantis(_count_built_units(blueprint_stats, Unit.ATLANTIS), a_queue)
-    self._built_tempests(_count_built_units(blueprint_stats, Unit.TEMPEST), a_queue)
-    self._built_scathis(_count_built_units(blueprint_stats, Unit.SCATHIS), survived, a_queue)
-    self._built_mavors(_count_built_units(blueprint_stats, Unit.MAVOR), survived, a_queue)
-    self._built_czars(_count_built_units(blueprint_stats, Unit.CZAR), a_queue)
-    self._built_ahwassas(_count_built_units(blueprint_stats, Unit.AHWASSA), a_queue)
-    self._built_ythothas(_count_built_units(blueprint_stats, Unit.YTHOTHA), a_queue)
-    self._built_fatboys(_count_built_units(blueprint_stats, Unit.FATBOY), a_queue)
-    self._built_monkeylords(_count_built_units(blueprint_stats, Unit.MONKEYLORD), a_queue)
-    self._built_galactic_colossus(_count_built_units(blueprint_stats, Unit.GALACTIC_COLOSSUS), a_queue)
-    self._built_soul_rippers(_count_built_units(blueprint_stats, Unit.SOUL_RIPPER), a_queue)
-    self._built_megaliths(_count_built_units(blueprint_stats, Unit.MEGALITH), a_queue)
-    self._built_asfs(_count_built_units(blueprint_stats, *ASFS), a_queue)
-    self._built_transports(unit_stats[&#34;transportation&#34;].get(&#34;built&#34;, 0), a_queue)
-    self._built_sacus(unit_stats[&#34;sacu&#34;].get(&#34;built&#34;, 0), a_queue)
-    self._lowest_acu_health(_count(blueprint_stats, lambda x: x.get(&#34;lowest_health&#34;, 0), *ACUS), survived, a_queue)
-    self._highscore(scored_highest, number_of_humans, a_queue)
-
-    if config.USE_API:
-        updated_achievements = await self._achievement_service.execute_batch_update(player.id, a_queue)
-
-        if updated_achievements is None:
-            self._logger.warning(&#34;API returned an error while handling the achievements batch update.&#34;)
-            return
-
-        await self._event_service.execute_batch_update(player.id, e_queue)
-        if player.lobby_connection is not None:
-            await player.lobby_connection.send_updated_achievements(updated_achievements)</code></pre>
+<pre><code class="python">async def process_game_stats(
+    self,
+    player: Player,
+    game: Game,
+    army_stats_list: List
+):
+    try:
+        await self._process_game_stats(player, game, army_stats_list)
+    except KeyError as e:
+        self._logger.info(&#34;Malformed game stats. KeyError: %s&#34;, e)
+    except Exception:
+        self._logger.exception(
+            &#34;Error processing game stats for %s in game %d&#34;,
+            player.login,
+            game.id
+        )</code></pre>
 </details>
 </dd>
 </dl>
@@ -4069,11 +4036,18 @@ statistics, and launches the games.</p></div>
                     if guest.lobby_connection is not None
                 ])
             await game.wait_launched(60 + 10 * len(all_guests))
-            self._logger.debug(&#34;Ladder game launched successfully&#34;)
-        except Exception:
+            self._logger.debug(&#34;Ladder game launched successfully %s&#34;, game)
+        except Exception as e:
+            if isinstance(e, asyncio.TimeoutError):
+                self._logger.info(
+                    &#34;Ladder game failed to start! %s setup timed out&#34;,
+                    game
+                )
+            else:
+                self._logger.exception(&#34;Ladder game failed to start %s&#34;, game)
+
             if game:
                 await game.on_game_end()
-            self._logger.exception(&#34;Failed to start ladder game!&#34;)
 
             msg = {&#34;command&#34;: &#34;match_cancelled&#34;}
             for player in all_players:
@@ -4470,11 +4444,18 @@ so it should only perform fast operations.</p></div>
                 if guest.lobby_connection is not None
             ])
         await game.wait_launched(60 + 10 * len(all_guests))
-        self._logger.debug(&#34;Ladder game launched successfully&#34;)
-    except Exception:
+        self._logger.debug(&#34;Ladder game launched successfully %s&#34;, game)
+    except Exception as e:
+        if isinstance(e, asyncio.TimeoutError):
+            self._logger.info(
+                &#34;Ladder game failed to start! %s setup timed out&#34;,
+                game
+            )
+        else:
+            self._logger.exception(&#34;Ladder game failed to start %s&#34;, game)
+
         if game:
             await game.on_game_end()
-        self._logger.exception(&#34;Failed to start ladder game!&#34;)
 
         msg = {&#34;command&#34;: &#34;match_cancelled&#34;}
         for player in all_players:
@@ -4920,6 +4901,7 @@ async def reconnect(self) -&gt; None:
 
     def __init__(self):
         self.public_keys = {}
+        self._last_key_fetch_time = None
 
     async def initialize(self) -&gt; None:
         await self.retrieve_public_keys()
@@ -4929,26 +4911,60 @@ async def reconnect(self) -&gt; None:
             &#34;*/10 * * * *&#34;, func=self.retrieve_public_keys
         )
 
+    @synchronizedmethod
+    async def get_public_keys(self) -&gt; dict:
+        &#34;&#34;&#34;
+        Return cached keys, or fetch them if they&#39;re missing
+        &#34;&#34;&#34;
+        if not self.public_keys:
+            # Rate limit requests so we don&#39;t spam the endpoint when it&#39;s down
+            if (
+                not self._last_key_fetch_time or
+                time.monotonic() - self._last_key_fetch_time &gt; 5
+            ):
+                await self.retrieve_public_keys()
+
+            if not self.public_keys:
+                raise RuntimeError(&#34;jwks could not be retrieved&#34;)
+
+        return self.public_keys
+
     async def retrieve_public_keys(self) -&gt; None:
         &#34;&#34;&#34;
         Get the latest jwks from the hydra endpoint
         &#34;&#34;&#34;
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(config.HYDRA_JWKS_URI) as resp:
-                jwks = await resp.json()
-                self.public_keys = {
-                    jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
-                    for jwk in jwks[&#34;keys&#34;]
-                }
+        self._last_key_fetch_time = time.monotonic()
+        try:
+            async with aiohttp.ClientSession(raise_for_status=True) as session:
+                async with session.get(config.HYDRA_JWKS_URI) as resp:
+                    jwks = await resp.json()
+                    self.public_keys = {
+                        jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
+                        for jwk in jwks[&#34;keys&#34;]
+                    }
+        except Exception:
+            self._logger.exception(
+                &#34;Unable to retrieve jwks, token login will be unavailable!&#34;
+            )
 
     async def get_player_id_from_token(self, token: str) -&gt; int:
         &#34;&#34;&#34;
         Decode the JWT to get the player_id
         &#34;&#34;&#34;
+        # Ensures that if we&#39;re missing the jwks we will try to fetch them on
+        # each new login request. This way our login functionality will be
+        # restored as soon as possible
+        keys = await self.get_public_keys()
         try:
             kid = jwt.get_unverified_header(token)[&#34;kid&#34;]
-            key = self.public_keys[kid]
-            return int(jwt.decode(token, key=key, algorithms=&#34;RS256&#34;, options={&#34;verify_aud&#34;: False})[&#34;sub&#34;])
+            key = keys[kid]
+            decoded = jwt.decode(
+                token,
+                key=key,
+                algorithms=&#34;RS256&#34;,
+                options={&#34;verify_aud&#34;: False}
+            )
+            return int(decoded[&#34;sub&#34;])
         except (InvalidTokenError, KeyError, ValueError):
             raise AuthenticationError(&#34;Token signature was invalid&#34;, &#34;token&#34;)</code></pre>
 </details>
@@ -4971,12 +4987,50 @@ async def reconnect(self) -&gt; None:
     &#34;&#34;&#34;
     Decode the JWT to get the player_id
     &#34;&#34;&#34;
+    # Ensures that if we&#39;re missing the jwks we will try to fetch them on
+    # each new login request. This way our login functionality will be
+    # restored as soon as possible
+    keys = await self.get_public_keys()
     try:
         kid = jwt.get_unverified_header(token)[&#34;kid&#34;]
-        key = self.public_keys[kid]
-        return int(jwt.decode(token, key=key, algorithms=&#34;RS256&#34;, options={&#34;verify_aud&#34;: False})[&#34;sub&#34;])
+        key = keys[kid]
+        decoded = jwt.decode(
+            token,
+            key=key,
+            algorithms=&#34;RS256&#34;,
+            options={&#34;verify_aud&#34;: False}
+        )
+        return int(decoded[&#34;sub&#34;])
     except (InvalidTokenError, KeyError, ValueError):
         raise AuthenticationError(&#34;Token signature was invalid&#34;, &#34;token&#34;)</code></pre>
+</details>
+</dd>
+<dt id="server.OAuthService.get_public_keys"><code class="name flex">
+<span>async def <span class="ident">get_public_keys</span></span>(<span>self) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return cached keys, or fetch them if they're missing</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@synchronizedmethod
+async def get_public_keys(self) -&gt; dict:
+    &#34;&#34;&#34;
+    Return cached keys, or fetch them if they&#39;re missing
+    &#34;&#34;&#34;
+    if not self.public_keys:
+        # Rate limit requests so we don&#39;t spam the endpoint when it&#39;s down
+        if (
+            not self._last_key_fetch_time or
+            time.monotonic() - self._last_key_fetch_time &gt; 5
+        ):
+            await self.retrieve_public_keys()
+
+        if not self.public_keys:
+            raise RuntimeError(&#34;jwks could not be retrieved&#34;)
+
+    return self.public_keys</code></pre>
 </details>
 </dd>
 <dt id="server.OAuthService.retrieve_public_keys"><code class="name flex">
@@ -4992,13 +5046,19 @@ async def reconnect(self) -&gt; None:
     &#34;&#34;&#34;
     Get the latest jwks from the hydra endpoint
     &#34;&#34;&#34;
-    async with aiohttp.ClientSession(raise_for_status=True) as session:
-        async with session.get(config.HYDRA_JWKS_URI) as resp:
-            jwks = await resp.json()
-            self.public_keys = {
-                jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
-                for jwk in jwks[&#34;keys&#34;]
-            }</code></pre>
+    self._last_key_fetch_time = time.monotonic()
+    try:
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(config.HYDRA_JWKS_URI) as resp:
+                jwks = await resp.json()
+                self.public_keys = {
+                    jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
+                    for jwk in jwks[&#34;keys&#34;]
+                }
+    except Exception:
+        self._logger.exception(
+            &#34;Unable to retrieve jwks, token login will be unavailable!&#34;
+        )</code></pre>
 </details>
 </dd>
 </dl>
@@ -6890,6 +6950,7 @@ state, i.e. the same players, games, etc.</p></div>
 <h4><code><a title="server.OAuthService" href="#server.OAuthService">OAuthService</a></code></h4>
 <ul class="">
 <li><code><a title="server.OAuthService.get_player_id_from_token" href="#server.OAuthService.get_player_id_from_token">get_player_id_from_token</a></code></li>
+<li><code><a title="server.OAuthService.get_public_keys" href="#server.OAuthService.get_public_keys">get_public_keys</a></code></li>
 <li><code><a title="server.OAuthService.retrieve_public_keys" href="#server.OAuthService.retrieve_public_keys">retrieve_public_keys</a></code></li>
 </ul>
 </li>

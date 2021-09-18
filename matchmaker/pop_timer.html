@@ -102,7 +102,7 @@ class PopTimer(object):
         # Obtained by solving $ NUM_PLAYERS = rate * time $ for time.
         next_pop_time = desired_players * total_times / total_players
         if next_pop_time &gt; config.QUEUE_POP_TIME_MAX:
-            self._logger.warning(
+            self._logger.info(
                 &#34;Required time (%.2fs) for %s is larger than max pop time (%ds). &#34;
                 &#34;Consider increasing the max pop time&#34;,
                 next_pop_time, self.queue.name, config.QUEUE_POP_TIME_MAX
@@ -204,7 +204,7 @@ The exact size can be set in config.</p></div>
         # Obtained by solving $ NUM_PLAYERS = rate * time $ for time.
         next_pop_time = desired_players * total_times / total_players
         if next_pop_time &gt; config.QUEUE_POP_TIME_MAX:
-            self._logger.warning(
+            self._logger.info(
                 &#34;Required time (%.2fs) for %s is larger than max pop time (%ds). &#34;
                 &#34;Consider increasing the max pop time&#34;,
                 next_pop_time, self.queue.name, config.QUEUE_POP_TIME_MAX
@@ -273,7 +273,7 @@ on the current rate of ladder queues</p></div>
     # Obtained by solving $ NUM_PLAYERS = rate * time $ for time.
     next_pop_time = desired_players * total_times / total_players
     if next_pop_time &gt; config.QUEUE_POP_TIME_MAX:
-        self._logger.warning(
+        self._logger.info(
             &#34;Required time (%.2fs) for %s is larger than max pop time (%ds). &#34;
             &#34;Consider increasing the max pop time&#34;,
             next_pop_time, self.queue.name, config.QUEUE_POP_TIME_MAX
