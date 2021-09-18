@@ -18,7 +18,29 @@ class GameStatsService(Service):
         self._event_service = event_service
         self._achievement_service = achievement_service
 
-    async def process_game_stats(self, player: Player, game: Game, army_stats_list: List):
+    async def process_game_stats(
+        self,
+        player: Player,
+        game: Game,
+        army_stats_list: List
+    ):
+        try:
+            await self._process_game_stats(player, game, army_stats_list)
+        except KeyError as e:
+            self._logger.info("Malformed game stats. KeyError: %s", e)
+        except Exception:
+            self._logger.exception(
+                "Error processing game stats for %s in game %d",
+                player.login,
+                game.id
+            )
+
+    async def _process_game_stats(
+        self,
+        player: Player,
+        game: Game,
+        army_stats_list: List
+    ):
         stats = None
         number_of_humans = 0
         highest_score = 0

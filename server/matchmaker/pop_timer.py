@@ -74,7 +74,7 @@ class PopTimer(object):
         # Obtained by solving $ NUM_PLAYERS = rate * time $ for time.
         next_pop_time = desired_players * total_times / total_players
         if next_pop_time > config.QUEUE_POP_TIME_MAX:
-            self._logger.warning(
+            self._logger.info(
                 "Required time (%.2fs) for %s is larger than max pop time (%ds). "
                 "Consider increasing the max pop time",
                 next_pop_time, self.queue.name, config.QUEUE_POP_TIME_MAX

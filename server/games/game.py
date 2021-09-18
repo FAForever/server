@@ -117,9 +117,8 @@ class Game():
             "RestrictedCategories": 0
         }
         self.mods = {}
-        loop = asyncio.get_event_loop()
-        self._is_hosted = loop.create_future()
-        self._launch_fut = loop.create_future()
+        self._hosted_event = asyncio.Event()
+        self._launched_event = asyncio.Event()
 
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
@@ -127,10 +126,7 @@ class Game():
     async def timeout_game(self, timeout: int = 60):
         await asyncio.sleep(timeout)
         if self.state is GameState.INITIALIZING:
-            self._is_hosted.set_exception(
-                asyncio.TimeoutError("Game setup timed out")
-            )
-            self._logger.debug("Game setup timed out.. Cancelling game")
+            self._logger.debug("Game setup timed out, cancelling game")
             await self.on_game_end()
 
     @property
@@ -272,17 +268,16 @@ class Game():
 
     async def wait_hosted(self, timeout: float):
         return await asyncio.wait_for(
-            asyncio.shield(self._is_hosted),
+            self._hosted_event.wait(),
             timeout=timeout
         )
 
     def set_hosted(self):
-        if not self._is_hosted.done():
-            self._is_hosted.set_result(None)
+        self._hosted_event.set()
 
     async def wait_launched(self, timeout: float):
         return await asyncio.wait_for(
-            asyncio.shield(self._launch_fut),
+            self._launched_event.wait(),
             timeout=timeout
         )
 
@@ -707,7 +702,7 @@ class Game():
         await self.on_game_launched()
         await self.validate_game_settings()
 
-        self._launch_fut.set_result(None)
+        self._launched_event.set()
         self._logger.info("Game launched")
 
     async def on_game_launched(self):
