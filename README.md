@@ -111,9 +111,10 @@ You can check for possible unused code with `vulture` by running:
 It tends to produce a lot of false positives, but it can provide a good place
 to start.
 
-For identifying simple issues before submission to code review,
-run `pre-commit install` to set up the git hook scripts:
+To identify simple issues before submission to code review using `pre-commit`,
+install it and set up the git hook scripts by running:
 
+    $ python3 -m pip install pre-commit
     $ pre-commit install
 
 (optional) Run against all the files (usually `pre-commit` will only run on the
