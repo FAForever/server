@@ -7,7 +7,7 @@ import json
 import random
 import re
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 import aiocron
 from sqlalchemy import and_, func, select, text, true
@@ -37,6 +37,9 @@ from .matchmaker import MapPool, MatchmakerQueue, OnMatchedCallback, Search
 from .players import Player, PlayerState
 from .types import GameLaunchOptions, Map, NeroxisGeneratedMap
 
+if TYPE_CHECKING:
+    from .lobbyconnection import LobbyConnection
+
 
 @with_logger
 class LadderService(Service):
@@ -44,6 +47,7 @@ class LadderService(Service):
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates
     statistics, and launches the games.
     """
+
     def __init__(
         self,
         database: FAFDatabase,

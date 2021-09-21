@@ -487,8 +487,8 @@ async def test_abort(mocker, lobbyconnection):
 
 async def test_send_game_list(mocker, database, lobbyconnection, game_stats_service):
     games = mocker.patch.object(lobbyconnection, "game_service")  # type: GameService
-    game1, game2 = mock.create_autospec(Game(42, database, mock.Mock(), game_stats_service)), \
-                   mock.create_autospec(Game(22, database, mock.Mock(), game_stats_service))
+    game1 = mock.create_autospec(Game(42, database, mock.Mock(), game_stats_service))
+    game2 = mock.create_autospec(Game(22, database, mock.Mock(), game_stats_service))
 
     games.open_games = [game1, game2]
     lobbyconnection.send = CoroutineMock()
@@ -959,13 +959,13 @@ async def test_command_game_matchmaking_not_party_owner(
 
     lobbyconnection.ladder_service.cancel_search.assert_called_once()
 
-    
+
 async def test_command_match_ready(lobbyconnection):
     await lobbyconnection.on_message_received({
         "command": "match_ready"
     })
 
-    
+
 async def test_command_matchmaker_info(
     lobbyconnection,
     ladder_service,

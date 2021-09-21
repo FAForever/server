@@ -7,7 +7,7 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_create_coop_game(database):
-    game = CoopGame(
+    game = CoopGame(  # noqa: F841
         id_=0,
         database=database,
         host=mock.Mock(),

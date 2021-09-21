@@ -2,7 +2,7 @@
 Manages interactions between players and parties
 """
 
-from typing import Dict, List, Set
+from typing import TYPE_CHECKING, Dict, List, Set
 
 from .core import Service
 from .decorators import with_logger
@@ -12,6 +12,9 @@ from .game_service import GameService
 from .players import Player, PlayerState
 from .team_matchmaker.player_party import PlayerParty
 from .timing import at_interval
+
+if TYPE_CHECKING:
+    from .lobbyconnection import LobbyConnection
 
 
 @with_logger

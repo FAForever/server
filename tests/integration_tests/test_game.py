@@ -413,9 +413,9 @@ async def test_partial_game_ended_rates_game(lobby_server, tmp_user):
         # Set player options
         await send_player_options(
             host_proto,
-            [guest_id, "Army", i+2],
-            [guest_id, "StartSpot", i+2],
-            [guest_id, "Color", i+2],
+            [guest_id, "Army", i + 2],
+            [guest_id, "StartSpot", i + 2],
+            [guest_id, "Color", i + 2],
             [guest_id, "Faction", 1],
             [guest_id, "Team", 3 if i % 2 == 0 else 2]
         )

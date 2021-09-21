@@ -3,7 +3,7 @@ Manages connected and authenticated players
 """
 
 import asyncio
-from typing import Optional, Set, ValuesView
+from typing import TYPE_CHECKING, Optional, Set, ValuesView
 
 import aiocron
 from sqlalchemy import and_, select
@@ -31,6 +31,9 @@ from .db.models import (
     user_group,
     user_group_assignment
 )
+
+if TYPE_CHECKING:
+    from .lobbyconnection import LobbyConnection
 
 
 @with_logger

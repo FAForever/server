@@ -101,6 +101,7 @@ class MockDatabase:
     Note that right now the server relies on autocommit behaviour of aiomysql.
     Any future manual commit() calls should be mocked here as well.
     """
+
     def __init__(self, loop):
         self._loop = loop
         self.engine = None

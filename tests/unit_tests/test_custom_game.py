@@ -82,7 +82,7 @@ async def test_global_rating_higher_after_custom_game_win(
     old_mean = players[0].ratings[RatingType.GLOBAL][0]
 
     await game.launch()
-    game.launched_at = time.time() - 60*20  # seconds
+    game.launched_at = time.time() - 60 * 20  # seconds
     await game.add_result(0, 0, "victory", 5)
     await game.add_result(0, 1, "defeat", -5)
     await game.on_game_end()

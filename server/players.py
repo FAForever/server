@@ -5,12 +5,15 @@ Player type definitions
 from collections import defaultdict
 from contextlib import suppress
 from enum import Enum, unique
-from typing import Dict, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional, Union
 
 from .factions import Faction
 from .protocol import DisconnectedError
 from .rating import Leaderboard, PlayerRatings, RatingType
 from .weakattr import WeakAttribute
+
+if TYPE_CHECKING:
+    from .lobbyconnection import LobbyConnection
 
 
 @unique

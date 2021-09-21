@@ -28,7 +28,7 @@ def player_factory(player_factory):
     def make(
         mean: int = 1500,
         deviation: int = 500,
-        ladder_games: int = config.NEWBIE_MIN_GAMES+1,
+        ladder_games: int = config.NEWBIE_MIN_GAMES + 1,
         name=None
     ):
         """Make a player with the given ratings"""

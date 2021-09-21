@@ -137,6 +137,7 @@ class InclusiveRange():
     assert -1 not in InclusiveRange(0, 10)
     assert 11 not in InclusiveRange(0, 10)
     """
+
     def __init__(self, lo: Optional[float] = None, hi: Optional[float] = None):
         self.lo = lo
         self.hi = hi

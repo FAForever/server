@@ -56,6 +56,7 @@ class TeamMatchMaker(Matchmaker):
     8. pick the first game from the game list and remove all other games that contain the same players
     9. repeat 8. until the list is empty
     """
+
     def find(self, searches: Iterable[Search], team_size: int) -> Tuple[List[Match], List[Search]]:
         if not searches:
             return [], []
@@ -113,7 +114,7 @@ class TeamMatchMaker(Matchmaker):
         # We need to do this in two steps to ensure that index = 0 gives an empty iterator
         lower = searches[:index]
         lower = iter(lower[::-1])
-        higher = iter(searches[index+1:])
+        higher = iter(searches[index + 1:])
         pick_lower = True
         candidate = searches[index]
         participants = [candidate]

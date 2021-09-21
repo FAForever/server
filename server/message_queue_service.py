@@ -26,6 +26,7 @@ class MessageQueueService(Service):
     Service handling connection to the message queue
     and providing an interface to publish messages.
     """
+
     def __init__(self) -> None:
         self._logger.debug("Message queue service created.")
         self._connection = None

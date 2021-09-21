@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from aio_pika import DeliveryMode
 
 from .config import config
@@ -8,6 +10,9 @@ from .games import GameState
 from .message_queue_service import MessageQueueService
 from .player_service import PlayerService
 from .timing import LazyIntervalTimer
+
+if TYPE_CHECKING:
+    from server import ServerInstance
 
 
 @with_logger

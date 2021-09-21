@@ -596,13 +596,14 @@ async def test_name_sanitization(game, players):
 async def test_to_dict(game, player_factory):
     game.state = GameState.LOBBY
     players = [
-            (player_factory(f"{i}", player_id=i, global_rating=rating), result, team)
-            for i, (rating, result, team) in enumerate([
-               (Rating(1500, 250), 0, 1),
-               (Rating(1700, 120), 0, 1),
-               (Rating(1200, 72), 0, 2),
-               (Rating(1200, 72), 0, 2),
-            ], 1)]
+        (player_factory(f"{i}", player_id=i, global_rating=rating), result, team)
+        for i, (rating, result, team) in enumerate([
+            (Rating(1500, 250), 0, 1),
+            (Rating(1700, 120), 0, 1),
+            (Rating(1200, 72), 0, 2),
+            (Rating(1200, 72), 0, 2),
+        ], 1)
+    ]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
         game.set_player_option(player.id, "Team", team)

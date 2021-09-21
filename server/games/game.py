@@ -3,7 +3,17 @@ import json
 import logging
 import time
 from collections import defaultdict
-from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    FrozenSet,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple
+)
 
 import pymysql
 from sqlalchemy import and_, bindparam
@@ -42,6 +52,10 @@ from .typedefs import (
     Victory,
     VisibilityState
 )
+
+if TYPE_CHECKING:
+    from server import GameConnection, GameService, GameStatsService
+    from server.db import FAFDatabase
 
 
 class GameError(Exception):

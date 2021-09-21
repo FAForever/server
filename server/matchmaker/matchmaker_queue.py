@@ -3,7 +3,16 @@ import time
 from collections import OrderedDict
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple
+)
 
 import server.metrics as metrics
 
@@ -14,6 +23,9 @@ from .algorithm.team_matchmaker import TeamMatchMaker
 from .map_pool import MapPool
 from .pop_timer import PopTimer
 from .search import Match, Search
+
+if TYPE_CHECKING:
+    from server import GameService
 
 MatchFoundCallback = Callable[[Search, Search, "MatchmakerQueue"], Any]
 

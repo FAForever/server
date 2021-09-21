@@ -503,7 +503,7 @@ class GameConnection(GpgNetServerProtocol):
             await self.on_connection_lost()
         self._mark_dirty()
 
-    async def handle_game_ended(self, *args:  List[Any]):
+    async def handle_game_ended(self, *args: List[Any]):
         """
         Signals that the simulation has ended.
         """
@@ -616,25 +616,25 @@ class GameConnection(GpgNetServerProtocol):
 
 
 COMMAND_HANDLERS = {
-    "Desync":               GameConnection.handle_desync,
-    "GameState":            GameConnection.handle_game_state,
-    "GameOption":           GameConnection.handle_game_option,
-    "GameMods":             GameConnection.handle_game_mods,
-    "PlayerOption":         GameConnection.handle_player_option,
-    "AIOption":             GameConnection.handle_ai_option,
-    "ClearSlot":            GameConnection.handle_clear_slot,
-    "GameResult":           GameConnection.handle_game_result,
-    "OperationComplete":    GameConnection.handle_operation_complete,
-    "JsonStats":            GameConnection.handle_json_stats,
-    "EnforceRating":        GameConnection.handle_enforce_rating,
-    "TeamkillReport":       GameConnection.handle_teamkill_report,
-    "TeamkillHappened":     GameConnection.handle_teamkill_happened,
-    "GameEnded":            GameConnection.handle_game_ended,
-    "Rehost":               GameConnection.handle_rehost,
-    "Bottleneck":           GameConnection.handle_bottleneck,
-    "BottleneckCleared":    GameConnection.handle_bottleneck_cleared,
-    "Disconnected":         GameConnection.handle_disconnected,
-    "IceMsg":               GameConnection.handle_ice_message,
-    "Chat":                 GameConnection.handle_chat,
-    "GameFull":             GameConnection.handle_game_full
+    "Desync": GameConnection.handle_desync,
+    "GameState": GameConnection.handle_game_state,
+    "GameOption": GameConnection.handle_game_option,
+    "GameMods": GameConnection.handle_game_mods,
+    "PlayerOption": GameConnection.handle_player_option,
+    "AIOption": GameConnection.handle_ai_option,
+    "ClearSlot": GameConnection.handle_clear_slot,
+    "GameResult": GameConnection.handle_game_result,
+    "OperationComplete": GameConnection.handle_operation_complete,
+    "JsonStats": GameConnection.handle_json_stats,
+    "EnforceRating": GameConnection.handle_enforce_rating,
+    "TeamkillReport": GameConnection.handle_teamkill_report,
+    "TeamkillHappened": GameConnection.handle_teamkill_happened,
+    "GameEnded": GameConnection.handle_game_ended,
+    "Rehost": GameConnection.handle_rehost,
+    "Bottleneck": GameConnection.handle_bottleneck,
+    "BottleneckCleared": GameConnection.handle_bottleneck_cleared,
+    "Disconnected": GameConnection.handle_disconnected,
+    "IceMsg": GameConnection.handle_ice_message,
+    "Chat": GameConnection.handle_chat,
+    "GameFull": GameConnection.handle_game_full
 }

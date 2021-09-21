@@ -1,12 +1,15 @@
 import asyncio
 from collections import deque
 from time import time
-from typing import Deque
+from typing import TYPE_CHECKING, Deque
 
 import server.metrics as metrics
 
 from ..config import config
 from ..decorators import with_logger
+
+if TYPE_CHECKING:
+    from .matchmaker_queue import MatchmakerQueue
 
 
 @with_logger
@@ -25,6 +28,7 @@ class PopTimer(object):
     The player queue rate is based on a moving average over the last few pops.
     The exact size can be set in config.
     """
+
     def __init__(self, queue: "MatchmakerQueue"):
         self.queue = queue
         # Set up deque's for calculating a moving average

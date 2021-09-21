@@ -34,7 +34,7 @@ def oauth2_server(event_loop):
     @routes.post("/token")
     async def token(request):
         data = await request.post()
-        return await {
+        return await {  # noqa: W606
             "client_credentials": client_credentials,
             "refresh_token": refresh_token
         }.get(data.get("grant_type"))(data)
