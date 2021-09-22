@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 from collections import deque
 from time import time
@@ -29,7 +31,7 @@ class PopTimer(object):
     The exact size can be set in config.
     """
 
-    def __init__(self, queue: "MatchmakerQueue"):
+    def __init__(self, queue: MatchmakerQueue):
         self.queue = queue
         # Set up deque's for calculating a moving average
         self.last_queue_amounts: Deque[int] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)

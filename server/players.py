@@ -1,6 +1,7 @@
 """
 Player type definitions
 """
+from __future__ import annotations
 
 from collections import defaultdict
 from contextlib import suppress
@@ -47,7 +48,7 @@ class Player:
         ratings=None,
         clan=None,
         game_count=None,
-        lobby_connection: Optional["LobbyConnection"] = None
+        lobby_connection: Optional[LobbyConnection] = None
     ) -> None:
         self._faction = Faction.uef
 

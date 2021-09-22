@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from aio_pika import DeliveryMode
@@ -23,7 +25,7 @@ class BroadcastService(Service):
 
     def __init__(
         self,
-        server: "ServerInstance",
+        server: ServerInstance,
         message_queue_service: MessageQueueService,
         game_service: GameService,
         player_service: PlayerService,

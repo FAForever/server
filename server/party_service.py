@@ -1,6 +1,7 @@
 """
 Manages interactions between players and parties
 """
+from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict, List, Set
 
@@ -189,7 +190,7 @@ class PartyService(Service):
         # TODO: Send a special "disbanded" command?
         self.write_broadcast_party(party, members=members)
 
-    def on_connection_lost(self, conn: "LobbyConnection") -> None:
+    def on_connection_lost(self, conn: LobbyConnection) -> None:
         if not conn.player or conn.player not in self.player_parties:
             return
 

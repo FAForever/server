@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import time
 from collections import OrderedDict
@@ -54,7 +56,7 @@ class MatchmakerSearchTimer:
 class MatchmakerQueue:
     def __init__(
         self,
-        game_service: "GameService",
+        game_service: GameService,
         on_match_found: MatchFoundCallback,
         name: str,
         queue_id: int,

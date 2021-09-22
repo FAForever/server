@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
@@ -72,9 +74,9 @@ class Game():
     def __init__(
         self,
         id_: int,
-        database: "FAFDatabase",
-        game_service: "GameService",
-        game_stats_service: "GameStatsService",
+        database: FAFDatabase,
+        game_service: GameService,
+        game_stats_service: GameStatsService,
         host: Optional[Player] = None,
         name: str = "None",
         map_: str = "SCMP_007",
@@ -206,7 +208,7 @@ class Game():
         return army is None or army < 0
 
     @property
-    def connections(self) -> Iterable["GameConnection"]:
+    def connections(self) -> Iterable[GameConnection]:
         return self._connections.values()
 
     @property

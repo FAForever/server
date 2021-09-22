@@ -1,6 +1,7 @@
 """
 Manages connected and authenticated players
 """
+from __future__ import annotations
 
 import asyncio
 from typing import TYPE_CHECKING, Optional, Set, ValuesView
@@ -282,7 +283,7 @@ class PlayerService(Service):
                     "Could not send shutdown message to %s: %s", player, ex
                 )
 
-    def on_connection_lost(self, conn: "LobbyConnection") -> None:
+    def on_connection_lost(self, conn: LobbyConnection) -> None:
         if not conn.player:
             return
 

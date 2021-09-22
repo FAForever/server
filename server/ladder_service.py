@@ -1,6 +1,7 @@
 """
 Manages interactions between players and matchmakers
 """
+from __future__ import annotations
 
 import asyncio
 import json
@@ -520,7 +521,7 @@ class LadderService(Service):
                 ])
         return result
 
-    def on_connection_lost(self, conn: "LobbyConnection") -> None:
+    def on_connection_lost(self, conn: LobbyConnection) -> None:
         if not conn.player:
             return
 
