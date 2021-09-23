@@ -183,7 +183,7 @@ async def test_QDataStreamProtocol_encode_ping_pong():
 async def test_send_message_simultaneous_writes(unix_protocol):
     msg = {
         "command": "test",
-        "data": "*" * (4096 * 4)
+        "data": "*" * (4096*4)
     }
 
     # If drain calls are not synchronized, then this will raise an
@@ -194,7 +194,7 @@ async def test_send_message_simultaneous_writes(unix_protocol):
 async def test_send_messages_simultaneous_writes(unix_protocol):
     msg = {
         "command": "test",
-        "data": "*" * (4096 * 4)
+        "data": "*" * (4096*4)
     }
 
     # If drain calls are not synchronized, then this will raise an
@@ -205,7 +205,7 @@ async def test_send_messages_simultaneous_writes(unix_protocol):
 
 
 async def test_send_raw_simultaneous_writes(unix_protocol):
-    msg = b"*" * (4096 * 4)
+    msg = b"*" * (4096*4)
 
     # If drain calls are not synchronized, then this will raise an
     # AssertionError from within asyncio

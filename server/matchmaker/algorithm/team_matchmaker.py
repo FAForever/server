@@ -114,7 +114,7 @@ class TeamMatchMaker(Matchmaker):
         # We need to do this in two steps to ensure that index = 0 gives an empty iterator
         lower = searches[:index]
         lower = iter(lower[::-1])
-        higher = iter(searches[index + 1:])
+        higher = iter(searches[index+1:])
         pick_lower = True
         candidate = searches[index]
         participants = [candidate]

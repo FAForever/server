@@ -102,7 +102,7 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
     before_deviation = {1: 125, 2: 75}
 
     await laddergame.launch()
-    laddergame.launched_at = time.time() - 60 * 20
+    laddergame.launched_at = time.time() - 60*20
     await laddergame.add_result(0, 0, "victory", 5)
     await laddergame.add_result(0, 1, "defeat", -5)
     await laddergame.on_game_end()
@@ -151,7 +151,7 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
         result_before = await result.fetchall()
 
     await laddergame.launch()
-    laddergame.launched_at = time.time() - 60 * 20
+    laddergame.launched_at = time.time() - 60*20
     await laddergame.add_result(0, 0, "victory", 5)
     await laddergame.add_result(0, 1, "defeat", -5)
     await laddergame.on_game_end()
