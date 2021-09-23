@@ -861,17 +861,22 @@ class Game():
         self._process_pending_army_stats()
 
     def is_visible_to_player(self, player: Player) -> bool:
+        """
+        Determine if a player should see this game in their games list.
+
+        Note: This is a *hot* function, it can have significant impacts on
+        performance.
+        """
         if self.host is None:
             return False
 
         if player == self.host or player in self._connections:
             return True
 
-        mean, dev = player.ratings[self.rating_type]
-        displayed_rating = mean - 3 * dev
         if (
             self.enforce_rating_range
-            and displayed_rating not in self.displayed_rating_range
+            and player.get_displayed_rating(self.rating_type)
+            not in self.displayed_rating_range
         ):
             return False
 
