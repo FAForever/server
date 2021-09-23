@@ -104,15 +104,8 @@ server.
 
 ## Other tools
 
-You can check for possible unused code with `vulture` by running:
-
-    $ pipenv run vulture
-
-It tends to produce a lot of false positives, but it can provide a good place
-to start.
-
-To identify simple issues before submission to code review using `pre-commit`,
-install it and set up the git hook scripts by running:
+There are some pre-commit hooks that can fix basic formatting issues for you
+to make the review process go smoother. You can install them by running:
 
     $ python3 -m pip install pre-commit
     $ pre-commit install
@@ -121,6 +114,13 @@ install it and set up the git hook scripts by running:
 changed files during git hooks):
 
     $ pre-commit run --all-files
+
+You can check for possible unused code with `vulture` by running:
+
+    $ pipenv run vulture
+
+It tends to produce a lot of false positives, but it can provide a good place
+to start.
 
 ## Building with Docker
 
