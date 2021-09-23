@@ -1066,7 +1066,7 @@ class LobbyConnection:
                                    downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
                                    ui=ui)
                         await self.send(out)
-                    except BaseException:
+                    except Exception:
                         self._logger.error(f"Error handling table_mod row (uid: {uid})", exc_info=True)
 
             elif type == "like":
@@ -1092,7 +1092,7 @@ class LobbyConnection:
                         canLike = False
                     else:
                         likers.append(self.player.id)
-                except BaseException:
+                except Exception:
                     likers = []
 
                 # TODO: Avoid sending all the mod info in the world just because we liked it?
