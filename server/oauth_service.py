@@ -85,6 +85,10 @@ class OAuthService(Service, name="oauth_service"):
                 algorithms="RS256",
                 options={"verify_aud": False}
             )
+
+            if "lobby" not in decoded["scp"]:
+                raise AuthenticationError("Token does not have permission to login to the lobby server", "token")
+
             return int(decoded["sub"])
         except (InvalidTokenError, KeyError, ValueError):
             raise AuthenticationError("Token signature was invalid", "token")
