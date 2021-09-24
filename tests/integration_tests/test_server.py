@@ -191,7 +191,7 @@ async def test_game_info_sent_to_friends(lobby_server):
     await host_game(proto1, title="Friends Only", visibility="friends")
 
     # Host should see their own game
-    msg = await read_until_command(proto1, "game_info")
+    msg = await read_until_command(proto1, "game_info", state="open")
     assert msg["featured_mod"] == "faf"
     assert msg["title"] == "Friends Only"
     assert msg["visibility"] == "friends"
