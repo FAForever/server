@@ -104,6 +104,17 @@ server.
 
 ## Other tools
 
+There are some pre-commit hooks that can fix basic formatting issues for you
+to make the review process go smoother. You can install them by running:
+
+    $ python3 -m pip install pre-commit
+    $ pre-commit install
+
+(optional) Run against all the files (usually `pre-commit` will only run on the
+changed files during git hooks):
+
+    $ pre-commit run --all-files
+
 You can check for possible unused code with `vulture` by running:
 
     $ pipenv run vulture
