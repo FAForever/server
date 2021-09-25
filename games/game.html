@@ -889,17 +889,22 @@ class Game():
         self._process_pending_army_stats()
 
     def is_visible_to_player(self, player: Player) -&gt; bool:
+        &#34;&#34;&#34;
+        Determine if a player should see this game in their games list.
+
+        Note: This is a *hot* function, it can have significant impacts on
+        performance.
+        &#34;&#34;&#34;
         if self.host is None:
             return False
 
         if player == self.host or player in self._connections:
             return True
 
-        mean, dev = player.ratings[self.rating_type]
-        displayed_rating = mean - 3 * dev
         if (
             self.enforce_rating_range
-            and displayed_rating not in self.displayed_rating_range
+            and player.get_displayed_rating(self.rating_type)
+            not in self.displayed_rating_range
         ):
             return False
 
@@ -1806,17 +1811,22 @@ class Game():
         self._process_pending_army_stats()
 
     def is_visible_to_player(self, player: Player) -&gt; bool:
+        &#34;&#34;&#34;
+        Determine if a player should see this game in their games list.
+
+        Note: This is a *hot* function, it can have significant impacts on
+        performance.
+        &#34;&#34;&#34;
         if self.host is None:
             return False
 
         if player == self.host or player in self._connections:
             return True
 
-        mean, dev = player.ratings[self.rating_type]
-        displayed_rating = mean - 3 * dev
         if (
             self.enforce_rating_range
-            and displayed_rating not in self.displayed_rating_range
+            and player.get_displayed_rating(self.rating_type)
+            not in self.displayed_rating_range
         ):
             return False
 
@@ -2397,23 +2407,30 @@ Note that FFA players will be separated into individual teams.</p></div>
 <span>def <span class="ident">is_visible_to_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> bool</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Determine if a player should see this game in their games list.</p>
+<p>Note: This is a <em>hot</em> function, it can have significant impacts on
+performance.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def is_visible_to_player(self, player: Player) -&gt; bool:
+    &#34;&#34;&#34;
+    Determine if a player should see this game in their games list.
+
+    Note: This is a *hot* function, it can have significant impacts on
+    performance.
+    &#34;&#34;&#34;
     if self.host is None:
         return False
 
     if player == self.host or player in self._connections:
         return True
 
-    mean, dev = player.ratings[self.rating_type]
-    displayed_rating = mean - 3 * dev
     if (
         self.enforce_rating_range
-        and displayed_rating not in self.displayed_rating_range
+        and player.get_displayed_rating(self.rating_type)
+        not in self.displayed_rating_range
     ):
         return False
 

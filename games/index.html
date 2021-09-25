@@ -228,6 +228,7 @@ __all__ = (
 <li><code><a title="server.games.game.Game.get_player_option" href="game.html#server.games.game.Game.get_player_option">get_player_option</a></code></li>
 <li><code><a title="server.games.game.Game.get_team_sets" href="game.html#server.games.game.Game.get_team_sets">get_team_sets</a></code></li>
 <li><code><a title="server.games.game.Game.is_even" href="game.html#server.games.game.Game.is_even">is_even</a></code></li>
+<li><code><a title="server.games.game.Game.is_visible_to_player" href="game.html#server.games.game.Game.is_visible_to_player">is_visible_to_player</a></code></li>
 <li><code><a title="server.games.game.Game.launch" href="game.html#server.games.game.Game.launch">launch</a></code></li>
 <li><code><a title="server.games.game.Game.load_results" href="game.html#server.games.game.Game.load_results">load_results</a></code></li>
 <li><code><a title="server.games.game.Game.map_folder_name" href="game.html#server.games.game.Game.map_folder_name">map_folder_name</a></code></li>
@@ -297,6 +298,7 @@ __all__ = (
 <li><code><a title="server.games.game.Game.get_player_option" href="game.html#server.games.game.Game.get_player_option">get_player_option</a></code></li>
 <li><code><a title="server.games.game.Game.get_team_sets" href="game.html#server.games.game.Game.get_team_sets">get_team_sets</a></code></li>
 <li><code><a title="server.games.game.Game.is_even" href="game.html#server.games.game.Game.is_even">is_even</a></code></li>
+<li><code><a title="server.games.game.Game.is_visible_to_player" href="game.html#server.games.game.Game.is_visible_to_player">is_visible_to_player</a></code></li>
 <li><code><a title="server.games.game.Game.launch" href="game.html#server.games.game.Game.launch">launch</a></code></li>
 <li><code><a title="server.games.game.Game.load_results" href="game.html#server.games.game.Game.load_results">load_results</a></code></li>
 <li><code><a title="server.games.game.Game.map_folder_name" href="game.html#server.games.game.Game.map_folder_name">map_folder_name</a></code></li>
@@ -1226,17 +1228,22 @@ __all__ = (
         self._process_pending_army_stats()
 
     def is_visible_to_player(self, player: Player) -&gt; bool:
+        &#34;&#34;&#34;
+        Determine if a player should see this game in their games list.
+
+        Note: This is a *hot* function, it can have significant impacts on
+        performance.
+        &#34;&#34;&#34;
         if self.host is None:
             return False
 
         if player == self.host or player in self._connections:
             return True
 
-        mean, dev = player.ratings[self.rating_type]
-        displayed_rating = mean - 3 * dev
         if (
             self.enforce_rating_range
-            and displayed_rating not in self.displayed_rating_range
+            and player.get_displayed_rating(self.rating_type)
+            not in self.displayed_rating_range
         ):
             return False
 
@@ -1817,23 +1824,30 @@ Note that FFA players will be separated into individual teams.</p></div>
 <span>def <span class="ident">is_visible_to_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> bool</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Determine if a player should see this game in their games list.</p>
+<p>Note: This is a <em>hot</em> function, it can have significant impacts on
+performance.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def is_visible_to_player(self, player: Player) -&gt; bool:
+    &#34;&#34;&#34;
+    Determine if a player should see this game in their games list.
+
+    Note: This is a *hot* function, it can have significant impacts on
+    performance.
+    &#34;&#34;&#34;
     if self.host is None:
         return False
 
     if player == self.host or player in self._connections:
         return True
 
-    mean, dev = player.ratings[self.rating_type]
-    displayed_rating = mean - 3 * dev
     if (
         self.enforce_rating_range
-        and displayed_rating not in self.displayed_rating_range
+        and player.get_displayed_rating(self.rating_type)
+        not in self.displayed_rating_range
     ):
         return False
 
@@ -2775,6 +2789,7 @@ as 1 for win and 0 for anything else.</p></div>
 <li><code><a title="server.games.game.Game.get_player_option" href="game.html#server.games.game.Game.get_player_option">get_player_option</a></code></li>
 <li><code><a title="server.games.game.Game.get_team_sets" href="game.html#server.games.game.Game.get_team_sets">get_team_sets</a></code></li>
 <li><code><a title="server.games.game.Game.is_even" href="game.html#server.games.game.Game.is_even">is_even</a></code></li>
+<li><code><a title="server.games.game.Game.is_visible_to_player" href="game.html#server.games.game.Game.is_visible_to_player">is_visible_to_player</a></code></li>
 <li><code><a title="server.games.game.Game.launch" href="game.html#server.games.game.Game.launch">launch</a></code></li>
 <li><code><a title="server.games.game.Game.load_results" href="game.html#server.games.game.Game.load_results">load_results</a></code></li>
 <li><code><a title="server.games.game.Game.map_folder_name" href="game.html#server.games.game.Game.map_folder_name">map_folder_name</a></code></li>
