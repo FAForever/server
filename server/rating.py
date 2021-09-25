@@ -56,6 +56,8 @@ class PlayerRatings(Dict[str, Rating]):
         self.leaderboards = leaderboards
         # Rating types which are present but should be recomputed.
         self.transient: Set[str] = set()
+        # Rating types which have been computed since the last rating update
+        self.clean: Set[str] = set()
 
         # DEPRECATED: Initialize known rating types so the client can display them
         if init:
@@ -73,6 +75,11 @@ class PlayerRatings(Dict[str, Rating]):
             rating = value
 
         self.transient.discard(rating_type)
+        # This could be optimized further by walking backwards along the
+        # initialization chain and only unmarking the ratings we come accross,
+        # but this adds complexity so we won't bother unless it really becomes
+        # a performance bottleneck, which is unlikely.
+        self.clean.clear()
         super().__setitem__(rating_type, rating)
 
     def __getitem__(
@@ -83,7 +90,10 @@ class PlayerRatings(Dict[str, Rating]):
         history = history or set()
         entry = self.get(rating_type)
 
-        if entry is None or rating_type in self.transient:
+        if (
+            entry is None or
+            (rating_type not in self.clean and rating_type in self.transient)
+        ):
             # Check for cycles
             if rating_type in history:
                 return default_rating()
@@ -91,6 +101,7 @@ class PlayerRatings(Dict[str, Rating]):
             rating = self._get_initial_rating(rating_type, history=history)
 
             self.transient.add(rating_type)
+            self.clean.add(rating_type)
             super().__setitem__(rating_type, rating)
             return rating
 
@@ -117,6 +128,7 @@ class PlayerRatings(Dict[str, Rating]):
 
     def update(self, other: Dict[str, Rating]):
         self.transient -= set(other)
+        self.clean.clear()
         if isinstance(other, PlayerRatings):
             self.transient |= other.transient
         super().update(other)

@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pytest
 
 from server.rating import Leaderboard, PlayerRatings, RatingType
@@ -135,6 +137,16 @@ def test_initialization_transient(chained_ratings):
     assert chained_ratings["tmm_2v2"] == (300, 200)
 
 
+def test_initialization_transient_caching(chained_ratings):
+    # Return a new mock on each call. By default it will return the same mock
+    chained_ratings._get_initial_rating = mock.Mock(side_effect=mock.Mock)
+
+    chained_ratings["global"] = (1000, 50)
+
+    assert chained_ratings["tmm_2v2"] == chained_ratings["tmm_2v2"]
+    chained_ratings._get_initial_rating.assert_called_once()
+
+
 def test_initialization_with_high_deviation(chained_ratings):
     chained_ratings["ladder_1v1"] = (1000, 150)
     assert chained_ratings["ladder_1v1"] == (1000, 150)
@@ -159,6 +171,30 @@ def test_dict_update(chained_ratings):
     assert chained_ratings["ladder_1v1"] == (500, 100)
     # Global should not be re-initialized after dict update
     assert chained_ratings["global"] == (750, 100)
+
+
+def test_dict_update_caching(chained_ratings):
+    # Return a new mock on each call. By default it will return the same mock
+    chained_ratings._get_initial_rating = mock.Mock(side_effect=mock.Mock)
+
+    chained_ratings["ladder_1v1"] = (1000, 50)
+    previous_rating = chained_ratings["global"]
+    chained_ratings._get_initial_rating.assert_called_once()
+
+    chained_ratings.update({
+        "ladder_1v1": (500, 100)
+    })
+    # Global should be re-initialized after dict update
+    assert chained_ratings["global"] != previous_rating
+    assert chained_ratings._get_initial_rating.call_count == 2
+
+    chained_ratings.update({
+        "ladder_1v1": (500, 100),
+        "global": (750, 100)
+    })
+    # Global should not be re-initialized
+    assert chained_ratings["global"] == (750, 100)
+    assert chained_ratings._get_initial_rating.call_count == 2
 
 
 def test_ratings_update_same_leaderboards(chained_leaderboards):
