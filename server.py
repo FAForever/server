@@ -27,6 +27,16 @@ from server.protocol import SimpleJsonProtocol
 
 
 async def main():
+    version = os.environ.get("VERSION") or "dev"
+    python_version = ".".join(map(str, sys.version_info[:3]))
+
+    logger.info(
+        "Lobby %s (Python %s) on %s",
+        version,
+        python_version,
+        sys.platform
+    )
+
     loop = asyncio.get_running_loop()
     done = loop.create_future()
 
@@ -98,8 +108,8 @@ async def main():
     await instance.listen(("", 8002), SimpleJsonProtocol)
 
     server.metrics.info.info({
-        "version": os.environ.get("VERSION") or "dev",
-        "python_version": ".".join(map(str, sys.version_info[:3])),
+        "version": version,
+        "python_version": python_version,
         "start_time": datetime.utcnow().strftime("%m-%d %H:%M"),
         "game_uid": str(game_service.game_id_counter)
     })
