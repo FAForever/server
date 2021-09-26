@@ -358,7 +358,8 @@ def queue_factory():
         name="Test Queue",
         mod="ladder1v1",
         team_size=1,
-        rating_type=RatingType.GLOBAL
+        rating_type=RatingType.GLOBAL,
+        **kwargs
     ):
         nonlocal queue_id
         queue_id += 1
@@ -370,6 +371,7 @@ def queue_factory():
             featured_mod=mod,
             rating_type=rating_type,
             team_size=team_size,
+            **kwargs
         )
     return make
 

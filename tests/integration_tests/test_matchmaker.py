@@ -18,7 +18,8 @@ from .test_game import (
     client_response,
     open_fa,
     queue_player_for_matchmaking,
-    queue_players_for_matchmaking
+    queue_players_for_matchmaking,
+    queue_temp_players_for_matchmaking
 )
 
 pytestmark = pytest.mark.asyncio
@@ -32,27 +33,66 @@ async def test_game_launch_message(lobby_server):
     await open_fa(proto1)
     msg2 = await read_until_command(proto2, "game_launch")
 
-    assert msg1["uid"] == msg2["uid"]
-    assert msg1["mod"] == msg2["mod"] == "ladder1v1"
-    assert msg1["mapname"] == msg2["mapname"]
-    assert msg1["team"] == 2
+    assert msg2["uid"] == msg1["uid"]
+    assert msg2["mod"] == msg1["mod"]
+    assert msg2["mapname"] == msg1["mapname"]
     assert msg2["team"] == 3
-    assert msg1["faction"] == msg2["faction"] == 1  # faction 1 is uef
-    assert msg1["expected_players"] == msg2["expected_players"] == 2
-    assert msg1["map_position"] == 1
+    assert msg2["faction"] == 1
+    assert msg2["expected_players"] == msg1["expected_players"]
     assert msg2["map_position"] == 2
+
+    del msg1["mapname"]
+    assert msg1 == {
+        "command": "game_launch",
+        "args": ["/numgames", 0],
+        "uid": 41956,
+        "mod": "ladder1v1",
+        "name": "ladder1 Vs ladder2",
+        "init_mode": 1,
+        "rating_type": "ladder_1v1",
+        "team": 2,
+        "faction": 1,
+        "expected_players": 2,
+        "map_position": 1
+    }
 
 
 @fast_forward(70)
 async def test_game_launch_message_map_generator(lobby_server):
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server, queue_name="neroxis1v1")
+    proto1, proto2 = await queue_players_for_matchmaking(
+        lobby_server,
+        queue_name="neroxis1v1"
+    )
 
     msg1 = await read_until_command(proto1, "game_launch")
     await open_fa(proto1)
     msg2 = await read_until_command(proto2, "game_launch")
 
     assert msg1["mapname"] == msg2["mapname"]
-    assert re.match("neroxis_map_generator_0.0.0_[0-9a-z]{13}_aiea", msg1["mapname"])
+    assert re.match(
+        "neroxis_map_generator_0.0.0_[0-9a-z]{13}_aiea",
+        msg1["mapname"]
+    )
+
+
+@fast_forward(70)
+async def test_game_launch_message_game_options(lobby_server, tmp_user):
+    protos = await queue_temp_players_for_matchmaking(
+        lobby_server,
+        tmp_user,
+        num_players=6,
+        queue_name="gameoptions"
+    )
+
+    msgs = await asyncio.gather(*[
+        client_response(proto) for proto in protos
+    ])
+
+    for msg in msgs:
+        assert msg["game_options"] == {
+            "Share": "ShareUntilDeath",
+            "UnitCap": 500
+        }
 
 
 @fast_forward(15)
@@ -403,6 +443,7 @@ async def test_command_matchmaker_info(lobby_server, mocker):
     await proto.send_message({"command": "matchmaker_info"})
     msg = await read_until_command(proto, "matchmaker_info")
     assert "queues" in msg
+    assert len(msg["queues"]) == 4
     for queue in msg["queues"]:
         assert "queue_name" in queue
         assert "team_size" in queue

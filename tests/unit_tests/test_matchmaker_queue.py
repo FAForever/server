@@ -44,6 +44,20 @@ def matchmaker_players_all_match(player_factory):
            player_factory("Rhiza", player_id=5, ladder_rating=(1500, 50))
 
 
+def test_get_game_options_empty(queue_factory):
+    queue1 = queue_factory(params={})
+    queue2 = queue_factory(params={"GameOptions": {}})
+
+    assert queue1.get_game_options() is None
+    assert queue2.get_game_options() is None
+
+
+def test_get_game_options(queue_factory):
+    queue = queue_factory(params={"GameOptions": {"Share": "ShareUntilDeath"}})
+
+    assert queue.get_game_options() == {"Share": "ShareUntilDeath"}
+
+
 def test_newbie_detection(matchmaker_players):
     pro, joe, _, _, _, newbie = matchmaker_players
     pro_search = Search([pro])

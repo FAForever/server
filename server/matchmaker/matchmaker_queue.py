@@ -49,6 +49,7 @@ class MatchmakerQueue:
         featured_mod: str,
         rating_type: str,
         team_size: int = 1,
+        params: Optional[Dict[str, Any]] = None,
         map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = (),
     ):
         self.game_service = game_service
@@ -57,6 +58,7 @@ class MatchmakerQueue:
         self.featured_mod = featured_mod
         self.rating_type = rating_type
         self.team_size = team_size
+        self.params = params or {}
         self.map_pools = {info[0].id: info for info in map_pools}
 
         self._queue: Dict[Search, None] = OrderedDict()
@@ -82,6 +84,9 @@ class MatchmakerQueue:
             if max_rating is not None and rating > max_rating:
                 continue
             return map_pool
+
+    def get_game_options(self) -> Dict[str, Any]:
+        return self.params.get("GameOptions") or None
 
     def initialize(self):
         asyncio.create_task(self.queue_pop_timer())

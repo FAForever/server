@@ -280,11 +280,13 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
   (41943, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1400),
   (41944, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1600);
 
-insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_id, name_key, team_size, enabled) values
-  (1, "ladder1v1", 6, 2, "matchmaker.ladder1v1", 1, true),
-  (2, "tmm2v2", 1, 3, "matchmaker.tmm2v2", 2, true),
-  (3, "disabled", 1, 1, "matchmaker.disabled", 4, false),
-  (4, "neroxis1v1", 1, 2, "matchmaker.neroxis", 1, true);
+insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_id, name_key, team_size, params, enabled) values
+  (1, "ladder1v1", 6, 2, "matchmaker.ladder1v1", 1, NULL, true),
+  (2, "tmm2v2", 1, 3, "matchmaker.tmm2v2", 2, NULL, true),
+  (3, "disabled", 1, 1, "matchmaker.disabled", 4, NULL, false),
+  (4, "neroxis1v1", 1, 2, "matchmaker.neroxis", 1, NULL, true),
+  (5, "gameoptions", 1, 1, "matchmaker.gameoptions", 3, '{"GameOptions":{"Share":"ShareUntilDeath","UnitCap":500}}', true),
+  (6, "gameoptions_malformed", 1, 1, "matchmaker.gameoptions_malformed", 3, '{"GameOptions"...', true);
 
 insert into matchmaker_queue_game (matchmaker_queue_id, game_stats_id) values
   (1, 1),
@@ -332,7 +334,9 @@ insert into matchmaker_queue_map_pool (matchmaker_queue_id, map_pool_id, min_rat
   (1, 2, 800, NULL),
   (1, 3, 1000, NULL),
   (2, 3, NULL, NULL),
-  (4, 4, NULL, NULL);
+  (4, 4, NULL, NULL),
+  (5, 1, NULL, NULL),
+  (6, 1, NULL, NULL);
 
 insert into friends_and_foes (user_id, subject_id, `status`) values
   (1, 400, 'FOE'),
