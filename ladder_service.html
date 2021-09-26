@@ -32,7 +32,6 @@ Manages interactions between players and matchmakers
 &#34;&#34;&#34;
 
 import asyncio
-import json
 import random
 import re
 from collections import defaultdict
@@ -104,6 +103,7 @@ class LadderService(Service):
                     featured_mod=info[&#34;mod&#34;],
                     rating_type=info[&#34;rating_type&#34;],
                     team_size=info[&#34;team_size&#34;],
+                    params=info.get(&#34;params&#34;)
                 )
                 self.queues[name] = queue
                 queue.initialize()
@@ -162,10 +162,12 @@ class LadderService(Service):
                 )
             elif row.map_params is not None:
                 try:
-                    params = json.loads(row.map_params)
+                    params = row.map_params
                     map_type = params[&#34;type&#34;]
                     if map_type == &#34;neroxis&#34;:
-                        map_list.append(NeroxisGeneratedMap.of(params, row.weight))
+                        map_list.append(
+                            NeroxisGeneratedMap.of(params, row.weight)
+                        )
                     else:
                         self._logger.warning(
                             &#34;Unsupported map type %s in pool %s&#34;,
@@ -190,6 +192,7 @@ class LadderService(Service):
                 matchmaker_queue.c.id,
                 matchmaker_queue.c.technical_name,
                 matchmaker_queue.c.team_size,
+                matchmaker_queue.c.params,
                 matchmaker_queue_map_pool.c.map_pool_id,
                 matchmaker_queue_map_pool.c.min_rating,
                 matchmaker_queue_map_pool.c.max_rating,
@@ -203,19 +206,34 @@ class LadderService(Service):
                 .join(leaderboard)
             ).where(matchmaker_queue.c.enabled == true())
         )
+        # So we don&#39;t log the same error multiple times when a queue has several
+        # map pools
+        errored = set()
         matchmaker_queues = defaultdict(lambda: defaultdict(list))
         async for row in result:
             name = row.technical_name
+            if name in errored:
+                continue
             info = matchmaker_queues[name]
-            info[&#34;id&#34;] = row.id
-            info[&#34;mod&#34;] = row.gamemod
-            info[&#34;rating_type&#34;] = row.rating_type
-            info[&#34;team_size&#34;] = row.team_size
-            info[&#34;map_pools&#34;].append((
-                row.map_pool_id,
-                row.min_rating,
-                row.max_rating
-            ))
+            try:
+                info[&#34;id&#34;] = row.id
+                info[&#34;mod&#34;] = row.gamemod
+                info[&#34;rating_type&#34;] = row.rating_type
+                info[&#34;team_size&#34;] = row.team_size
+                info[&#34;params&#34;] = row.params
+                info[&#34;map_pools&#34;].append((
+                    row.map_pool_id,
+                    row.min_rating,
+                    row.max_rating
+                ))
+            except Exception:
+                self._logger.warning(
+                    &#34;Unable to load queue &#39;%s&#39;!&#34;,
+                    name,
+                    exc_info=True
+                )
+                del matchmaker_queues[name]
+                errored.add(name)
         return matchmaker_queues
 
     def start_search(
@@ -457,6 +475,10 @@ class LadderService(Service):
                 game.set_player_option(player.id, &#34;Army&#34;, slot)
                 game.set_player_option(player.id, &#34;Color&#34;, slot)
 
+            game_options = queue.get_game_options()
+            if game_options:
+                game.gameOptions.update(game_options)
+
             mapname = re.match(&#34;maps/(.+).zip&#34;, map_path).group(1)
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
             # Really in the future, just send a better description
@@ -466,6 +488,7 @@ class LadderService(Service):
             options = GameLaunchOptions(
                 mapname=mapname,
                 expected_players=len(all_players),
+                game_options=game_options
             )
 
             def game_options(player: Player) -&gt; GameLaunchOptions:
@@ -692,6 +715,7 @@ statistics, and launches the games.</p></div>
                     featured_mod=info[&#34;mod&#34;],
                     rating_type=info[&#34;rating_type&#34;],
                     team_size=info[&#34;team_size&#34;],
+                    params=info.get(&#34;params&#34;)
                 )
                 self.queues[name] = queue
                 queue.initialize()
@@ -750,10 +774,12 @@ statistics, and launches the games.</p></div>
                 )
             elif row.map_params is not None:
                 try:
-                    params = json.loads(row.map_params)
+                    params = row.map_params
                     map_type = params[&#34;type&#34;]
                     if map_type == &#34;neroxis&#34;:
-                        map_list.append(NeroxisGeneratedMap.of(params, row.weight))
+                        map_list.append(
+                            NeroxisGeneratedMap.of(params, row.weight)
+                        )
                     else:
                         self._logger.warning(
                             &#34;Unsupported map type %s in pool %s&#34;,
@@ -778,6 +804,7 @@ statistics, and launches the games.</p></div>
                 matchmaker_queue.c.id,
                 matchmaker_queue.c.technical_name,
                 matchmaker_queue.c.team_size,
+                matchmaker_queue.c.params,
                 matchmaker_queue_map_pool.c.map_pool_id,
                 matchmaker_queue_map_pool.c.min_rating,
                 matchmaker_queue_map_pool.c.max_rating,
@@ -791,19 +818,34 @@ statistics, and launches the games.</p></div>
                 .join(leaderboard)
             ).where(matchmaker_queue.c.enabled == true())
         )
+        # So we don&#39;t log the same error multiple times when a queue has several
+        # map pools
+        errored = set()
         matchmaker_queues = defaultdict(lambda: defaultdict(list))
         async for row in result:
             name = row.technical_name
+            if name in errored:
+                continue
             info = matchmaker_queues[name]
-            info[&#34;id&#34;] = row.id
-            info[&#34;mod&#34;] = row.gamemod
-            info[&#34;rating_type&#34;] = row.rating_type
-            info[&#34;team_size&#34;] = row.team_size
-            info[&#34;map_pools&#34;].append((
-                row.map_pool_id,
-                row.min_rating,
-                row.max_rating
-            ))
+            try:
+                info[&#34;id&#34;] = row.id
+                info[&#34;mod&#34;] = row.gamemod
+                info[&#34;rating_type&#34;] = row.rating_type
+                info[&#34;team_size&#34;] = row.team_size
+                info[&#34;params&#34;] = row.params
+                info[&#34;map_pools&#34;].append((
+                    row.map_pool_id,
+                    row.min_rating,
+                    row.max_rating
+                ))
+            except Exception:
+                self._logger.warning(
+                    &#34;Unable to load queue &#39;%s&#39;!&#34;,
+                    name,
+                    exc_info=True
+                )
+                del matchmaker_queues[name]
+                errored.add(name)
         return matchmaker_queues
 
     def start_search(
@@ -1045,6 +1087,10 @@ statistics, and launches the games.</p></div>
                 game.set_player_option(player.id, &#34;Army&#34;, slot)
                 game.set_player_option(player.id, &#34;Color&#34;, slot)
 
+            game_options = queue.get_game_options()
+            if game_options:
+                game.gameOptions.update(game_options)
+
             mapname = re.match(&#34;maps/(.+).zip&#34;, map_path).group(1)
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
             # Really in the future, just send a better description
@@ -1054,6 +1100,7 @@ statistics, and launches the games.</p></div>
             options = GameLaunchOptions(
                 mapname=mapname,
                 expected_players=len(all_players),
+                game_options=game_options
             )
 
             def game_options(player: Player) -&gt; GameLaunchOptions:
@@ -1214,10 +1261,12 @@ statistics, and launches the games.</p></div>
             )
         elif row.map_params is not None:
             try:
-                params = json.loads(row.map_params)
+                params = row.map_params
                 map_type = params[&#34;type&#34;]
                 if map_type == &#34;neroxis&#34;:
-                    map_list.append(NeroxisGeneratedMap.of(params, row.weight))
+                    map_list.append(
+                        NeroxisGeneratedMap.of(params, row.weight)
+                    )
                 else:
                     self._logger.warning(
                         &#34;Unsupported map type %s in pool %s&#34;,
@@ -1252,6 +1301,7 @@ statistics, and launches the games.</p></div>
             matchmaker_queue.c.id,
             matchmaker_queue.c.technical_name,
             matchmaker_queue.c.team_size,
+            matchmaker_queue.c.params,
             matchmaker_queue_map_pool.c.map_pool_id,
             matchmaker_queue_map_pool.c.min_rating,
             matchmaker_queue_map_pool.c.max_rating,
@@ -1265,19 +1315,34 @@ statistics, and launches the games.</p></div>
             .join(leaderboard)
         ).where(matchmaker_queue.c.enabled == true())
     )
+    # So we don&#39;t log the same error multiple times when a queue has several
+    # map pools
+    errored = set()
     matchmaker_queues = defaultdict(lambda: defaultdict(list))
     async for row in result:
         name = row.technical_name
+        if name in errored:
+            continue
         info = matchmaker_queues[name]
-        info[&#34;id&#34;] = row.id
-        info[&#34;mod&#34;] = row.gamemod
-        info[&#34;rating_type&#34;] = row.rating_type
-        info[&#34;team_size&#34;] = row.team_size
-        info[&#34;map_pools&#34;].append((
-            row.map_pool_id,
-            row.min_rating,
-            row.max_rating
-        ))
+        try:
+            info[&#34;id&#34;] = row.id
+            info[&#34;mod&#34;] = row.gamemod
+            info[&#34;rating_type&#34;] = row.rating_type
+            info[&#34;team_size&#34;] = row.team_size
+            info[&#34;params&#34;] = row.params
+            info[&#34;map_pools&#34;].append((
+                row.map_pool_id,
+                row.min_rating,
+                row.max_rating
+            ))
+        except Exception:
+            self._logger.warning(
+                &#34;Unable to load queue &#39;%s&#39;!&#34;,
+                name,
+                exc_info=True
+            )
+            del matchmaker_queues[name]
+            errored.add(name)
     return matchmaker_queues</code></pre>
 </details>
 </dd>
@@ -1453,6 +1518,10 @@ so it should only perform fast operations.</p></div>
             game.set_player_option(player.id, &#34;Army&#34;, slot)
             game.set_player_option(player.id, &#34;Color&#34;, slot)
 
+        game_options = queue.get_game_options()
+        if game_options:
+            game.gameOptions.update(game_options)
+
         mapname = re.match(&#34;maps/(.+).zip&#34;, map_path).group(1)
         # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
         # Really in the future, just send a better description
@@ -1462,6 +1531,7 @@ so it should only perform fast operations.</p></div>
         options = GameLaunchOptions(
             mapname=mapname,
             expected_players=len(all_players),
+            game_options=game_options
         )
 
         def game_options(player: Player) -&gt; GameLaunchOptions:
@@ -1580,6 +1650,7 @@ so it should only perform fast operations.</p></div>
                 featured_mod=info[&#34;mod&#34;],
                 rating_type=info[&#34;rating_type&#34;],
                 team_size=info[&#34;team_size&#34;],
+                params=info.get(&#34;params&#34;)
             )
             self.queues[name] = queue
             queue.initialize()

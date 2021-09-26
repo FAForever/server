@@ -77,6 +77,7 @@ class MatchmakerQueue:
         featured_mod: str,
         rating_type: str,
         team_size: int = 1,
+        params: Optional[Dict[str, Any]] = None,
         map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = (),
     ):
         self.game_service = game_service
@@ -85,6 +86,7 @@ class MatchmakerQueue:
         self.featured_mod = featured_mod
         self.rating_type = rating_type
         self.team_size = team_size
+        self.params = params or {}
         self.map_pools = {info[0].id: info for info in map_pools}
 
         self._queue: Dict[Search, None] = OrderedDict()
@@ -110,6 +112,9 @@ class MatchmakerQueue:
             if max_rating is not None and rating &gt; max_rating:
                 continue
             return map_pool
+
+    def get_game_options(self) -&gt; Dict[str, Any]:
+        return self.params.get(&#34;GameOptions&#34;) or None
 
     def initialize(self):
         asyncio.create_task(self.queue_pop_timer())
@@ -311,7 +316,7 @@ class MatchmakerQueue:
 <dl>
 <dt id="server.matchmaker.matchmaker_queue.MatchmakerQueue"><code class="flex name class">
 <span>class <span class="ident">MatchmakerQueue</span></span>
-<span>(</span><span>game_service: GameService, on_match_found: Callable[[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, ForwardRef('<a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>')], Any], name: str, queue_id: int, featured_mod: str, rating_type: str, team_size: int = 1, map_pools: Iterable[Tuple[<a title="server.matchmaker.map_pool.MapPool" href="map_pool.html#server.matchmaker.map_pool.MapPool">MapPool</a>, Optional[int], Optional[int]]] = ())</span>
+<span>(</span><span>game_service: GameService, on_match_found: Callable[[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, ForwardRef('<a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>')], Any], name: str, queue_id: int, featured_mod: str, rating_type: str, team_size: int = 1, params: Optional[Dict[str, Any]] = None, map_pools: Iterable[Tuple[<a title="server.matchmaker.map_pool.MapPool" href="map_pool.html#server.matchmaker.map_pool.MapPool">MapPool</a>, Optional[int], Optional[int]]] = ())</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -329,6 +334,7 @@ class MatchmakerQueue:
         featured_mod: str,
         rating_type: str,
         team_size: int = 1,
+        params: Optional[Dict[str, Any]] = None,
         map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = (),
     ):
         self.game_service = game_service
@@ -337,6 +343,7 @@ class MatchmakerQueue:
         self.featured_mod = featured_mod
         self.rating_type = rating_type
         self.team_size = team_size
+        self.params = params or {}
         self.map_pools = {info[0].id: info for info in map_pools}
 
         self._queue: Dict[Search, None] = OrderedDict()
@@ -362,6 +369,9 @@ class MatchmakerQueue:
             if max_rating is not None and rating &gt; max_rating:
                 continue
             return map_pool
+
+    def get_game_options(self) -&gt; Dict[str, Any]:
+        return self.params.get(&#34;GameOptions&#34;) or None
 
     def initialize(self):
         asyncio.create_task(self.queue_pop_timer())
@@ -649,6 +659,19 @@ async def find_matches(self) -&gt; None:
             self._logger.exception(&#34;Match callback raised an exception!&#34;)</code></pre>
 </details>
 </dd>
+<dt id="server.matchmaker.matchmaker_queue.MatchmakerQueue.get_game_options"><code class="name flex">
+<span>def <span class="ident">get_game_options</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_game_options(self) -&gt; Dict[str, Any]:
+    return self.params.get(&#34;GameOptions&#34;) or None</code></pre>
+</details>
+</dd>
 <dt id="server.matchmaker.matchmaker_queue.MatchmakerQueue.get_map_pool_for_rating"><code class="name flex">
 <span>def <span class="ident">get_map_pool_for_rating</span></span>(<span>self, rating: int) ‑> Optional[<a title="server.matchmaker.map_pool.MapPool" href="map_pool.html#server.matchmaker.map_pool.MapPool">MapPool</a>]</span>
 </code></dt>
@@ -911,6 +934,7 @@ in the queue.</p></div>
 <ul class="">
 <li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.add_map_pool" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.add_map_pool">add_map_pool</a></code></li>
 <li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.find_matches" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.find_matches">find_matches</a></code></li>
+<li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.get_game_options" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.get_game_options">get_game_options</a></code></li>
 <li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.get_map_pool_for_rating" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.get_map_pool_for_rating">get_map_pool_for_rating</a></code></li>
 <li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.initialize" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.initialize">initialize</a></code></li>
 <li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.match" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.match">match</a></code></li>

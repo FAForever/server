@@ -470,7 +470,7 @@ amount of times.</p></div>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue"><code class="flex name class">
 <span>class <span class="ident">MatchmakerQueue</span></span>
-<span>(</span><span>game_service: GameService, on_match_found: Callable[[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, ForwardRef('<a title="server.matchmaker.MatchmakerQueue" href="#server.matchmaker.MatchmakerQueue">MatchmakerQueue</a>')], Any], name: str, queue_id: int, featured_mod: str, rating_type: str, team_size: int = 1, map_pools: Iterable[Tuple[<a title="server.matchmaker.map_pool.MapPool" href="map_pool.html#server.matchmaker.map_pool.MapPool">MapPool</a>, Optional[int], Optional[int]]] = ())</span>
+<span>(</span><span>game_service: GameService, on_match_found: Callable[[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, ForwardRef('<a title="server.matchmaker.MatchmakerQueue" href="#server.matchmaker.MatchmakerQueue">MatchmakerQueue</a>')], Any], name: str, queue_id: int, featured_mod: str, rating_type: str, team_size: int = 1, params: Optional[Dict[str, Any]] = None, map_pools: Iterable[Tuple[<a title="server.matchmaker.map_pool.MapPool" href="map_pool.html#server.matchmaker.map_pool.MapPool">MapPool</a>, Optional[int], Optional[int]]] = ())</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -488,6 +488,7 @@ amount of times.</p></div>
         featured_mod: str,
         rating_type: str,
         team_size: int = 1,
+        params: Optional[Dict[str, Any]] = None,
         map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = (),
     ):
         self.game_service = game_service
@@ -496,6 +497,7 @@ amount of times.</p></div>
         self.featured_mod = featured_mod
         self.rating_type = rating_type
         self.team_size = team_size
+        self.params = params or {}
         self.map_pools = {info[0].id: info for info in map_pools}
 
         self._queue: Dict[Search, None] = OrderedDict()
@@ -521,6 +523,9 @@ amount of times.</p></div>
             if max_rating is not None and rating &gt; max_rating:
                 continue
             return map_pool
+
+    def get_game_options(self) -&gt; Dict[str, Any]:
+        return self.params.get(&#34;GameOptions&#34;) or None
 
     def initialize(self):
         asyncio.create_task(self.queue_pop_timer())
@@ -806,6 +811,19 @@ async def find_matches(self) -&gt; None:
             self.on_match_found(search1, search2, self)
         except Exception:
             self._logger.exception(&#34;Match callback raised an exception!&#34;)</code></pre>
+</details>
+</dd>
+<dt id="server.matchmaker.MatchmakerQueue.get_game_options"><code class="name flex">
+<span>def <span class="ident">get_game_options</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_game_options(self) -&gt; Dict[str, Any]:
+    return self.params.get(&#34;GameOptions&#34;) or None</code></pre>
 </details>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue.get_map_pool_for_rating"><code class="name flex">
@@ -1908,6 +1926,7 @@ and increase internal counter by one.</p></div>
 <ul class="">
 <li><code><a title="server.matchmaker.MatchmakerQueue.add_map_pool" href="#server.matchmaker.MatchmakerQueue.add_map_pool">add_map_pool</a></code></li>
 <li><code><a title="server.matchmaker.MatchmakerQueue.find_matches" href="#server.matchmaker.MatchmakerQueue.find_matches">find_matches</a></code></li>
+<li><code><a title="server.matchmaker.MatchmakerQueue.get_game_options" href="#server.matchmaker.MatchmakerQueue.get_game_options">get_game_options</a></code></li>
 <li><code><a title="server.matchmaker.MatchmakerQueue.get_map_pool_for_rating" href="#server.matchmaker.MatchmakerQueue.get_map_pool_for_rating">get_map_pool_for_rating</a></code></li>
 <li><code><a title="server.matchmaker.MatchmakerQueue.initialize" href="#server.matchmaker.MatchmakerQueue.initialize">initialize</a></code></li>
 <li><code><a title="server.matchmaker.MatchmakerQueue.match" href="#server.matchmaker.MatchmakerQueue.match">match</a></code></li>
