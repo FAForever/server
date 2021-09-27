@@ -82,6 +82,12 @@ async def test_load_from_database(ladder_service, queue_factory):
                 "size": 512,
                 "type": "neroxis"
             }),
+            NeroxisGeneratedMap.of({
+                "version": "0.0.0",
+                "spawns": 2,
+                "size": 768,
+                "type": "neroxis"
+            }),
         ]
 
         queue = ladder_service.queues["gameoptions"]
