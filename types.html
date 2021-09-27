@@ -86,8 +86,8 @@ class NeroxisGeneratedMap(NamedTuple):
         if map_size_pixels &lt;= 0:
             raise Exception(&#34;Map size is zero or negative&#34;)
 
-        if map_size_pixels &amp; (map_size_pixels - 1) != 0:
-            raise Exception(&#34;Map size is not a power of 2&#34;)
+        if map_size_pixels % 64 != 0:
+            raise Exception(&#34;Map size is not a multiple of 64&#34;)
 
         spawns = int(params[&#34;spawns&#34;])
         if spawns % 2 != 0:
@@ -319,8 +319,8 @@ def from_string(cls, address: str) -&gt; &#34;Address&#34;:
         if map_size_pixels &lt;= 0:
             raise Exception(&#34;Map size is zero or negative&#34;)
 
-        if map_size_pixels &amp; (map_size_pixels - 1) != 0:
-            raise Exception(&#34;Map size is not a power of 2&#34;)
+        if map_size_pixels % 64 != 0:
+            raise Exception(&#34;Map size is not a multiple of 64&#34;)
 
         spawns = int(params[&#34;spawns&#34;])
         if spawns % 2 != 0:
@@ -374,8 +374,8 @@ def of(cls, params: dict, weight: int = 1):
     if map_size_pixels &lt;= 0:
         raise Exception(&#34;Map size is zero or negative&#34;)
 
-    if map_size_pixels &amp; (map_size_pixels - 1) != 0:
-        raise Exception(&#34;Map size is not a power of 2&#34;)
+    if map_size_pixels % 64 != 0:
+        raise Exception(&#34;Map size is not a multiple of 64&#34;)
 
     spawns = int(params[&#34;spawns&#34;])
     if spawns % 2 != 0:
