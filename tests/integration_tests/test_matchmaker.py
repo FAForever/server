@@ -70,7 +70,7 @@ async def test_game_launch_message_map_generator(lobby_server):
 
     assert msg1["mapname"] == msg2["mapname"]
     assert re.match(
-        "neroxis_map_generator_0.0.0_[0-9a-z]{13}_aiea",
+        "neroxis_map_generator_0.0.0_[0-9a-z]{13}_[0-9a-z]{4}",
         msg1["mapname"]
     )
 
