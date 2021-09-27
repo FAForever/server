@@ -323,6 +323,7 @@ insert into map_pool_map_version (map_pool_id, map_version_id, weight, map_param
   (2, 11, 1, NULL), (2, 14, 1, NULL), (2, 15, 1, NULL), (2, 16, 1, NULL), (2, 17, 1, NULL),
   (3, 1, 1, NULL), (3, 2, 1, NULL), (3, 3, 1, NULL),
   (4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 2, "version": "0.0.0"}'),
+  (4, NULL, 1, '{"type": "neroxis", "size": 768, "spawns": 2, "version": "0.0.0"}'),
   -- Bad Generated Map Parameters should not be included in pool
   (4, NULL, 1, '{"type": "neroxis", "size": 513, "spawns": 2, "version": "0.0.0"}'),
   (4, NULL, 1, '{"type": "neroxis", "size": 0, "spawns": 2, "version": "0.0.0"}'),

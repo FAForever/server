@@ -57,7 +57,7 @@ class NeroxisGeneratedMap(NamedTuple):
         if map_size_pixels <= 0:
             raise Exception("Map size is zero or negative")
 
-        if map_size_pixels // 64 != 0:
+        if map_size_pixels % 64 != 0:
             raise Exception("Map size is not a multiple of 64")
 
         spawns = int(params["spawns"])

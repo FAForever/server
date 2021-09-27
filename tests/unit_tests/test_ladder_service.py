@@ -74,12 +74,18 @@ async def test_load_from_database(ladder_service, queue_factory):
 
         queue = ladder_service.queues["neroxis1v1"]
         assert queue.name == "neroxis1v1"
-        assert len(queue.map_pools) == 1
+        assert len(queue.map_pools) == 2
         assert list(queue.map_pools[4][0].maps.values()) == [
             NeroxisGeneratedMap.of({
                 "version": "0.0.0",
                 "spawns": 2,
                 "size": 512,
+                "type": "neroxis"
+            }),
+            NeroxisGeneratedMap.of({
+                "version": "0.0.0",
+                "spawns": 2,
+                "size": 768,
                 "type": "neroxis"
             }),
         ]
