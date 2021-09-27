@@ -235,7 +235,7 @@ async def test_server_valid_login_with_token(lobby_server, jwk_priv_key, jwk_kid
         "token": jwt.encode({
             "sub": 3,
             "user_name": "Rhiza",
-            "scope": [],
+            "scp": ["lobby"],
             "exp": int(time() + 1000),
             "authorities": [],
             "non_locked": True,
@@ -298,7 +298,7 @@ async def test_server_login_bad_id_in_token(lobby_server, jwk_priv_key, jwk_kid)
         "token": jwt.encode({
             "sub": -1,
             "user_name": "Rhiza",
-            "scope": [],
+            "scp": ["lobby"],
             "exp": int(time() + 1000),
             "authorities": [],
             "non_locked": True,
@@ -323,6 +323,7 @@ async def test_server_login_expired_token(lobby_server, jwk_priv_key, jwk_kid):
         "user_agent": "faf-client",
         "token": jwt.encode({
             "sub": 1,
+            "scp": ["lobby"],
             "user_name": "test",
             "exp": int(time() - 10)
         }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
@@ -355,4 +356,32 @@ async def test_server_login_malformed_token(lobby_server, jwk_priv_key, jwk_kid)
     assert msg == {
         "command": "authentication_failed",
         "text": "Token signature was invalid"
+    }
+
+
+async def test_server_login_lobby_scope_missing(lobby_server, jwk_priv_key, jwk_kid):
+    """This scenario could only happen if the hydra signed a token that
+    was missing critical data"""
+    proto = await connect_client(lobby_server)
+    await proto.send_message({
+        "command": "auth",
+        "version": "1.0.0-dev",
+        "user_agent": "faf-client",
+        "token": jwt.encode({
+            "sub": 3,
+            "user_name": "Rhiza",
+            "scp": [],
+            "exp": int(time() + 1000),
+            "authorities": [],
+            "non_locked": True,
+            "jti": "",
+            "client_id": ""
+        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
+        "unique_id": "some_id"
+    })
+
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "authentication_failed",
+        "text": "Token does not have permission to login to the lobby server"
     }
