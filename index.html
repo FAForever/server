@@ -5012,6 +5012,13 @@ async def reconnect(self) -&gt; None:
                 algorithms=&#34;RS256&#34;,
                 options={&#34;verify_aud&#34;: False}
             )
+
+            if &#34;lobby&#34; not in decoded[&#34;scp&#34;]:
+                raise AuthenticationError(
+                    &#34;Token does not have permission to login to the lobby server&#34;,
+                    &#34;token&#34;
+                )
+
             return int(decoded[&#34;sub&#34;])
         except (InvalidTokenError, KeyError, ValueError):
             raise AuthenticationError(&#34;Token signature was invalid&#34;, &#34;token&#34;)</code></pre>
@@ -5048,6 +5055,13 @@ async def reconnect(self) -&gt; None:
             algorithms=&#34;RS256&#34;,
             options={&#34;verify_aud&#34;: False}
         )
+
+        if &#34;lobby&#34; not in decoded[&#34;scp&#34;]:
+            raise AuthenticationError(
+                &#34;Token does not have permission to login to the lobby server&#34;,
+                &#34;token&#34;
+            )
+
         return int(decoded[&#34;sub&#34;])
     except (InvalidTokenError, KeyError, ValueError):
         raise AuthenticationError(&#34;Token signature was invalid&#34;, &#34;token&#34;)</code></pre>
