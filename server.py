@@ -10,6 +10,7 @@ Options:
 import asyncio
 import logging
 import os
+import platform
 import signal
 import sys
 from datetime import datetime
@@ -28,7 +29,7 @@ from server.protocol import SimpleJsonProtocol
 
 async def main():
     version = os.environ.get("VERSION") or "dev"
-    python_version = ".".join(map(str, sys.version_info[:3]))
+    python_version = platform.python_version()
 
     logger.info(
         "Lobby %s (Python %s) on %s",
