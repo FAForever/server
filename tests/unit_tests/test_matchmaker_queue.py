@@ -8,7 +8,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-import server.config as config
+from server.config import config
 from server.matchmaker import CombinedSearch, MapPool, PopTimer, Search
 from server.players import PlayerState
 from server.rating import RatingType
@@ -174,14 +174,14 @@ def test_search_boundaries(matchmaker_players):
     assert p1.ratings[RatingType.LADDER_1V1][0] < s1.boundary_75[1]
 
 
-def test_search_expansion_controlled_by_failed_matching_attempts(matchmaker_players, mocker):
-    p1 = matchmaker_players[0]
+def test_search_expansion_controlled_by_failed_matching_attempts(matchmaker_players):
+    p1 = matchmaker_players[1]
     s1 = Search([p1])
 
     assert s1.search_expansion == 0.0
 
     s1.register_failed_matching_attempt()
-    assert s1.search_expansion > 0.0
+    assert s1.search_expansion == config.LADDER_SEARCH_EXPANSION_STEP
 
     # Make sure that the expansion stops at some point
     for _ in range(100):
@@ -191,6 +191,25 @@ def test_search_expansion_controlled_by_failed_matching_attempts(matchmaker_play
     s1.register_failed_matching_attempt()
     assert e1 == s1.search_expansion
     assert e1 == config.LADDER_SEARCH_EXPANSION_MAX
+
+
+def test_search_expansion_for_top_players(matchmaker_players):
+    p1 = matchmaker_players[0]
+    s1 = Search([p1])
+
+    assert s1.search_expansion == 0.0
+
+    s1.register_failed_matching_attempt()
+    assert s1.search_expansion == config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_STEP
+
+    # Make sure that the expansion stops at some point
+    for _ in range(100):
+        s1.register_failed_matching_attempt()
+    e1 = s1.search_expansion
+
+    s1.register_failed_matching_attempt()
+    assert e1 == s1.search_expansion
+    assert e1 == config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX
 
 
 @pytest.mark.asyncio

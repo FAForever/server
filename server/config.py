@@ -82,7 +82,8 @@ class ConfigurationStore:
         self.NEWBIE_MIN_GAMES = 10
         self.START_RATING_MEAN = 1500
         self.START_RATING_DEV = 500
-        self.TOP_PLAYER_MIN_RATING = 1600
+        self.HIGH_RATED_PLAYER_MIN_RATING = 1400
+        self.TOP_PLAYER_MIN_RATING = 2000
 
         # Values for the custom (i.e. not trueskill) game quality metric used by the matchmaker
         self.MINIMUM_GAME_QUALITY = 0.4
@@ -111,6 +112,8 @@ class ConfigurationStore:
         self.LADDER_ANTI_REPETITION_LIMIT = 2
         self.LADDER_SEARCH_EXPANSION_MAX = 0.25
         self.LADDER_SEARCH_EXPANSION_STEP = 0.05
+        self.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX = 0.3
+        self.LADDER_TOP_PLAYER_SEARCH_EXPANSION_STEP = 0.15
         # The maximum amount of time in seconds) to wait between pops.
         self.QUEUE_POP_TIME_MAX = 180
         # The number of possible matches we would like to have when the queue
