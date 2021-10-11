@@ -150,7 +150,7 @@ async def test_enqueue_uninitialized(uninitialized_service, game_info):
 async def test_get_rating_uninitialized(uninitialized_service):
     service = uninitialized_service
     with pytest.raises(ServiceNotReadyError):
-        await service._get_player_rating(1, RatingType.GLOBAL)
+        await service._get_players_ratings([1], RatingType.GLOBAL)
 
 
 async def test_load_from_database(uninitialized_service):
@@ -173,20 +173,20 @@ async def test_load_from_database(uninitialized_service):
     }
 
 
-async def test_get_player_rating_global(semiinitialized_service):
+async def test_get_players_ratings_global(semiinitialized_service):
     service = semiinitialized_service
     player_id = 50
     true_rating = Rating(1200, 250)
-    rating = await service._get_player_rating(player_id, RatingType.GLOBAL)
-    assert rating == true_rating
+    ratings = await service._get_players_ratings([player_id], RatingType.GLOBAL)
+    assert ratings[player_id] == true_rating
 
 
-async def test_get_player_rating_ladder(semiinitialized_service):
+async def test_get_players_ratings_ladder(semiinitialized_service):
     service = semiinitialized_service
     player_id = 50
     true_rating = Rating(1300, 400)
-    rating = await service._get_player_rating(player_id, RatingType.LADDER_1V1)
-    assert rating == true_rating
+    ratings = await service._get_players_ratings([player_id], RatingType.LADDER_1V1)
+    assert ratings[player_id] == true_rating
 
 
 async def get_all_ratings(db: FAFDatabase, player_id: int):
@@ -213,7 +213,7 @@ async def test_get_new_player_rating_created(semiinitialized_service):
     db_ratings = await get_all_ratings(service._db, player_id)
     assert len(db_ratings) == 0  # Rating does not exist yet
 
-    await service._get_player_rating(player_id, rating_type)
+    await service._get_players_ratings([player_id], rating_type)
 
     db_ratings = await get_all_ratings(service._db, player_id)
     assert len(db_ratings) == 1  # Rating has been created

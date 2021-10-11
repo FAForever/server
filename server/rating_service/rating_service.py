@@ -1,9 +1,8 @@
 import asyncio
-from contextlib import asynccontextmanager
-from typing import Dict
+from typing import Dict, List
 
 import aiocron
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from trueskill import Rating
 
 from server.config import config
@@ -30,15 +29,6 @@ from .typedefs import (
     ServiceNotReadyError,
     TeamRatingData
 )
-
-
-@asynccontextmanager
-async def acquire_or_default(db, default=None):
-    if default is None:
-        async with db.acquire() as conn:
-            yield conn
-    else:
-        yield default
 
 
 @with_logger
@@ -174,12 +164,14 @@ class RatingService(Service):
         )
 
     async def _get_rating_data(self, summary: GameRatingSummary) -> GameRatingData:
-        ratings = {}
-        for team in summary.teams:
-            for player_id in team.player_ids:
-                ratings[player_id] = await self._get_player_rating(
-                    player_id, summary.rating_type
-                )
+        ratings = await self._get_players_ratings(
+            [
+                player_id
+                for team in summary.teams
+                for player_id in team.player_ids
+            ],
+            summary.rating_type
+        )
 
         return [
             TeamRatingData(
@@ -189,9 +181,9 @@ class RatingService(Service):
             for team in summary.teams
         ]
 
-    async def _get_player_rating(
-        self, player_id: int, rating_type: str, conn=None
-    ) -> Rating:
+    async def _get_players_ratings(
+        self, player_ids: List[PlayerID], rating_type: str, conn=None
+    ) -> Dict[PlayerID, Rating]:
         if self._rating_type_ids is None:
             self._logger.warning(
                 "Tried to fetch player data before initializing service."
@@ -202,48 +194,69 @@ class RatingService(Service):
         if rating_type_id is None:
             raise ValueError(f"Unknown rating type {rating_type}.")
 
-        async with acquire_or_default(self._db, conn) as conn:
+        async with self._db.acquire() as conn:
             player_ratings = await self._get_all_player_ratings(
-                conn, player_id
+                conn, player_ids
             )
 
-            if rating_type not in player_ratings:
-                # This player has not played any games using this leaderboard
-                # yet, so we need to create the initial rating. This also
-                # ensures that the journal will show accurate changes.
-
+            uninitialized_ratings = [
                 # Querying the key will create the value using rating
                 # initialization, sort of like a defaultdict.
-                mean, dev = player_ratings[rating_type]
+                (player_id, *player_ratings[player_id][rating_type])
+                for player_id in player_ids
+                if rating_type not in player_ratings[player_id]
+            ]
+            if uninitialized_ratings:
+                # These players have not played any games using this leaderboard
+                # yet, so we need to create the initial ratings. This also
+                # ensures that the journal will show accurate changes.
 
-                insertion_sql = leaderboard_rating.insert().values(
-                    login_id=player_id,
-                    mean=mean,
-                    deviation=dev,
-                    total_games=0,
-                    won_games=0,
-                    leaderboard_id=self._rating_type_ids[rating_type],
+                leaderboard_id = self._rating_type_ids[rating_type]
+
+                values = [
+                    dict(
+                        login_id=player_id,
+                        mean=mean,
+                        deviation=dev,
+                        total_games=0,
+                        won_games=0,
+                        leaderboard_id=leaderboard_id,
+                    )
+                    for player_id, mean, dev in uninitialized_ratings
+                ]
+                await conn.execute(
+                    leaderboard_rating.insert(),
+                    values
                 )
-                await conn.execute(insertion_sql)
 
-                return Rating(mean, dev)
-
-            return Rating(*player_ratings[rating_type])
+            return {
+                player_id: Rating(*player_ratings[player_id][rating_type])
+                for player_id in player_ids
+            }
 
     async def _get_all_player_ratings(
-        self, conn, player_id: int
-    ) -> PlayerRatings:
+        self, conn, player_ids: List[PlayerID]
+    ) -> Dict[PlayerID, PlayerRatings]:
         sql = select([
+            leaderboard_rating.c.login_id,
             leaderboard.c.technical_name,
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation
-        ]).join(leaderboard).where(leaderboard_rating.c.login_id == player_id)
+        ]).join(leaderboard).where(or_(*[
+            leaderboard_rating.c.login_id == player_id
+            for player_id in player_ids
+        ]))
+        # TODO: Use leaderboard_rating.c.login_id.in_(player_ids) instead
         result = await conn.execute(sql)
 
-        player_ratings = PlayerRatings(self.leaderboards, init=False)
+        player_ratings = {
+            player_id: PlayerRatings(self.leaderboards, init=False)
+            for player_id in player_ids
+        }
 
         async for row in result:
-            player_ratings[row.technical_name] = (row.mean, row.deviation)
+            player_id, rating_type = row.login_id, row.technical_name
+            player_ratings[player_id][rating_type] = (row.mean, row.deviation)
 
         return player_ratings
 

@@ -51,18 +51,21 @@ async def rating_service(database, player_service):
         )
         mock_ratings[(player_id, rating_type)] = rating
 
-    def get_mock_rating(*args, **kwargs):
+    def get_mock_ratings(player_ids, rating_type, **kwargs):
         nonlocal mock_ratings
         nonlocal mock_service
-        player_id, rating_type = args
-        value = mock_ratings.get((player_id, rating_type), Rating(1500, 500))
+        values = {
+            player_id: mock_ratings.get(
+                (player_id, rating_type), Rating(1500, 500)
+            ) for player_id in player_ids
+        }
         mock_service._logger.debug(
-            f"Retrieved mock {rating_type} rating for player {player_id}: {value}"
+            f"Retrieved mock {rating_type} rating for players {player_ids}: {values}"
         )
-        return value
+        return values
 
     mock_service.set_mock_rating = set_mock_rating
-    mock_service._get_player_rating = CoroutineMock(wraps=get_mock_rating)
+    mock_service._get_players_ratings = CoroutineMock(wraps=get_mock_ratings)
 
     await mock_service.initialize()
 
