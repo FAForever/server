@@ -257,9 +257,6 @@ class MatchmakerQueue:
         self._is_running = False
 
     def to_dict(self):
-        """
-        Return a fuzzy representation of the searches currently in the queue
-        """
         return {
             "queue_name": self.name,
             "queue_pop_time": datetime.fromtimestamp(
@@ -267,8 +264,6 @@ class MatchmakerQueue:
             ).isoformat(),
             "queue_pop_time_delta": self.timer.next_queue_pop - time.time(),
             "num_players": self.num_players,
-            "boundary_80s": [search.boundary_80 for search in self._queue.keys()],
-            "boundary_75s": [search.boundary_75 for search in self._queue.keys()],
             # TODO: Remove, the client should query the API for this
             "team_size": self.team_size,
         }

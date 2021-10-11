@@ -1,6 +1,5 @@
 import asyncio
 import itertools
-import math
 import statistics
 import time
 from typing import Any, Callable, List, Optional, Tuple
@@ -99,25 +98,6 @@ class Search:
     @property
     def raw_ratings(self):
         return [player.ratings[self.rating_type] for player in self.players]
-
-    def _nearby_rating_range(self, delta):
-        """
-        Returns 'boundary' mu values for player matching. Adjust delta for
-        different game qualities.
-        """
-        mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
-        rounded_mu = int(math.ceil(mu / 10) * 10)  # Round to 10
-        return rounded_mu - delta, rounded_mu + delta
-
-    @property
-    def boundary_80(self):
-        """ Achieves roughly 80% quality. """
-        return self._nearby_rating_range(200)
-
-    @property
-    def boundary_75(self):
-        """ Achieves roughly 75% quality. FIXME - why is it MORE restrictive??? """
-        return self._nearby_rating_range(100)
 
     @property
     def failed_matching_attempts(self) -> int:

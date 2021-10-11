@@ -74,13 +74,6 @@ async def test_info_message(lobby_server):
     msg = await read_until_command(proto, "matchmaker_info")
 
     assert msg["queues"]
-    for queue in msg["queues"]:
-        boundaries = queue["boundary_80s"]
-
-        if queue["queue_name"] == "tmm2v2":
-            assert boundaries == [[300, 700]]
-        else:
-            assert boundaries == []
 
 
 @fast_forward(10)
