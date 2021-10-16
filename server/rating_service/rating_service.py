@@ -2,7 +2,8 @@ import asyncio
 from typing import Dict, List
 
 import aiocron
-from sqlalchemy import and_, func, or_, select
+import pymysql
+from sqlalchemy import and_, bindparam, func, or_, select
 from trueskill import Rating
 
 from server.config import config
@@ -282,8 +283,12 @@ class RatingService(Service):
         """
         self._logger.debug("Saving rating change stats for game %i", game_id)
 
-        for player_id, new_rating in new_ratings.items():
-            old_rating = old_ratings[player_id]
+        ratings = [
+            (player_id, old_ratings[player_id], new_ratings[player_id])
+            for player_id in new_ratings.keys()
+        ]
+
+        for player_id, new_rating, old_rating in ratings:
             self._logger.debug(
                 "New %s rating for player with id %s: %s -> %s",
                 rating_type,
@@ -292,69 +297,110 @@ class RatingService(Service):
                 new_rating,
             )
 
-            gps_update_sql = (
-                game_player_stats.update()
-                .where(
-                    and_(
-                        game_player_stats.c.playerId == player_id,
-                        game_player_stats.c.gameId == game_id,
-                    )
+        # DEPRECATED: game_player_stats table contains rating data.
+        # Use leaderboard_rating_journal instead
+        gps_update_sql = (
+            game_player_stats.update()
+            .where(
+                and_(
+                    game_player_stats.c.playerId == bindparam("player_id"),
+                    game_player_stats.c.gameId == game_id,
                 )
-                .values(
+            )
+            .values(
+                after_mean=bindparam("after_mean"),
+                after_deviation=bindparam("after_deviation"),
+                mean=bindparam("mean"),
+                deviation=bindparam("deviation"),
+                scoreTime=func.now()
+            )
+        )
+        try:
+            result = await conn.execute(gps_update_sql, [
+                dict(
+                    player_id=player_id,
                     after_mean=new_rating.mu,
                     after_deviation=new_rating.sigma,
                     mean=old_rating.mu,
                     deviation=old_rating.sigma,
-                    scoreTime=func.now(),
                 )
-            )
-            result = await conn.execute(gps_update_sql)
+                for player_id, old_rating, new_rating in ratings
+            ])
 
-            if not result.rowcount:
-                self._logger.warning("gps_update_sql resultset is empty for game_id %i", game_id)
+            if result.rowcount != len(ratings):
+                self._logger.warning(
+                    "gps_update_sql only updated %d out of %d rows for game_id %d",
+                    result.rowcount,
+                    len(ratings),
+                    game_id
+                )
                 return
+        except pymysql.OperationalError:
+            # Could happen if we drop the rating columns from game_player_stats
+            self._logger.warning(
+                "gps_update_sql failed for game %d, ignoring...",
+                game_id,
+                exc_info=True
+            )
 
-            rating_type_id = self._rating_type_ids[rating_type]
+        rating_type_id = self._rating_type_ids[rating_type]
 
-            journal_insert_sql = leaderboard_rating_journal.insert().values(
-                leaderboard_id=rating_type_id,
+        journal_insert_sql = leaderboard_rating_journal.insert().values(
+            leaderboard_id=rating_type_id,
+            rating_mean_before=bindparam("rating_mean_before"),
+            rating_deviation_before=bindparam("rating_deviation_before"),
+            rating_mean_after=bindparam("rating_mean_after"),
+            rating_deviation_after=bindparam("rating_deviation_after"),
+            game_player_stats_id=select([game_player_stats.c.id]).where(
+                and_(
+                    game_player_stats.c.playerId == bindparam("player_id"),
+                    game_player_stats.c.gameId == game_id,
+                )
+            ).scalar_subquery(),
+        )
+        await conn.execute(journal_insert_sql, [
+            dict(
+                player_id=player_id,
                 rating_mean_before=old_rating.mu,
                 rating_deviation_before=old_rating.sigma,
                 rating_mean_after=new_rating.mu,
                 rating_deviation_after=new_rating.sigma,
-                game_player_stats_id=select([game_player_stats.c.id]).where(
-                    and_(
-                        game_player_stats.c.playerId == player_id,
-                        game_player_stats.c.gameId == game_id,
-                    )
-                ).scalar_subquery(),
             )
-            await conn.execute(journal_insert_sql)
+            for player_id, old_rating, new_rating in ratings
+        ])
 
-            victory_increment = (
-                1 if outcomes[player_id] is GameOutcome.VICTORY else 0
-            )
-            rating_update_sql = (
-                leaderboard_rating.update()
-                .where(
-                    and_(
-                        leaderboard_rating.c.login_id == player_id,
-                        leaderboard_rating.c.leaderboard_id == rating_type_id,
-                    )
-                )
-                .values(
-                    mean=new_rating.mu,
-                    deviation=new_rating.sigma,
-                    total_games=leaderboard_rating.c.total_games + 1,
-                    won_games=leaderboard_rating.c.won_games + victory_increment,
+        rating_update_sql = (
+            leaderboard_rating.update()
+            .where(
+                and_(
+                    leaderboard_rating.c.login_id == bindparam("player_id"),
+                    leaderboard_rating.c.leaderboard_id == rating_type_id,
                 )
             )
-            await conn.execute(rating_update_sql)
+            .values(
+                mean=bindparam("mean"),
+                deviation=bindparam("deviation"),
+                total_games=leaderboard_rating.c.total_games + 1,
+                won_games=leaderboard_rating.c.won_games + bindparam("increment"),
+            )
+        )
+        await conn.execute(rating_update_sql, [
+            dict(
+                player_id=player_id,
+                mean=new_rating.mu,
+                deviation=new_rating.sigma,
+                increment=(
+                    1 if outcomes[player_id] is GameOutcome.VICTORY else 0
+                )
+            )
+            for player_id, _, new_rating in ratings
+        ])
 
+        for player_id, new_rating in new_ratings.items():
             self._update_player_object(player_id, rating_type, new_rating)
 
     def _update_player_object(
-        self, player_id: PlayerID, rating_type: RatingType, new_rating: Rating
+        self, player_id: PlayerID, rating_type: str, new_rating: Rating
     ) -> None:
         if self._player_service_callback is None:
             self._logger.warning(
