@@ -51,7 +51,7 @@ async def rating_service(database, player_service):
         )
         mock_ratings[(player_id, rating_type)] = rating
 
-    def get_mock_ratings(player_ids, rating_type, **kwargs):
+    def get_mock_ratings(conn, player_ids, rating_type, **kwargs):
         nonlocal mock_ratings
         nonlocal mock_service
         values = {
@@ -82,7 +82,7 @@ def get_persisted_results(mock_service):
     if args is None:
         return PersistedResults(None, {}, {})
 
-    game_id, rating_type, old_ratings, new_ratings, outcomes = args[0]
+    _conn, game_id, rating_type, old_ratings, new_ratings, outcomes = args[0]
     return PersistedResults(rating_type, new_ratings, outcomes)
 
 

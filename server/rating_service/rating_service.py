@@ -138,33 +138,43 @@ class RatingService(Service):
         self._logger.debug("RatingService stopped.")
 
     async def _rate(self, summary: GameRatingSummary) -> None:
-        rating_data = await self._get_rating_data(summary)
-        new_ratings = GameRater.compute_rating(rating_data)
+        async with self._db.acquire() as conn:
+            rating_data = await self._get_rating_data(conn, summary)
+            new_ratings = GameRater.compute_rating(rating_data)
 
-        outcome_map = {
-            player_id: team.outcome
-            for team in summary.teams
-            for player_id in team.player_ids
-        }
+            outcome_map = {
+                player_id: team.outcome
+                for team in summary.teams
+                for player_id in team.player_ids
+            }
 
-        old_ratings = {
-            player_id: rating
-            for team in rating_data
-            for player_id, rating in team.ratings.items()
-        }
-        await self._persist_rating_changes(
-            summary.game_id,
-            summary.rating_type,
-            old_ratings,
-            new_ratings,
-            outcome_map
-        )
-        await self._publish_rating_changes(
-            summary.rating_type, old_ratings, new_ratings, outcome_map
-        )
+            old_ratings = {
+                player_id: rating
+                for team in rating_data
+                for player_id, rating in team.ratings.items()
+            }
+            await self._persist_rating_changes(
+                conn,
+                summary.game_id,
+                summary.rating_type,
+                old_ratings,
+                new_ratings,
+                outcome_map
+            )
+            await self._publish_rating_changes(
+                summary.rating_type,
+                old_ratings,
+                new_ratings,
+                outcome_map
+            )
 
-    async def _get_rating_data(self, summary: GameRatingSummary) -> GameRatingData:
+    async def _get_rating_data(
+        self,
+        conn,
+        summary: GameRatingSummary
+    ) -> GameRatingData:
         ratings = await self._get_players_ratings(
+            conn,
             [
                 player_id
                 for team in summary.teams
@@ -182,7 +192,7 @@ class RatingService(Service):
         ]
 
     async def _get_players_ratings(
-        self, player_ids: List[PlayerID], rating_type: str, conn=None
+        self, conn, player_ids: List[PlayerID], rating_type: str
     ) -> Dict[PlayerID, Rating]:
         if self._rating_type_ids is None:
             self._logger.warning(
@@ -194,45 +204,43 @@ class RatingService(Service):
         if rating_type_id is None:
             raise ValueError(f"Unknown rating type {rating_type}.")
 
-        async with self._db.acquire() as conn:
-            player_ratings = await self._get_all_player_ratings(
-                conn, player_ids
+        player_ratings = await self._get_all_player_ratings(
+            conn, player_ids
+        )
+
+        uninitialized_ratings = [
+            # Querying the key will create the value using rating
+            # initialization, sort of like a defaultdict.
+            (player_id, *player_ratings[player_id][rating_type])
+            for player_id in player_ids
+            if rating_type not in player_ratings[player_id]
+        ]
+        if uninitialized_ratings:
+            # These players have not played any games using this leaderboard
+            # yet, so we need to create the initial ratings. This also
+            # ensures that the journal will show accurate changes.
+            leaderboard_id = self._rating_type_ids[rating_type]
+
+            values = [
+                dict(
+                    login_id=player_id,
+                    mean=mean,
+                    deviation=dev,
+                    total_games=0,
+                    won_games=0,
+                    leaderboard_id=leaderboard_id,
+                )
+                for player_id, mean, dev in uninitialized_ratings
+            ]
+            await conn.execute(
+                leaderboard_rating.insert(),
+                values
             )
 
-            uninitialized_ratings = [
-                # Querying the key will create the value using rating
-                # initialization, sort of like a defaultdict.
-                (player_id, *player_ratings[player_id][rating_type])
-                for player_id in player_ids
-                if rating_type not in player_ratings[player_id]
-            ]
-            if uninitialized_ratings:
-                # These players have not played any games using this leaderboard
-                # yet, so we need to create the initial ratings. This also
-                # ensures that the journal will show accurate changes.
-
-                leaderboard_id = self._rating_type_ids[rating_type]
-
-                values = [
-                    dict(
-                        login_id=player_id,
-                        mean=mean,
-                        deviation=dev,
-                        total_games=0,
-                        won_games=0,
-                        leaderboard_id=leaderboard_id,
-                    )
-                    for player_id, mean, dev in uninitialized_ratings
-                ]
-                await conn.execute(
-                    leaderboard_rating.insert(),
-                    values
-                )
-
-            return {
-                player_id: Rating(*player_ratings[player_id][rating_type])
-                for player_id in player_ids
-            }
+        return {
+            player_id: Rating(*player_ratings[player_id][rating_type])
+            for player_id in player_ids
+        }
 
     async def _get_all_player_ratings(
         self, conn, player_ids: List[PlayerID]
@@ -262,6 +270,7 @@ class RatingService(Service):
 
     async def _persist_rating_changes(
         self,
+        conn,
         game_id: int,
         rating_type: str,
         old_ratings: Dict[PlayerID, Rating],
@@ -273,77 +282,76 @@ class RatingService(Service):
         """
         self._logger.debug("Saving rating change stats for game %i", game_id)
 
-        async with self._db.acquire() as conn:
-            for player_id, new_rating in new_ratings.items():
-                old_rating = old_ratings[player_id]
-                self._logger.debug(
-                    "New %s rating for player with id %s: %s -> %s",
-                    rating_type,
-                    player_id,
-                    old_rating,
-                    new_rating,
-                )
+        for player_id, new_rating in new_ratings.items():
+            old_rating = old_ratings[player_id]
+            self._logger.debug(
+                "New %s rating for player with id %s: %s -> %s",
+                rating_type,
+                player_id,
+                old_rating,
+                new_rating,
+            )
 
-                gps_update_sql = (
-                    game_player_stats.update()
-                    .where(
-                        and_(
-                            game_player_stats.c.playerId == player_id,
-                            game_player_stats.c.gameId == game_id,
-                        )
-                    )
-                    .values(
-                        after_mean=new_rating.mu,
-                        after_deviation=new_rating.sigma,
-                        mean=old_rating.mu,
-                        deviation=old_rating.sigma,
-                        scoreTime=func.now(),
+            gps_update_sql = (
+                game_player_stats.update()
+                .where(
+                    and_(
+                        game_player_stats.c.playerId == player_id,
+                        game_player_stats.c.gameId == game_id,
                     )
                 )
-                result = await conn.execute(gps_update_sql)
-
-                if not result.rowcount:
-                    self._logger.warning("gps_update_sql resultset is empty for game_id %i", game_id)
-                    return
-
-                rating_type_id = self._rating_type_ids[rating_type]
-
-                journal_insert_sql = leaderboard_rating_journal.insert().values(
-                    leaderboard_id=rating_type_id,
-                    rating_mean_before=old_rating.mu,
-                    rating_deviation_before=old_rating.sigma,
-                    rating_mean_after=new_rating.mu,
-                    rating_deviation_after=new_rating.sigma,
-                    game_player_stats_id=select([game_player_stats.c.id]).where(
-                        and_(
-                            game_player_stats.c.playerId == player_id,
-                            game_player_stats.c.gameId == game_id,
-                        )
-                    ).scalar_subquery(),
+                .values(
+                    after_mean=new_rating.mu,
+                    after_deviation=new_rating.sigma,
+                    mean=old_rating.mu,
+                    deviation=old_rating.sigma,
+                    scoreTime=func.now(),
                 )
-                await conn.execute(journal_insert_sql)
+            )
+            result = await conn.execute(gps_update_sql)
 
-                victory_increment = (
-                    1 if outcomes[player_id] is GameOutcome.VICTORY else 0
-                )
-                rating_update_sql = (
-                    leaderboard_rating.update()
-                    .where(
-                        and_(
-                            leaderboard_rating.c.login_id == player_id,
-                            leaderboard_rating.c.leaderboard_id == rating_type_id,
-                        )
+            if not result.rowcount:
+                self._logger.warning("gps_update_sql resultset is empty for game_id %i", game_id)
+                return
+
+            rating_type_id = self._rating_type_ids[rating_type]
+
+            journal_insert_sql = leaderboard_rating_journal.insert().values(
+                leaderboard_id=rating_type_id,
+                rating_mean_before=old_rating.mu,
+                rating_deviation_before=old_rating.sigma,
+                rating_mean_after=new_rating.mu,
+                rating_deviation_after=new_rating.sigma,
+                game_player_stats_id=select([game_player_stats.c.id]).where(
+                    and_(
+                        game_player_stats.c.playerId == player_id,
+                        game_player_stats.c.gameId == game_id,
                     )
-                    .values(
-                        mean=new_rating.mu,
-                        deviation=new_rating.sigma,
-                        total_games=leaderboard_rating.c.total_games + 1,
-                        won_games=leaderboard_rating.c.won_games + victory_increment,
+                ).scalar_subquery(),
+            )
+            await conn.execute(journal_insert_sql)
+
+            victory_increment = (
+                1 if outcomes[player_id] is GameOutcome.VICTORY else 0
+            )
+            rating_update_sql = (
+                leaderboard_rating.update()
+                .where(
+                    and_(
+                        leaderboard_rating.c.login_id == player_id,
+                        leaderboard_rating.c.leaderboard_id == rating_type_id,
                     )
                 )
-                await conn.execute(rating_update_sql)
+                .values(
+                    mean=new_rating.mu,
+                    deviation=new_rating.sigma,
+                    total_games=leaderboard_rating.c.total_games + 1,
+                    won_games=leaderboard_rating.c.won_games + victory_increment,
+                )
+            )
+            await conn.execute(rating_update_sql)
 
-                self._update_player_object(player_id, rating_type, new_rating)
+            self._update_player_object(player_id, rating_type, new_rating)
 
     def _update_player_object(
         self, player_id: PlayerID, rating_type: RatingType, new_rating: Rating

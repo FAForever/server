@@ -150,7 +150,7 @@ async def test_enqueue_uninitialized(uninitialized_service, game_info):
 async def test_get_rating_uninitialized(uninitialized_service):
     service = uninitialized_service
     with pytest.raises(ServiceNotReadyError):
-        await service._get_players_ratings([1], RatingType.GLOBAL)
+        await service._get_players_ratings(service._db, [1], RatingType.GLOBAL)
 
 
 async def test_load_from_database(uninitialized_service):
@@ -177,7 +177,10 @@ async def test_get_players_ratings_global(semiinitialized_service):
     service = semiinitialized_service
     player_id = 50
     true_rating = Rating(1200, 250)
-    ratings = await service._get_players_ratings([player_id], RatingType.GLOBAL)
+    async with service._db.acquire() as conn:
+        ratings = await service._get_players_ratings(
+            conn, [player_id], RatingType.GLOBAL
+        )
     assert ratings[player_id] == true_rating
 
 
@@ -185,7 +188,10 @@ async def test_get_players_ratings_ladder(semiinitialized_service):
     service = semiinitialized_service
     player_id = 50
     true_rating = Rating(1300, 400)
-    ratings = await service._get_players_ratings([player_id], RatingType.LADDER_1V1)
+    async with service._db.acquire() as conn:
+        ratings = await service._get_players_ratings(
+            conn, [player_id], RatingType.LADDER_1V1
+        )
     assert ratings[player_id] == true_rating
 
 
@@ -213,7 +219,8 @@ async def test_get_new_player_rating_created(semiinitialized_service):
     db_ratings = await get_all_ratings(service._db, player_id)
     assert len(db_ratings) == 0  # Rating does not exist yet
 
-    await service._get_players_ratings([player_id], rating_type)
+    async with service._db.acquire() as conn:
+        await service._get_players_ratings(conn, [player_id], rating_type)
 
     db_ratings = await get_all_ratings(service._db, player_id)
     assert len(db_ratings) == 1  # Rating has been created
@@ -250,7 +257,8 @@ async def test_get_rating_data(semiinitialized_service):
         ],
     )
 
-    rating_data = await service._get_rating_data(summary)
+    async with service._db.acquire() as conn:
+        rating_data = await service._get_rating_data(conn, summary)
 
     player1_expected_data = TeamRatingData(
         player1_outcome, {player1_id: player1_db_rating}
@@ -284,11 +292,11 @@ async def test_rating_persistence(semiinitialized_service):
     new_ratings = {player_id: Rating(after_mean, 400)}
     outcomes = {player_id: GameOutcome.VICTORY}
 
-    await service._persist_rating_changes(
-        game_id, rating_type, old_ratings, new_ratings, outcomes
-    )
-
     async with service._db.acquire() as conn:
+        await service._persist_rating_changes(
+            conn, game_id, rating_type, old_ratings, new_ratings, outcomes
+        )
+
         sql = select([game_player_stats.c.id, game_player_stats.c.after_mean]).where(
             and_(
                 game_player_stats.c.gameId == game_id,
@@ -365,6 +373,7 @@ async def test_game_update_empty_resultset(rating_service):
     new_ratings = {player_id: Rating(after_mean, 400)}
     outcomes = {player_id: GameOutcome.VICTORY}
 
-    await service._persist_rating_changes(
-        game_id, rating_type, old_ratings, new_ratings, outcomes
-    )
+    async with service._db.acquire() as conn:
+        await service._persist_rating_changes(
+            conn, game_id, rating_type, old_ratings, new_ratings, outcomes
+        )
