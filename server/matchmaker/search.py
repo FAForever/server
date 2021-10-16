@@ -108,7 +108,7 @@ class Search:
     def displayed_ratings(self):
         """
         The client always displays mean - 3 * dev as a player's rating.
-        So generally this is percieved as a player's true rating.
+        So generally this is perceived as a player's true rating.
         """
         return [mean - 3 * dev for mean, dev in self.raw_ratings]
 
