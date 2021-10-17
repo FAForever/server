@@ -1,5 +1,6 @@
 import json
-from collections import namedtuple
+from collections import defaultdict
+from typing import Any, Dict, List, NamedTuple, Optional
 from unittest import mock
 
 import pytest
@@ -30,6 +31,12 @@ class PersistenceError(Exception):
     """
 
     pass
+
+
+class PersistedResults(NamedTuple):
+    rating_type: Optional[str]
+    ratings: Dict[int, Any]
+    outcomes: Dict[int, Any]
 
 
 @pytest.fixture
@@ -65,7 +72,9 @@ async def rating_service(database, player_service):
         return values
 
     mock_service.set_mock_rating = set_mock_rating
-    mock_service._get_players_ratings = CoroutineMock(wraps=get_mock_ratings)
+    mock_service._get_players_initialized_rating = CoroutineMock(
+        wraps=get_mock_ratings
+    )
 
     await mock_service.initialize()
 
@@ -74,25 +83,35 @@ async def rating_service(database, player_service):
     mock_service.kill()
 
 
-def get_persisted_results(mock_service):
-    PersistedResults = namedtuple(
-        "PersistedResults", ["rating_type", "ratings", "outcomes"]
-    )
-    args = mock_service._persist_rating_changes.await_args
-    if args is None:
-        return PersistedResults(None, {}, {})
+def get_persisted_results(mock_service) -> List[PersistedResults]:
+    args = mock_service._persist_rating_changes.await_args_list
 
-    _conn, game_id, rating_type, old_ratings, new_ratings, outcomes = args[0]
-    return PersistedResults(rating_type, new_ratings, outcomes)
+    return [
+        PersistedResults(None, {}, {})
+        if args is None else
+        PersistedResults(rating_type, new_ratings, outcomes)
+        for call in args
+        for (
+            _conn,
+            _game_id,
+            rating_type,
+            _old_ratings,
+            new_ratings,
+            outcomes
+        ) in call[:1]
+    ]
 
 
 def get_published_results_by_player_id(mock_service):
     args = mock_service._message_queue_service.publish.await_args_list
-    if args is None:
-        return {}
 
-    messages = [arg[0][2] for arg in args]
-    return {message["player_id"]: message for message in messages}
+    result = defaultdict(list)
+
+    for call in args:
+        message = call[0][2]
+        result[message["player_id"]].append(message)
+
+    return result
 
 
 @pytest.fixture
@@ -196,7 +215,7 @@ async def test_on_game_end_global_ratings_persisted(custom_game, players):
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(custom_game.game_service._rating_service)
+    results, = get_persisted_results(custom_game.game_service._rating_service)
     assert results.rating_type == RatingType.GLOBAL
     assert players.hosting.id in results.ratings
     assert players.joining.id in results.ratings
@@ -225,13 +244,13 @@ async def test_on_game_end_global_ratings_published(custom_game, players):
     assert players.hosting.id in results
     assert players.joining.id in results
 
-    host_result = results[players.hosting.id]
+    host_result, = results[players.hosting.id]
     assert host_result["rating_type"] == RatingType.GLOBAL
     assert "new_rating_mean" in host_result
     assert "new_rating_deviation" in host_result
     assert host_result["outcome"] == GameOutcome.VICTORY.value
 
-    join_result = results[players.joining.id]
+    join_result, = results[players.joining.id]
     assert join_result["rating_type"] == RatingType.GLOBAL
     assert "new_rating_mean" in join_result
     assert "new_rating_deviation" in join_result
@@ -253,12 +272,17 @@ async def test_on_game_end_ladder_ratings_persisted(ladder_game, players):
     await ladder_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
-    assert results.rating_type == RatingType.LADDER_1V1
-    assert players.hosting.id in results.ratings
-    assert players.joining.id in results.ratings
-    assert results.outcomes[players.hosting.id] is GameOutcome.VICTORY
-    assert results.outcomes[players.joining.id] is GameOutcome.DEFEAT
+    ladder_results, global_results = get_persisted_results(rating_service)
+    assert ladder_results.rating_type == RatingType.LADDER_1V1
+    assert players.hosting.id in ladder_results.ratings
+    assert players.joining.id in ladder_results.ratings
+    assert ladder_results.outcomes[players.hosting.id] is GameOutcome.VICTORY
+    assert ladder_results.outcomes[players.joining.id] is GameOutcome.DEFEAT
+
+    assert global_results.rating_type == RatingType.GLOBAL
+    assert players.hosting.id in global_results.ratings
+    assert players.joining.id not in global_results.ratings
+    assert global_results.outcomes[players.hosting.id] is GameOutcome.VICTORY
 
 
 async def test_on_game_end_ladder_ratings_published(ladder_game, players):
@@ -280,17 +304,22 @@ async def test_on_game_end_ladder_ratings_published(ladder_game, players):
     assert players.hosting.id in results
     assert players.joining.id in results
 
-    host_result = results[players.hosting.id]
-    assert host_result["rating_type"] == RatingType.LADDER_1V1
-    assert "new_rating_mean" in host_result
-    assert "new_rating_deviation" in host_result
-    assert host_result["outcome"] == GameOutcome.VICTORY.value
+    host_ladder_result, host_global_result = results[players.hosting.id]
+    assert host_ladder_result["rating_type"] == RatingType.LADDER_1V1
+    assert "new_rating_mean" in host_ladder_result
+    assert "new_rating_deviation" in host_ladder_result
+    assert host_ladder_result["outcome"] == GameOutcome.VICTORY.value
 
-    join_result = results[players.joining.id]
-    assert join_result["rating_type"] == RatingType.LADDER_1V1
-    assert "new_rating_mean" in join_result
-    assert "new_rating_deviation" in join_result
-    assert join_result["outcome"] == GameOutcome.DEFEAT.value
+    assert host_global_result["rating_type"] == RatingType.GLOBAL
+    assert "new_rating_mean" in host_global_result
+    assert "new_rating_deviation" in host_global_result
+    assert host_global_result["outcome"] == GameOutcome.VICTORY.value
+
+    join_ladder_result, = results[players.joining.id]
+    assert join_ladder_result["rating_type"] == RatingType.LADDER_1V1
+    assert "new_rating_mean" in join_ladder_result
+    assert "new_rating_deviation" in join_ladder_result
+    assert join_ladder_result["outcome"] == GameOutcome.DEFEAT.value
 
 
 async def test_on_game_end_ladder_same_rating_published_as_persisted(
@@ -310,16 +339,22 @@ async def test_on_game_end_ladder_same_rating_published_as_persisted(
     await ladder_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    persisted = get_persisted_results(rating_service).ratings
+    ladder_results, global_results = get_persisted_results(rating_service)
+    persisted = ladder_results.ratings
+    persisted_global = global_results.ratings
     published = get_published_results_by_player_id(rating_service)
 
     host_id = players.hosting.id
-    assert persisted[host_id].mu == published[host_id]["new_rating_mean"]
-    assert persisted[host_id].sigma == published[host_id]["new_rating_deviation"]
+    host_ladder_result, host_global_result = published[host_id]
+    assert persisted[host_id].mu == host_ladder_result["new_rating_mean"]
+    assert persisted[host_id].sigma == host_ladder_result["new_rating_deviation"]
+    assert persisted_global[host_id].mu == host_global_result["new_rating_mean"]
+    assert persisted_global[host_id].sigma == host_global_result["new_rating_deviation"]
 
-    join_id = players.hosting.id
-    assert persisted[join_id].mu == published[join_id]["new_rating_mean"]
-    assert persisted[join_id].sigma == published[join_id]["new_rating_deviation"]
+    join_id = players.joining.id
+    join_ladder_result, = published[join_id]
+    assert persisted[join_id].mu == join_ladder_result["new_rating_mean"]
+    assert persisted[join_id].sigma == join_ladder_result["new_rating_deviation"]
 
 
 async def test_on_game_end_ladder_ratings_without_score_override(
@@ -340,12 +375,17 @@ async def test_on_game_end_ladder_ratings_without_score_override(
     await ladder_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
-    assert results.rating_type == RatingType.LADDER_1V1
-    assert players.hosting.id in results.ratings
-    assert players.joining.id in results.ratings
-    assert results.outcomes[players.hosting.id] is GameOutcome.VICTORY
-    assert results.outcomes[players.joining.id] is GameOutcome.DEFEAT
+    ladder_results, global_results = get_persisted_results(rating_service)
+    assert ladder_results.rating_type == RatingType.LADDER_1V1
+    assert players.hosting.id in ladder_results.ratings
+    assert players.joining.id in ladder_results.ratings
+    assert ladder_results.outcomes[players.hosting.id] is GameOutcome.VICTORY
+    assert ladder_results.outcomes[players.joining.id] is GameOutcome.DEFEAT
+
+    assert global_results.rating_type == RatingType.GLOBAL
+    assert players.hosting.id in global_results.ratings
+    assert players.joining.id not in global_results.ratings
+    assert global_results.outcomes[players.hosting.id] is GameOutcome.VICTORY
 
 
 async def test_on_game_end_ladder_ratings_uses_score_override(
@@ -366,12 +406,17 @@ async def test_on_game_end_ladder_ratings_uses_score_override(
     await ladder_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
-    assert results.rating_type == RatingType.LADDER_1V1
-    assert players.hosting.id in results.ratings
-    assert players.joining.id in results.ratings
-    assert results.outcomes[players.hosting.id] is GameOutcome.VICTORY
-    assert results.outcomes[players.joining.id] is GameOutcome.DEFEAT
+    ladder_results, global_results = get_persisted_results(rating_service)
+    assert ladder_results.rating_type == RatingType.LADDER_1V1
+    assert players.hosting.id in ladder_results.ratings
+    assert players.joining.id in ladder_results.ratings
+    assert ladder_results.outcomes[players.hosting.id] is GameOutcome.VICTORY
+    assert ladder_results.outcomes[players.joining.id] is GameOutcome.DEFEAT
+
+    assert global_results.rating_type == RatingType.GLOBAL
+    assert players.hosting.id in global_results.ratings
+    assert players.joining.id not in global_results.ratings
+    assert global_results.outcomes[players.hosting.id] is GameOutcome.VICTORY
 
 
 async def test_on_game_end_ladder_ratings_score_override_draw(
@@ -392,12 +437,18 @@ async def test_on_game_end_ladder_ratings_score_override_draw(
     await ladder_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
-    assert results.rating_type == RatingType.LADDER_1V1
-    assert players.hosting.id in results.ratings
-    assert players.joining.id in results.ratings
-    assert results.outcomes[players.hosting.id] is GameOutcome.DRAW
-    assert results.outcomes[players.joining.id] is GameOutcome.DRAW
+    ladder_results, global_results = get_persisted_results(rating_service)
+    assert ladder_results.rating_type == RatingType.LADDER_1V1
+    assert players.hosting.id in ladder_results.ratings
+    assert players.joining.id in ladder_results.ratings
+    assert ladder_results.outcomes[players.hosting.id] is GameOutcome.DRAW
+    assert ladder_results.outcomes[players.joining.id] is GameOutcome.DRAW
+
+    assert global_results.rating_type == RatingType.GLOBAL
+    assert players.hosting.id in global_results.ratings
+    assert players.joining.id in global_results.ratings
+    assert global_results.outcomes[players.hosting.id] is GameOutcome.DRAW
+    assert global_results.outcomes[players.joining.id] is GameOutcome.DRAW
 
 
 async def test_on_game_end_rating_type_not_set(game, players):
@@ -420,9 +471,8 @@ async def test_on_game_end_rating_type_not_set(game, players):
 
     await rating_service._join_rating_queue()
 
-    persisted_results = get_persisted_results(rating_service)
-    assert persisted_results.rating_type is None
-    assert persisted_results.ratings == {}
+    all_results = get_persisted_results(rating_service)
+    assert all_results == []
 
     published_results = get_published_results_by_player_id(rating_service)
     assert published_results == {}
@@ -452,7 +502,7 @@ async def test_rate_game_balanced_teamgame(custom_game, player_factory):
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
+    results, = get_persisted_results(rating_service)
     assert results.rating_type == RatingType.GLOBAL
     for player, _ in players:
         assert results.ratings[player.id] != Rating(*player.ratings[RatingType.GLOBAL])
@@ -494,7 +544,7 @@ async def test_rate_game_sum_of_scores_edge_case(custom_game, player_factory):
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
+    results, = get_persisted_results(rating_service)
     assert results.rating_type == RatingType.GLOBAL
     for player, team in players:
         if team == win_team:
@@ -541,7 +591,7 @@ async def test_rate_game_only_one_survivor(custom_game, player_factory):
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
+    results, = get_persisted_results(rating_service)
     assert results.rating_type == RatingType.GLOBAL
     for player, team in players:
         if team == win_team:
@@ -586,7 +636,7 @@ async def test_rate_game_two_player_FFA(custom_game, player_factory):
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
+    results, = get_persisted_results(rating_service)
     assert results.rating_type == RatingType.GLOBAL
     for player, _ in players:
         assert (
@@ -619,8 +669,8 @@ async def test_rate_game_does_not_rate_multi_team(custom_game, player_factory):
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
-    assert results.ratings == {}
+    all_results = get_persisted_results(rating_service)
+    assert all_results == []
 
 
 async def test_rate_game_does_not_rate_multi_FFA(custom_game, player_factory):
@@ -648,8 +698,8 @@ async def test_rate_game_does_not_rate_multi_FFA(custom_game, player_factory):
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
-    assert results.ratings == {}
+    all_results = get_persisted_results(rating_service)
+    assert all_results == []
 
 
 async def test_rate_game_does_not_rate_double_win(custom_game, player_factory):
@@ -677,8 +727,8 @@ async def test_rate_game_does_not_rate_double_win(custom_game, player_factory):
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
-    assert results.ratings == {}
+    all_results = get_persisted_results(rating_service)
+    assert all_results == []
 
 
 async def test_rating_errors_persisted(custom_game, player_factory):
@@ -740,7 +790,7 @@ async def test_rate_game_treats_double_defeat_as_draw(custom_game, player_factor
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
+    results, = get_persisted_results(rating_service)
     for player, _ in players:
         new_rating = results.ratings[player.id]
         old_rating = Rating(*player.ratings[RatingType.GLOBAL])
@@ -784,7 +834,7 @@ async def test_compute_rating_works_with_partially_unknown_results(
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
+    results, = get_persisted_results(rating_service)
     assert results.rating_type == RatingType.GLOBAL
     for player, team in players:
         if team == win_team:
@@ -824,7 +874,7 @@ async def test_rate_game_single_ffa_vs_single_team(custom_game, player_factory):
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
+    results, = get_persisted_results(rating_service)
     for player, _ in players:
         new_rating = results.ratings[player.id]
         old_rating = Rating(*player.ratings[RatingType.GLOBAL])
@@ -857,8 +907,8 @@ async def test_rate_game_single_ffa_vs_team(custom_game, player_factory):
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
-    assert results.ratings == {}
+    all_results = get_persisted_results(rating_service)
+    assert all_results == []
 
 
 async def test_dont_rate_partial_ffa_matches(custom_game, player_factory):
@@ -886,8 +936,8 @@ async def test_dont_rate_partial_ffa_matches(custom_game, player_factory):
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
-    assert results.ratings == {}
+    all_results = get_persisted_results(rating_service)
+    assert all_results == []
 
 
 async def test_dont_rate_pure_ffa_matches_with_more_than_two_players(
@@ -917,8 +967,8 @@ async def test_dont_rate_pure_ffa_matches_with_more_than_two_players(
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
-    assert results.ratings == {}
+    all_results = get_persisted_results(rating_service)
+    assert all_results == []
 
 
 async def test_dont_rate_threeway_team_matches(custom_game, player_factory):
@@ -946,8 +996,8 @@ async def test_dont_rate_threeway_team_matches(custom_game, player_factory):
     await custom_game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
-    assert results.ratings == {}
+    all_results = get_persisted_results(rating_service)
+    assert all_results == []
 
 
 async def test_single_wrong_report_still_rated_correctly(game: Game, player_factory):
@@ -987,7 +1037,7 @@ async def test_single_wrong_report_still_rated_correctly(game: Game, player_fact
     await game.on_game_end()
     await rating_service._join_rating_queue()
 
-    results = get_persisted_results(rating_service)
+    results, = get_persisted_results(rating_service)
     winning_ids = log_dict["teams"][str(log_dict["winning_team"])]
     for player_id, new_rating in results.ratings.items():
         if player_id in winning_ids:

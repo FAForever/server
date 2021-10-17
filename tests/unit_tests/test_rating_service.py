@@ -147,10 +147,12 @@ async def test_enqueue_uninitialized(uninitialized_service, game_info):
     await service.shutdown()
 
 
-async def test_get_rating_uninitialized(uninitialized_service):
+async def test_persist_uninitialized(uninitialized_service):
     service = uninitialized_service
     with pytest.raises(ServiceNotReadyError):
-        await service._get_players_ratings(service._db, [1], RatingType.GLOBAL)
+        await service._persist_rating_changes(
+            CoroutineMock(), 1, RatingType.GLOBAL, {}, {}, {}
+        )
 
 
 async def test_load_from_database(uninitialized_service):
@@ -178,8 +180,11 @@ async def test_get_players_ratings_global(semiinitialized_service):
     player_id = 50
     true_rating = Rating(1200, 250)
     async with service._db.acquire() as conn:
-        ratings = await service._get_players_ratings(
-            conn, [player_id], RatingType.GLOBAL
+        player_ratings = await service._get_all_player_ratings(
+            conn, [player_id]
+        )
+        ratings = await service._get_players_initialized_rating(
+            conn, player_ratings, RatingType.GLOBAL
         )
     assert ratings[player_id] == true_rating
 
@@ -189,8 +194,11 @@ async def test_get_players_ratings_ladder(semiinitialized_service):
     player_id = 50
     true_rating = Rating(1300, 400)
     async with service._db.acquire() as conn:
-        ratings = await service._get_players_ratings(
-            conn, [player_id], RatingType.LADDER_1V1
+        player_ratings = await service._get_all_player_ratings(
+            conn, [player_id]
+        )
+        ratings = await service._get_players_initialized_rating(
+            conn, player_ratings, RatingType.LADDER_1V1
         )
     assert ratings[player_id] == true_rating
 
@@ -220,7 +228,10 @@ async def test_get_new_player_rating_created(semiinitialized_service):
     assert len(db_ratings) == 0  # Rating does not exist yet
 
     async with service._db.acquire() as conn:
-        await service._get_players_ratings(conn, [player_id], rating_type)
+        player_ratings = await service._get_all_player_ratings(
+            conn, [player_id]
+        )
+        await service._get_players_initialized_rating(conn, player_ratings, rating_type)
 
     db_ratings = await get_all_ratings(service._db, player_id)
     assert len(db_ratings) == 1  # Rating has been created
@@ -257,8 +268,13 @@ async def test_get_rating_data(semiinitialized_service):
         ],
     )
 
-    async with service._db.acquire() as conn:
-        rating_data = await service._get_rating_data(conn, summary)
+    rating_data = service._get_rating_data(
+        summary,
+        {
+            player1_id: player1_db_rating,
+            player2_id: player2_db_rating
+        }
+    )
 
     player1_expected_data = TeamRatingData(
         player1_outcome, {player1_id: player1_db_rating}

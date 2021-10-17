@@ -1,5 +1,6 @@
 import asyncio
 import gc
+from collections import defaultdict
 
 import pytest
 from sqlalchemy import select
@@ -162,6 +163,21 @@ async def get_player_ratings(proto, *names, rating_type="global"):
             for player_info in msg["players"]
         })
     return ratings
+
+
+async def get_player_ratings_all(proto, *names):
+    """
+    Like `get_player_ratings` but find all rating types instead of just one and
+    return a nested dictionary containing all those ratings
+    """
+    ratings = defaultdict(dict)
+    while set(ratings.keys()) != set(names):
+        msg = await read_until_command(proto, "player_info")
+        for player_info in msg["players"]:
+            for rating_type, rating in player_info["ratings"].items():
+                ratings[player_info["login"]][rating_type] = rating["rating"]
+
+    return dict(ratings)
 
 
 async def send_player_options(proto, *options):
@@ -562,15 +578,16 @@ async def test_ladder_game_draw_bug(lobby_server, database):
             "args": []
         })
 
-    ratings = await get_player_ratings(
-        proto1, "ladder1", "ladder2",
-        rating_type="ladder_1v1"
-    )
+    ratings = await get_player_ratings_all(proto1, "ladder1", "ladder2")
 
     # Both start at (1500, 500).
     # When rated as a draw the means should barely change.
-    assert abs(ratings["ladder1"][0] - 1500.) < 1
-    assert abs(ratings["ladder2"][0] - 1500.) < 1
+    assert 0 < abs(ratings["ladder1"]["ladder_1v1"][0] - 1500.) < 1
+    assert 0 < abs(ratings["ladder2"]["ladder_1v1"][0] - 1500.) < 1
+
+    # Global rating should also be updated
+    assert 0 < abs(ratings["ladder1"]["global"][0] - 1500.) < 1
+    assert 0 < abs(ratings["ladder2"]["global"][0] - 1500.) < 1
 
     async with database.acquire() as conn:
         result = await conn.execute(
