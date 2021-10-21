@@ -41,6 +41,7 @@ async def test_game_launch_message(lobby_server):
     assert msg2["expected_players"] == msg1["expected_players"]
     assert msg2["map_position"] == 2
 
+    assert "scmp_015" in msg1["mapname"]
     del msg1["mapname"]
     assert msg1 == {
         "command": "game_launch",
