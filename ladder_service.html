@@ -429,7 +429,7 @@ class LadderService(Service):
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
-                newbie_adjusted_mean(player, queue.rating_type)
+                player.get_displayed_rating(queue.rating_type)
                 for player in all_players
             )
             pool = queue.get_map_pool_for_rating(rating)
@@ -611,15 +611,7 @@ def _team_name(team: List[Player]) -&gt; str:
     else:
         name = player_1_name
 
-    return f&#34;Team {name}&#34;
-
-
-def newbie_adjusted_mean(player: Player, rating_type: str) -&gt; float:
-    &#34;&#34;&#34;Get rating mean with new player&#39;s always returning a mean of 0&#34;&#34;&#34;
-    if player.game_count[rating_type] &gt; config.NEWBIE_MIN_GAMES:
-        return player.ratings[rating_type][0]
-    else:
-        return 0</code></pre>
+    return f&#34;Team {name}&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -644,23 +636,6 @@ def newbie_adjusted_mean(player: Player, rating_type: str) -&gt; float:
     &#34;&#34;&#34;
 
     return &#34; Vs &#34;.join(_team_name(team) for team in teams)</code></pre>
-</details>
-</dd>
-<dt id="server.ladder_service.newbie_adjusted_mean"><code class="name flex">
-<span>def <span class="ident">newbie_adjusted_mean</span></span>(<span>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, rating_type: str) ‑> float</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Get rating mean with new player's always returning a mean of 0</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def newbie_adjusted_mean(player: Player, rating_type: str) -&gt; float:
-    &#34;&#34;&#34;Get rating mean with new player&#39;s always returning a mean of 0&#34;&#34;&#34;
-    if player.game_count[rating_type] &gt; config.NEWBIE_MIN_GAMES:
-        return player.ratings[rating_type][0]
-    else:
-        return 0</code></pre>
 </details>
 </dd>
 </dl>
@@ -1041,7 +1016,7 @@ statistics, and launches the games.</p></div>
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
-                newbie_adjusted_mean(player, queue.rating_type)
+                player.get_displayed_rating(queue.rating_type)
                 for player in all_players
             )
             pool = queue.get_map_pool_for_rating(rating)
@@ -1472,7 +1447,7 @@ so it should only perform fast operations.</p></div>
             limit=config.LADDER_ANTI_REPETITION_LIMIT
         )
         rating = min(
-            newbie_adjusted_mean(player, queue.rating_type)
+            player.get_displayed_rating(queue.rating_type)
             for player in all_players
         )
         pool = queue.get_map_pool_for_rating(rating)
@@ -1753,7 +1728,6 @@ so it should only perform fast operations.</p></div>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="server.ladder_service.game_name" href="#server.ladder_service.game_name">game_name</a></code></li>
-<li><code><a title="server.ladder_service.newbie_adjusted_mean" href="#server.ladder_service.newbie_adjusted_mean">newbie_adjusted_mean</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>

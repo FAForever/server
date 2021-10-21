@@ -3971,7 +3971,7 @@ statistics, and launches the games.</p></div>
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
-                newbie_adjusted_mean(player, queue.rating_type)
+                player.get_displayed_rating(queue.rating_type)
                 for player in all_players
             )
             pool = queue.get_map_pool_for_rating(rating)
@@ -4402,7 +4402,7 @@ so it should only perform fast operations.</p></div>
             limit=config.LADDER_ANTI_REPETITION_LIMIT
         )
         rating = min(
-            newbie_adjusted_mean(player, queue.rating_type)
+            player.get_displayed_rating(queue.rating_type)
             for player in all_players
         )
         pool = queue.get_map_pool_for_rating(rating)
