@@ -46,7 +46,7 @@ OnMatchedCallback = Callable[[&#34;Search&#34;, &#34;Search&#34;], Any]
 
 
 def get_average_rating(searches):
-    return statistics.mean(mean - 3 * dev for s in searches for mean, dev in s.raw_ratings)
+    return statistics.mean(itertools.chain(*[s.displayed_ratings for s in searches]))
 
 
 @with_logger
@@ -102,8 +102,12 @@ class Search:
     def num_newbies(self) -&gt; int:
         return sum(self.is_newbie(player) for player in self.players)
 
+    def has_high_rated_player(self) -&gt; bool:
+        max_rating = max(self.displayed_ratings)
+        return max_rating &gt;= config.HIGH_RATED_PLAYER_MIN_RATING
+
     def has_top_player(self) -&gt; bool:
-        max_rating = max(map(lambda rating_tuple: rating_tuple[0], self.ratings))
+        max_rating = max(self.displayed_ratings)
         return max_rating &gt;= config.TOP_PLAYER_MIN_RATING
 
     @property
@@ -118,15 +122,23 @@ class Search:
 
     @property
     def cumulative_rating(self):
-        return sum(mean - 3 * dev for mean, dev in self.raw_ratings)
+        return sum(self.displayed_ratings)
 
     @property
     def average_rating(self):
-        return statistics.mean(mean - 3 * dev for mean, dev in self.raw_ratings)
+        return statistics.mean(self.displayed_ratings)
 
     @property
     def raw_ratings(self):
         return [player.ratings[self.rating_type] for player in self.players]
+
+    @property
+    def displayed_ratings(self):
+        &#34;&#34;&#34;
+        The client always displays mean - 3 * dev as a player&#39;s rating.
+        So generally this is perceived as a player&#39;s true rating.
+        &#34;&#34;&#34;
+        return [mean - 3 * dev for mean, dev in self.raw_ratings]
 
     def _nearby_rating_range(self, delta):
         &#34;&#34;&#34;
@@ -159,12 +171,19 @@ class Search:
 
         The threshold will expand linearly with every failed matching attempt
         until it reaches the specified MAX.
-        &#34;&#34;&#34;
 
-        return min(
-            self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
-            config.LADDER_SEARCH_EXPANSION_MAX
-        )
+        Top players use bigger values to make matching easier.
+        &#34;&#34;&#34;
+        if self.has_top_player():
+            return min(
+                self._failed_matching_attempts * config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_STEP,
+                config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX
+            )
+        else:
+            return min(
+                self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
+                config.LADDER_SEARCH_EXPANSION_MAX
+            )
 
     def register_failed_matching_attempt(self):
         &#34;&#34;&#34;
@@ -322,6 +341,10 @@ class CombinedSearch(Search):
         return list(itertools.chain(*[s.raw_ratings for s in self.searches]))
 
     @property
+    def displayed_ratings(self):
+        return list(itertools.chain(*[s.displayed_ratings for s in self.searches]))
+
+    @property
     def failed_matching_attempts(self) -&gt; int:
         return max(search.failed_matching_attempts for search in self.searches)
 
@@ -396,7 +419,7 @@ class CombinedSearch(Search):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_average_rating(searches):
-    return statistics.mean(mean - 3 * dev for s in searches for mean, dev in s.raw_ratings)</code></pre>
+    return statistics.mean(itertools.chain(*[s.displayed_ratings for s in searches]))</code></pre>
 </details>
 </dd>
 </dl>
@@ -442,6 +465,10 @@ class CombinedSearch(Search):
     @property
     def raw_ratings(self):
         return list(itertools.chain(*[s.raw_ratings for s in self.searches]))
+
+    @property
+    def displayed_ratings(self):
+        return list(itertools.chain(*[s.displayed_ratings for s in self.searches]))
 
     @property
     def failed_matching_attempts(self) -&gt; int:
@@ -659,6 +686,7 @@ def raw_ratings(self):
 <li><code><a title="server.matchmaker.search.Search.boundary_75" href="#server.matchmaker.search.Search.boundary_75">boundary_75</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.boundary_80" href="#server.matchmaker.search.Search.boundary_80">boundary_80</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.cancel" href="#server.matchmaker.search.Search.cancel">cancel</a></code></li>
+<li><code><a title="server.matchmaker.search.Search.displayed_ratings" href="#server.matchmaker.search.Search.displayed_ratings">displayed_ratings</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.match" href="#server.matchmaker.search.Search.match">match</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.matches_with" href="#server.matchmaker.search.Search.matches_with">matches_with</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.register_failed_matching_attempt" href="#server.matchmaker.search.Search.register_failed_matching_attempt">register_failed_matching_attempt</a></code></li>
@@ -729,8 +757,12 @@ def raw_ratings(self):
     def num_newbies(self) -&gt; int:
         return sum(self.is_newbie(player) for player in self.players)
 
+    def has_high_rated_player(self) -&gt; bool:
+        max_rating = max(self.displayed_ratings)
+        return max_rating &gt;= config.HIGH_RATED_PLAYER_MIN_RATING
+
     def has_top_player(self) -&gt; bool:
-        max_rating = max(map(lambda rating_tuple: rating_tuple[0], self.ratings))
+        max_rating = max(self.displayed_ratings)
         return max_rating &gt;= config.TOP_PLAYER_MIN_RATING
 
     @property
@@ -745,15 +777,23 @@ def raw_ratings(self):
 
     @property
     def cumulative_rating(self):
-        return sum(mean - 3 * dev for mean, dev in self.raw_ratings)
+        return sum(self.displayed_ratings)
 
     @property
     def average_rating(self):
-        return statistics.mean(mean - 3 * dev for mean, dev in self.raw_ratings)
+        return statistics.mean(self.displayed_ratings)
 
     @property
     def raw_ratings(self):
         return [player.ratings[self.rating_type] for player in self.players]
+
+    @property
+    def displayed_ratings(self):
+        &#34;&#34;&#34;
+        The client always displays mean - 3 * dev as a player&#39;s rating.
+        So generally this is perceived as a player&#39;s true rating.
+        &#34;&#34;&#34;
+        return [mean - 3 * dev for mean, dev in self.raw_ratings]
 
     def _nearby_rating_range(self, delta):
         &#34;&#34;&#34;
@@ -786,12 +826,19 @@ def raw_ratings(self):
 
         The threshold will expand linearly with every failed matching attempt
         until it reaches the specified MAX.
-        &#34;&#34;&#34;
 
-        return min(
-            self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
-            config.LADDER_SEARCH_EXPANSION_MAX
-        )
+        Top players use bigger values to make matching easier.
+        &#34;&#34;&#34;
+        if self.has_top_player():
+            return min(
+                self._failed_matching_attempts * config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_STEP,
+                config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX
+            )
+        else:
+            return min(
+                self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
+                config.LADDER_SEARCH_EXPANSION_MAX
+            )
 
     def register_failed_matching_attempt(self):
         &#34;&#34;&#34;
@@ -933,7 +980,7 @@ def raw_ratings(self):
 </summary>
 <pre><code class="python">@property
 def average_rating(self):
-    return statistics.mean(mean - 3 * dev for mean, dev in self.raw_ratings)</code></pre>
+    return statistics.mean(self.displayed_ratings)</code></pre>
 </details>
 </dd>
 <dt id="server.matchmaker.search.Search.boundary_75"><code class="name">var <span class="ident">boundary_75</span></code></dt>
@@ -971,7 +1018,24 @@ def boundary_80(self):
 </summary>
 <pre><code class="python">@property
 def cumulative_rating(self):
-    return sum(mean - 3 * dev for mean, dev in self.raw_ratings)</code></pre>
+    return sum(self.displayed_ratings)</code></pre>
+</details>
+</dd>
+<dt id="server.matchmaker.search.Search.displayed_ratings"><code class="name">var <span class="ident">displayed_ratings</span></code></dt>
+<dd>
+<div class="desc"><p>The client always displays mean - 3 * dev as a player's rating.
+So generally this is perceived as a player's true rating.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def displayed_ratings(self):
+    &#34;&#34;&#34;
+    The client always displays mean - 3 * dev as a player&#39;s rating.
+    So generally this is perceived as a player&#39;s true rating.
+    &#34;&#34;&#34;
+    return [mean - 3 * dev for mean, dev in self.raw_ratings]</code></pre>
 </details>
 </dd>
 <dt id="server.matchmaker.search.Search.failed_matching_attempts"><code class="name">var <span class="ident">failed_matching_attempts</span> : int</code></dt>
@@ -1068,7 +1132,8 @@ def raw_ratings(self):
 <div class="desc"><p>Defines how much to expand the search range of game quality due to waiting
 time.</p>
 <p>The threshold will expand linearly with every failed matching attempt
-until it reaches the specified MAX.</p></div>
+until it reaches the specified MAX.</p>
+<p>Top players use bigger values to make matching easier.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1081,12 +1146,19 @@ def search_expansion(self) -&gt; float:
 
     The threshold will expand linearly with every failed matching attempt
     until it reaches the specified MAX.
-    &#34;&#34;&#34;
 
-    return min(
-        self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
-        config.LADDER_SEARCH_EXPANSION_MAX
-    )</code></pre>
+    Top players use bigger values to make matching easier.
+    &#34;&#34;&#34;
+    if self.has_top_player():
+        return min(
+            self._failed_matching_attempts * config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_STEP,
+            config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX
+        )
+    else:
+        return min(
+            self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
+            config.LADDER_SEARCH_EXPANSION_MAX
+        )</code></pre>
 </details>
 </dd>
 </dl>
@@ -1176,6 +1248,20 @@ as if it were a CombinedSearch of one</p></div>
     return [self]</code></pre>
 </details>
 </dd>
+<dt id="server.matchmaker.search.Search.has_high_rated_player"><code class="name flex">
+<span>def <span class="ident">has_high_rated_player</span></span>(<span>self) ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def has_high_rated_player(self) -&gt; bool:
+    max_rating = max(self.displayed_ratings)
+    return max_rating &gt;= config.HIGH_RATED_PLAYER_MIN_RATING</code></pre>
+</details>
+</dd>
 <dt id="server.matchmaker.search.Search.has_newbie"><code class="name flex">
 <span>def <span class="ident">has_newbie</span></span>(<span>self) ‑> bool</span>
 </code></dt>
@@ -1203,7 +1289,7 @@ as if it were a CombinedSearch of one</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def has_top_player(self) -&gt; bool:
-    max_rating = max(map(lambda rating_tuple: rating_tuple[0], self.ratings))
+    max_rating = max(self.displayed_ratings)
     return max_rating &gt;= config.TOP_PLAYER_MIN_RATING</code></pre>
 </details>
 </dd>
@@ -1386,9 +1472,11 @@ and increase internal counter by one.</p></div>
 <li><code><a title="server.matchmaker.search.Search.boundary_80" href="#server.matchmaker.search.Search.boundary_80">boundary_80</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.cancel" href="#server.matchmaker.search.Search.cancel">cancel</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.cumulative_rating" href="#server.matchmaker.search.Search.cumulative_rating">cumulative_rating</a></code></li>
+<li><code><a title="server.matchmaker.search.Search.displayed_ratings" href="#server.matchmaker.search.Search.displayed_ratings">displayed_ratings</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.done" href="#server.matchmaker.search.Search.done">done</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.failed_matching_attempts" href="#server.matchmaker.search.Search.failed_matching_attempts">failed_matching_attempts</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.get_original_searches" href="#server.matchmaker.search.Search.get_original_searches">get_original_searches</a></code></li>
+<li><code><a title="server.matchmaker.search.Search.has_high_rated_player" href="#server.matchmaker.search.Search.has_high_rated_player">has_high_rated_player</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.has_newbie" href="#server.matchmaker.search.Search.has_newbie">has_newbie</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.has_top_player" href="#server.matchmaker.search.Search.has_top_player">has_top_player</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.is_cancelled" href="#server.matchmaker.search.Search.is_cancelled">is_cancelled</a></code></li>

@@ -317,7 +317,7 @@ class TeamMatchMaker(Matchmaker):
         # Visually this creates a cone in the unfairness-rating_variety plane
         # that slowly raises with the time bonuses.
         quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus
-        if not any(team.has_top_player() for team in match):
+        if not any(team.has_high_rated_player() for team in match):
             quality += newbie_bonus
         self._logger.debug(
             &#34;bonuses: %s rating disparity: %s -&gt; unfairness: %f deviation: %f -&gt; variety: %f -&gt; game quality: %f&#34;,
@@ -711,7 +711,7 @@ If that is not the case perform the karmarkar-karp algorithm to get a good appro
         # Visually this creates a cone in the unfairness-rating_variety plane
         # that slowly raises with the time bonuses.
         quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus
-        if not any(team.has_top_player() for team in match):
+        if not any(team.has_high_rated_player() for team in match):
             quality += newbie_bonus
         self._logger.debug(
             &#34;bonuses: %s rating disparity: %s -&gt; unfairness: %f deviation: %f -&gt; variety: %f -&gt; game quality: %f&#34;,
@@ -830,7 +830,7 @@ def pick_neighboring_players(searches: List[Search], index: int, team_size: int)
     # Visually this creates a cone in the unfairness-rating_variety plane
     # that slowly raises with the time bonuses.
     quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus
-    if not any(team.has_top_player() for team in match):
+    if not any(team.has_high_rated_player() for team in match):
         quality += newbie_bonus
     self._logger.debug(
         &#34;bonuses: %s rating disparity: %s -&gt; unfairness: %f deviation: %f -&gt; variety: %f -&gt; game quality: %f&#34;,
