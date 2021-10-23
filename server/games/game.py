@@ -114,7 +114,8 @@ class Game():
             "NoRushOption": "Off",
             "TeamLock": "locked",
             "AIReplacement": "Off",
-            "RestrictedCategories": 0
+            "RestrictedCategories": 0,
+            "Unranked": "No"
         }
         self.mods = {}
         self._hosted_event = asyncio.Event()
@@ -646,7 +647,8 @@ class Game():
             "PrebuiltUnits": (FA.DISABLED, ValidityState.PREBUILT_ENABLED),
             "NoRushOption": (FA.DISABLED, ValidityState.NORUSH_ENABLED),
             "RestrictedCategories": (0, ValidityState.BAD_UNIT_RESTRICTIONS),
-            "TeamLock": ("locked", ValidityState.UNLOCKED_TEAMS)
+            "TeamLock": ("locked", ValidityState.UNLOCKED_TEAMS),
+            "Unranked": (FA.DISABLED, ValidityState.HOST_SET_UNRANKED)
         }
         if await self._validate_game_options(valid_options) is False:
             return
