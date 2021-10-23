@@ -524,6 +524,25 @@ async def get_player_selected_avatars(conn, player_id):
 
 
 @fast_forward(30)
+async def test_avatar_list_empty(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server
+    )
+    await read_until_command(proto, "game_info")
+
+    await proto.send_message({
+        "command": "avatar", "action": "list_avatar"
+    })
+    msg = await read_until_command(proto, "avatar")
+
+    assert msg == {
+        "command": "avatar",
+        "avatarlist": []
+    }
+
+
+@fast_forward(30)
 async def test_avatar_select(lobby_server, database):
     # This user has multiple avatars in the test data
     player_id, _, proto = await connect_and_sign_in(

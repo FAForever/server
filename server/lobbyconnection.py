@@ -759,7 +759,7 @@ class LobbyConnection:
 
         if action == "list_avatar":
             async with self._db.acquire() as conn:
-                rows = await conn.execute(
+                result = await conn.execute(
                     select([
                         avatars_list.c.url,
                         avatars_list.c.tooltip
@@ -772,14 +772,11 @@ class LobbyConnection:
                     )
                 )
 
-                if not rows:
-                    return
-
                 await self.send({
                     "command": "avatar",
                     "avatarlist": [
                         {"url": row.url, "tooltip": row.tooltip}
-                        for row in rows
+                        for row in result
                     ]
                 })
 
