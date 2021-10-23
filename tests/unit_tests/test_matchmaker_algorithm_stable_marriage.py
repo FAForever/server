@@ -438,7 +438,7 @@ def test_odd_number_of_unmatched_newbies(player_factory):
     newbie1 = Search([player_factory(-250, 500, ladder_games=9)])
     newbie2 = Search([player_factory(750, 500, ladder_games=9)])
     newbie3 = Search([player_factory(1500, 500, ladder_games=9)])
-    pro = Search([player_factory(1500, 10, ladder_games=100)])
+    pro = Search([player_factory(1500, 70, ladder_games=100)])
     pro.register_failed_matching_attempt()
 
     searches = [newbie1, pro, newbie2, newbie3]
@@ -457,7 +457,7 @@ def test_matchmaker(player_factory):
     pro_that_matches1.register_failed_matching_attempt()
     pro_that_matches2 = Search([player_factory(1750, 50, ladder_games=100)])
     pro_that_matches2.register_failed_matching_attempt()
-    pro_alone = Search([player_factory(1550, 50, ladder_games=100)])
+    pro_alone = Search([player_factory(1550, 70, ladder_games=100)])
     pro_alone.register_failed_matching_attempt()
 
     top_player = Search([player_factory(2100, 50, ladder_games=200)])

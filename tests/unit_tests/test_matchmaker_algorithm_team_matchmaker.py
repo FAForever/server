@@ -259,7 +259,7 @@ def test_game_quality_time_bonus(s):
     team_b.register_failed_matching_attempt()
     quality_after = matchmaker.assign_game_quality((team_a, team_b), 3).quality
 
-    if team_a.has_top_player() or team_b.has_top_player():
+    if team_a.has_high_rated_player() or team_b.has_high_rated_player():
         num_newbies = 0
     else:
         num_newbies = team_a.num_newbies() + team_b.num_newbies()
@@ -286,7 +286,7 @@ def test_game_quality_max_time_bonus(s):
         team_b.register_failed_matching_attempt()
     quality_after = matchmaker.assign_game_quality((team_a, team_b), 3).quality
 
-    if team_a.has_top_player() or team_b.has_top_player():
+    if team_a.has_high_rated_player() or team_b.has_high_rated_player():
         num_newbies = 0
     else:
         num_newbies = team_a.num_newbies() + team_b.num_newbies()

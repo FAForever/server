@@ -289,7 +289,7 @@ class TeamMatchMaker(Matchmaker):
         # Visually this creates a cone in the unfairness-rating_variety plane
         # that slowly raises with the time bonuses.
         quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus
-        if not any(team.has_top_player() for team in match):
+        if not any(team.has_high_rated_player() for team in match):
             quality += newbie_bonus
         self._logger.debug(
             "bonuses: %s rating disparity: %s -> unfairness: %f deviation: %f -> variety: %f -> game quality: %f",

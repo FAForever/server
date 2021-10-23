@@ -18,7 +18,7 @@ OnMatchedCallback = Callable[["Search", "Search"], Any]
 
 
 def get_average_rating(searches):
-    return statistics.mean(mean - 3 * dev for s in searches for mean, dev in s.raw_ratings)
+    return statistics.mean(itertools.chain(*[s.displayed_ratings for s in searches]))
 
 
 @with_logger
@@ -74,8 +74,12 @@ class Search:
     def num_newbies(self) -> int:
         return sum(self.is_newbie(player) for player in self.players)
 
+    def has_high_rated_player(self) -> bool:
+        max_rating = max(self.displayed_ratings)
+        return max_rating >= config.HIGH_RATED_PLAYER_MIN_RATING
+
     def has_top_player(self) -> bool:
-        max_rating = max(map(lambda rating_tuple: rating_tuple[0], self.ratings))
+        max_rating = max(self.displayed_ratings)
         return max_rating >= config.TOP_PLAYER_MIN_RATING
 
     @property
@@ -90,15 +94,23 @@ class Search:
 
     @property
     def cumulative_rating(self):
-        return sum(mean - 3 * dev for mean, dev in self.raw_ratings)
+        return sum(self.displayed_ratings)
 
     @property
     def average_rating(self):
-        return statistics.mean(mean - 3 * dev for mean, dev in self.raw_ratings)
+        return statistics.mean(self.displayed_ratings)
 
     @property
     def raw_ratings(self):
         return [player.ratings[self.rating_type] for player in self.players]
+
+    @property
+    def displayed_ratings(self):
+        """
+        The client always displays mean - 3 * dev as a player's rating.
+        So generally this is perceived as a player's true rating.
+        """
+        return [mean - 3 * dev for mean, dev in self.raw_ratings]
 
     def _nearby_rating_range(self, delta):
         """
@@ -131,12 +143,19 @@ class Search:
 
         The threshold will expand linearly with every failed matching attempt
         until it reaches the specified MAX.
-        """
 
-        return min(
-            self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
-            config.LADDER_SEARCH_EXPANSION_MAX
-        )
+        Top players use bigger values to make matching easier.
+        """
+        if self.has_top_player():
+            return min(
+                self._failed_matching_attempts * config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_STEP,
+                config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX
+            )
+        else:
+            return min(
+                self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
+                config.LADDER_SEARCH_EXPANSION_MAX
+            )
 
     def register_failed_matching_attempt(self):
         """
@@ -292,6 +311,10 @@ class CombinedSearch(Search):
     @property
     def raw_ratings(self):
         return list(itertools.chain(*[s.raw_ratings for s in self.searches]))
+
+    @property
+    def displayed_ratings(self):
+        return list(itertools.chain(*[s.displayed_ratings for s in self.searches]))
 
     @property
     def failed_matching_attempts(self) -> int:

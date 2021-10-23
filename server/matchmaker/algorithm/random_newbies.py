@@ -14,7 +14,7 @@ class RandomlyMatchNewbies(MatchmakingPolicy1v1):
         unmatched_newbies: List[Search] = []
         first_opponent = None
         for search in searches:
-            if search.has_top_player():
+            if search.has_high_rated_player():
                 continue
             elif search.has_newbie():
                 unmatched_newbies.append(search)
