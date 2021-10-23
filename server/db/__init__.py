@@ -4,15 +4,29 @@ Database interaction
 
 import asyncio
 import logging
+from contextlib import contextmanager
 
 from sqlalchemy import create_engine, text
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import DBAPIError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncConnection as _AsyncConnection
 from sqlalchemy.ext.asyncio import AsyncEngine as _AsyncEngine
 from sqlalchemy.util import EMPTY_DICT
 
+from server.metrics import db_exceptions
+
 logger = logging.getLogger(__name__)
 
+
+@contextmanager
+def stat_db_errors():
+    """
+    Collect metrics on errors thrown
+    """
+    try:
+        yield
+    except DBAPIError as e:
+        db_exceptions.labels(e.__class__.__name__, e.code).inc()
+        raise e
 
 
 class FAFDatabase:
@@ -59,6 +73,19 @@ class AsyncConnection(_AsyncConnection):
         parameters=None,
         execution_options=EMPTY_DICT,
     ):
+        with stat_db_errors():
+            return await self._execute(
+                statement,
+                parameters=parameters,
+                execution_options=execution_options
+            )
+
+    async def _execute(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+    ):
         """
         Wrap strings in the text type automatically
         """
@@ -72,6 +99,19 @@ class AsyncConnection(_AsyncConnection):
         )
 
     async def stream(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+    ):
+        with stat_db_errors():
+            return await self._stream(
+                statement,
+                parameters=parameters,
+                execution_options=execution_options
+            )
+
+    async def _stream(
         self,
         statement,
         parameters=None,
@@ -96,9 +136,24 @@ class AsyncConnection(_AsyncConnection):
         execution_options=EMPTY_DICT,
         max_attempts=3
     ):
+        with stat_db_errors():
+            return await self._deadlock_retry_execute(
+                statement,
+                parameters=parameters,
+                execution_options=execution_options,
+                max_attempts=max_attempts
+            )
+
+    async def _deadlock_retry_execute(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        max_attempts=3
+    ):
         for attempt in range(max_attempts - 1):
             try:
-                return await self.execute(
+                return await self._execute(
                     statement,
                     parameters=parameters,
                     execution_options=execution_options
@@ -119,7 +174,7 @@ class AsyncConnection(_AsyncConnection):
                     raise
 
         # On the final attempt we don't do any error handling
-        return await self.execute(
+        return await self._execute(
             statement,
             parameters=parameters,
             execution_options=execution_options
