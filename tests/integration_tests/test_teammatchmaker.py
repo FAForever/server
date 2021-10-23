@@ -20,10 +20,10 @@ pytestmark = pytest.mark.asyncio
 async def connect_players(lobby_server):
     res = await asyncio.gather(*[
         connect_and_sign_in(
-            (f"ladder{i}",) * 2,
+            (f"ladder{i+1}",) * 2,
             lobby_server
         )
-        for i in range(1, 5)
+        for i in range(4)
     ])
     protos = [proto for _, _, proto in res]
     ids = [id_ for id_, _, _ in res]
@@ -50,7 +50,7 @@ async def queue_players_for_matchmaking(lobby_server):
 
     # If the players did not match, this will fail due to a timeout error
     await asyncio.gather(*[
-        read_until_command(proto, "match_found") for proto in protos
+        read_until_command(proto, "match_found", timeout=30) for proto in protos
     ])
 
     return protos, ids
