@@ -4,7 +4,6 @@ Database interaction
 
 import asyncio
 import logging
-from typing import Optional
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
@@ -15,22 +14,17 @@ from sqlalchemy.util import EMPTY_DICT
 logger = logging.getLogger(__name__)
 
 
-class FAFDatabase:
-    def __init__(self):
-        self.engine: Optional[AsyncEngine] = None
 
-    async def connect(
+class FAFDatabase:
+    def __init__(
         self,
-        host="localhost",
-        port=3306,
-        user="root",
-        password="",
-        db="faf_test",
+        host: str = "localhost",
+        port: int = 3306,
+        user: str = "root",
+        password: str = "",
+        db: str = "faf_test",
         **kwargs
     ):
-        if self.engine is not None:
-            raise ValueError("DB is already connected!")
-
         kwargs["future"] = True
         sync_engine = create_engine(
             f"mysql+aiomysql://{user}:{password}@{host}:{port}/{db}",
@@ -40,13 +34,10 @@ class FAFDatabase:
         self.engine = AsyncEngine(sync_engine)
 
     def acquire(self):
-        assert self.engine is not None, "must call `connect` before `acquire`!"
         return self.engine.begin()
 
     async def close(self):
-        assert self.engine is not None, "must call `connect` before `close`!"
         await self.engine.dispose()
-        self.engine = None
 
 
 class AsyncEngine(_AsyncEngine):

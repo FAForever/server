@@ -102,33 +102,23 @@ class MockDatabase(FAFDatabase):
     Note that right now the server relies on autocommit behaviour sqlalchemy.
     Any future manual commit() calls should be mocked here as well.
     """
-    def __init__(self):
-        self.engine = None
-        self._connection = None
-        self._conn_present = Event()
-        self._keep = None
-        self._lock = Lock()
-        self._done = Event()
-
-    async def connect(
+    def __init__(
         self,
-        host="localhost",
-        port=3306,
-        user="root",
-        password="",
-        db="faf_test",
+        host: str = "localhost",
+        port: int = 3306,
+        user: str = "root",
+        password: str = "",
+        db: str = "faf_test",
         **kwargs
     ):
-        await super().connect(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            db=db,
-            **kwargs
-        )
-        assert self.engine is not None, "engine not connected!"
+        super().__init__(host, port, user, password, db, **kwargs)
+        self._connection = None
+        self._conn_present = Event()
+        self._lock = Lock()
+        self._done = Event()
         self._keep = asyncio.create_task(self._keep_connection())
+
+    async def connect(self):
         await self._conn_present.wait()
 
     async def _keep_connection(self):
@@ -143,14 +133,10 @@ class MockDatabase(FAFDatabase):
         return MockConnectionContext(self)
 
     async def close(self):
-        if self.engine is None:
-            return
-
         async with self._lock:
             self._done.set()
             await self._keep
             await self.engine.dispose()
-            self.engine = None
 
 
 def autocontext(*auto_args):

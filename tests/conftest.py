@@ -133,7 +133,7 @@ async def test_data(request):
     await db.close()
 
 
-async def global_database(request):
+async def global_database(request) -> FAFDatabase:
     def opt(val):
         return request.config.getoption(val)
     host, user, pw, name, port = (
@@ -143,17 +143,14 @@ async def global_database(request):
         opt("--mysql_database"),
         opt("--mysql_port")
     )
-    db = FAFDatabase()
 
-    await db.connect(
+    return FAFDatabase(
         host=host,
         user=user,
-        password=pw or None,
+        password=pw or "",
         port=port,
         db=name
     )
-
-    return db
 
 
 @pytest.fixture(scope="session")
@@ -170,15 +167,14 @@ def database_context():
             opt("--mysql_database"),
             opt("--mysql_port")
         )
-        db = MockDatabase()
-
-        await db.connect(
+        db = MockDatabase(
             host=host,
             user=user,
-            password=pw or None,
+            password=pw or "",
             port=port,
             db=name
         )
+        await db.connect()
 
         yield db
 

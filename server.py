@@ -54,13 +54,12 @@ async def main():
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
 
-    database = server.db.FAFDatabase()
-    await database.connect(
+    database = server.db.FAFDatabase(
         host=config.DB_SERVER,
         port=int(config.DB_PORT),
         user=config.DB_LOGIN,
         password=config.DB_PASSWORD,
-        db=config.DB_NAME,
+        db=config.DB_NAME
     )
 
     # Set up services
