@@ -56,6 +56,11 @@ async def queue_players_for_matchmaking(lobby_server):
     return protos, ids
 
 
+async def matchmaking_client_response(proto):
+    await read_until_command(proto, "match_found", timeout=30)
+    return await client_response(proto)
+
+
 @fast_forward(10)
 async def test_info_message(lobby_server):
     _, _, proto = await connect_and_sign_in(
@@ -210,7 +215,9 @@ async def test_game_matchmaking_with_parties(lobby_server):
         "state": "start",
     })
 
-    msgs = await asyncio.gather(*[client_response(proto) for proto in protos])
+    msgs = await asyncio.gather(*[
+        matchmaking_client_response(proto) for proto in protos
+    ])
 
     uid = set(msg["uid"] for msg in msgs)
     assert len(uid) == 1
@@ -276,7 +283,9 @@ async def test_newbie_matchmaking_with_parties(lobby_server):
         "state": "start",
     })
 
-    msgs = await asyncio.gather(*[client_response(proto) for proto in protos])
+    msgs = await asyncio.gather(*[
+        matchmaking_client_response(proto) for proto in protos
+    ])
 
     uid = set(msg["uid"] for msg in msgs)
     assert len(uid) == 1
@@ -623,7 +632,7 @@ async def test_ratings_initialized_based_on_global_persisted(
         await read_until_command(proto, "search_info")
 
     msg1, msg2, msg3, msg4 = await asyncio.gather(*[
-        client_response(proto) for proto in protos
+        matchmaking_client_response(proto) for proto in protos
     ])
     # So it doesn't matter who is host
     await asyncio.gather(*[
