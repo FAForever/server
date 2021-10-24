@@ -112,7 +112,7 @@ async def queue_players_for_matchmaking(lobby_server, queue_name: str = "ladder1
         "faction": 1,  # Python client sends factions as numbers
         "queue_name": queue_name
     })
-    await read_until_command(proto2, "search_info")
+    await read_until_command(proto2, "search_info", state="start")
 
     # If the players did not match, this will fail due to a timeout error
     await read_until_command(proto1, "match_found", timeout=30)
