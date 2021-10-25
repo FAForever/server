@@ -15,9 +15,8 @@ from server.games import (
     ValidityState
 )
 from server.games.game_results import GameOutcome
-from server.rating import RatingType
+from server.rating import Rating, RatingType
 from server.rating_service.rating_service import RatingService
-from server.rating_service.typedefs import Rating
 from tests.unit_tests.conftest import add_connected_players
 
 pytestmark = pytest.mark.asyncio

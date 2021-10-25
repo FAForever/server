@@ -2,8 +2,8 @@ import pytest
 
 from server.games.game_results import GameOutcome
 from server.games.typedefs import TeamRatingSummary
+from server.rating import Rating, RatingType
 from server.rating_service.game_rater import GameRater
-from server.rating_service.typedefs import Rating
 
 
 @pytest.fixture

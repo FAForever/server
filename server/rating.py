@@ -3,15 +3,37 @@ Type definitions for player ratings
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Set, Tuple, TypeVar, Union
+from typing import Dict, NamedTuple, Optional, Set, Tuple, Union
 
 import trueskill
 
 from server.config import config
 from server.weakattr import WeakAttribute
 
-Rating = Tuple[float, float]
-V = TypeVar("V")
+AnyRating = Union["Rating", trueskill.Rating, Tuple[float, float]]
+
+
+class Rating(NamedTuple):
+    """
+    A container for holding a mean, deviation pair and computing the displayed
+    rating.
+
+    Uses mean, dev to differentiate from the trueskill.Rating type which uses
+    mu, sigma.
+    """
+    mean: float
+    dev: float
+
+    def of(value: AnyRating) -> "Rating":
+        if isinstance(value, trueskill.Rating):
+            return Rating(value.mu, value.sigma)
+        elif isinstance(value, Rating):
+            return value
+
+        return Rating(*value)
+
+    def displayed(self) -> float:
+        return self.mean - 3 * self.dev
 
 
 @dataclass(init=False)
@@ -64,23 +86,14 @@ class PlayerRatings(Dict[str, Rating]):
             _ = self[RatingType.GLOBAL]
             _ = self[RatingType.LADDER_1V1]
 
-    def __setitem__(
-        self,
-        rating_type: str,
-        value: Union[Rating, trueskill.Rating],
-    ) -> None:
-        if isinstance(value, trueskill.Rating):
-            rating = (value.mu, value.sigma)
-        else:
-            rating = value
-
+    def __setitem__(self, rating_type: str, value: AnyRating) -> None:
         self.transient.discard(rating_type)
         # This could be optimized further by walking backwards along the
         # initialization chain and only unmarking the ratings we come accross,
         # but this adds complexity so we won't bother unless it really becomes
         # a performance bottleneck, which is unlikely.
         self.clean.clear()
-        super().__setitem__(rating_type, rating)
+        super().__setitem__(rating_type, Rating.of(value))
 
     def __getitem__(
         self,
@@ -119,23 +132,25 @@ class PlayerRatings(Dict[str, Rating]):
 
         history.add(rating_type)
         init_rating_type = leaderboard.initializer.technical_name
-        mean, dev = self.__getitem__(init_rating_type, history=history)
+        rating = self.__getitem__(init_rating_type, history=history)
 
-        if dev > 250 or init_rating_type in self.transient:
-            return (mean, dev)
+        if rating.dev > 250 or init_rating_type in self.transient:
+            return rating
 
-        return (mean, min(dev + 150, 250))
+        return Rating(rating.mean, min(rating.dev + 150, 250))
 
     def update(self, other: Dict[str, Rating]):
         self.transient -= set(other)
         self.clean.clear()
         if isinstance(other, PlayerRatings):
             self.transient |= other.transient
+        else:
+            other = {key: Rating.of(value) for key, value in other.items()}
         super().update(other)
 
 
 def default_rating() -> Rating:
-    return (config.START_RATING_MEAN, config.START_RATING_DEV)
+    return Rating(config.START_RATING_MEAN, config.START_RATING_DEV)
 
 
 class InclusiveRange():

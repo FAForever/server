@@ -19,10 +19,10 @@ from server.games.game_results import GameOutcome
 from server.message_queue_service import MessageQueueService
 from server.metrics import rating_service_backlog
 from server.player_service import PlayerService
-from server.rating import Leaderboard, PlayerRatings, RatingType
+from server.rating import Leaderboard, PlayerRatings, Rating, RatingType
 
 from .game_rater import GameRater, GameRatingError
-from .typedefs import GameRatingSummary, PlayerID, Rating, ServiceNotReadyError
+from .typedefs import GameRatingSummary, PlayerID, ServiceNotReadyError
 
 
 @with_logger

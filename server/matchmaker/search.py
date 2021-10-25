@@ -5,9 +5,9 @@ import statistics
 import time
 from typing import Any, Callable, List, Optional, Tuple
 
-from trueskill import Rating, quality
+import trueskill
 
-from server.rating import RatingType
+from server.rating import Rating, RatingType
 
 from ..config import config
 from ..decorators import with_logger
@@ -48,7 +48,7 @@ class Search:
         # Precompute this
         self.quality_against_self = self.quality_with(self)
 
-    def adjusted_rating(self, player: Player):
+    def adjusted_rating(self, player: Player) -> Rating:
         """
         Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
         """
@@ -56,7 +56,7 @@ class Search:
         game_count = player.game_count[self.rating_type]
         adjusted_mean = ((config.NEWBIE_MIN_GAMES - game_count) * config.NEWBIE_BASE_MEAN
                          + game_count * mean) / config.NEWBIE_MIN_GAMES
-        return adjusted_mean, dev
+        return Rating(adjusted_mean, dev)
 
     def is_newbie(self, player: Player) -> bool:
         return player.game_count[self.rating_type] <= config.NEWBIE_MIN_GAMES
@@ -83,7 +83,7 @@ class Search:
         return max_rating >= config.TOP_PLAYER_MIN_RATING
 
     @property
-    def ratings(self):
+    def ratings(self) -> List[Rating]:
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
@@ -101,16 +101,16 @@ class Search:
         return statistics.mean(self.displayed_ratings)
 
     @property
-    def raw_ratings(self):
+    def raw_ratings(self) -> List[Rating]:
         return [player.ratings[self.rating_type] for player in self.players]
 
     @property
-    def displayed_ratings(self):
+    def displayed_ratings(self) -> List[float]:
         """
         The client always displays mean - 3 * dev as a player's rating.
         So generally this is perceived as a player's true rating.
         """
-        return [mean - 3 * dev for mean, dev in self.raw_ratings]
+        return [rating.displayed() for rating in self.raw_ratings]
 
     def _nearby_rating_range(self, delta):
         """
@@ -181,10 +181,10 @@ class Search:
         assert all(other.raw_ratings)
         assert other.players
 
-        team1 = [Rating(*rating) for rating in self.ratings]
-        team2 = [Rating(*rating) for rating in other.ratings]
+        team1 = [trueskill.Rating(*rating) for rating in self.ratings]
+        team2 = [trueskill.Rating(*rating) for rating in other.ratings]
 
-        return quality([team1, team2])
+        return trueskill.quality([team1, team2])
 
     @property
     def is_matched(self):
@@ -297,7 +297,7 @@ class CombinedSearch(Search):
         return list(itertools.chain(*[s.players for s in self.searches]))
 
     @property
-    def ratings(self):
+    def ratings(self) -> List[Rating]:
         return list(itertools.chain(*[s.ratings for s in self.searches]))
 
     @property
@@ -309,11 +309,11 @@ class CombinedSearch(Search):
         return get_average_rating(self.searches)
 
     @property
-    def raw_ratings(self):
+    def raw_ratings(self) -> List[Rating]:
         return list(itertools.chain(*[s.raw_ratings for s in self.searches]))
 
     @property
-    def displayed_ratings(self):
+    def displayed_ratings(self) -> List[float]:
         return list(itertools.chain(*[s.displayed_ratings for s in self.searches]))
 
     @property

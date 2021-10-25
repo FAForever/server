@@ -4,9 +4,10 @@ import trueskill
 
 from server.games.game_results import GameOutcome
 from server.games.typedefs import TeamRatingSummary
+from server.rating import Rating
 
 from ..decorators import with_logger
-from .typedefs import PlayerID, Rating
+from .typedefs import PlayerID
 
 
 class GameRatingError(Exception):

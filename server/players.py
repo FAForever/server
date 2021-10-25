@@ -88,10 +88,6 @@ class Player:
         else:
             self._faction = Faction.from_value(value)
 
-    def get_displayed_rating(self, rating_type: str) -> float:
-        mean, dev = self.ratings[rating_type]
-        return mean - 3 * dev
-
     def power(self) -> int:
         """An artifact of the old permission system. The client still uses this
         number to determine if a player gets a special category in the user list

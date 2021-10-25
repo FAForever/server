@@ -16,12 +16,12 @@ from server.games.typedefs import (
     TeamRatingSummary,
     ValidityState
 )
-from server.rating import Leaderboard, RatingType
+from server.rating import Leaderboard, Rating, RatingType
 from server.rating_service.rating_service import (
     RatingService,
     ServiceNotReadyError
 )
-from server.rating_service.typedefs import GameRatingSummary, Rating
+from server.rating_service.typedefs import GameRatingSummary
 
 pytestmark = pytest.mark.asyncio
 

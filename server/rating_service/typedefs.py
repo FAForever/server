@@ -6,18 +6,6 @@ from server.games.typedefs import TeamRatingSummary
 PlayerID = int
 
 
-class Rating(NamedTuple):
-    """
-    A dumb container for holding a mean, deviation pair in a single container.
-    Uses mean, dev to differentiate from the trueskill.Rating type.
-    """
-    mean: float
-    dev: float
-
-    def displayed(self) -> float:
-        return self.mean - 3 * self.dev
-
-
 class GameRatingSummary(NamedTuple):
     """
     Holds minimal information needed to rate a game.

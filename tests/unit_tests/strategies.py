@@ -6,13 +6,14 @@ from hypothesis import strategies as st
 
 from server.matchmaker import Search
 from server.matchmaker.algorithm.team_matchmaker import GameCandidate
+from server.rating import Rating
 from tests.conftest import make_player
 
 
 @st.composite
 def st_rating(draw):
     """Strategy for generating rating tuples"""
-    return (
+    return Rating(
         draw(st.floats(min_value=-100., max_value=2500.)),
         draw(st.floats(min_value=0.001, max_value=500.))
     )
