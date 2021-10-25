@@ -1,19 +1,21 @@
 from typing import Dict, List, NamedTuple
 
-from trueskill import Rating
-
 from server.games.game_results import GameOutcome
 from server.games.typedefs import TeamRatingSummary
 
 PlayerID = int
 
 
-class TeamRatingData(NamedTuple):
-    outcome: GameOutcome
-    ratings: Dict[int, Rating]
+class Rating(NamedTuple):
+    """
+    A dumb container for holding a mean, deviation pair in a single container.
+    Uses mean, dev to differentiate from the trueskill.Rating type.
+    """
+    mean: float
+    dev: float
 
-
-GameRatingData = List[TeamRatingData]
+    def displayed(self) -> float:
+        return self.mean - 3 * self.dev
 
 
 class GameRatingSummary(NamedTuple):

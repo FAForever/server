@@ -5,7 +5,6 @@ from unittest import mock
 
 import pytest
 from asynctest import CoroutineMock
-from trueskill import Rating
 
 from server.games import (
     CustomGame,
@@ -18,6 +17,7 @@ from server.games import (
 from server.games.game_results import GameOutcome
 from server.rating import RatingType
 from server.rating_service.rating_service import RatingService
+from server.rating_service.typedefs import Rating
 from tests.unit_tests.conftest import add_connected_players
 
 pytestmark = pytest.mark.asyncio
@@ -346,15 +346,15 @@ async def test_on_game_end_ladder_same_rating_published_as_persisted(
 
     host_id = players.hosting.id
     host_ladder_result, host_global_result = published[host_id]
-    assert persisted[host_id].mu == host_ladder_result["new_rating_mean"]
-    assert persisted[host_id].sigma == host_ladder_result["new_rating_deviation"]
-    assert persisted_global[host_id].mu == host_global_result["new_rating_mean"]
-    assert persisted_global[host_id].sigma == host_global_result["new_rating_deviation"]
+    assert persisted[host_id].mean == host_ladder_result["new_rating_mean"]
+    assert persisted[host_id].dev == host_ladder_result["new_rating_deviation"]
+    assert persisted_global[host_id].mean == host_global_result["new_rating_mean"]
+    assert persisted_global[host_id].dev == host_global_result["new_rating_deviation"]
 
     join_id = players.joining.id
     join_ladder_result, = published[join_id]
-    assert persisted[join_id].mu == join_ladder_result["new_rating_mean"]
-    assert persisted[join_id].sigma == join_ladder_result["new_rating_deviation"]
+    assert persisted[join_id].mean == join_ladder_result["new_rating_mean"]
+    assert persisted[join_id].dev == join_ladder_result["new_rating_deviation"]
 
 
 async def test_on_game_end_ladder_ratings_without_score_override(
@@ -796,8 +796,8 @@ async def test_rate_game_treats_double_defeat_as_draw(custom_game, player_factor
         old_rating = Rating(*player.ratings[RatingType.GLOBAL])
 
         assert results.outcomes[player.id] is GameOutcome.DRAW
-        assert (new_rating.mu - old_rating.mu) < 0.1
-        assert new_rating.sigma < old_rating.sigma - 10
+        assert (new_rating.mean - old_rating.mean) < 0.1
+        assert new_rating.dev < old_rating.dev - 10
 
 
 async def test_compute_rating_works_with_partially_unknown_results(
@@ -1041,6 +1041,6 @@ async def test_single_wrong_report_still_rated_correctly(game: Game, player_fact
     winning_ids = log_dict["teams"][str(log_dict["winning_team"])]
     for player_id, new_rating in results.ratings.items():
         if player_id in winning_ids:
-            assert new_rating.mu > old_rating
+            assert new_rating.mean > old_rating
         else:
-            assert new_rating.mu < old_rating
+            assert new_rating.mean < old_rating

@@ -3,7 +3,6 @@ from unittest import mock
 import pytest
 from asynctest import CoroutineMock
 from sqlalchemy import and_, select
-from trueskill import Rating
 
 from server.db import FAFDatabase
 from server.db.models import (
@@ -22,7 +21,7 @@ from server.rating_service.rating_service import (
     RatingService,
     ServiceNotReadyError
 )
-from server.rating_service.typedefs import GameRatingSummary, TeamRatingData
+from server.rating_service.typedefs import GameRatingSummary, Rating
 
 pytestmark = pytest.mark.asyncio
 
@@ -237,54 +236,6 @@ async def test_get_new_player_rating_created(semiinitialized_service):
     assert len(db_ratings) == 1  # Rating has been created
     assert db_ratings[0]["mean"] == 1500
     assert db_ratings[0]["deviation"] == 500
-
-
-async def test_get_rating_data(semiinitialized_service):
-    service = semiinitialized_service
-    game_id = 1
-
-    player1_id = 1
-    player1_db_rating = Rating(2000, 125)
-    player1_outcome = GameOutcome.VICTORY
-
-    player2_id = 2
-    player2_db_rating = Rating(1500, 75)
-    player2_outcome = GameOutcome.DEFEAT
-
-    summary = GameRatingSummary(
-        game_id,
-        RatingType.GLOBAL,
-        [
-            TeamRatingSummary(
-                player1_outcome, {1}, [
-                    ArmyResult(player1_id, 0, player1_outcome.name, [])
-                ],
-            ),
-            TeamRatingSummary(
-                player2_outcome, {2}, [
-                    ArmyResult(player2_id, 1, player2_outcome.name, [])
-                ],
-            ),
-        ],
-    )
-
-    rating_data = service._get_rating_data(
-        summary,
-        {
-            player1_id: player1_db_rating,
-            player2_id: player2_db_rating
-        }
-    )
-
-    player1_expected_data = TeamRatingData(
-        player1_outcome, {player1_id: player1_db_rating}
-    )
-    player2_expected_data = TeamRatingData(
-        player2_outcome, {player2_id: player2_db_rating}
-    )
-
-    assert rating_data[0] == player1_expected_data
-    assert rating_data[1] == player2_expected_data
 
 
 async def test_rating(semiinitialized_service, game_rating_summary):

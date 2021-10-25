@@ -189,7 +189,7 @@ async def send_player_options(proto, *options):
         })
 
 
-@fast_forward(30)
+@fast_forward(60)
 async def test_game_ended_rates_game(lobby_server):
     host_id, _, host_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
