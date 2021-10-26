@@ -93,11 +93,11 @@ class Search:
         return ratings
 
     @property
-    def cumulative_rating(self):
+    def cumulative_rating(self) -> float:
         return sum(self.displayed_ratings)
 
     @property
-    def average_rating(self):
+    def average_rating(self) -> float:
         return statistics.mean(self.displayed_ratings)
 
     @property
@@ -112,7 +112,7 @@ class Search:
         """
         return [rating.displayed() for rating in self.raw_ratings]
 
-    def _nearby_rating_range(self, delta):
+    def _nearby_rating_range(self, delta: int) -> Tuple[int, int]:
         """
         Returns 'boundary' mu values for player matching. Adjust delta for
         different game qualities.
@@ -122,12 +122,12 @@ class Search:
         return rounded_mu - delta, rounded_mu + delta
 
     @property
-    def boundary_80(self):
+    def boundary_80(self) -> Tuple[int, int]:
         """ Achieves roughly 80% quality. """
         return self._nearby_rating_range(200)
 
     @property
-    def boundary_75(self):
+    def boundary_75(self) -> Tuple[int, int]:
         """ Achieves roughly 75% quality. FIXME - why is it MORE restrictive??? """
         return self._nearby_rating_range(100)
 
@@ -187,17 +187,17 @@ class Search:
         return trueskill.quality([team1, team2])
 
     @property
-    def is_matched(self):
+    def is_matched(self) -> bool:
         return self._match.done() and not self._match.cancelled()
 
-    def done(self):
+    def done(self) -> bool:
         return self._match.done()
 
     @property
-    def is_cancelled(self):
+    def is_cancelled(self) -> bool:
         return self._match.cancelled()
 
-    def matches_with(self, other: "Search"):
+    def matches_with(self, other: "Search") -> bool:
         """
         Determine if this search is compatible with other given search according
         to both wishes.
@@ -301,11 +301,11 @@ class CombinedSearch(Search):
         return list(itertools.chain(*[s.ratings for s in self.searches]))
 
     @property
-    def cumulative_rating(self):
+    def cumulative_rating(self) -> float:
         return sum(s.cumulative_rating for s in self.searches)
 
     @property
-    def average_rating(self):
+    def average_rating(self) -> float:
         return get_average_rating(self.searches)
 
     @property
