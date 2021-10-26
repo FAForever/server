@@ -15,8 +15,10 @@ from server.games import (
     ValidityState
 )
 from server.games.game_results import GameOutcome
+from server.games.typedefs import TeamRatingSummary
 from server.rating import Rating, RatingType
 from server.rating_service.rating_service import RatingService
+from server.rating_service.typedefs import GameRatingSummary
 from tests.unit_tests.conftest import add_connected_players
 
 pytestmark = pytest.mark.asyncio
@@ -28,7 +30,6 @@ class PersistenceError(Exception):
     """
     Raised when detecting that rating results would not have been persisted.
     """
-
     pass
 
 
@@ -1043,3 +1044,425 @@ async def test_single_wrong_report_still_rated_correctly(game: Game, player_fact
             assert new_rating.mean > old_rating
         else:
             assert new_rating.mean < old_rating
+
+
+# NOTE: The following test_rating_adjustment_* tests were created by setting up
+# the inputs and copying the results to the expected assertions. They exist
+# primarily to document the current behaviour and detect bugs in case the
+# behaviour changes, however, there is no reason why the rating initialization
+# couldn't be changed and the values in these tests updated.
+async def do_test_rating_adjustment(
+    rating_service,
+    player_factory,
+    ratings,
+    expected_results
+):
+    team1 = set()
+    team2 = set()
+    teams = (team1, team2)
+    for player_id, ratings in ratings.items():
+        _ = player_factory(player_id=player_id)
+        for rating_type, rating in ratings.items():
+            rating_service.set_mock_rating(player_id, rating_type, rating)
+        # Odds on team1, evens on team2
+        teams[(player_id + 1) % 2].add(player_id)
+
+    summary = GameRatingSummary(
+        game_id=1,
+        rating_type=RatingType.LADDER_1V1,
+        teams=[
+            TeamRatingSummary(GameOutcome.VICTORY, team1, []),
+            TeamRatingSummary(GameOutcome.DEFEAT, team2, [])
+        ]
+    )
+    await rating_service._rate(summary)
+
+    results = get_persisted_results(rating_service)
+
+    assert len(results) == len(expected_results)
+    for result, expected in zip(results, expected_results):
+        assert result.rating_type == expected.rating_type
+        assert result.ratings == expected.ratings
+        team1_outcomes = {id: GameOutcome.VICTORY for id in team1}
+        team2_outcomes = {id: GameOutcome.DEFEAT for id in team2}
+        # TODO: When updating from 3.7 to 3.9, use dict union {} | {}
+        assert result.outcomes == {**team1_outcomes, **team2_outcomes}
+
+
+async def test_rating_adjustment_1v1_newbies(rating_service, player_factory):
+    IGNORED = object()
+
+    # Both players have no ratings yet
+    await do_test_rating_adjustment(
+        rating_service,
+        player_factory,
+        ratings={1: {}, 2: {}},
+        expected_results=[
+            PersistedResults(
+                rating_type=RatingType.LADDER_1V1,
+                ratings={
+                    1: pytest.approx((1766, 429), abs=1),
+                    2: pytest.approx((1235, 429), abs=1),
+                },
+                outcomes=IGNORED
+            ),
+            PersistedResults(
+                rating_type=RatingType.GLOBAL,
+                ratings={1: pytest.approx((1766, 429), abs=1)},
+                outcomes=IGNORED
+            )
+        ]
+    )
+
+
+async def test_rating_adjustment_1v1_ladder_newbies_global_pros(
+    rating_service, player_factory
+):
+    IGNORED = object()
+
+    # Both players have no ladder rating, but high global rating
+    await do_test_rating_adjustment(
+        rating_service,
+        player_factory,
+        ratings={
+            1: {RatingType.GLOBAL: Rating(2000, 75)},
+            2: {RatingType.GLOBAL: Rating(1900, 75)},
+        },
+        expected_results=[
+            PersistedResults(
+                rating_type=RatingType.LADDER_1V1,
+                ratings={
+                    1: pytest.approx((1766, 429), abs=1),
+                    2: pytest.approx((1235, 429), abs=1),
+                },
+                outcomes=IGNORED
+            ),
+            PersistedResults(
+                rating_type=RatingType.GLOBAL,
+                ratings={},
+                outcomes=IGNORED
+            )
+        ]
+    )
+
+
+async def test_rating_adjustment_1v1_low_ladder_high_global(
+    rating_service, player_factory
+):
+    IGNORED = object()
+
+    # Both players have lower ladder rating than global, but both are below the
+    # rating adjustment limit
+    await do_test_rating_adjustment(
+        rating_service,
+        player_factory,
+        ratings={
+            1: {
+                RatingType.GLOBAL: Rating(1000, 75),
+                RatingType.LADDER_1V1: Rating(900, 125)
+            },
+            2: {
+                RatingType.GLOBAL: Rating(900, 75),
+                RatingType.LADDER_1V1: Rating(700, 125)
+            },
+        },
+        expected_results=[
+            PersistedResults(
+                rating_type=RatingType.LADDER_1V1,
+                ratings={
+                    1: pytest.approx((923, 122), abs=1),
+                    2: pytest.approx((677, 122), abs=1),
+                },
+                outcomes=IGNORED
+            ),
+            PersistedResults(
+                rating_type=RatingType.GLOBAL,
+                ratings={1: pytest.approx((1006, 75), abs=1)},
+                outcomes=IGNORED
+            )
+        ]
+    )
+
+
+async def test_rating_adjustment_1v1_ladder_pros_global_newbies(
+    rating_service, player_factory
+):
+    IGNORED = object()
+
+    # Both players have high ladder rating but no global rating
+    await do_test_rating_adjustment(
+        rating_service,
+        player_factory,
+        ratings={
+            1: {RatingType.LADDER_1V1: Rating(2000, 75)},
+            2: {RatingType.LADDER_1V1: Rating(1900, 75)},
+        },
+        expected_results=[
+            PersistedResults(
+                rating_type=RatingType.LADDER_1V1,
+                ratings={
+                    1: pytest.approx((2011, 75), abs=1),
+                    2: pytest.approx((1889, 75), abs=1),
+                },
+                outcomes=IGNORED
+            ),
+            PersistedResults(
+                rating_type=RatingType.GLOBAL,
+                ratings={
+                    1: pytest.approx((2038, 348), abs=1),
+                    2: pytest.approx((1340, 419), abs=1),
+                },
+                outcomes=IGNORED
+            )
+        ]
+    )
+
+
+async def test_rating_adjustment_1v1_ladder_pros_global_mixed(
+    rating_service, player_factory
+):
+    IGNORED = object()
+
+    expected_results = [
+        PersistedResults(
+            rating_type=RatingType.LADDER_1V1,
+            ratings={
+                1: pytest.approx((2011, 75), abs=1),
+                2: pytest.approx((1889, 75), abs=1),
+            },
+            outcomes=IGNORED
+        ),
+        PersistedResults(
+            rating_type=RatingType.GLOBAL,
+            ratings={
+                1: pytest.approx((1373, 208), abs=1),
+            },
+            outcomes=IGNORED
+        )
+    ]
+
+    # Both players have high ladder rating, one has low global, the other has
+    # high global.
+    await do_test_rating_adjustment(
+        rating_service,
+        player_factory,
+        ratings={
+            1: {
+                RatingType.LADDER_1V1: Rating(2000, 75),
+                RatingType.GLOBAL: Rating(1000, 250),
+            },
+            2: {
+                RatingType.LADDER_1V1: Rating(1900, 75),
+                RatingType.GLOBAL: Rating(2100, 75),
+            }
+        },
+        expected_results=expected_results
+    )
+
+    # Same as above but player 2's global rating is a bit lower. This should
+    # not have an effect on the rating adjustment.
+    rating_service._persist_rating_changes.reset_mock()
+    await do_test_rating_adjustment(
+        rating_service,
+        player_factory,
+        ratings={
+            1: {
+                RatingType.LADDER_1V1: Rating(2000, 75),
+                RatingType.GLOBAL: Rating(1000, 250),
+            },
+            2: {
+                RatingType.LADDER_1V1: Rating(1900, 75),
+                RatingType.GLOBAL: Rating(1700, 75),
+            }
+        },
+        expected_results=expected_results
+    )
+
+
+async def test_rating_adjustment_1v1_ladder_pro_vs_global_pro(
+    rating_service, player_factory
+):
+    IGNORED = object()
+
+    # One player has high ladder rating the other has high global
+    await do_test_rating_adjustment(
+        rating_service,
+        player_factory,
+        ratings={
+            1: {RatingType.LADDER_1V1: Rating(2000, 75)},
+            2: {RatingType.GLOBAL: Rating(1900, 75)},
+        },
+        expected_results=[
+            PersistedResults(
+                rating_type=RatingType.LADDER_1V1,
+                ratings={
+                    1: pytest.approx((2003, 75), abs=1),
+                    2: pytest.approx((1340, 419), abs=1),
+                },
+                outcomes=IGNORED
+            ),
+            PersistedResults(
+                rating_type=RatingType.GLOBAL,
+                ratings={
+                    1: pytest.approx((1766, 429), abs=1),
+                },
+                outcomes=IGNORED
+            )
+        ]
+    )
+
+
+async def test_rating_adjustment_2v2_newbies(rating_service, player_factory):
+    IGNORED = object()
+
+    # Both players have no ratings yet
+    await do_test_rating_adjustment(
+        rating_service,
+        player_factory,
+        ratings={
+            1: {}, 3: {},
+            2: {}, 4: {},
+        },
+        expected_results=[
+            PersistedResults(
+                rating_type=RatingType.LADDER_1V1,
+                ratings={
+                    # Team 1
+                    1: pytest.approx((1688, 466), abs=1),
+                    3: pytest.approx((1688, 466), abs=1),
+                    # Team 2
+                    2: pytest.approx((1312, 466), abs=1),
+                    4: pytest.approx((1312, 466), abs=1),
+                },
+                outcomes=IGNORED
+            ),
+            PersistedResults(
+                rating_type=RatingType.GLOBAL,
+                ratings={
+                    1: pytest.approx((1688, 466), abs=1),
+                    3: pytest.approx((1688, 466), abs=1),
+                },
+                outcomes=IGNORED
+            )
+        ]
+    )
+
+
+async def test_rating_adjustment_2v2_ladder_newbies_global_joes(
+    rating_service,
+    player_factory
+):
+    IGNORED = object()
+
+    # All players have no ladder ratings yet, but some have global
+    await do_test_rating_adjustment(
+        rating_service,
+        player_factory,
+        ratings={
+            1: {RatingType.GLOBAL: Rating(1000, 150)}, 3: {},
+            2: {RatingType.GLOBAL: Rating(900, 150)}, 4: {},
+        },
+        expected_results=[
+            PersistedResults(
+                rating_type=RatingType.LADDER_1V1,
+                ratings={
+                    # Team 1
+                    1: pytest.approx((1688, 466), abs=1),
+                    3: pytest.approx((1688, 466), abs=1),
+                    # Team 2
+                    2: pytest.approx((1312, 466), abs=1),
+                    4: pytest.approx((1312, 466), abs=1),
+                },
+                outcomes=IGNORED
+            ),
+            PersistedResults(
+                rating_type=RatingType.GLOBAL,
+                ratings={
+                    1: pytest.approx((1027, 149), abs=1),
+                    3: pytest.approx((1688, 466), abs=1),
+                },
+                outcomes=IGNORED
+            )
+        ]
+    )
+
+
+async def test_rating_adjustment_3v3_newbies(rating_service, player_factory):
+    IGNORED = object()
+
+    # Both players have no ratings yet
+    await do_test_rating_adjustment(
+        rating_service,
+        player_factory,
+        ratings={
+            1: {}, 3: {}, 5: {},
+            2: {}, 4: {}, 6: {},
+        },
+        expected_results=[
+            PersistedResults(
+                rating_type=RatingType.LADDER_1V1,
+                ratings={
+                    # Team 1
+                    1: pytest.approx((1653, 478), abs=1),
+                    3: pytest.approx((1653, 478), abs=1),
+                    5: pytest.approx((1653, 478), abs=1),
+                    # Team 2
+                    2: pytest.approx((1347, 478), abs=1),
+                    4: pytest.approx((1347, 478), abs=1),
+                    6: pytest.approx((1347, 478), abs=1),
+                },
+                outcomes=IGNORED
+            ),
+            PersistedResults(
+                rating_type=RatingType.GLOBAL,
+                ratings={
+                    1: pytest.approx((1653, 478), abs=1),
+                    3: pytest.approx((1653, 478), abs=1),
+                    5: pytest.approx((1653, 478), abs=1),
+                },
+                outcomes=IGNORED
+            )
+        ]
+    )
+
+
+async def test_rating_adjustment_3v3_ladder_newbies_global_joes(
+    rating_service,
+    player_factory
+):
+    IGNORED = object()
+
+    # All players have no ladder ratings yet, but some have global
+    await do_test_rating_adjustment(
+        rating_service,
+        player_factory,
+        ratings={
+            1: {RatingType.GLOBAL: Rating(1000, 150)}, 3: {}, 5: {},
+            2: {RatingType.GLOBAL: Rating(1100, 150)}, 4: {}, 6: {},
+        },
+        expected_results=[
+            PersistedResults(
+                rating_type=RatingType.LADDER_1V1,
+                ratings={
+                    # Team 1
+                    1: pytest.approx((1653, 478), abs=1),
+                    3: pytest.approx((1653, 478), abs=1),
+                    5: pytest.approx((1653, 478), abs=1),
+                    # Team 2
+                    2: pytest.approx((1347, 478), abs=1),
+                    4: pytest.approx((1347, 478), abs=1),
+                    6: pytest.approx((1347, 478), abs=1),
+                },
+                outcomes=IGNORED
+            ),
+            PersistedResults(
+                rating_type=RatingType.GLOBAL,
+                ratings={
+                    1: pytest.approx((1020, 150), abs=1),
+                    3: pytest.approx((1653, 478), abs=1),
+                    5: pytest.approx((1653, 478), abs=1),
+                },
+                outcomes=IGNORED
+            )
+        ]
+    )
