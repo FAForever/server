@@ -132,27 +132,18 @@ class RatingService(Service):
         self._logger.debug("RatingService stopped.")
 
     async def _rate(self, summary: GameRatingSummary) -> None:
+        rater = GameRater(summary)
+
         async with self._db.acquire() as conn:
-            player_ids = [
-                player_id
-                for team in summary.teams
-                for player_id in team.player_ids
-            ]
             # Fetch all players rating info from the database
             player_ratings = await self._get_all_player_ratings(
-                conn, player_ids
+                conn, rater.player_ids
             )
             # Initialize the ratings we need
             old_ratings = await self._get_players_initialized_rating(
                 conn, player_ratings, summary.rating_type
             )
-            new_ratings = GameRater.compute_rating(summary.teams, old_ratings)
-
-            outcome_map = {
-                player_id: team.outcome
-                for team in summary.teams
-                for player_id in team.player_ids
-            }
+            new_ratings = rater.compute_rating(old_ratings)
 
             await self._persist_rating_changes(
                 conn,
@@ -160,20 +151,29 @@ class RatingService(Service):
                 summary.rating_type,
                 old_ratings,
                 new_ratings,
-                outcome_map
+                rater.outcome_map
             )
+
         await self._publish_rating_changes(
             summary.rating_type,
             old_ratings,
             new_ratings,
-            outcome_map
+            rater.outcome_map
         )
 
         # TODO: If we add hidden ratings, make sure to check for them here.
         # Hidden ratings should not affect global.
-        if summary.rating_type == RatingType.GLOBAL:
-            return
+        if summary.rating_type != RatingType.GLOBAL:
+            await self._perform_global_rating_adjustment(
+                rater, player_ratings, old_ratings
+            )
 
+    async def _perform_global_rating_adjustment(
+        self,
+        rater: GameRater,
+        player_ratings: Dict[PlayerID, PlayerRatings],
+        old_ratings: Dict[PlayerID, Rating]
+    ):
         # Now perform global rating adjustments.
         async with self._db.acquire() as conn:
             # Initialize the global ratings if needed.
@@ -183,35 +183,40 @@ class RatingService(Service):
                 conn, player_ratings, RatingType.GLOBAL
             )
             new_global_ratings = self._get_global_rating_adjustment(
-                summary,
-                old_ratings,
-                old_global_ratings
+                rater, old_ratings, old_global_ratings
             )
 
             # Now persist the changes for all players that get the adjustment,
             # however, we don't want to update the game_player_stats entry here.
             await self._persist_rating_changes(
                 conn,
-                summary.game_id,
+                rater.summary.game_id,
                 RatingType.GLOBAL,
                 old_global_ratings,
                 new_global_ratings,
-                outcome_map,
+                rater.outcome_map,
                 update_game_player_stats=False
             )
+
         await self._publish_rating_changes(
             RatingType.GLOBAL,
             old_global_ratings,
             new_global_ratings,
-            outcome_map
+            rater.outcome_map
         )
 
     def _get_global_rating_adjustment(
         self,
-        summary: GameRatingSummary,
+        rater: GameRater,
         old_ratings: Dict[PlayerID, Rating],
         old_global_ratings: Dict[PlayerID, Rating]
     ) -> Dict[PlayerID, Rating]:
+        """
+        Perform global rating adjustment based on the matchmaker ratings. For
+        each player, this will rate the game with trueskill as if their
+        matchmaker rating was equal to their global rating. Adjustments are
+        only returned under certain conditions to prevent rating manipulation.
+        """
         new_global_ratings = {}
         for player_id in old_ratings.keys():
             # Make a copy of the matchmaker ratings, but replace this player's
@@ -220,7 +225,7 @@ class RatingService(Service):
             old_global_rating = old_global_ratings[player_id]
             ratings[player_id] = old_global_rating
 
-            new_ratings = GameRater.compute_rating(summary.teams, old_ratings)
+            new_ratings = rater.compute_rating(ratings)
             new_global_rating = new_ratings[player_id]
             if (
                 old_global_rating.displayed() <

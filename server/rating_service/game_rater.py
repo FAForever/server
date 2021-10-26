@@ -3,8 +3,8 @@ from typing import Dict, List
 import trueskill
 
 from server.games.game_results import GameOutcome
-from server.games.typedefs import TeamRatingSummary
 from server.rating import Rating
+from server.rating_service.typedefs import GameRatingSummary
 
 from ..decorators import with_logger
 from .typedefs import PlayerID
@@ -16,10 +16,19 @@ class GameRatingError(Exception):
 
 @with_logger
 class GameRater:
-    @classmethod
+    def __init__(self, summary: GameRatingSummary):
+        self.summary = summary
+        self.outcome_map = {
+            player_id: team.outcome
+            for team in summary.teams
+            for player_id in team.player_ids
+        }
+        self.player_ids = list(self.outcome_map.keys())
+        self.team_outcomes = [team.outcome for team in summary.teams]
+        self.ranks = self._ranks_from_team_outcomes(self.team_outcomes)
+
     def compute_rating(
-        cls,
-        teams: List[TeamRatingSummary],
+        self,
         ratings: Dict[PlayerID, Rating]
     ) -> Dict[PlayerID, Rating]:
         rating_groups = [
@@ -27,15 +36,13 @@ class GameRater:
                 player_id: trueskill.Rating(*ratings[player_id])
                 for player_id in team.player_ids
             }
-            for team in teams
+            for team in self.summary.teams
         ]
-        team_outcomes = [team.outcome for team in teams]
-        ranks = cls._ranks_from_team_outcomes(team_outcomes)
 
-        cls._logger.debug("Rating groups: %s", rating_groups)
-        cls._logger.debug("Ranks: %s", ranks)
+        self._logger.debug("Rating groups: %s", rating_groups)
+        self._logger.debug("Ranks: %s", self.ranks)
 
-        new_rating_groups = trueskill.rate(rating_groups, ranks)
+        new_rating_groups = trueskill.rate(rating_groups, self.ranks)
 
         player_rating_map = {
             player_id: Rating(*new_rating)
