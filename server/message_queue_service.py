@@ -87,7 +87,7 @@ class MessageQueueService(Service):
         self._logger.debug("Connected to RabbitMQ %r", self._connection)
 
     async def declare_exchange(
-        self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC
+        self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC, durable: bool = True
     ) -> None:
         await self.initialize()
         if not self._is_ready:
@@ -96,13 +96,13 @@ class MessageQueueService(Service):
             )
             return
 
-        await self._declare_exchange(exchange_name, exchange_type)
+        await self._declare_exchange(exchange_name, exchange_type, durable)
 
     async def _declare_exchange(
-        self, exchange_name: str, exchange_type: ExchangeType
+        self, exchange_name: str, exchange_type: ExchangeType, durable: bool = True
     ) -> None:
         new_exchange = await self._channel.declare_exchange(
-            exchange_name, exchange_type
+            exchange_name, exchange_type, durable
         )
 
         self._exchanges[exchange_name] = new_exchange

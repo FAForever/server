@@ -391,7 +391,8 @@ async def connect_mq_consumer(server, channel, routing_key):
     """
     exchange = await channel.declare_exchange(
         config.MQ_EXCHANGE_NAME,
-        aio_pika.ExchangeType.TOPIC
+        aio_pika.ExchangeType.TOPIC,
+        durable=True
     )
     queue = await channel.declare_queue("", exclusive=True)
     await queue.bind(exchange, routing_key=routing_key)
