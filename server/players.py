@@ -134,6 +134,8 @@ class Player:
         """
         Return a dictionary representing this player object
         """
+        assert self.state is not None and self.state.value is not None
+
         cmd = {
             "id": self.id,
             "login": self.login,
