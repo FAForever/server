@@ -90,7 +90,7 @@ class MatchmakerQueue:
                 continue
             return map_pool
 
-    def get_game_options(self) -> dict[str, Any]:
+    def get_game_options(self) -> Optional[dict[str, Any]]:
         return self.params.get("GameOptions") or None
 
     def initialize(self):

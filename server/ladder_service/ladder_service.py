@@ -74,7 +74,7 @@ class LadderService(Service):
         self.message_queue_service = message_queue_service
         self.player_service = player_service
         self.violation_service = violation_service
-        self.queues = {}
+        self.queues: dict[str, MatchmakerQueue] = {}
 
         self._initialized = False
         self._informed_players: set[Player] = set()
@@ -205,7 +205,7 @@ class LadderService(Service):
 
         return map_pool_maps
 
-    async def fetch_matchmaker_queues(self, conn):
+    async def fetch_matchmaker_queues(self, conn) -> dict[str, dict]:
         result = await conn.execute(
             select(
                 matchmaker_queue.c.id,
