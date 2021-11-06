@@ -481,7 +481,8 @@ __all__ = (
             &#34;NoRushOption&#34;: &#34;Off&#34;,
             &#34;TeamLock&#34;: &#34;locked&#34;,
             &#34;AIReplacement&#34;: &#34;Off&#34;,
-            &#34;RestrictedCategories&#34;: 0
+            &#34;RestrictedCategories&#34;: 0,
+            &#34;Unranked&#34;: &#34;No&#34;
         }
         self.mods = {}
         self._hosted_event = asyncio.Event()
@@ -1013,7 +1014,8 @@ __all__ = (
             &#34;PrebuiltUnits&#34;: (FA.DISABLED, ValidityState.PREBUILT_ENABLED),
             &#34;NoRushOption&#34;: (FA.DISABLED, ValidityState.NORUSH_ENABLED),
             &#34;RestrictedCategories&#34;: (0, ValidityState.BAD_UNIT_RESTRICTIONS),
-            &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS)
+            &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS),
+            &#34;Unranked&#34;: (FA.DISABLED, ValidityState.HOST_SET_UNRANKED)
         }
         if await self._validate_game_options(valid_options) is False:
             return
@@ -2508,7 +2510,8 @@ care about recording stats for, after all).</p></div>
         &#34;PrebuiltUnits&#34;: (FA.DISABLED, ValidityState.PREBUILT_ENABLED),
         &#34;NoRushOption&#34;: (FA.DISABLED, ValidityState.NORUSH_ENABLED),
         &#34;RestrictedCategories&#34;: (0, ValidityState.BAD_UNIT_RESTRICTIONS),
-        &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS)
+        &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS),
+        &#34;Unranked&#34;: (FA.DISABLED, ValidityState.HOST_SET_UNRANKED)
     }
     if await self._validate_game_options(valid_options) is False:
         return
@@ -2842,7 +2845,8 @@ as 1 for win and 0 for anything else.</p></div>
     WRONG_DIFFICULTY = 21
     EXPANSION_DISABLED = 22
     SPAWN_NOT_FIXED = 23
-    OTHER_UNRANK = 24</code></pre>
+    OTHER_UNRANK = 24
+    HOST_SET_UNRANKED = 25</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -2883,6 +2887,10 @@ as 1 for win and 0 for anything else.</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="server.games.ValidityState.HAS_AI_PLAYERS"><code class="name">var <span class="ident">HAS_AI_PLAYERS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.ValidityState.HOST_SET_UNRANKED"><code class="name">var <span class="ident">HOST_SET_UNRANKED</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -3185,6 +3193,7 @@ as 1 for win and 0 for anything else.</p></div>
 <li><code><a title="server.games.ValidityState.EXPANSION_DISABLED" href="#server.games.ValidityState.EXPANSION_DISABLED">EXPANSION_DISABLED</a></code></li>
 <li><code><a title="server.games.ValidityState.FFA_NOT_RANKED" href="#server.games.ValidityState.FFA_NOT_RANKED">FFA_NOT_RANKED</a></code></li>
 <li><code><a title="server.games.ValidityState.HAS_AI_PLAYERS" href="#server.games.ValidityState.HAS_AI_PLAYERS">HAS_AI_PLAYERS</a></code></li>
+<li><code><a title="server.games.ValidityState.HOST_SET_UNRANKED" href="#server.games.ValidityState.HOST_SET_UNRANKED">HOST_SET_UNRANKED</a></code></li>
 <li><code><a title="server.games.ValidityState.MULTI_TEAM" href="#server.games.ValidityState.MULTI_TEAM">MULTI_TEAM</a></code></li>
 <li><code><a title="server.games.ValidityState.MUTUAL_DRAW" href="#server.games.ValidityState.MUTUAL_DRAW">MUTUAL_DRAW</a></code></li>
 <li><code><a title="server.games.ValidityState.NORUSH_ENABLED" href="#server.games.ValidityState.NORUSH_ENABLED">NORUSH_ENABLED</a></code></li>

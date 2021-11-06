@@ -117,6 +117,7 @@ class ValidityState(Enum):
     EXPANSION_DISABLED = 22
     SPAWN_NOT_FIXED = 23
     OTHER_UNRANK = 24
+    HOST_SET_UNRANKED = 25
 
 
 class FeaturedModType():
@@ -866,7 +867,8 @@ def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
     WRONG_DIFFICULTY = 21
     EXPANSION_DISABLED = 22
     SPAWN_NOT_FIXED = 23
-    OTHER_UNRANK = 24</code></pre>
+    OTHER_UNRANK = 24
+    HOST_SET_UNRANKED = 25</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -907,6 +909,10 @@ def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
 <div class="desc"></div>
 </dd>
 <dt id="server.games.typedefs.ValidityState.HAS_AI_PLAYERS"><code class="name">var <span class="ident">HAS_AI_PLAYERS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.typedefs.ValidityState.HOST_SET_UNRANKED"><code class="name">var <span class="ident">HOST_SET_UNRANKED</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1159,6 +1165,7 @@ def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
 <li><code><a title="server.games.typedefs.ValidityState.EXPANSION_DISABLED" href="#server.games.typedefs.ValidityState.EXPANSION_DISABLED">EXPANSION_DISABLED</a></code></li>
 <li><code><a title="server.games.typedefs.ValidityState.FFA_NOT_RANKED" href="#server.games.typedefs.ValidityState.FFA_NOT_RANKED">FFA_NOT_RANKED</a></code></li>
 <li><code><a title="server.games.typedefs.ValidityState.HAS_AI_PLAYERS" href="#server.games.typedefs.ValidityState.HAS_AI_PLAYERS">HAS_AI_PLAYERS</a></code></li>
+<li><code><a title="server.games.typedefs.ValidityState.HOST_SET_UNRANKED" href="#server.games.typedefs.ValidityState.HOST_SET_UNRANKED">HOST_SET_UNRANKED</a></code></li>
 <li><code><a title="server.games.typedefs.ValidityState.MULTI_TEAM" href="#server.games.typedefs.ValidityState.MULTI_TEAM">MULTI_TEAM</a></code></li>
 <li><code><a title="server.games.typedefs.ValidityState.MUTUAL_DRAW" href="#server.games.typedefs.ValidityState.MUTUAL_DRAW">MUTUAL_DRAW</a></code></li>
 <li><code><a title="server.games.typedefs.ValidityState.NORUSH_ENABLED" href="#server.games.typedefs.ValidityState.NORUSH_ENABLED">NORUSH_ENABLED</a></code></li>

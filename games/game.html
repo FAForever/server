@@ -142,7 +142,8 @@ class Game():
             &#34;NoRushOption&#34;: &#34;Off&#34;,
             &#34;TeamLock&#34;: &#34;locked&#34;,
             &#34;AIReplacement&#34;: &#34;Off&#34;,
-            &#34;RestrictedCategories&#34;: 0
+            &#34;RestrictedCategories&#34;: 0,
+            &#34;Unranked&#34;: &#34;No&#34;
         }
         self.mods = {}
         self._hosted_event = asyncio.Event()
@@ -674,7 +675,8 @@ class Game():
             &#34;PrebuiltUnits&#34;: (FA.DISABLED, ValidityState.PREBUILT_ENABLED),
             &#34;NoRushOption&#34;: (FA.DISABLED, ValidityState.NORUSH_ENABLED),
             &#34;RestrictedCategories&#34;: (0, ValidityState.BAD_UNIT_RESTRICTIONS),
-            &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS)
+            &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS),
+            &#34;Unranked&#34;: (FA.DISABLED, ValidityState.HOST_SET_UNRANKED)
         }
         if await self._validate_game_options(valid_options) is False:
             return
@@ -1064,7 +1066,8 @@ class Game():
             &#34;NoRushOption&#34;: &#34;Off&#34;,
             &#34;TeamLock&#34;: &#34;locked&#34;,
             &#34;AIReplacement&#34;: &#34;Off&#34;,
-            &#34;RestrictedCategories&#34;: 0
+            &#34;RestrictedCategories&#34;: 0,
+            &#34;Unranked&#34;: &#34;No&#34;
         }
         self.mods = {}
         self._hosted_event = asyncio.Event()
@@ -1596,7 +1599,8 @@ class Game():
             &#34;PrebuiltUnits&#34;: (FA.DISABLED, ValidityState.PREBUILT_ENABLED),
             &#34;NoRushOption&#34;: (FA.DISABLED, ValidityState.NORUSH_ENABLED),
             &#34;RestrictedCategories&#34;: (0, ValidityState.BAD_UNIT_RESTRICTIONS),
-            &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS)
+            &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS),
+            &#34;Unranked&#34;: (FA.DISABLED, ValidityState.HOST_SET_UNRANKED)
         }
         if await self._validate_game_options(valid_options) is False:
             return
@@ -3091,7 +3095,8 @@ care about recording stats for, after all).</p></div>
         &#34;PrebuiltUnits&#34;: (FA.DISABLED, ValidityState.PREBUILT_ENABLED),
         &#34;NoRushOption&#34;: (FA.DISABLED, ValidityState.NORUSH_ENABLED),
         &#34;RestrictedCategories&#34;: (0, ValidityState.BAD_UNIT_RESTRICTIONS),
-        &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS)
+        &#34;TeamLock&#34;: (&#34;locked&#34;, ValidityState.UNLOCKED_TEAMS),
+        &#34;Unranked&#34;: (FA.DISABLED, ValidityState.HOST_SET_UNRANKED)
     }
     if await self._validate_game_options(valid_options) is False:
         return
