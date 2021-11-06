@@ -89,6 +89,7 @@ class ValidityState(Enum):
     EXPANSION_DISABLED = 22
     SPAWN_NOT_FIXED = 23
     OTHER_UNRANK = 24
+    HOST_SET_UNRANKED = 25
 
 
 class FeaturedModType():
