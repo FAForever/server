@@ -116,7 +116,7 @@ class MessageQueueService(Service):
         self._logger.debug(&#34;Connected to RabbitMQ %r&#34;, self._connection)
 
     async def declare_exchange(
-        self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC
+        self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC, durable: bool = True
     ) -&gt; None:
         await self.initialize()
         if not self._is_ready:
@@ -125,13 +125,13 @@ class MessageQueueService(Service):
             )
             return
 
-        await self._declare_exchange(exchange_name, exchange_type)
+        await self._declare_exchange(exchange_name, exchange_type, durable)
 
     async def _declare_exchange(
-        self, exchange_name: str, exchange_type: ExchangeType
+        self, exchange_name: str, exchange_type: ExchangeType, durable: bool = True
     ) -&gt; None:
         new_exchange = await self._channel.declare_exchange(
-            exchange_name, exchange_type
+            exchange_name, exchange_type, durable
         )
 
         self._exchanges[exchange_name] = new_exchange
@@ -306,7 +306,7 @@ and providing an interface to publish messages.</p></div>
         self._logger.debug(&#34;Connected to RabbitMQ %r&#34;, self._connection)
 
     async def declare_exchange(
-        self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC
+        self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC, durable: bool = True
     ) -&gt; None:
         await self.initialize()
         if not self._is_ready:
@@ -315,13 +315,13 @@ and providing an interface to publish messages.</p></div>
             )
             return
 
-        await self._declare_exchange(exchange_name, exchange_type)
+        await self._declare_exchange(exchange_name, exchange_type, durable)
 
     async def _declare_exchange(
-        self, exchange_name: str, exchange_type: ExchangeType
+        self, exchange_name: str, exchange_type: ExchangeType, durable: bool = True
     ) -&gt; None:
         new_exchange = await self._channel.declare_exchange(
-            exchange_name, exchange_type
+            exchange_name, exchange_type, durable
         )
 
         self._exchanges[exchange_name] = new_exchange
@@ -396,7 +396,7 @@ and providing an interface to publish messages.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.message_queue_service.MessageQueueService.declare_exchange"><code class="name flex">
-<span>async def <span class="ident">declare_exchange</span></span>(<span>self, exchange_name: str, exchange_type: aio_pika.exchange.ExchangeType = ExchangeType.TOPIC) ‑> None</span>
+<span>async def <span class="ident">declare_exchange</span></span>(<span>self, exchange_name: str, exchange_type: aio_pika.exchange.ExchangeType = ExchangeType.TOPIC, durable: bool = True) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -405,7 +405,7 @@ and providing an interface to publish messages.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def declare_exchange(
-    self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC
+    self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC, durable: bool = True
 ) -&gt; None:
     await self.initialize()
     if not self._is_ready:
@@ -414,7 +414,7 @@ and providing an interface to publish messages.</p></div>
         )
         return
 
-    await self._declare_exchange(exchange_name, exchange_type)</code></pre>
+    await self._declare_exchange(exchange_name, exchange_type, durable)</code></pre>
 </details>
 </dd>
 <dt id="server.message_queue_service.MessageQueueService.publish"><code class="name flex">
