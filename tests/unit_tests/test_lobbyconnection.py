@@ -341,7 +341,11 @@ async def test_command_game_join_calls_join_game(
         "mod": "faf",
         "name": "Test Game Name",
         "init_mode": InitMode.NORMAL_LOBBY.value,
+<<<<<<< HEAD
         "game_type": "CUSTOM",
+=======
+        "game_type": GameType.CUSTOM.value,
+>>>>>>> 23a88bef09902dfb0199f2561933748acec1a439
         "rating_type": "global",
     }
     lobbyconnection.send.assert_called_with(expected_reply)
@@ -381,7 +385,11 @@ async def test_command_game_join_uid_as_str(
         "uid": 42,
         "name": "Test Game Name",
         "init_mode": InitMode.NORMAL_LOBBY.value,
+<<<<<<< HEAD
         "game_type": "CUSTOM",
+=======
+        "game_type": GameType.CUSTOM.value,
+>>>>>>> 23a88bef09902dfb0199f2561933748acec1a439
         "rating_type": "global",
     }
     lobbyconnection.send.assert_called_with(expected_reply)
@@ -968,13 +976,13 @@ async def test_command_game_matchmaking_not_party_owner(
 
     lobbyconnection.ladder_service.cancel_search.assert_called_once()
 
-    
+
 async def test_command_match_ready(lobbyconnection):
     await lobbyconnection.on_message_received({
         "command": "match_ready"
     })
 
-    
+
 async def test_command_matchmaker_info(
     lobbyconnection,
     ladder_service,
