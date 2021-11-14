@@ -14,7 +14,14 @@ from server.db.models import ban, friends_and_foes
 from server.exceptions import BanError, ClientError
 from server.game_service import GameService
 from server.gameconnection import GameConnection
-from server.games import CustomGame, Game, GameState, InitMode, VisibilityState
+from server.games import (
+    CustomGame,
+    Game,
+    GameState,
+    GameType,
+    InitMode,
+    VisibilityState
+)
 from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
@@ -334,6 +341,7 @@ async def test_command_game_join_calls_join_game(
         "mod": "faf",
         "name": "Test Game Name",
         "init_mode": InitMode.NORMAL_LOBBY.value,
+        "game_type": GameType.CUSTOM.value,
         "rating_type": "global",
     }
     lobbyconnection.send.assert_called_with(expected_reply)
@@ -373,6 +381,7 @@ async def test_command_game_join_uid_as_str(
         "uid": 42,
         "name": "Test Game Name",
         "init_mode": InitMode.NORMAL_LOBBY.value,
+        "game_type": GameType.CUSTOM.value,
         "rating_type": "global",
     }
     lobbyconnection.send.assert_called_with(expected_reply)
@@ -959,13 +968,13 @@ async def test_command_game_matchmaking_not_party_owner(
 
     lobbyconnection.ladder_service.cancel_search.assert_called_once()
 
-    
+
 async def test_command_match_ready(lobbyconnection):
     await lobbyconnection.on_message_received({
         "command": "match_ready"
     })
 
-    
+
 async def test_command_matchmaker_info(
     lobbyconnection,
     ladder_service,
