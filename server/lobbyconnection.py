@@ -1038,15 +1038,9 @@ class LobbyConnection:
             # options are. Currently, options for ladder are hardcoded into the
             # client.
             "name": game.name,
-<<<<<<< HEAD
-            # DEPRICADET: init_mode can be inferred from game_type
+            # DEPRICATED: init_mode can be inferred from game_type
             "init_mode": game.init_mode.value,
             "game_type": game.game_type.to_string(game.game_type.value),
-=======
-            # Depricated: init_mode can be inferred from game_type
-            "init_mode": game.init_mode.value,
-            "game_type": game.game_type.value,
->>>>>>> 23a88bef09902dfb0199f2561933748acec1a439
             "rating_type": game.rating_type,
             **options._asdict()
         }
