@@ -77,7 +77,8 @@ async def test_validate_game_settings(game: Game, game_add_players):
         ("PrebuiltUnits", "On", ValidityState.PREBUILT_ENABLED),
         ("NoRushOption", 20, ValidityState.NORUSH_ENABLED),
         ("RestrictedCategories", 1, ValidityState.BAD_UNIT_RESTRICTIONS),
-        ("TeamLock", "unlocked", ValidityState.UNLOCKED_TEAMS)
+        ("TeamLock", "unlocked", ValidityState.UNLOCKED_TEAMS),
+        ("Unranked", "Yes", ValidityState.HOST_SET_UNRANKED)
     ]
     mods = (
         FeaturedModType.FAF,
