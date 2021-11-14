@@ -50,6 +50,7 @@ async def test_game_launch_message(lobby_server):
         "mod": "ladder1v1",
         "name": "ladder1 Vs ladder2",
         "init_mode": 1,
+        "game_type": 2,
         "rating_type": "ladder_1v1",
         "team": 2,
         "faction": 1,
