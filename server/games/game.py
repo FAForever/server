@@ -902,7 +902,7 @@ class Game():
             "uid": self.id,
             "title": self.name,
             "state": client_state,
-            "game_type": GameType.to_string(self.game_type),
+            "game_type": self.game_type.value,
             "featured_mod": self.game_mode,
             "sim_mods": self.mods,
             "mapname": self.map_folder_name,
