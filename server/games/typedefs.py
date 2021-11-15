@@ -37,9 +37,9 @@ class Victory(Enum):
 
 @unique
 class GameType(str, Enum):
-    COOP = "COOP"
-    CUSTOM = "CUSTOM"
-    MATCHMAKER = "MATCHMAKER"
+    COOP = "coop"
+    CUSTOM = "custom"
+    MATCHMAKER = "matchmaker"
 
 
 @unique
