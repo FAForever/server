@@ -1040,7 +1040,7 @@ class LobbyConnection:
             "name": game.name,
             # DEPRICATED: init_mode can be inferred from game_type
             "init_mode": game.init_mode.value,
-            "game_type": game.game_type.to_string(game.game_type.value),
+            "game_type": game.game_type.value,
             "rating_type": game.rating_type,
             **options._asdict()
         }
