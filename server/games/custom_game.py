@@ -1,4 +1,3 @@
-import asyncio
 import time
 
 from server.decorators import with_logger
