@@ -36,6 +36,7 @@ from .typedefs import (
     FeaturedModType,
     GameConnectionState,
     GameState,
+    GameType,
     InitMode,
     ValidityState,
     Victory,
