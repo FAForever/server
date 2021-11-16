@@ -18,7 +18,6 @@ from server.games import (
     CustomGame,
     Game,
     GameState,
-    GameType,
     InitMode,
     VisibilityState
 )
