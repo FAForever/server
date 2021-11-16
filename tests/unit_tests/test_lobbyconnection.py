@@ -14,13 +14,7 @@ from server.db.models import ban, friends_and_foes
 from server.exceptions import BanError, ClientError
 from server.game_service import GameService
 from server.gameconnection import GameConnection
-from server.games import (
-    CustomGame,
-    Game,
-    GameState,
-    InitMode,
-    VisibilityState
-)
+from server.games import CustomGame, Game, GameState, InitMode, VisibilityState
 from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
