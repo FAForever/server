@@ -1067,7 +1067,9 @@ class LobbyConnection:
             # options are. Currently, options for ladder are hardcoded into the
             # client.
             &#34;name&#34;: game.name,
+            # DEPRICATED: init_mode can be inferred from game_type
             &#34;init_mode&#34;: game.init_mode.value,
+            &#34;game_type&#34;: game.game_type.value,
             &#34;rating_type&#34;: game.rating_type,
             **options._asdict()
         }
@@ -2278,7 +2280,9 @@ class LobbyConnection:
             # options are. Currently, options for ladder are hardcoded into the
             # client.
             &#34;name&#34;: game.name,
+            # DEPRICATED: init_mode can be inferred from game_type
             &#34;init_mode&#34;: game.init_mode.value,
+            &#34;game_type&#34;: game.game_type.value,
             &#34;rating_type&#34;: game.rating_type,
             **options._asdict()
         }
@@ -3662,7 +3666,9 @@ async def command_kick_player_from_party(self, message):
         # options are. Currently, options for ladder are hardcoded into the
         # client.
         &#34;name&#34;: game.name,
+        # DEPRICATED: init_mode can be inferred from game_type
         &#34;init_mode&#34;: game.init_mode.value,
+        &#34;game_type&#34;: game.game_type.value,
         &#34;rating_type&#34;: game.rating_type,
         **options._asdict()
     }

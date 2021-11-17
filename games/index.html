@@ -41,6 +41,7 @@ from .typedefs import (
     FeaturedModType,
     GameConnectionState,
     GameState,
+    GameType,
     InitMode,
     ValidityState,
     Victory,
@@ -66,6 +67,7 @@ __all__ = (
     &#34;GameConnectionState&#34;,
     &#34;GameError&#34;,
     &#34;GameState&#34;,
+    &#34;GameType&#34;,
     &#34;InitMode&#34;,
     &#34;LadderGame&#34;,
     &#34;ValidityState&#34;,
@@ -1269,7 +1271,7 @@ __all__ = (
             &#34;uid&#34;: self.id,
             &#34;title&#34;: self.name,
             &#34;state&#34;: client_state,
-            &#34;game_type&#34;: GameType.to_string(self.game_type),
+            &#34;game_type&#34;: self.game_type.value,
             &#34;featured_mod&#34;: self.game_mode,
             &#34;sim_mods&#34;: self.mods,
             &#34;mapname&#34;: self.map_folder_name,
@@ -2299,7 +2301,7 @@ game.</p></div>
         &#34;uid&#34;: self.id,
         &#34;title&#34;: self.name,
         &#34;state&#34;: client_state,
-        &#34;game_type&#34;: GameType.to_string(self.game_type),
+        &#34;game_type&#34;: self.game_type.value,
         &#34;featured_mod&#34;: self.game_mode,
         &#34;sim_mods&#34;: self.mods,
         &#34;mapname&#34;: self.map_folder_name,
@@ -2647,6 +2649,41 @@ care about recording stats for, after all).</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="server.games.GameState.LOBBY"><code class="name">var <span class="ident">LOBBY</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="server.games.GameType"><code class="flex name class">
+<span>class <span class="ident">GameType</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GameType(Enum):
+    COOP = &#34;coop&#34;
+    CUSTOM = &#34;custom&#34;
+    MATCHMAKER = &#34;matchmaker&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.games.GameType.COOP"><code class="name">var <span class="ident">COOP</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.GameType.CUSTOM"><code class="name">var <span class="ident">CUSTOM</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.games.GameType.MATCHMAKER"><code class="name">var <span class="ident">MATCHMAKER</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -3163,6 +3200,14 @@ as 1 for win and 0 for anything else.</p></div>
 <li><code><a title="server.games.GameState.INITIALIZING" href="#server.games.GameState.INITIALIZING">INITIALIZING</a></code></li>
 <li><code><a title="server.games.GameState.LIVE" href="#server.games.GameState.LIVE">LIVE</a></code></li>
 <li><code><a title="server.games.GameState.LOBBY" href="#server.games.GameState.LOBBY">LOBBY</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.games.GameType" href="#server.games.GameType">GameType</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.GameType.COOP" href="#server.games.GameType.COOP">COOP</a></code></li>
+<li><code><a title="server.games.GameType.CUSTOM" href="#server.games.GameType.CUSTOM">CUSTOM</a></code></li>
+<li><code><a title="server.games.GameType.MATCHMAKER" href="#server.games.GameType.MATCHMAKER">MATCHMAKER</a></code></li>
 </ul>
 </li>
 <li>

@@ -65,20 +65,9 @@ class Victory(Enum):
 
 @unique
 class GameType(Enum):
-    COOP = 0
-    CUSTOM = 1
-    MATCHMAKER = 2
-
-    @staticmethod
-    def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
-        &#34;&#34;&#34;
-        # Returns
-        `GameType` or `None` if the string is not valid
-        &#34;&#34;&#34;
-        return GameType.__members__.get(value.upper())
-
-    def to_string(self) -&gt; str:
-        return self.name.lower()
+    COOP = &#34;coop&#34;
+    CUSTOM = &#34;custom&#34;
+    MATCHMAKER = &#34;matchmaker&#34;
 
 
 @unique
@@ -694,20 +683,9 @@ def from_basic(
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class GameType(Enum):
-    COOP = 0
-    CUSTOM = 1
-    MATCHMAKER = 2
-
-    @staticmethod
-    def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
-        &#34;&#34;&#34;
-        # Returns
-        `GameType` or `None` if the string is not valid
-        &#34;&#34;&#34;
-        return GameType.__members__.get(value.upper())
-
-    def to_string(self) -&gt; str:
-        return self.name.lower()</code></pre>
+    COOP = &#34;coop&#34;
+    CUSTOM = &#34;custom&#34;
+    MATCHMAKER = &#34;matchmaker&#34;</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -726,44 +704,6 @@ def from_basic(
 <dt id="server.games.typedefs.GameType.MATCHMAKER"><code class="name">var <span class="ident">MATCHMAKER</span></code></dt>
 <dd>
 <div class="desc"></div>
-</dd>
-</dl>
-<h3>Static methods</h3>
-<dl>
-<dt id="server.games.typedefs.GameType.from_string"><code class="name flex">
-<span>def <span class="ident">from_string</span></span>(<span>value: str) ‑> Optional[<a title="server.games.typedefs.GameType" href="#server.games.typedefs.GameType">GameType</a>]</span>
-</code></dt>
-<dd>
-<div class="desc"><h1 id="returns">Returns</h1>
-<p><code><a title="server.games.typedefs.GameType" href="#server.games.typedefs.GameType">GameType</a></code> or <code>None</code> if the string is not valid</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@staticmethod
-def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
-    &#34;&#34;&#34;
-    # Returns
-    `GameType` or `None` if the string is not valid
-    &#34;&#34;&#34;
-    return GameType.__members__.get(value.upper())</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Methods</h3>
-<dl>
-<dt id="server.games.typedefs.GameType.to_string"><code class="name flex">
-<span>def <span class="ident">to_string</span></span>(<span>self) ‑> str</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def to_string(self) -&gt; str:
-    return self.name.lower()</code></pre>
-</details>
 </dd>
 </dl>
 </dd>
@@ -1134,8 +1074,6 @@ def from_string(value: str) -&gt; Optional[&#34;GameType&#34;]:
 <li><code><a title="server.games.typedefs.GameType.COOP" href="#server.games.typedefs.GameType.COOP">COOP</a></code></li>
 <li><code><a title="server.games.typedefs.GameType.CUSTOM" href="#server.games.typedefs.GameType.CUSTOM">CUSTOM</a></code></li>
 <li><code><a title="server.games.typedefs.GameType.MATCHMAKER" href="#server.games.typedefs.GameType.MATCHMAKER">MATCHMAKER</a></code></li>
-<li><code><a title="server.games.typedefs.GameType.from_string" href="#server.games.typedefs.GameType.from_string">from_string</a></code></li>
-<li><code><a title="server.games.typedefs.GameType.to_string" href="#server.games.typedefs.GameType.to_string">to_string</a></code></li>
 </ul>
 </li>
 <li>
