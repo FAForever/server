@@ -37,20 +37,9 @@ class Victory(Enum):
 
 @unique
 class GameType(Enum):
-    COOP = 0
-    CUSTOM = 1
-    MATCHMAKER = 2
-
-    @staticmethod
-    def from_string(value: str) -> Optional["GameType"]:
-        """
-        # Returns
-        `GameType` or `None` if the string is not valid
-        """
-        return GameType.__members__.get(value.upper())
-
-    def to_string(self) -> str:
-        return self.name.lower()
+    COOP = "coop"
+    CUSTOM = "custom"
+    MATCHMAKER = "matchmaker"
 
 
 @unique
