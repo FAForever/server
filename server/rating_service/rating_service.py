@@ -132,6 +132,8 @@ class RatingService(Service):
         self._logger.debug("RatingService stopped.")
 
     async def _rate(self, summary: GameRatingSummary) -> None:
+        if summary.rating_type not in self._rating_type_ids:
+            raise GameRatingError(f"Unknown rating type {summary.rating_type}.")
         rater = GameRater(summary)
 
         async with self._db.acquire() as conn:
@@ -273,11 +275,7 @@ class RatingService(Service):
         rating_type: str,
         ratings: Dict[PlayerID, Rating]
     ):
-        if self._rating_type_ids is None:
-            self._logger.warning(
-                "Tried to write player data before initializing service."
-            )
-            raise ServiceNotReadyError("RatingService not yet initialized.")
+        assert self._rating_type_ids is not None
 
         leaderboard_id = self._rating_type_ids[rating_type]
 
@@ -337,11 +335,7 @@ class RatingService(Service):
         """
         Persist computed ratings to the respective players' selected rating
         """
-        if self._rating_type_ids is None:
-            self._logger.warning(
-                "Tried to write player data before initializing service."
-            )
-            raise ServiceNotReadyError("RatingService not yet initialized.")
+        assert self._rating_type_ids is not None
 
         self._logger.debug("Saving rating change stats for game %i", game_id)
 
@@ -406,10 +400,10 @@ class RatingService(Service):
                     exc_info=True
                 )
 
-        rating_type_id = self._rating_type_ids[rating_type]
+        leaderboard_id = self._rating_type_ids[rating_type]
 
         journal_insert_sql = leaderboard_rating_journal.insert().values(
-            leaderboard_id=rating_type_id,
+            leaderboard_id=leaderboard_id,
             rating_mean_before=bindparam("rating_mean_before"),
             rating_deviation_before=bindparam("rating_deviation_before"),
             rating_mean_after=bindparam("rating_mean_after"),
@@ -437,7 +431,7 @@ class RatingService(Service):
             .where(
                 and_(
                     leaderboard_rating.c.login_id == bindparam("player_id"),
-                    leaderboard_rating.c.leaderboard_id == rating_type_id,
+                    leaderboard_rating.c.leaderboard_id == leaderboard_id,
                 )
             )
             .values(

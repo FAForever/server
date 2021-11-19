@@ -146,14 +146,6 @@ async def test_enqueue_uninitialized(uninitialized_service, game_info):
     await service.shutdown()
 
 
-async def test_persist_uninitialized(uninitialized_service):
-    service = uninitialized_service
-    with pytest.raises(ServiceNotReadyError):
-        await service._persist_rating_changes(
-            CoroutineMock(), 1, RatingType.GLOBAL, {}, {}, {}
-        )
-
-
 async def test_load_from_database(uninitialized_service):
     service = uninitialized_service
     assert service._rating_type_ids is None
