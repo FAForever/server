@@ -21,8 +21,14 @@ from server.metrics import rating_service_backlog
 from server.player_service import PlayerService
 from server.rating import Leaderboard, PlayerRatings, Rating, RatingType
 
-from .game_rater import GameRater, GameRatingError
-from .typedefs import GameRatingSummary, PlayerID, ServiceNotReadyError
+from .game_rater import AdjustmentGameRater, GameRater, GameRatingError
+from .typedefs import (
+    GameRatingResult,
+    GameRatingSummary,
+    PlayerID,
+    RatingDict,
+    ServiceNotReadyError
+)
 
 
 @with_logger
@@ -132,120 +138,71 @@ class RatingService(Service):
         self._logger.debug("RatingService stopped.")
 
     async def _rate(self, summary: GameRatingSummary) -> None:
+        assert self._rating_type_ids is not None
+
         if summary.rating_type not in self._rating_type_ids:
             raise GameRatingError(f"Unknown rating type {summary.rating_type}.")
+
         rater = GameRater(summary)
+        rating_results = []
 
         async with self._db.acquire() as conn:
             # Fetch all players rating info from the database
             player_ratings = await self._get_all_player_ratings(
                 conn, rater.player_ids
             )
-            # Initialize the ratings we need
-            old_ratings = await self._get_players_initialized_rating(
-                conn, player_ratings, summary.rating_type
-            )
-            new_ratings = rater.compute_rating(old_ratings)
-
-            await self._persist_rating_changes(
+            rating_result = await self._rate_for_leaderboard(
                 conn,
                 summary.game_id,
                 summary.rating_type,
-                old_ratings,
-                new_ratings,
-                rater.outcome_map
+                player_ratings,
+                rater
+            )
+            assert rating_result is not None
+            rating_results.append(rating_result)
+
+            # TODO: If we add hidden ratings, make sure to check for them here.
+            # Hidden ratings should not affect global.
+            # TODO: Use game_type == "matchmaker" instead?
+            if summary.rating_type != RatingType.GLOBAL:
+                self._logger.debug(
+                    "Performing global rating adjustment for players: %s",
+                    rater.player_ids
+                )
+                adjustment_rater = AdjustmentGameRater(
+                    rater,
+                    rating_result.old_ratings
+                )
+                global_rating_result = await self._rate_for_leaderboard(
+                    conn,
+                    summary.game_id,
+                    RatingType.GLOBAL,
+                    player_ratings,
+                    adjustment_rater,
+                    update_game_player_stats=False
+                )
+                if global_rating_result:
+                    rating_results.append(global_rating_result)
+
+        for rating_result in rating_results:
+            await self._publish_rating_changes(
+                rating_result.rating_type,
+                rating_result.old_ratings,
+                rating_result.new_ratings,
+                rating_result.outcome_map
             )
 
-        await self._publish_rating_changes(
-            summary.rating_type,
-            old_ratings,
-            new_ratings,
-            rater.outcome_map
-        )
-
-        # TODO: If we add hidden ratings, make sure to check for them here.
-        # Hidden ratings should not affect global.
-        if summary.rating_type != RatingType.GLOBAL:
-            await self._perform_global_rating_adjustment(
-                rater, player_ratings, old_ratings
-            )
-
-    async def _perform_global_rating_adjustment(
-        self,
-        rater: GameRater,
-        player_ratings: Dict[PlayerID, PlayerRatings],
-        old_ratings: Dict[PlayerID, Rating]
-    ):
-        # Now perform global rating adjustments.
-        async with self._db.acquire() as conn:
-            # Initialize the global ratings if needed.
-            # Note, this will create global rating entries for new players
-            # even if no rating adjustment is performed
-            old_global_ratings = await self._get_players_initialized_rating(
-                conn, player_ratings, RatingType.GLOBAL
-            )
-            new_global_ratings = self._get_global_rating_adjustment(
-                rater, old_ratings, old_global_ratings
-            )
-
-            # Now persist the changes for all players that get the adjustment,
-            # however, we don't want to update the game_player_stats entry here.
-            await self._persist_rating_changes(
-                conn,
-                rater.summary.game_id,
-                RatingType.GLOBAL,
-                old_global_ratings,
-                new_global_ratings,
-                rater.outcome_map,
-                update_game_player_stats=False
-            )
-
-        await self._publish_rating_changes(
-            RatingType.GLOBAL,
-            old_global_ratings,
-            new_global_ratings,
-            rater.outcome_map
-        )
-
-    def _get_global_rating_adjustment(
-        self,
-        rater: GameRater,
-        old_ratings: Dict[PlayerID, Rating],
-        old_global_ratings: Dict[PlayerID, Rating]
-    ) -> Dict[PlayerID, Rating]:
-        """
-        Perform global rating adjustment based on the matchmaker ratings. For
-        each player, this will rate the game with trueskill as if their
-        matchmaker rating was equal to their global rating. Adjustments are
-        only returned under certain conditions to prevent rating manipulation.
-        """
-        new_global_ratings = {}
-        for player_id in old_ratings.keys():
-            # Make a copy of the matchmaker ratings, but replace this player's
-            # rating with their global rating.
-            ratings = dict(old_ratings)
-            old_global_rating = old_global_ratings[player_id]
-            ratings[player_id] = old_global_rating
-
-            new_ratings = rater.compute_rating(ratings)
-            new_global_rating = new_ratings[player_id]
-            if (
-                old_global_rating.displayed() <
-                new_global_rating.displayed() <=
-                config.RATING_ADJUSTMENT_MAX_RATING
-            ):
-                new_global_ratings[player_id] = new_global_rating
-
-        return new_global_ratings
-
-    async def _get_players_initialized_rating(
+    async def _rate_for_leaderboard(
         self,
         conn,
+        game_id: int,
+        rating_type: str,
         player_ratings: Dict[PlayerID, PlayerRatings],
-        rating_type: str
-    ) -> Dict[PlayerID, Rating]:
+        rater: GameRater,
+        update_game_player_stats: bool = True
+    ) -> Optional[GameRatingResult]:
         """
-        Initialize and return one rating type for all players
+        Rates a game using a particular rating_type and GameRater.
         """
         uninitialized_ratings = {
             # Querying the key will create the value using rating
@@ -254,26 +211,53 @@ class RatingService(Service):
             for player_id in player_ratings.keys()
             if rating_type not in player_ratings[player_id]
         }
-        if uninitialized_ratings:
-            # These players have not played any games using this leaderboard
-            # yet, so we need to create the initial ratings. This also
-            # ensures that the journal will show accurate changes.
-            await self._create_initial_ratings(
-                conn,
-                rating_type,
-                uninitialized_ratings
-            )
-
-        return {
+        # Initialize the ratings we need
+        old_ratings = {
             player_id: Rating(*player_ratings[player_id][rating_type])
             for player_id in player_ratings.keys()
         }
+
+        new_ratings = rater.compute_rating(old_ratings)
+        if not new_ratings:
+            return None
+
+        need_initial_ratings = {
+            player_id: rating
+            for player_id, rating in uninitialized_ratings.items()
+            if player_id in new_ratings
+        }
+        if need_initial_ratings:
+            # Ensure that leaderboard entries exist before calling persist.
+            await self._create_initial_ratings(
+                conn,
+                rating_type,
+                need_initial_ratings
+            )
+
+        outcome_map = rater.get_outcome_map()
+        # Now persist the changes for all players that get the adjustment.
+        await self._persist_rating_changes(
+            conn,
+            game_id,
+            rating_type,
+            old_ratings,
+            new_ratings,
+            outcome_map,
+            update_game_player_stats=update_game_player_stats
+        )
+
+        return GameRatingResult(
+            rating_type,
+            old_ratings,
+            new_ratings,
+            outcome_map
+        )
 
     async def _create_initial_ratings(
         self,
         conn,
         rating_type: str,
-        ratings: Dict[PlayerID, Rating]
+        ratings: RatingDict
     ):
         assert self._rating_type_ids is not None
 
@@ -327,8 +311,8 @@ class RatingService(Service):
         conn,
         game_id: int,
         rating_type: str,
-        old_ratings: Dict[PlayerID, Rating],
-        new_ratings: Dict[PlayerID, Rating],
+        old_ratings: RatingDict,
+        new_ratings: RatingDict,
         outcomes: Dict[PlayerID, GameOutcome],
         update_game_player_stats: bool = True
     ) -> None:
@@ -474,8 +458,8 @@ class RatingService(Service):
     async def _publish_rating_changes(
         self,
         rating_type: str,
-        old_ratings: Dict[PlayerID, Rating],
-        new_ratings: Dict[PlayerID, Rating],
+        old_ratings: RatingDict,
+        new_ratings: RatingDict,
         outcomes: Dict[PlayerID, GameOutcome],
     ):
         for player_id, new_rating in new_ratings.items():

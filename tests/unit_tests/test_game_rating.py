@@ -16,7 +16,7 @@ from server.games import (
 )
 from server.games.game_results import GameOutcome
 from server.games.typedefs import TeamRatingSummary
-from server.rating import Rating, RatingType
+from server.rating import PlayerRatings, Rating, RatingType
 from server.rating_service.rating_service import RatingService
 from server.rating_service.typedefs import GameRatingSummary
 from tests.unit_tests.conftest import add_connected_players
@@ -44,11 +44,16 @@ async def rating_service(database, player_service):
     mock_message_queue_service = mock.Mock()
     mock_message_queue_service.publish = CoroutineMock()
 
-    mock_service = RatingService(database, player_service, mock_message_queue_service)
+    mock_service = RatingService(
+        database,
+        player_service,
+        mock_message_queue_service
+    )
 
     mock_service._persist_rating_changes = CoroutineMock()
+    mock_service._create_initial_ratings = CoroutineMock()
 
-    mock_ratings = {}
+    mock_ratings = defaultdict(dict)
 
     def set_mock_rating(player_id, rating_type, rating):
         nonlocal mock_ratings
@@ -56,23 +61,28 @@ async def rating_service(database, player_service):
         mock_service._logger.debug(
             f"Set mock {rating_type} rating for player {player_id}: {rating}"
         )
-        mock_ratings[(player_id, rating_type)] = rating
+        mock_ratings[player_id][rating_type] = rating
 
-    def get_mock_ratings(conn, player_ids, rating_type, **kwargs):
+    def get_mock_ratings(conn, player_ids, **kwargs):
         nonlocal mock_ratings
         nonlocal mock_service
-        values = {
-            player_id: mock_ratings.get(
-                (player_id, rating_type), Rating(1500, 500)
-            ) for player_id in player_ids
+        player_ratings = {
+            player_id: PlayerRatings(mock_service.leaderboards, init=False)
+            for player_id in player_ids
         }
+
+        for player_id in player_ids:
+            ratings = mock_ratings[player_id]
+            for rating_type, rating in ratings.items():
+                player_ratings[player_id][rating_type] = rating
+
         mock_service._logger.debug(
-            f"Retrieved mock {rating_type} rating for players {player_ids}: {values}"
+            f"Retrieved mock ratings for players {player_ids}: {player_ratings}"
         )
-        return values
+        return player_ratings
 
     mock_service.set_mock_rating = set_mock_rating
-    mock_service._get_players_initialized_rating = CoroutineMock(
+    mock_service._get_all_player_ratings = CoroutineMock(
         wraps=get_mock_ratings
     )
 
@@ -595,15 +605,15 @@ async def test_rate_game_only_one_survivor(custom_game, player_factory):
     assert results.rating_type == RatingType.GLOBAL
     for player, team in players:
         if team == win_team:
+            assert results.outcomes[player.id] is GameOutcome.VICTORY
             assert results.ratings[player.id] > Rating(
                 *player.ratings[RatingType.GLOBAL]
             )
-            assert results.outcomes[player.id] is GameOutcome.VICTORY
         else:
+            assert results.outcomes[player.id] is GameOutcome.DEFEAT
             assert results.ratings[player.id] < Rating(
                 *player.ratings[RatingType.GLOBAL]
             )
-            assert results.outcomes[player.id] is GameOutcome.DEFEAT
 
 
 async def test_rate_game_two_player_FFA(custom_game, player_factory):
@@ -1061,7 +1071,6 @@ async def do_test_rating_adjustment(
     team2 = set()
     teams = (team1, team2)
     for player_id, ratings in ratings.items():
-        _ = player_factory(player_id=player_id)
         for rating_type, rating in ratings.items():
             rating_service.set_mock_rating(player_id, rating_type, rating)
         # Odds on team1, evens on team2
@@ -1136,12 +1145,8 @@ async def test_rating_adjustment_1v1_ladder_newbies_global_pros(
                     2: pytest.approx((1235, 429), abs=1),
                 },
                 outcomes=IGNORED
-            ),
-            PersistedResults(
-                rating_type=RatingType.GLOBAL,
-                ratings={},
-                outcomes=IGNORED
             )
+            # No adjustment performed
         ]
     )
 
@@ -1315,7 +1320,7 @@ async def test_rating_adjustment_1v1_ladder_pro_vs_global_pro(
 async def test_rating_adjustment_2v2_newbies(rating_service, player_factory):
     IGNORED = object()
 
-    # Both players have no ratings yet
+    # All players have no ratings yet
     await do_test_rating_adjustment(
         rating_service,
         player_factory,
@@ -1390,7 +1395,7 @@ async def test_rating_adjustment_2v2_ladder_newbies_global_joes(
 async def test_rating_adjustment_3v3_newbies(rating_service, player_factory):
     IGNORED = object()
 
-    # Both players have no ratings yet
+    # All players have no ratings yet
     await do_test_rating_adjustment(
         rating_service,
         player_factory,

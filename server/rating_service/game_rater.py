@@ -2,12 +2,13 @@ from typing import Dict, List
 
 import trueskill
 
+from server.config import config
 from server.games.game_results import GameOutcome
 from server.rating import Rating
 from server.rating_service.typedefs import GameRatingSummary
 
 from ..decorators import with_logger
-from .typedefs import PlayerID
+from .typedefs import PlayerID, RatingDict
 
 
 class GameRatingError(Exception):
@@ -25,12 +26,12 @@ class GameRater:
         }
         self.player_ids = list(self.outcome_map.keys())
         self.team_outcomes = [team.outcome for team in summary.teams]
-        self.ranks = self._ranks_from_team_outcomes(self.team_outcomes)
+        self.ranks = _ranks_from_team_outcomes(self.team_outcomes)
 
     def compute_rating(
         self,
-        ratings: Dict[PlayerID, Rating]
-    ) -> Dict[PlayerID, Rating]:
+        ratings: RatingDict
+    ) -> RatingDict:
         rating_groups = [
             {
                 player_id: trueskill.Rating(*ratings[player_id])
@@ -52,13 +53,63 @@ class GameRater:
 
         return player_rating_map
 
-    @staticmethod
-    def _ranks_from_team_outcomes(outcomes: List[GameOutcome]) -> List[int]:
-        if outcomes == [GameOutcome.DRAW, GameOutcome.DRAW]:
-            return [0, 0]
-        elif outcomes == [GameOutcome.VICTORY, GameOutcome.DEFEAT]:
-            return [0, 1]
-        elif outcomes == [GameOutcome.DEFEAT, GameOutcome.VICTORY]:
-            return [1, 0]
-        else:
-            raise GameRatingError(f"Inconsistent outcomes {outcomes}")
+    def get_outcome_map(self) -> Dict[PlayerID, GameOutcome]:
+        return self.outcome_map
+
+
+@with_logger
+class AdjustmentGameRater(GameRater):
+    """GameRater for performing adjustments using another GameRater"""
+
+    def __init__(self, rater: GameRater, base_ratings: RatingDict):
+        self.rater = rater
+        self.base_ratings = base_ratings
+
+    def compute_rating(
+        self,
+        ratings: RatingDict
+    ) -> RatingDict:
+        """
+        Perform rating adjustment based on another set of ratings. For
+        each player, this will rate the game with trueskill as if they
+        played this game with the rating we are adjusting instead of the
+        base rating. Adjustments are only returned under certain conditions to
+        prevent rating manipulation.
+        """
+        new_adjusted_ratings = {}
+        for player_id in self.base_ratings.keys():
+            # Make a copy of the base ratings, but substitute this player's
+            # rating with the rating we are adjusting.
+            old_ratings = dict(self.base_ratings)
+            old_adjusted_rating = ratings[player_id]
+            old_ratings[player_id] = old_adjusted_rating
+
+            new_ratings = self.rater.compute_rating(old_ratings)
+            new_adjusted_rating = new_ratings[player_id]
+            self._logger.debug(
+                "Got new adjusted rating for player %d: %s",
+                player_id,
+                new_adjusted_rating
+            )
+            if (
+                old_adjusted_rating.displayed() <
+                new_adjusted_rating.displayed() <=
+                config.RATING_ADJUSTMENT_MAX_RATING
+            ):
+                new_adjusted_ratings[player_id] = new_adjusted_rating
+
+        return new_adjusted_ratings
+
+    def get_outcome_map(self) -> Dict[PlayerID, GameOutcome]:
+        return self.rater.outcome_map
+
+
+def _ranks_from_team_outcomes(outcomes: List[GameOutcome]) -> List[int]:
+    if outcomes == [GameOutcome.DRAW, GameOutcome.DRAW]:
+        return [0, 0]
+    elif outcomes == [GameOutcome.VICTORY, GameOutcome.DEFEAT]:
+        return [0, 1]
+    elif outcomes == [GameOutcome.DEFEAT, GameOutcome.VICTORY]:
+        return [1, 0]
+    else:
+        raise GameRatingError(f"Inconsistent outcomes {outcomes}")

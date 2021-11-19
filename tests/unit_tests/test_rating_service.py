@@ -17,6 +17,7 @@ from server.games.typedefs import (
     ValidityState
 )
 from server.rating import Leaderboard, Rating, RatingType
+from server.rating_service.game_rater import GameRater
 from server.rating_service.rating_service import (
     RatingService,
     ServiceNotReadyError
@@ -166,34 +167,6 @@ async def test_load_from_database(uninitialized_service):
     }
 
 
-async def test_get_players_ratings_global(semiinitialized_service):
-    service = semiinitialized_service
-    player_id = 50
-    true_rating = Rating(1200, 250)
-    async with service._db.acquire() as conn:
-        player_ratings = await service._get_all_player_ratings(
-            conn, [player_id]
-        )
-        ratings = await service._get_players_initialized_rating(
-            conn, player_ratings, RatingType.GLOBAL
-        )
-    assert ratings[player_id] == true_rating
-
-
-async def test_get_players_ratings_ladder(semiinitialized_service):
-    service = semiinitialized_service
-    player_id = 50
-    true_rating = Rating(1300, 400)
-    async with service._db.acquire() as conn:
-        player_ratings = await service._get_all_player_ratings(
-            conn, [player_id]
-        )
-        ratings = await service._get_players_initialized_rating(
-            conn, player_ratings, RatingType.LADDER_1V1
-        )
-    assert ratings[player_id] == true_rating
-
-
 async def get_all_ratings(db: FAFDatabase, player_id: int):
     rating_sql = select([leaderboard_rating]).where(
         and_(leaderboard_rating.c.login_id == player_id)
@@ -206,23 +179,45 @@ async def get_all_ratings(db: FAFDatabase, player_id: int):
     return rows
 
 
-async def test_get_new_player_rating_created(semiinitialized_service):
+async def test_new_player_rating_created(semiinitialized_service):
     """
-    Upon rating games of players without a rating entry in both new and legacy
-    tables, a new rating entry should be created.
+    Upon rating games of players without a rating entry, a new rating entry
+    should be created.
     """
     service = semiinitialized_service
     player_id = 300
     rating_type = RatingType.LADDER_1V1
+    summary = GameRatingSummary(
+        1,
+        RatingType.GLOBAL,
+        [
+            TeamRatingSummary(
+                GameOutcome.VICTORY,
+                {player_id},
+                [ArmyResult(player_id, 0, "VICTORY", [])]
+            ),
+            TeamRatingSummary(
+                GameOutcome.DEFEAT,
+                {2},
+                [ArmyResult(2, 1, "DEFEAT", [])],
+            ),
+        ],
+    )
 
     db_ratings = await get_all_ratings(service._db, player_id)
     assert len(db_ratings) == 0  # Rating does not exist yet
 
     async with service._db.acquire() as conn:
         player_ratings = await service._get_all_player_ratings(
-            conn, [player_id]
+            conn, [player_id, 2]
         )
-        await service._get_players_initialized_rating(conn, player_ratings, rating_type)
+        await service._rate_for_leaderboard(
+            conn,
+            summary.game_id,
+            rating_type,
+            player_ratings,
+            GameRater(summary)
+        )
 
     db_ratings = await get_all_ratings(service._db, player_id)
     assert len(db_ratings) == 1  # Rating has been created
