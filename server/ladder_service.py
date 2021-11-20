@@ -32,7 +32,7 @@ from .db.models import (
 )
 from .decorators import with_logger
 from .game_service import GameService
-from .games import InitMode, LadderGame
+from .games import LadderGame
 from .matchmaker import MapPool, MatchmakerQueue, OnMatchedCallback, Search
 from .players import Player, PlayerState
 from .types import GameLaunchOptions, Map, NeroxisGeneratedMap
@@ -418,7 +418,6 @@ class LadderService(Service):
                 rating_type=queue.rating_type,
                 max_players=len(all_players)
             )
-            game.init_mode = InitMode.AUTO_LOBBY
             game.map_file_path = map_path
             game.set_name_unchecked(game_name(team1, team2))
 

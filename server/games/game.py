@@ -36,7 +36,6 @@ from .typedefs import (
     GameConnectionState,
     GameState,
     GameType,
-    InitMode,
     ValidityState,
     Victory,
     VisibilityState
@@ -51,7 +50,6 @@ class Game():
     """
     Object that lasts for the lifetime of a game on FAF.
     """
-    init_mode = InitMode.NORMAL_LOBBY
     game_type = GameType.CUSTOM
 
     def __init__(

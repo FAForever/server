@@ -11,7 +11,7 @@ from server.db.models import ban, friends_and_foes
 from server.exceptions import BanError, ClientError
 from server.game_service import GameService
 from server.gameconnection import GameConnection
-from server.games import CustomGame, Game, GameState, InitMode, VisibilityState
+from server.games import CustomGame, Game, GameState, GameType, VisibilityState
 from server.geoip_service import GeoIpService
 from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
@@ -315,7 +315,6 @@ async def test_command_game_join_calls_join_game(
         "uid": 42,
         "mod": "faf",
         "name": "Test Game Name",
-        "init_mode": InitMode.NORMAL_LOBBY.value,
         "game_type": "custom",
         "rating_type": "global",
     }
@@ -355,7 +354,6 @@ async def test_command_game_join_uid_as_str(
         "mod": "faf",
         "uid": 42,
         "name": "Test Game Name",
-        "init_mode": InitMode.NORMAL_LOBBY.value,
         "game_type": "custom",
         "rating_type": "global",
     }
@@ -374,7 +372,7 @@ async def test_command_game_join_without_password(
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game)
     game.state = GameState.LOBBY
-    game.init_mode = InitMode.NORMAL_LOBBY
+    game.game_type = GameType.CUSTOM
     game.password = "password"
     game.game_mode = "faf"
     game.id = 42
@@ -419,7 +417,7 @@ async def test_command_game_join_game_not_found(
     })
 
 
-async def test_command_game_join_game_bad_init_mode(
+async def test_command_game_join_matchmaker_game(
     lobbyconnection,
     game_service,
     test_game_info,
@@ -429,7 +427,7 @@ async def test_command_game_join_game_bad_init_mode(
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game)
     game.state = GameState.LOBBY
-    game.init_mode = InitMode.AUTO_LOBBY
+    game.game_type = GameType.MATCHMAKER
     game.id = 42
     game.host = players.hosting
     game_service._games[42] = game

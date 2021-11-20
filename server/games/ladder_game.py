@@ -7,15 +7,13 @@ from server.rating import RatingType
 
 from .game import Game
 from .game_results import ArmyOutcome, GameOutcome
-from .typedefs import FeaturedModType, GameType, InitMode
+from .typedefs import FeaturedModType, GameType
 
 logger = logging.getLogger(__name__)
 
 
 class LadderGame(Game):
     """Class for 1v1 ladder games"""
-
-    init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
 
     def __init__(self, id_, *args, **kwargs):

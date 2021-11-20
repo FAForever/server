@@ -49,7 +49,6 @@ async def test_game_launch_message(lobby_server):
         "uid": 41956,
         "mod": "ladder1v1",
         "name": "ladder1 Vs ladder2",
-        "init_mode": 1,
         "game_type": "matchmaker",
         "rating_type": "ladder_1v1",
         "team": 2,

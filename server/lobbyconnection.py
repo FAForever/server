@@ -40,7 +40,7 @@ from .games import (
     FeaturedModType,
     GameConnectionState,
     GameState,
-    InitMode,
+    GameType,
     VisibilityState
 )
 from .geoip_service import GeoIpService
@@ -885,7 +885,7 @@ class LobbyConnection:
             })
             return
 
-        if game.init_mode != InitMode.NORMAL_LOBBY:
+        if game.game_type not in (GameType.CUSTOM, GameType.COOP):
             raise ClientError("The game cannot be joined in this way.")
 
         if game.password != password:
@@ -1024,8 +1024,6 @@ class LobbyConnection:
             # options are. Currently, options for ladder are hardcoded into the
             # client.
             "name": game.name,
-            # DEPRICATED: init_mode can be inferred from game_type
-            "init_mode": game.init_mode.value,
             "game_type": game.game_type.value,
             "rating_type": game.rating_type,
             **options._asdict()

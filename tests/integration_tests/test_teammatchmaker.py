@@ -103,7 +103,7 @@ async def test_game_matchmaking(lobby_server):
     uid = set(msg["uid"] for msg in msgs)
     assert len(uid) == 1
     for msg in msgs:
-        assert msg["init_mode"] == 1
+        assert msg["game_type"] == "matchmaker"
         assert "None" not in msg["name"]
         assert msg["mod"] == "faf"
         assert msg["expected_players"] == 4
@@ -157,7 +157,7 @@ async def test_game_matchmaking_multiqueue(lobby_server):
     uid = set(msg["uid"] for msg in msgs)
     assert len(uid) == 1
     for msg in msgs:
-        assert msg["init_mode"] == 1
+        assert msg["game_type"] == "matchmaker"
         assert "None" not in msg["name"]
         assert msg["mod"] == "faf"
         assert msg["expected_players"] == 4
@@ -237,7 +237,7 @@ async def test_game_matchmaking_with_parties(lobby_server):
     uid = set(msg["uid"] for msg in msgs)
     assert len(uid) == 1
     for i, msg in enumerate(msgs):
-        assert msg["init_mode"] == 1
+        assert msg["game_type"] == "matchmaker"
         assert "None" not in msg["name"]
         assert msg["mod"] == "faf"
         assert msg["expected_players"] == 4
@@ -305,7 +305,7 @@ async def test_newbie_matchmaking_with_parties(lobby_server):
     uid = set(msg["uid"] for msg in msgs)
     assert len(uid) == 1
     for msg in msgs:
-        assert msg["init_mode"] == 1
+        assert msg["game_type"] == "matchmaker"
         assert "None" not in msg["name"]
         assert msg["mod"] == "faf"
         assert msg["expected_players"] == 4

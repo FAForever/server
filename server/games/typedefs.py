@@ -23,12 +23,6 @@ class GameConnectionState(Enum):
 
 
 @unique
-class InitMode(Enum):
-    NORMAL_LOBBY = 0
-    AUTO_LOBBY = 1
-
-
-@unique
 class GameType(Enum):
     COOP = "coop"
     CUSTOM = "custom"
@@ -218,7 +212,6 @@ __all__ = (
     "GameConnectionState",
     "GameState",
     "GameType",
-    "InitMode",
     "TeamRatingSummary",
     "ValidityState",
     "Victory",
