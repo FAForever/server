@@ -406,11 +406,11 @@ async def test_handle_action_GameOption(
     game: Game,
     game_connection: GameConnection
 ):
-    game.gameOptions = {"AIReplacement": "Off"}
+    game.game_options = {"AIReplacement": "Off"}
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
-    assert game.gameOptions["Victory"] == Victory.SANDBOX
+    assert game.game_options["Victory"] == Victory.SANDBOX
     await game_connection.handle_action("GameOption", ["AIReplacement", "On"])
-    assert game.gameOptions["AIReplacement"] == "On"
+    assert game.game_options["AIReplacement"] == "On"
     await game_connection.handle_action("GameOption", ["Slots", "7"])
     assert game.max_players == 7
     # I don't know what these paths actually look like
@@ -419,7 +419,7 @@ async def test_handle_action_GameOption(
     await game_connection.handle_action("GameOption", ["Title", "All welcome"])
     assert game.name == "All welcome"
     await game_connection.handle_action("GameOption", ["ArbitraryKey", "ArbitraryValue"])
-    assert game.gameOptions["ArbitraryKey"] == "ArbitraryValue"
+    assert game.game_options["ArbitraryKey"] == "ArbitraryValue"
 
 
 async def test_handle_action_GameOption_not_host(
@@ -428,9 +428,9 @@ async def test_handle_action_GameOption_not_host(
     players
 ):
     game_connection.player = players.joining
-    game.gameOptions = {"Victory": "asdf"}
+    game.game_options = {"Victory": "asdf"}
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
-    assert game.gameOptions == {"Victory": "asdf"}
+    assert game.game_options == {"Victory": "asdf"}
 
 
 async def test_json_stats(

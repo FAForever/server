@@ -559,7 +559,7 @@ class LadderService(Service):
 
             game_options = queue.get_game_options()
             if game_options:
-                game.gameOptions.update(game_options)
+                game.game_options.update(game_options)
 
             mapname = re.match("maps/(.+).zip", map_path).group(1)
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.

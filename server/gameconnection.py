@@ -21,8 +21,7 @@ from .games import (
     GameConnectionState,
     GameError,
     GameState,
-    ValidityState,
-    Victory
+    ValidityState
 )
 from .games.typedefs import FA
 from .player_service import PlayerService
@@ -228,26 +227,7 @@ class GameConnection(GpgNetServerProtocol):
         if not self.is_host():
             return
 
-        if key == "Victory":
-            self.game.gameOptions["Victory"] = Victory.__members__.get(
-                value.upper(), None
-            )
-        else:
-            self.game.gameOptions[key] = value
-
-        if key == "Slots":
-            self.game.max_players = int(value)
-        elif key == "ScenarioFile":
-            raw = repr(value)
-            self.game.map_scenario_path = \
-                raw.replace("\\", "/").replace("//", "/").replace("'", "")
-            self.game.map_file_path = "maps/{}.zip".format(
-                self.game.map_scenario_path.split("/")[2].lower()
-            )
-        elif key == "Title":
-            with contextlib.suppress(ValueError):
-                self.game.name = value
-
+        self.game.set_game_option(key, value)
         self._mark_dirty()
 
     async def handle_game_mods(self, mode: Any, args: list[Any]):

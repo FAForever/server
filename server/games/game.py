@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import json
 import logging
 import time
@@ -87,7 +88,6 @@ class Game:
         )
         self.id = id_
         self.visibility = VisibilityState.PUBLIC
-        self.max_players = max_players
         self.host = host
         self.name = name
         self.map_id = None
@@ -107,7 +107,8 @@ class Game:
         self._connections = {}
         self._configured_player_ids: set[int] = set()
         self.enforce_rating = False
-        self.gameOptions = {
+        self.game_options = {
+            "Slots": max_players,
             "FogOfWar": "explored",
             "GameSpeed": "normal",
             "Victory": Victory.DEMORALIZATION,
@@ -154,6 +155,10 @@ class Game:
         """
         max_len = game_stats.c.gameName.type.length
         self._name = value[:max_len]
+
+    @property
+    def max_players(self) -> Optional[int]:
+        return self.get_game_option("Slots")
 
     @property
     def armies(self) -> frozenset[int]:
@@ -327,7 +332,7 @@ class Game:
         try:
             if (
                 len(self._army_stats_list) == 0
-                or self.gameOptions["CheatsEnabled"] != "false"
+                or self.game_options["CheatsEnabled"] != "false"
             ):
                 return
 
@@ -565,18 +570,42 @@ class Game:
             self.get_team_sets(),
         )
 
-    def set_player_option(self, player_id: int, key: str, value: Any):
-        """
-        Set game-associative options for given player, by id
-        """
-        self._configured_player_ids.add(player_id)
-        self._player_options[player_id][key] = value
+    def get_game_option(self, key: str, default: Any = None) -> Optional[Any]:
+        return self.game_options.get(key, default)
+
+    def set_game_option(self, key: str, value: Any):
+        # Type transformations
+        if key == "Victory":
+            value = Victory.__members__.get(value.upper())
+        elif key == "Slots":
+            value = int(value)
+
+        self.game_options[key] = value
+
+        # Additional attributes
+        if key == "ScenarioFile":
+            raw = repr(value)
+            self.map_scenario_path = \
+                raw.replace("\\", "/").replace("//", "/").replace("'", "")
+            self.game.map_file_path = "maps/{}.zip".format(
+                self.map_scenario_path.split("/")[2].lower()
+            )
+        elif key == "Title":
+            with contextlib.suppress(ValueError):
+                self.name = value
 
     def get_player_option(self, player_id: int, key: str) -> Optional[Any]:
         """
         Retrieve game-associative options for given player, by their uid
         """
         return self._player_options[player_id].get(key)
+
+    def set_player_option(self, player_id: int, key: str, value: Any):
+        """
+        Set game-associative options for given player, by id
+        """
+        self._configured_player_ids.add(player_id)
+        self._player_options[player_id][key] = value
 
     def set_ai_option(self, name, key, value):
         """
@@ -662,11 +691,11 @@ class Game:
     async def _validate_game_options(
         self, valid_options: dict[str, tuple[Any, ValidityState]]
     ) -> bool:
-        for key, value in self.gameOptions.items():
+        for key, value in self.game_options.items():
             if key in valid_options:
                 (valid_value, validity_state) = valid_options[key]
-                if valid_value != self.gameOptions[key]:
                     await self.mark_invalid(validity_state)
+                if valid_value != self.game_options[key]:
                     return False
         return True
 
@@ -733,7 +762,7 @@ class Game:
         # In some cases, games can be invalidated while running: we check for those cases when
         # the game ends and update this record as appropriate.
 
-        game_type = str(self.gameOptions.get("Victory").value)
+        game_type = str(self.get_game_option("Victory").value)
 
         async with self._db.acquire() as conn:
             await conn.execute(
