@@ -1098,6 +1098,11 @@ async def do_test_rating_adjustment(
         assert result.outcomes == {**team1_outcomes, **team2_outcomes}
 
 
+# These ratings show up a lot because our tests have a lot of new players
+NEWBIE_1V1_WINNER = (1766, 429)
+NEWBIE_1V1_LOSER = (1235, 429)
+
+
 async def test_rating_adjustment_1v1_newbies(rating_service, player_factory):
     IGNORED = object()
 
@@ -1110,14 +1115,14 @@ async def test_rating_adjustment_1v1_newbies(rating_service, player_factory):
             PersistedResults(
                 rating_type=RatingType.LADDER_1V1,
                 ratings={
-                    1: pytest.approx((1766, 429), abs=1),
-                    2: pytest.approx((1235, 429), abs=1),
+                    1: pytest.approx(NEWBIE_1V1_WINNER, abs=1),
+                    2: pytest.approx(NEWBIE_1V1_LOSER, abs=1),
                 },
                 outcomes=IGNORED
             ),
             PersistedResults(
                 rating_type=RatingType.GLOBAL,
-                ratings={1: pytest.approx((1766, 429), abs=1)},
+                ratings={1: pytest.approx(NEWBIE_1V1_WINNER, abs=1)},
                 outcomes=IGNORED
             )
         ]
@@ -1141,8 +1146,8 @@ async def test_rating_adjustment_1v1_ladder_newbies_global_pros(
             PersistedResults(
                 rating_type=RatingType.LADDER_1V1,
                 ratings={
-                    1: pytest.approx((1766, 429), abs=1),
-                    2: pytest.approx((1235, 429), abs=1),
+                    1: pytest.approx(NEWBIE_1V1_WINNER, abs=1),
+                    2: pytest.approx(NEWBIE_1V1_LOSER, abs=1),
                 },
                 outcomes=IGNORED
             )
@@ -1305,7 +1310,7 @@ async def test_rating_adjustment_1v1_ladder_pro_vs_global_pro(
             PersistedResults(
                 rating_type=RatingType.GLOBAL,
                 ratings={
-                    1: pytest.approx((1766, 429), abs=1),
+                    1: pytest.approx(NEWBIE_1V1_WINNER, abs=1),
                 },
                 outcomes=IGNORED
             )
