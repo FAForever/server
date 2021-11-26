@@ -1179,12 +1179,8 @@ async def test_rating_adjustment_1v1_low_ladder_high_global(
                     2: pytest.approx((677, 122), abs=1),
                 },
                 outcomes=IGNORED
-            ),
-            PersistedResults(
-                rating_type=RatingType.GLOBAL,
-                ratings={1: pytest.approx((1006, 75), abs=1)},
-                outcomes=IGNORED
             )
+            # No adjustment performed
         ]
     )
 
@@ -1383,7 +1379,6 @@ async def test_rating_adjustment_2v2_ladder_newbies_global_joes(
             PersistedResults(
                 rating_type=RatingType.GLOBAL,
                 ratings={
-                    1: pytest.approx((1027, 149), abs=1),
                     3: pytest.approx((1688, 466), abs=1),
                 },
                 outcomes=IGNORED
@@ -1463,7 +1458,6 @@ async def test_rating_adjustment_3v3_ladder_newbies_global_joes(
             PersistedResults(
                 rating_type=RatingType.GLOBAL,
                 ratings={
-                    1: pytest.approx((1020, 150), abs=1),
                     3: pytest.approx((1653, 478), abs=1),
                     5: pytest.approx((1653, 478), abs=1),
                 },

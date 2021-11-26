@@ -70,18 +70,22 @@ class AdjustmentGameRater(GameRater):
         ratings: RatingDict
     ) -> RatingDict:
         """
-        Perform rating adjustment based on another set of ratings. For
+        Adjust one rating to bring it closer to a different base rating. For
         each player, this will rate the game with trueskill as if they
         played this game with the rating we are adjusting instead of the
         base rating. Adjustments are only returned under certain conditions to
         prevent rating manipulation.
         """
         new_adjusted_ratings = {}
-        for player_id in self.base_ratings.keys():
+        for player_id, base_rating in self.base_ratings.items():
+            old_adjusted_rating = ratings[player_id]
+            # Since we only adjust upwards, we should not adjust ratings that
+            # are already higher than the base.
+            if base_rating.displayed() < old_adjusted_rating.displayed():
+                continue
             # Make a copy of the base ratings, but substitute this player's
             # rating with the rating we are adjusting.
             old_ratings = dict(self.base_ratings)
-            old_adjusted_rating = ratings[player_id]
             old_ratings[player_id] = old_adjusted_rating
 
             new_ratings = self.rater.compute_rating(old_ratings)
