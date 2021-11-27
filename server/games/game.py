@@ -877,7 +877,7 @@ class Game():
 
         if (
             self.enforce_rating_range
-            and player.get_displayed_rating(self.rating_type)
+            and player.ratings[self.rating_type].displayed()
             not in self.displayed_rating_range
         ):
             return False

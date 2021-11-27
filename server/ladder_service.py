@@ -400,7 +400,7 @@ class LadderService(Service):
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
             rating = min(
-                player.get_displayed_rating(queue.rating_type)
+                player.ratings[queue.rating_type].displayed()
                 for player in all_players
             )
             pool = queue.get_map_pool_for_rating(rating)

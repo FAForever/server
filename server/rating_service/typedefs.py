@@ -1,19 +1,11 @@
 from typing import Dict, List, NamedTuple
 
-from trueskill import Rating
-
 from server.games.game_results import GameOutcome
 from server.games.typedefs import TeamRatingSummary
+from server.rating import Rating
 
 PlayerID = int
-
-
-class TeamRatingData(NamedTuple):
-    outcome: GameOutcome
-    ratings: Dict[int, Rating]
-
-
-GameRatingData = List[TeamRatingData]
+RatingDict = Dict[PlayerID, Rating]
 
 
 class GameRatingSummary(NamedTuple):
@@ -46,6 +38,13 @@ class GameRatingSummary(NamedTuple):
                 for summary in game_info["teams"]
             ],
         )
+
+
+class GameRatingResult(NamedTuple):
+    rating_type: str
+    old_ratings: RatingDict
+    new_ratings: RatingDict
+    outcome_map: Dict[PlayerID, GameOutcome]
 
 
 class RatingServiceError(Exception):

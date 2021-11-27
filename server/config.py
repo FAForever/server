@@ -82,6 +82,7 @@ class ConfigurationStore:
         self.NEWBIE_MIN_GAMES = 10
         self.START_RATING_MEAN = 1500
         self.START_RATING_DEV = 500
+        self.RATING_ADJUSTMENT_MAX_RATING = 1400
         self.HIGH_RATED_PLAYER_MIN_RATING = 1400
         self.TOP_PLAYER_MIN_RATING = 2000
 
