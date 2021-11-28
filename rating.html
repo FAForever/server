@@ -32,15 +32,37 @@ Type definitions for player ratings
 &#34;&#34;&#34;
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Set, Tuple, TypeVar, Union
+from typing import Dict, NamedTuple, Optional, Set, Tuple, Union
 
 import trueskill
 
 from server.config import config
 from server.weakattr import WeakAttribute
 
-Rating = Tuple[float, float]
-V = TypeVar(&#34;V&#34;)
+AnyRating = Union[&#34;Rating&#34;, trueskill.Rating, Tuple[float, float]]
+
+
+class Rating(NamedTuple):
+    &#34;&#34;&#34;
+    A container for holding a mean, deviation pair and computing the displayed
+    rating.
+
+    Uses mean, dev to differentiate from the trueskill.Rating type which uses
+    mu, sigma.
+    &#34;&#34;&#34;
+    mean: float
+    dev: float
+
+    def of(value: AnyRating) -&gt; &#34;Rating&#34;:
+        if isinstance(value, trueskill.Rating):
+            return Rating(value.mu, value.sigma)
+        elif isinstance(value, Rating):
+            return value
+
+        return Rating(*value)
+
+    def displayed(self) -&gt; float:
+        return self.mean - 3 * self.dev
 
 
 @dataclass(init=False)
@@ -93,23 +115,14 @@ class PlayerRatings(Dict[str, Rating]):
             _ = self[RatingType.GLOBAL]
             _ = self[RatingType.LADDER_1V1]
 
-    def __setitem__(
-        self,
-        rating_type: str,
-        value: Union[Rating, trueskill.Rating],
-    ) -&gt; None:
-        if isinstance(value, trueskill.Rating):
-            rating = (value.mu, value.sigma)
-        else:
-            rating = value
-
+    def __setitem__(self, rating_type: str, value: AnyRating) -&gt; None:
         self.transient.discard(rating_type)
         # This could be optimized further by walking backwards along the
         # initialization chain and only unmarking the ratings we come accross,
         # but this adds complexity so we won&#39;t bother unless it really becomes
         # a performance bottleneck, which is unlikely.
         self.clean.clear()
-        super().__setitem__(rating_type, rating)
+        super().__setitem__(rating_type, Rating.of(value))
 
     def __getitem__(
         self,
@@ -148,23 +161,25 @@ class PlayerRatings(Dict[str, Rating]):
 
         history.add(rating_type)
         init_rating_type = leaderboard.initializer.technical_name
-        mean, dev = self.__getitem__(init_rating_type, history=history)
+        rating = self.__getitem__(init_rating_type, history=history)
 
-        if dev &gt; 250 or init_rating_type in self.transient:
-            return (mean, dev)
+        if rating.dev &gt; 250 or init_rating_type in self.transient:
+            return rating
 
-        return (mean, min(dev + 150, 250))
+        return Rating(rating.mean, min(rating.dev + 150, 250))
 
     def update(self, other: Dict[str, Rating]):
         self.transient -= set(other)
         self.clean.clear()
         if isinstance(other, PlayerRatings):
             self.transient |= other.transient
+        else:
+            other = {key: Rating.of(value) for key, value in other.items()}
         super().update(other)
 
 
 def default_rating() -&gt; Rating:
-    return (config.START_RATING_MEAN, config.START_RATING_DEV)
+    return Rating(config.START_RATING_MEAN, config.START_RATING_DEV)
 
 
 class InclusiveRange():
@@ -205,7 +220,7 @@ class InclusiveRange():
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="server.rating.default_rating"><code class="name flex">
-<span>def <span class="ident">default_rating</span></span>(<span>) ‑> Tuple[float, float]</span>
+<span>def <span class="ident">default_rating</span></span>(<span>) ‑> <a title="server.rating.Rating" href="#server.rating.Rating">Rating</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -214,7 +229,7 @@ class InclusiveRange():
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def default_rating() -&gt; Rating:
-    return (config.START_RATING_MEAN, config.START_RATING_DEV)</code></pre>
+    return Rating(config.START_RATING_MEAN, config.START_RATING_DEV)</code></pre>
 </details>
 </dd>
 </dl>
@@ -370,23 +385,14 @@ dict(one=1, two=2)</p></div>
             _ = self[RatingType.GLOBAL]
             _ = self[RatingType.LADDER_1V1]
 
-    def __setitem__(
-        self,
-        rating_type: str,
-        value: Union[Rating, trueskill.Rating],
-    ) -&gt; None:
-        if isinstance(value, trueskill.Rating):
-            rating = (value.mu, value.sigma)
-        else:
-            rating = value
-
+    def __setitem__(self, rating_type: str, value: AnyRating) -&gt; None:
         self.transient.discard(rating_type)
         # This could be optimized further by walking backwards along the
         # initialization chain and only unmarking the ratings we come accross,
         # but this adds complexity so we won&#39;t bother unless it really becomes
         # a performance bottleneck, which is unlikely.
         self.clean.clear()
-        super().__setitem__(rating_type, rating)
+        super().__setitem__(rating_type, Rating.of(value))
 
     def __getitem__(
         self,
@@ -425,18 +431,20 @@ dict(one=1, two=2)</p></div>
 
         history.add(rating_type)
         init_rating_type = leaderboard.initializer.technical_name
-        mean, dev = self.__getitem__(init_rating_type, history=history)
+        rating = self.__getitem__(init_rating_type, history=history)
 
-        if dev &gt; 250 or init_rating_type in self.transient:
-            return (mean, dev)
+        if rating.dev &gt; 250 or init_rating_type in self.transient:
+            return rating
 
-        return (mean, min(dev + 150, 250))
+        return Rating(rating.mean, min(rating.dev + 150, 250))
 
     def update(self, other: Dict[str, Rating]):
         self.transient -= set(other)
         self.clean.clear()
         if isinstance(other, PlayerRatings):
             self.transient |= other.transient
+        else:
+            other = {key: Rating.of(value) for key, value in other.items()}
         super().update(other)</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -447,7 +455,7 @@ dict(one=1, two=2)</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.rating.PlayerRatings.update"><code class="name flex">
-<span>def <span class="ident">update</span></span>(<span>self, other: Dict[str, Tuple[float, float]])</span>
+<span>def <span class="ident">update</span></span>(<span>self, other: Dict[str, <a title="server.rating.Rating" href="#server.rating.Rating">Rating</a>])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>D.update([E, ]**F) -&gt; None.
@@ -467,7 +475,94 @@ D[k] = F[k]</p></div>
     self.clean.clear()
     if isinstance(other, PlayerRatings):
         self.transient |= other.transient
+    else:
+        other = {key: Rating.of(value) for key, value in other.items()}
     super().update(other)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="server.rating.Rating"><code class="flex name class">
+<span>class <span class="ident">Rating</span></span>
+<span>(</span><span>mean: float, dev: float)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A container for holding a mean, deviation pair and computing the displayed
+rating.</p>
+<p>Uses mean, dev to differentiate from the trueskill.Rating type which uses
+mu, sigma.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Rating(NamedTuple):
+    &#34;&#34;&#34;
+    A container for holding a mean, deviation pair and computing the displayed
+    rating.
+
+    Uses mean, dev to differentiate from the trueskill.Rating type which uses
+    mu, sigma.
+    &#34;&#34;&#34;
+    mean: float
+    dev: float
+
+    def of(value: AnyRating) -&gt; &#34;Rating&#34;:
+        if isinstance(value, trueskill.Rating):
+            return Rating(value.mu, value.sigma)
+        elif isinstance(value, Rating):
+            return value
+
+        return Rating(*value)
+
+    def displayed(self) -&gt; float:
+        return self.mean - 3 * self.dev</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.tuple</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="server.rating.Rating.dev"><code class="name">var <span class="ident">dev</span> : float</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 1</p></div>
+</dd>
+<dt id="server.rating.Rating.mean"><code class="name">var <span class="ident">mean</span> : float</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 0</p></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="server.rating.Rating.displayed"><code class="name flex">
+<span>def <span class="ident">displayed</span></span>(<span>self) ‑> float</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def displayed(self) -&gt; float:
+    return self.mean - 3 * self.dev</code></pre>
+</details>
+</dd>
+<dt id="server.rating.Rating.of"><code class="name flex">
+<span>def <span class="ident">of</span></span>(<span>value: Union[ForwardRef('<a title="server.rating.Rating" href="#server.rating.Rating">Rating</a>'), trueskill.Rating, Tuple[float, float]]) ‑> <a title="server.rating.Rating" href="#server.rating.Rating">Rating</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def of(value: AnyRating) -&gt; &#34;Rating&#34;:
+    if isinstance(value, trueskill.Rating):
+        return Rating(value.mu, value.sigma)
+    elif isinstance(value, Rating):
+        return value
+
+    return Rating(*value)</code></pre>
 </details>
 </dd>
 </dl>
@@ -533,6 +628,15 @@ D[k] = F[k]</p></div>
 <h4><code><a title="server.rating.PlayerRatings" href="#server.rating.PlayerRatings">PlayerRatings</a></code></h4>
 <ul class="">
 <li><code><a title="server.rating.PlayerRatings.update" href="#server.rating.PlayerRatings.update">update</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.rating.Rating" href="#server.rating.Rating">Rating</a></code></h4>
+<ul class="">
+<li><code><a title="server.rating.Rating.dev" href="#server.rating.Rating.dev">dev</a></code></li>
+<li><code><a title="server.rating.Rating.displayed" href="#server.rating.Rating.displayed">displayed</a></code></li>
+<li><code><a title="server.rating.Rating.mean" href="#server.rating.Rating.mean">mean</a></code></li>
+<li><code><a title="server.rating.Rating.of" href="#server.rating.Rating.of">of</a></code></li>
 </ul>
 </li>
 <li>

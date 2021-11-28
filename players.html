@@ -117,10 +117,6 @@ class Player:
         else:
             self._faction = Faction.from_value(value)
 
-    def get_displayed_rating(self, rating_type: str) -&gt; float:
-        mean, dev = self.ratings[rating_type]
-        return mean - 3 * dev
-
     def power(self) -&gt; int:
         &#34;&#34;&#34;An artifact of the old permission system. The client still uses this
         number to determine if a player gets a special category in the user list
@@ -298,10 +294,6 @@ information about players.</p></div>
         else:
             self._faction = Faction.from_value(value)
 
-    def get_displayed_rating(self, rating_type: str) -&gt; float:
-        mean, dev = self.ratings[rating_type]
-        return mean - 3 * dev
-
     def power(self) -&gt; int:
         &#34;&#34;&#34;An artifact of the old permission system. The client still uses this
         number to determine if a player gets a special category in the user list
@@ -454,20 +446,6 @@ weak reference.</p></div>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="server.players.Player.get_displayed_rating"><code class="name flex">
-<span>def <span class="ident">get_displayed_rating</span></span>(<span>self, rating_type: str) ‑> float</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_displayed_rating(self, rating_type: str) -&gt; float:
-    mean, dev = self.ratings[rating_type]
-    return mean - 3 * dev</code></pre>
-</details>
-</dd>
 <dt id="server.players.Player.is_admin"><code class="name flex">
 <span>def <span class="ident">is_admin</span></span>(<span>self) ‑> bool</span>
 </code></dt>
@@ -677,11 +655,10 @@ such as "Moderator"</p></div>
 <ul>
 <li>
 <h4><code><a title="server.players.Player" href="#server.players.Player">Player</a></code></h4>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="server.players.Player.faction" href="#server.players.Player.faction">faction</a></code></li>
 <li><code><a title="server.players.Player.game" href="#server.players.Player.game">game</a></code></li>
 <li><code><a title="server.players.Player.game_connection" href="#server.players.Player.game_connection">game_connection</a></code></li>
-<li><code><a title="server.players.Player.get_displayed_rating" href="#server.players.Player.get_displayed_rating">get_displayed_rating</a></code></li>
 <li><code><a title="server.players.Player.is_admin" href="#server.players.Player.is_admin">is_admin</a></code></li>
 <li><code><a title="server.players.Player.is_moderator" href="#server.players.Player.is_moderator">is_moderator</a></code></li>
 <li><code><a title="server.players.Player.lobby_connection" href="#server.players.Player.lobby_connection">lobby_connection</a></code></li>

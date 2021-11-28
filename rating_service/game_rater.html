@@ -29,12 +29,14 @@
 <pre><code class="python">from typing import Dict, List
 
 import trueskill
-from trueskill import Rating
 
+from server.config import config
 from server.games.game_results import GameOutcome
+from server.rating import Rating
+from server.rating_service.typedefs import GameRatingSummary
 
 from ..decorators import with_logger
-from .typedefs import GameRatingData, PlayerID
+from .typedefs import PlayerID, RatingDict
 
 
 class GameRatingError(Exception):
@@ -43,35 +45,106 @@ class GameRatingError(Exception):
 
 @with_logger
 class GameRater:
-    @classmethod
-    def compute_rating(cls, rating_data: GameRatingData) -&gt; Dict[PlayerID, Rating]:
-        rating_groups = [team.ratings for team in rating_data]
-        team_outcomes = [team.outcome for team in rating_data]
-        ranks = cls._ranks_from_team_outcomes(team_outcomes)
+    def __init__(self, summary: GameRatingSummary):
+        self.summary = summary
+        self.outcome_map = {
+            player_id: team.outcome
+            for team in summary.teams
+            for player_id in team.player_ids
+        }
+        self.player_ids = list(self.outcome_map.keys())
+        self.team_outcomes = [team.outcome for team in summary.teams]
+        self.ranks = _ranks_from_team_outcomes(self.team_outcomes)
 
-        cls._logger.debug(&#34;Rating groups: %s&#34;, rating_groups)
-        cls._logger.debug(&#34;Ranks: %s&#34;, ranks)
+    def compute_rating(
+        self,
+        ratings: RatingDict
+    ) -&gt; RatingDict:
+        rating_groups = [
+            {
+                player_id: trueskill.Rating(*ratings[player_id])
+                for player_id in team.player_ids
+            }
+            for team in self.summary.teams
+        ]
 
-        new_rating_groups = trueskill.rate(rating_groups, ranks)
+        self._logger.debug(&#34;Rating groups: %s&#34;, rating_groups)
+        self._logger.debug(&#34;Ranks: %s&#34;, self.ranks)
+
+        new_rating_groups = trueskill.rate(rating_groups, self.ranks)
 
         player_rating_map = {
-            player_id: new_rating
+            player_id: Rating(*new_rating)
             for team in new_rating_groups
             for player_id, new_rating in team.items()
         }
 
         return player_rating_map
 
-    @staticmethod
-    def _ranks_from_team_outcomes(outcomes: List[GameOutcome]) -&gt; List[int]:
-        if outcomes == [GameOutcome.DRAW, GameOutcome.DRAW]:
-            return [0, 0]
-        elif outcomes == [GameOutcome.VICTORY, GameOutcome.DEFEAT]:
-            return [0, 1]
-        elif outcomes == [GameOutcome.DEFEAT, GameOutcome.VICTORY]:
-            return [1, 0]
-        else:
-            raise GameRatingError(f&#34;Inconsistent outcomes {outcomes}&#34;)</code></pre>
+    def get_outcome_map(self) -&gt; Dict[PlayerID, GameOutcome]:
+        return self.outcome_map
+
+
+@with_logger
+class AdjustmentGameRater(GameRater):
+    &#34;&#34;&#34;GameRater for performing adjustments using another GameRater&#34;&#34;&#34;
+
+    def __init__(self, rater: GameRater, base_ratings: RatingDict):
+        self.rater = rater
+        self.base_ratings = base_ratings
+
+    def compute_rating(
+        self,
+        ratings: RatingDict
+    ) -&gt; RatingDict:
+        &#34;&#34;&#34;
+        Adjust one rating to bring it closer to a different base rating. For
+        each player, this will rate the game with trueskill as if they
+        played this game with the rating we are adjusting instead of the
+        base rating. Adjustments are only returned under certain conditions to
+        prevent rating manipulation.
+        &#34;&#34;&#34;
+        new_adjusted_ratings = {}
+        for player_id, base_rating in self.base_ratings.items():
+            old_adjusted_rating = ratings[player_id]
+            # Since we only adjust upwards, we should not adjust ratings that
+            # are already higher than the base.
+            if base_rating.displayed() &lt; old_adjusted_rating.displayed():
+                continue
+            # Make a copy of the base ratings, but substitute this player&#39;s
+            # rating with the rating we are adjusting.
+            old_ratings = dict(self.base_ratings)
+            old_ratings[player_id] = old_adjusted_rating
+
+            new_ratings = self.rater.compute_rating(old_ratings)
+            new_adjusted_rating = new_ratings[player_id]
+            self._logger.debug(
+                &#34;Got new adjusted rating for player %d: %s&#34;,
+                player_id,
+                new_adjusted_rating
+            )
+            if (
+                old_adjusted_rating.displayed() &lt;
+                new_adjusted_rating.displayed() &lt;=
+                config.RATING_ADJUSTMENT_MAX_RATING
+            ):
+                new_adjusted_ratings[player_id] = new_adjusted_rating
+
+        return new_adjusted_ratings
+
+    def get_outcome_map(self) -&gt; Dict[PlayerID, GameOutcome]:
+        return self.rater.outcome_map
+
+
+def _ranks_from_team_outcomes(outcomes: List[GameOutcome]) -&gt; List[int]:
+    if outcomes == [GameOutcome.DRAW, GameOutcome.DRAW]:
+        return [0, 0]
+    elif outcomes == [GameOutcome.VICTORY, GameOutcome.DEFEAT]:
+        return [0, 1]
+    elif outcomes == [GameOutcome.DEFEAT, GameOutcome.VICTORY]:
+        return [1, 0]
+    else:
+        raise GameRatingError(f&#34;Inconsistent outcomes {outcomes}&#34;)</code></pre>
 </details>
 </section>
 <section>
@@ -83,8 +156,142 @@ class GameRater:
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="server.rating_service.game_rater.AdjustmentGameRater"><code class="flex name class">
+<span>class <span class="ident">AdjustmentGameRater</span></span>
+<span>(</span><span>rater: <a title="server.rating_service.game_rater.GameRater" href="#server.rating_service.game_rater.GameRater">GameRater</a>, base_ratings: Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>GameRater for performing adjustments using another GameRater</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AdjustmentGameRater(GameRater):
+    &#34;&#34;&#34;GameRater for performing adjustments using another GameRater&#34;&#34;&#34;
+
+    def __init__(self, rater: GameRater, base_ratings: RatingDict):
+        self.rater = rater
+        self.base_ratings = base_ratings
+
+    def compute_rating(
+        self,
+        ratings: RatingDict
+    ) -&gt; RatingDict:
+        &#34;&#34;&#34;
+        Adjust one rating to bring it closer to a different base rating. For
+        each player, this will rate the game with trueskill as if they
+        played this game with the rating we are adjusting instead of the
+        base rating. Adjustments are only returned under certain conditions to
+        prevent rating manipulation.
+        &#34;&#34;&#34;
+        new_adjusted_ratings = {}
+        for player_id, base_rating in self.base_ratings.items():
+            old_adjusted_rating = ratings[player_id]
+            # Since we only adjust upwards, we should not adjust ratings that
+            # are already higher than the base.
+            if base_rating.displayed() &lt; old_adjusted_rating.displayed():
+                continue
+            # Make a copy of the base ratings, but substitute this player&#39;s
+            # rating with the rating we are adjusting.
+            old_ratings = dict(self.base_ratings)
+            old_ratings[player_id] = old_adjusted_rating
+
+            new_ratings = self.rater.compute_rating(old_ratings)
+            new_adjusted_rating = new_ratings[player_id]
+            self._logger.debug(
+                &#34;Got new adjusted rating for player %d: %s&#34;,
+                player_id,
+                new_adjusted_rating
+            )
+            if (
+                old_adjusted_rating.displayed() &lt;
+                new_adjusted_rating.displayed() &lt;=
+                config.RATING_ADJUSTMENT_MAX_RATING
+            ):
+                new_adjusted_ratings[player_id] = new_adjusted_rating
+
+        return new_adjusted_ratings
+
+    def get_outcome_map(self) -&gt; Dict[PlayerID, GameOutcome]:
+        return self.rater.outcome_map</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.rating_service.game_rater.GameRater" href="#server.rating_service.game_rater.GameRater">GameRater</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="server.rating_service.game_rater.AdjustmentGameRater.compute_rating"><code class="name flex">
+<span>def <span class="ident">compute_rating</span></span>(<span>self, ratings: Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]) ‑> Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Adjust one rating to bring it closer to a different base rating. For
+each player, this will rate the game with trueskill as if they
+played this game with the rating we are adjusting instead of the
+base rating. Adjustments are only returned under certain conditions to
+prevent rating manipulation.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_rating(
+    self,
+    ratings: RatingDict
+) -&gt; RatingDict:
+    &#34;&#34;&#34;
+    Adjust one rating to bring it closer to a different base rating. For
+    each player, this will rate the game with trueskill as if they
+    played this game with the rating we are adjusting instead of the
+    base rating. Adjustments are only returned under certain conditions to
+    prevent rating manipulation.
+    &#34;&#34;&#34;
+    new_adjusted_ratings = {}
+    for player_id, base_rating in self.base_ratings.items():
+        old_adjusted_rating = ratings[player_id]
+        # Since we only adjust upwards, we should not adjust ratings that
+        # are already higher than the base.
+        if base_rating.displayed() &lt; old_adjusted_rating.displayed():
+            continue
+        # Make a copy of the base ratings, but substitute this player&#39;s
+        # rating with the rating we are adjusting.
+        old_ratings = dict(self.base_ratings)
+        old_ratings[player_id] = old_adjusted_rating
+
+        new_ratings = self.rater.compute_rating(old_ratings)
+        new_adjusted_rating = new_ratings[player_id]
+        self._logger.debug(
+            &#34;Got new adjusted rating for player %d: %s&#34;,
+            player_id,
+            new_adjusted_rating
+        )
+        if (
+            old_adjusted_rating.displayed() &lt;
+            new_adjusted_rating.displayed() &lt;=
+            config.RATING_ADJUSTMENT_MAX_RATING
+        ):
+            new_adjusted_ratings[player_id] = new_adjusted_rating
+
+    return new_adjusted_ratings</code></pre>
+</details>
+</dd>
+<dt id="server.rating_service.game_rater.AdjustmentGameRater.get_outcome_map"><code class="name flex">
+<span>def <span class="ident">get_outcome_map</span></span>(<span>self) ‑> Dict[int, <a title="server.games.game_results.GameOutcome" href="../games/game_results.html#server.games.game_results.GameOutcome">GameOutcome</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_outcome_map(self) -&gt; Dict[PlayerID, GameOutcome]:
+    return self.rater.outcome_map</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 <dt id="server.rating_service.game_rater.GameRater"><code class="flex name class">
 <span>class <span class="ident">GameRater</span></span>
+<span>(</span><span>summary: <a title="server.rating_service.typedefs.GameRatingSummary" href="typedefs.html#server.rating_service.typedefs.GameRatingSummary">GameRatingSummary</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -93,40 +300,53 @@ class GameRater:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class GameRater:
-    @classmethod
-    def compute_rating(cls, rating_data: GameRatingData) -&gt; Dict[PlayerID, Rating]:
-        rating_groups = [team.ratings for team in rating_data]
-        team_outcomes = [team.outcome for team in rating_data]
-        ranks = cls._ranks_from_team_outcomes(team_outcomes)
+    def __init__(self, summary: GameRatingSummary):
+        self.summary = summary
+        self.outcome_map = {
+            player_id: team.outcome
+            for team in summary.teams
+            for player_id in team.player_ids
+        }
+        self.player_ids = list(self.outcome_map.keys())
+        self.team_outcomes = [team.outcome for team in summary.teams]
+        self.ranks = _ranks_from_team_outcomes(self.team_outcomes)
 
-        cls._logger.debug(&#34;Rating groups: %s&#34;, rating_groups)
-        cls._logger.debug(&#34;Ranks: %s&#34;, ranks)
+    def compute_rating(
+        self,
+        ratings: RatingDict
+    ) -&gt; RatingDict:
+        rating_groups = [
+            {
+                player_id: trueskill.Rating(*ratings[player_id])
+                for player_id in team.player_ids
+            }
+            for team in self.summary.teams
+        ]
 
-        new_rating_groups = trueskill.rate(rating_groups, ranks)
+        self._logger.debug(&#34;Rating groups: %s&#34;, rating_groups)
+        self._logger.debug(&#34;Ranks: %s&#34;, self.ranks)
+
+        new_rating_groups = trueskill.rate(rating_groups, self.ranks)
 
         player_rating_map = {
-            player_id: new_rating
+            player_id: Rating(*new_rating)
             for team in new_rating_groups
             for player_id, new_rating in team.items()
         }
 
         return player_rating_map
 
-    @staticmethod
-    def _ranks_from_team_outcomes(outcomes: List[GameOutcome]) -&gt; List[int]:
-        if outcomes == [GameOutcome.DRAW, GameOutcome.DRAW]:
-            return [0, 0]
-        elif outcomes == [GameOutcome.VICTORY, GameOutcome.DEFEAT]:
-            return [0, 1]
-        elif outcomes == [GameOutcome.DEFEAT, GameOutcome.VICTORY]:
-            return [1, 0]
-        else:
-            raise GameRatingError(f&#34;Inconsistent outcomes {outcomes}&#34;)</code></pre>
+    def get_outcome_map(self) -&gt; Dict[PlayerID, GameOutcome]:
+        return self.outcome_map</code></pre>
 </details>
-<h3>Static methods</h3>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="server.rating_service.game_rater.AdjustmentGameRater" href="#server.rating_service.game_rater.AdjustmentGameRater">AdjustmentGameRater</a></li>
+</ul>
+<h3>Methods</h3>
 <dl>
 <dt id="server.rating_service.game_rater.GameRater.compute_rating"><code class="name flex">
-<span>def <span class="ident">compute_rating</span></span>(<span>rating_data: List[<a title="server.rating_service.typedefs.TeamRatingData" href="typedefs.html#server.rating_service.typedefs.TeamRatingData">TeamRatingData</a>]) ‑> Dict[int, trueskill.Rating]</span>
+<span>def <span class="ident">compute_rating</span></span>(<span>self, ratings: Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]) ‑> Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -134,24 +354,43 @@ class GameRater:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@classmethod
-def compute_rating(cls, rating_data: GameRatingData) -&gt; Dict[PlayerID, Rating]:
-    rating_groups = [team.ratings for team in rating_data]
-    team_outcomes = [team.outcome for team in rating_data]
-    ranks = cls._ranks_from_team_outcomes(team_outcomes)
+<pre><code class="python">def compute_rating(
+    self,
+    ratings: RatingDict
+) -&gt; RatingDict:
+    rating_groups = [
+        {
+            player_id: trueskill.Rating(*ratings[player_id])
+            for player_id in team.player_ids
+        }
+        for team in self.summary.teams
+    ]
 
-    cls._logger.debug(&#34;Rating groups: %s&#34;, rating_groups)
-    cls._logger.debug(&#34;Ranks: %s&#34;, ranks)
+    self._logger.debug(&#34;Rating groups: %s&#34;, rating_groups)
+    self._logger.debug(&#34;Ranks: %s&#34;, self.ranks)
 
-    new_rating_groups = trueskill.rate(rating_groups, ranks)
+    new_rating_groups = trueskill.rate(rating_groups, self.ranks)
 
     player_rating_map = {
-        player_id: new_rating
+        player_id: Rating(*new_rating)
         for team in new_rating_groups
         for player_id, new_rating in team.items()
     }
 
     return player_rating_map</code></pre>
+</details>
+</dd>
+<dt id="server.rating_service.game_rater.GameRater.get_outcome_map"><code class="name flex">
+<span>def <span class="ident">get_outcome_map</span></span>(<span>self) ‑> Dict[int, <a title="server.games.game_results.GameOutcome" href="../games/game_results.html#server.games.game_results.GameOutcome">GameOutcome</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_outcome_map(self) -&gt; Dict[PlayerID, GameOutcome]:
+    return self.outcome_map</code></pre>
 </details>
 </dd>
 </dl>
@@ -192,9 +431,17 @@ def compute_rating(cls, rating_data: GameRatingData) -&gt; Dict[PlayerID, Rating
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
+<h4><code><a title="server.rating_service.game_rater.AdjustmentGameRater" href="#server.rating_service.game_rater.AdjustmentGameRater">AdjustmentGameRater</a></code></h4>
+<ul class="">
+<li><code><a title="server.rating_service.game_rater.AdjustmentGameRater.compute_rating" href="#server.rating_service.game_rater.AdjustmentGameRater.compute_rating">compute_rating</a></code></li>
+<li><code><a title="server.rating_service.game_rater.AdjustmentGameRater.get_outcome_map" href="#server.rating_service.game_rater.AdjustmentGameRater.get_outcome_map">get_outcome_map</a></code></li>
+</ul>
+</li>
+<li>
 <h4><code><a title="server.rating_service.game_rater.GameRater" href="#server.rating_service.game_rater.GameRater">GameRater</a></code></h4>
 <ul class="">
 <li><code><a title="server.rating_service.game_rater.GameRater.compute_rating" href="#server.rating_service.game_rater.GameRater.compute_rating">compute_rating</a></code></li>
+<li><code><a title="server.rating_service.game_rater.GameRater.get_outcome_map" href="#server.rating_service.game_rater.GameRater.get_outcome_map">get_outcome_map</a></code></li>
 </ul>
 </li>
 <li>

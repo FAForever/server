@@ -28,20 +28,12 @@
 </summary>
 <pre><code class="python">from typing import Dict, List, NamedTuple
 
-from trueskill import Rating
-
 from server.games.game_results import GameOutcome
 from server.games.typedefs import TeamRatingSummary
+from server.rating import Rating
 
 PlayerID = int
-
-
-class TeamRatingData(NamedTuple):
-    outcome: GameOutcome
-    ratings: Dict[int, Rating]
-
-
-GameRatingData = List[TeamRatingData]
+RatingDict = Dict[PlayerID, Rating]
 
 
 class GameRatingSummary(NamedTuple):
@@ -76,6 +68,13 @@ class GameRatingSummary(NamedTuple):
         )
 
 
+class GameRatingResult(NamedTuple):
+    rating_type: str
+    old_ratings: RatingDict
+    new_ratings: RatingDict
+    outcome_map: Dict[PlayerID, GameOutcome]
+
+
 class RatingServiceError(Exception):
     pass
 
@@ -93,6 +92,46 @@ class ServiceNotReadyError(RatingServiceError):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="server.rating_service.typedefs.GameRatingResult"><code class="flex name class">
+<span>class <span class="ident">GameRatingResult</span></span>
+<span>(</span><span>rating_type: str, old_ratings: Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>], new_ratings: Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>], outcome_map: Dict[int, <a title="server.games.game_results.GameOutcome" href="../games/game_results.html#server.games.game_results.GameOutcome">GameOutcome</a>])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>GameRatingResult(rating_type, old_ratings, new_ratings, outcome_map)</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GameRatingResult(NamedTuple):
+    rating_type: str
+    old_ratings: RatingDict
+    new_ratings: RatingDict
+    outcome_map: Dict[PlayerID, GameOutcome]</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.tuple</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="server.rating_service.typedefs.GameRatingResult.new_ratings"><code class="name">var <span class="ident">new_ratings</span> : Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 2</p></div>
+</dd>
+<dt id="server.rating_service.typedefs.GameRatingResult.old_ratings"><code class="name">var <span class="ident">old_ratings</span> : Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 1</p></div>
+</dd>
+<dt id="server.rating_service.typedefs.GameRatingResult.outcome_map"><code class="name">var <span class="ident">outcome_map</span> : Dict[int, <a title="server.games.game_results.GameOutcome" href="../games/game_results.html#server.games.game_results.GameOutcome">GameOutcome</a>]</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 3</p></div>
+</dd>
+<dt id="server.rating_service.typedefs.GameRatingResult.rating_type"><code class="name">var <span class="ident">rating_type</span> : str</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 0</p></div>
+</dd>
+</dl>
+</dd>
 <dt id="server.rating_service.typedefs.GameRatingSummary"><code class="flex name class">
 <span>class <span class="ident">GameRatingSummary</span></span>
 <span>(</span><span>game_id: int, rating_type: str, teams: List[<a title="server.games.typedefs.TeamRatingSummary" href="../games/typedefs.html#server.games.typedefs.TeamRatingSummary">TeamRatingSummary</a>])</span>
@@ -232,36 +271,6 @@ def from_game_info_dict(cls, game_info: Dict) -&gt; &#34;GameRatingSummary&#34;:
 <li>builtins.BaseException</li>
 </ul>
 </dd>
-<dt id="server.rating_service.typedefs.TeamRatingData"><code class="flex name class">
-<span>class <span class="ident">TeamRatingData</span></span>
-<span>(</span><span>outcome: <a title="server.games.game_results.GameOutcome" href="../games/game_results.html#server.games.game_results.GameOutcome">GameOutcome</a>, ratings: Dict[int, trueskill.Rating])</span>
-</code></dt>
-<dd>
-<div class="desc"><p>TeamRatingData(outcome, ratings)</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class TeamRatingData(NamedTuple):
-    outcome: GameOutcome
-    ratings: Dict[int, Rating]</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>builtins.tuple</li>
-</ul>
-<h3>Instance variables</h3>
-<dl>
-<dt id="server.rating_service.typedefs.TeamRatingData.outcome"><code class="name">var <span class="ident">outcome</span> : <a title="server.games.game_results.GameOutcome" href="../games/game_results.html#server.games.game_results.GameOutcome">GameOutcome</a></code></dt>
-<dd>
-<div class="desc"><p>Alias for field number 0</p></div>
-</dd>
-<dt id="server.rating_service.typedefs.TeamRatingData.ratings"><code class="name">var <span class="ident">ratings</span> : Dict[int, trueskill.Rating]</code></dt>
-<dd>
-<div class="desc"><p>Alias for field number 1</p></div>
-</dd>
-</dl>
-</dd>
 </dl>
 </section>
 </article>
@@ -279,6 +288,15 @@ def from_game_info_dict(cls, game_info: Dict) -&gt; &#34;GameRatingSummary&#34;:
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
+<h4><code><a title="server.rating_service.typedefs.GameRatingResult" href="#server.rating_service.typedefs.GameRatingResult">GameRatingResult</a></code></h4>
+<ul class="">
+<li><code><a title="server.rating_service.typedefs.GameRatingResult.new_ratings" href="#server.rating_service.typedefs.GameRatingResult.new_ratings">new_ratings</a></code></li>
+<li><code><a title="server.rating_service.typedefs.GameRatingResult.old_ratings" href="#server.rating_service.typedefs.GameRatingResult.old_ratings">old_ratings</a></code></li>
+<li><code><a title="server.rating_service.typedefs.GameRatingResult.outcome_map" href="#server.rating_service.typedefs.GameRatingResult.outcome_map">outcome_map</a></code></li>
+<li><code><a title="server.rating_service.typedefs.GameRatingResult.rating_type" href="#server.rating_service.typedefs.GameRatingResult.rating_type">rating_type</a></code></li>
+</ul>
+</li>
+<li>
 <h4><code><a title="server.rating_service.typedefs.GameRatingSummary" href="#server.rating_service.typedefs.GameRatingSummary">GameRatingSummary</a></code></h4>
 <ul class="">
 <li><code><a title="server.rating_service.typedefs.GameRatingSummary.from_game_info_dict" href="#server.rating_service.typedefs.GameRatingSummary.from_game_info_dict">from_game_info_dict</a></code></li>
@@ -292,13 +310,6 @@ def from_game_info_dict(cls, game_info: Dict) -&gt; &#34;GameRatingSummary&#34;:
 </li>
 <li>
 <h4><code><a title="server.rating_service.typedefs.ServiceNotReadyError" href="#server.rating_service.typedefs.ServiceNotReadyError">ServiceNotReadyError</a></code></h4>
-</li>
-<li>
-<h4><code><a title="server.rating_service.typedefs.TeamRatingData" href="#server.rating_service.typedefs.TeamRatingData">TeamRatingData</a></code></h4>
-<ul class="">
-<li><code><a title="server.rating_service.typedefs.TeamRatingData.outcome" href="#server.rating_service.typedefs.TeamRatingData.outcome">outcome</a></code></li>
-<li><code><a title="server.rating_service.typedefs.TeamRatingData.ratings" href="#server.rating_service.typedefs.TeamRatingData.ratings">ratings</a></code></li>
-</ul>
 </li>
 </ul>
 </li>
