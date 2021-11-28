@@ -165,14 +165,16 @@ async def get_player_ratings(proto, *names, rating_type="global"):
     return ratings
 
 
-async def get_player_ratings_all(proto, *names):
+async def get_player_ratings_all(proto, *names, messages=1):
     """
     Like `get_player_ratings` but find all rating types instead of just one and
     return a nested dictionary containing all those ratings
     """
     ratings = defaultdict(dict)
-    while set(ratings.keys()) != set(names):
+    read_messages = 0
+    while set(ratings.keys()) != set(names) or read_messages < messages:
         msg = await read_until_command(proto, "player_info")
+        read_messages += 1
         for player_info in msg["players"]:
             for rating_type, rating in player_info["ratings"].items():
                 ratings[player_info["login"]][rating_type] = rating["rating"]
@@ -578,7 +580,12 @@ async def test_ladder_game_draw_bug(lobby_server, database):
             "args": []
         })
 
-    ratings = await get_player_ratings_all(proto1, "ladder1", "ladder2")
+    ratings = await get_player_ratings_all(
+        proto1,
+        "ladder1",
+        "ladder2",
+        messages=2
+    )
 
     # Both start at (1500, 500).
     # When rated as a draw the means should barely change.
