@@ -13,16 +13,16 @@ from tests.utils import fast_forward
 @fast_forward(10)
 async def test_deadlock_retry_execute():
     mock_conn = mock.Mock()
-    mock_conn.execute = asynctest.CoroutineMock(
+    mock_conn._execute = asynctest.CoroutineMock(
         side_effect=OperationalError(
             "QUERY", {}, pymysql.err.OperationalError(-1, "Deadlock found")
         )
     )
 
     with pytest.raises(OperationalError):
-        await AsyncConnection.deadlock_retry_execute(mock_conn, "foo")
+        await AsyncConnection._deadlock_retry_execute(mock_conn, "foo")
 
-    assert mock_conn.execute.call_count == 3
+    assert mock_conn._execute.call_count == 3
 
 
 @pytest.mark.asyncio
@@ -30,7 +30,7 @@ async def test_deadlock_retry_execute():
 async def test_deadlock_retry_execute_success():
     call_count = 0
 
-    async def execute(*args, **kwargs):
+    async def _execute(*args, **kwargs):
         nonlocal call_count
         call_count += 1
         if call_count <= 1:
@@ -39,8 +39,8 @@ async def test_deadlock_retry_execute_success():
             )
 
     mock_conn = mock.Mock()
-    mock_conn.execute = asynctest.CoroutineMock(side_effect=execute)
+    mock_conn._execute = asynctest.CoroutineMock(side_effect=_execute)
 
-    await AsyncConnection.deadlock_retry_execute(mock_conn, "foo")
+    await AsyncConnection._deadlock_retry_execute(mock_conn, "foo")
 
-    assert mock_conn.execute.call_count == 2
+    assert mock_conn._execute.call_count == 2

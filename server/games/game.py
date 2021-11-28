@@ -724,7 +724,8 @@ class Game():
             # so, and grab the map id at the same time.
             result = await conn.execute(
                 "SELECT id, ranked FROM map_version "
-                "WHERE lower(filename) = lower(:f)", {"f": self.map_file_path}
+                "WHERE lower(filename) = lower(:filename)",
+                filename=self.map_file_path
             )
             row = result.fetchone()
 

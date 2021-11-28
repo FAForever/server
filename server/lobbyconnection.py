@@ -711,8 +711,10 @@ class LobbyConnection:
 
         try:
             await conn.execute(
-                "UPDATE anope.anope_db_NickCore SET pass = :p WHERE display = :d",
-                {"p": irc_pass, "d": login}
+                "UPDATE anope.anope_db_NickCore "
+                "SET pass = :passwd WHERE display = :display",
+                passwd=irc_pass,
+                display=login
             )
         except (OperationalError, ProgrammingError):
             self._logger.error("Failure updating NickServ password for %s", login)
@@ -1080,7 +1082,8 @@ class LobbyConnection:
                 result = await conn.execute(
                     "SELECT uid, name, version, author, ui, date, downloads, "
                     "likes, played, description, filename, icon, likers FROM "
-                    "`table_mod` WHERE uid = :id LIMIT 1", {"id": uid}
+                    "`table_mod` WHERE uid = :uid LIMIT 1",
+                    uid=uid
                 )
 
                 row = result.fetchone()
@@ -1110,7 +1113,8 @@ class LobbyConnection:
                         "UPDATE mod_stats s "
                         "JOIN mod_version v ON v.mod_id = s.mod_id "
                         "SET s.likes = s.likes + 1, likers=:l WHERE v.uid=:id",
-                        {"l": json.dumps(likers), "id": uid}
+                        l=json.dumps(likers),
+                        id=uid
                     )
                     await self.send(out)
 

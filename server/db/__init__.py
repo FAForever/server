@@ -72,12 +72,14 @@ class AsyncConnection(_AsyncConnection):
         statement,
         parameters=None,
         execution_options=EMPTY_DICT,
+        **kwargs
     ):
         with stat_db_errors():
             return await self._execute(
                 statement,
                 parameters=parameters,
-                execution_options=execution_options
+                execution_options=execution_options,
+                **kwargs
             )
 
     async def _execute(
@@ -85,12 +87,17 @@ class AsyncConnection(_AsyncConnection):
         statement,
         parameters=None,
         execution_options=EMPTY_DICT,
+        **kwargs
     ):
         """
-        Wrap strings in the text type automatically
+        Wrap strings in the text type automatically and allows bindparams to be
+        passed via kwargs.
         """
         if isinstance(statement, str):
             statement = text(statement)
+
+        if kwargs and parameters is None:
+            parameters = kwargs
 
         return await super().execute(
             statement,
@@ -103,12 +110,14 @@ class AsyncConnection(_AsyncConnection):
         statement,
         parameters=None,
         execution_options=EMPTY_DICT,
+        **kwargs
     ):
         with stat_db_errors():
             return await self._stream(
                 statement,
                 parameters=parameters,
-                execution_options=execution_options
+                execution_options=execution_options,
+                **kwargs
             )
 
     async def _stream(
@@ -116,12 +125,17 @@ class AsyncConnection(_AsyncConnection):
         statement,
         parameters=None,
         execution_options=EMPTY_DICT,
+        **kwargs
     ):
         """
-        Wrap strings in the text type automatically
+        Wrap strings in the text type automatically and allows bindparams to be
+        passed via kwargs.
         """
         if isinstance(statement, str):
             statement = text(statement)
+
+        if kwargs and parameters is None:
+            parameters = kwargs
 
         return await super().stream(
             statement,
@@ -134,14 +148,16 @@ class AsyncConnection(_AsyncConnection):
         statement,
         parameters=None,
         execution_options=EMPTY_DICT,
-        max_attempts=3
+        max_attempts=3,
+        **kwargs
     ):
         with stat_db_errors():
             return await self._deadlock_retry_execute(
                 statement,
                 parameters=parameters,
                 execution_options=execution_options,
-                max_attempts=max_attempts
+                max_attempts=max_attempts,
+                **kwargs
             )
 
     async def _deadlock_retry_execute(
@@ -149,14 +165,16 @@ class AsyncConnection(_AsyncConnection):
         statement,
         parameters=None,
         execution_options=EMPTY_DICT,
-        max_attempts=3
+        max_attempts=3,
+        **kwargs
     ):
         for attempt in range(max_attempts - 1):
             try:
                 return await self._execute(
                     statement,
                     parameters=parameters,
-                    execution_options=execution_options
+                    execution_options=execution_options,
+                    **kwargs
                 )
             except OperationalError as e:
                 error_text = str(e)
@@ -177,5 +195,6 @@ class AsyncConnection(_AsyncConnection):
         return await self._execute(
             statement,
             parameters=parameters,
-            execution_options=execution_options
+            execution_options=execution_options,
+            **kwargs
         )

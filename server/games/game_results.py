@@ -4,6 +4,9 @@ from collections.abc import Mapping
 from enum import Enum
 from typing import Dict, FrozenSet, Iterator, List, NamedTuple, Optional, Set
 
+from sqlalchemy import select
+
+from server.db.models import game_player_stats
 from server.db.typedefs import GameOutcome
 from server.decorators import with_logger
 
@@ -222,18 +225,19 @@ class GameResultReports(Mapping):
         results = cls(game_id)
         async with database.acquire() as conn:
             result = await conn.execute(
-                "SELECT `place`, `score`, `result` "
-                "FROM `game_player_stats` "
-                "WHERE `gameId`=:id",
-                {"id": game_id},
+                select([
+                    game_player_stats.c.place,
+                    game_player_stats.c.score,
+                    game_player_stats.c.result
+                ]).where(game_player_stats.c.gameId == game_id)
             )
 
             for row in result:
                 # FIXME: Assertion about startspot == army
                 with contextlib.suppress(ValueError):
-                    outcome = ArmyReportedOutcome(row.result)
-                    result = GameResultReport(0, row.place, outcome, row.score)
-                    results.add(result)
+                    outcome = ArmyReportedOutcome(row.result.value)
+                    report = GameResultReport(0, row.place, outcome, row.score)
+                    results.add(report)
         return results
 
 

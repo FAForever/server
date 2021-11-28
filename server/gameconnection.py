@@ -264,7 +264,7 @@ class GameConnection(GpgNetServerProtocol):
             async with self._db.acquire() as conn:
                 rows = await conn.execute(
                     "SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids",
-                    {"ids": tuple(uids)}
+                    ids=tuple(uids)
                 )
                 for row in rows:
                     self.game.mods[row.uid] = row.name
@@ -500,7 +500,7 @@ class GameConnection(GpgNetServerProtocol):
                         "v.mod_id = s.mod_id "
                         "SET s.times_played = s.times_played + 1 "
                         "WHERE v.uid in :ids",
-                        {"ids": tuple(uids)}
+                        ids=tuple(uids)
                     )
         elif state == "Ended":
             await self.on_connection_lost()
