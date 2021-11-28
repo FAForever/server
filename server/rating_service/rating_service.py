@@ -326,7 +326,7 @@ class RatingService(Service):
             for player_id in new_ratings.keys()
         ]
 
-        for player_id, new_rating, old_rating in ratings:
+        for player_id, old_rating, new_rating in ratings:
             self._logger.debug(
                 "New %s rating for player with id %s: %s -> %s",
                 rating_type,
