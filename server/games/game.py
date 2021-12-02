@@ -81,6 +81,7 @@ class Game():
         self._player_options: Dict[int, Dict[str, Any]] = defaultdict(dict)
         self.launched_at = None
         self.startTime = None
+        self.endTime = None
         self.ended = False
         self._logger = logging.getLogger(
             f"{self.__class__.__qualname__}.{id_}"
@@ -417,12 +418,13 @@ class Game():
         if [conn for conn in self.connections if not conn.finished_sim]:
             return
         self.ended = True
+        self.endTime = sql_now()
         async with self._db.acquire() as conn:
             await conn.execute(
                 game_stats.update().where(
                     game_stats.c.id == self.id
                 ).values(
-                    endTime=sql_now()
+                    endTime=self.endTime
                 )
             )
 
