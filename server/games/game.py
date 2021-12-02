@@ -80,6 +80,7 @@ class Game():
         self.game_service = game_service
         self._player_options: Dict[int, Dict[str, Any]] = defaultdict(dict)
         self.launched_at = None
+        self.startTime = None
         self.ended = False
         self._logger = logging.getLogger(
             f"{self.__class__.__qualname__}.{id_}"
@@ -710,6 +711,7 @@ class Game():
     async def on_game_launched(self):
         for player in self.players:
             player.state = PlayerState.PLAYING
+        self.startTime = sql_now()
         await self.update_game_stats()
         await self.update_game_player_stats()
 
@@ -758,6 +760,7 @@ class Game():
                     mapId=self.map_id,
                     gameName=self.name,
                     validity=self.validity.value,
+                    startTime=self.startTime
                 )
             )
 
