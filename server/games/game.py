@@ -419,7 +419,7 @@ class Game():
         if [conn for conn in self.connections if not conn.finished_sim]:
             return
         self.ended = True
-        self.endTime = datetime.now(datetime.timezone.utc)
+        self.endTime = datetime.datetime.now(datetime.timezone.utc)
         async with self._db.acquire() as conn:
             await conn.execute(
                 game_stats.update().where(
@@ -714,7 +714,7 @@ class Game():
     async def on_game_launched(self):
         for player in self.players:
             player.state = PlayerState.PLAYING
-        self.startTime = datetime.now(datetime.timezone.utc)
+        self.startTime = datetime.datetime.now(datetime.timezone.utc)
         await self.update_game_stats()
         await self.update_game_player_stats()
 
