@@ -915,7 +915,7 @@ class Game():
             "rating_min": self.displayed_rating_range.lo,
             "rating_max": self.displayed_rating_range.hi,
             "enforce_rating_range": self.enforce_rating_range,
-            "player_ids":  {
+            "teams_ids":  {
                 team: [
                     player.id for player in connected_players
                     if self.get_player_option(player.id, "Team") == team

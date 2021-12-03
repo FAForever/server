@@ -631,7 +631,7 @@ async def test_to_dict(game, player_factory):
         "rating_min": game.displayed_rating_range.lo,
         "rating_max": game.displayed_rating_range.hi,
         "enforce_rating_range": game.enforce_rating_range,
-        "player_ids":  {
+        "teams_ids":  {
             team: [
                 player.id for player in game.players
                 if game.get_player_option(player.id, "Team") == team
