@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>server.metrics API documentation</title>
-<meta name="description" content="Prometheus metric definitions" />
+<title>server.db.typedefs API documentation</title>
+<meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -19,136 +19,33 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>server.metrics</code></h1>
+<h1 class="title">Module <code>server.db.typedefs</code></h1>
 </header>
 <section id="section-intro">
-<p>Prometheus metric definitions</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">&#34;&#34;&#34;
-Prometheus metric definitions
-&#34;&#34;&#34;
+<pre><code class="python"># To prevent import issues, enums used by models should be defined in the db
+# package
 
-from prometheus_client import Counter, Gauge, Histogram, Info
-
-info = Info(&#34;build&#34;, &#34;Information collected on server start&#34;)
-
-# ==========
-# Matchmaker
-# ==========
-matches = Gauge(&#34;server_matchmaker_queue_matches&#34;, &#34;Number of matches made&#34;, [&#34;queue&#34;])
-
-match_quality = Histogram(
-    &#34;server_matchmaker_queue_quality&#34;,
-    &#34;Quality of matches made&#34;,
-    [&#34;queue&#34;],
-    buckets=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95],
-)
-
-unmatched_searches = Gauge(
-    &#34;server_matchmaker_queue_unmatched_searches&#34;,
-    &#34;Number of unmatched searches after queue pop&#34;,
-    [&#34;queue&#34;],
-)
-
-matchmaker_searches = Histogram(
-    &#34;server_matchmaker_queue_search_duration_seconds&#34;,
-    &#34;Time spent searching for matches per search in seconds&#34;,
-    [&#34;queue&#34;, &#34;status&#34;],
-    buckets=[30, 60, 120, 180, 240, 300, 600, 1800, 3600],
-)
-
-matchmaker_players = Gauge(
-    &#34;server_matchmaker_queue_players&#34;, &#34;Players in the queue at pop time&#34;, [&#34;queue&#34;]
-)
-
-matchmaker_queue_pop = Gauge(
-    &#34;server_matchmaker_queue_pop_timer_seconds&#34;,
-    &#34;Queue pop timer duration in seconds&#34;,
-    [&#34;queue&#34;],
-)
-
-# =====
-# Users
-# =====
-user_connections = Gauge(
-    &#34;server_user_connections&#34;,
-    &#34;Number of users currently connected to server&#34;,
-    [&#34;user_agent&#34;, &#34;version&#34;],
-)
-
-user_logins = Counter(
-    &#34;server_user_logins_total&#34;, &#34;Total number of login attempts made&#34;, [&#34;status&#34;, &#34;method&#34;]
-)
-
-user_agent_version = Counter(
-    &#34;server_user_agent_version_checks_total&#34;,
-    &#34;Total number of user agent version checks made&#34;,
-    [&#34;version&#34;],
-)
-
-players_online = Gauge(
-    &#34;server_user_online&#34;,
-    &#34;Number of users currently online as per lobbyconnection.player_service&#34;,
-)
+from enum import Enum, unique
 
 
-# ========================
-# Connections and Messages
-# ========================
-server_connections = Counter(
-    &#34;server_lobbyconnections_total&#34;,
-    &#34;Total number of connections to the lobby as per lobbyconnection.on_connection_made&#34;,
-)
-
-sent_messages = Counter(
-    &#34;server_messages_total&#34;,
-    &#34;Total number of Messages sent&#34;,
-    [&#34;protocol&#34;]
-)
-
-unauth_messages = Counter(
-    &#34;server_messages_unauthenticated_total&#34;,
-    &#34;Total number of unauthenticated messages&#34;,
-    [&#34;command&#34;],
-)
-
-server_broadcasts = Counter(
-    &#34;server_broadcasts_total&#34;, &#34;Total number of broadcasts&#34;
-)
-
-connection_on_message_received = Histogram(
-    &#34;server_on_message_received_seconds&#34;,
-    &#34;Seconds spent in &#39;connection.on_message_received&#39;&#34;,
-)
-
-db_exceptions = Counter(
-    &#34;db_exceptions_total&#34;,
-    &#34;Total number of database exceptions when executing queries&#34;,
-    [&#34;class&#34;, &#34;code&#34;]
-)
+@unique
+class Victory(Enum):
+    DEMORALIZATION = 0
+    DOMINATION = 1
+    ERADICATION = 2
+    SANDBOX = 3
 
 
-# =====
-# Games
-# =====
-active_games = Gauge(
-    &#34;server_game_active_games_total&#34;,
-    &#34;Number of currently active games. &#34;
-    &#34;Includes games in lobby, games currently running, and games that ended &#34;
-    &#34;but are still in the game_service.&#34;,
-    [&#34;game_mode&#34;, &#34;game_state&#34;],
-)
-
-
-# ==============
-# Rating Service
-# ==============
-rating_service_backlog = Gauge(
-    &#34;server_rating_service_backlog&#34;, &#34;Number of games remaining to be rated&#34;,
-)</code></pre>
+@unique
+class GameOutcome(Enum):
+    VICTORY = &#34;VICTORY&#34;
+    DEFEAT = &#34;DEFEAT&#34;
+    DRAW = &#34;DRAW&#34;
+    UNKNOWN = &#34;UNKNOWN&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -158,6 +55,89 @@ rating_service_backlog = Gauge(
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="server.db.typedefs.GameOutcome"><code class="flex name class">
+<span>class <span class="ident">GameOutcome</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GameOutcome(Enum):
+    VICTORY = &#34;VICTORY&#34;
+    DEFEAT = &#34;DEFEAT&#34;
+    DRAW = &#34;DRAW&#34;
+    UNKNOWN = &#34;UNKNOWN&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.db.typedefs.GameOutcome.DEFEAT"><code class="name">var <span class="ident">DEFEAT</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.db.typedefs.GameOutcome.DRAW"><code class="name">var <span class="ident">DRAW</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.db.typedefs.GameOutcome.UNKNOWN"><code class="name">var <span class="ident">UNKNOWN</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.db.typedefs.GameOutcome.VICTORY"><code class="name">var <span class="ident">VICTORY</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="server.db.typedefs.Victory"><code class="flex name class">
+<span>class <span class="ident">Victory</span></span>
+<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An enumeration.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Victory(Enum):
+    DEMORALIZATION = 0
+    DOMINATION = 1
+    ERADICATION = 2
+    SANDBOX = 3</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.db.typedefs.Victory.DEMORALIZATION"><code class="name">var <span class="ident">DEMORALIZATION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.db.typedefs.Victory.DOMINATION"><code class="name">var <span class="ident">DOMINATION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.db.typedefs.Victory.ERADICATION"><code class="name">var <span class="ident">ERADICATION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.db.typedefs.Victory.SANDBOX"><code class="name">var <span class="ident">SANDBOX</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -168,7 +148,29 @@ rating_service_backlog = Gauge(
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="server" href="index.html">server</a></code></li>
+<li><code><a title="server.db" href="index.html">server.db</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="server.db.typedefs.GameOutcome" href="#server.db.typedefs.GameOutcome">GameOutcome</a></code></h4>
+<ul class="">
+<li><code><a title="server.db.typedefs.GameOutcome.DEFEAT" href="#server.db.typedefs.GameOutcome.DEFEAT">DEFEAT</a></code></li>
+<li><code><a title="server.db.typedefs.GameOutcome.DRAW" href="#server.db.typedefs.GameOutcome.DRAW">DRAW</a></code></li>
+<li><code><a title="server.db.typedefs.GameOutcome.UNKNOWN" href="#server.db.typedefs.GameOutcome.UNKNOWN">UNKNOWN</a></code></li>
+<li><code><a title="server.db.typedefs.GameOutcome.VICTORY" href="#server.db.typedefs.GameOutcome.VICTORY">VICTORY</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.db.typedefs.Victory" href="#server.db.typedefs.Victory">Victory</a></code></h4>
+<ul class="">
+<li><code><a title="server.db.typedefs.Victory.DEMORALIZATION" href="#server.db.typedefs.Victory.DEMORALIZATION">DEMORALIZATION</a></code></li>
+<li><code><a title="server.db.typedefs.Victory.DOMINATION" href="#server.db.typedefs.Victory.DOMINATION">DOMINATION</a></code></li>
+<li><code><a title="server.db.typedefs.Victory.ERADICATION" href="#server.db.typedefs.Victory.ERADICATION">ERADICATION</a></code></li>
+<li><code><a title="server.db.typedefs.Victory.SANDBOX" href="#server.db.typedefs.Victory.SANDBOX">SANDBOX</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

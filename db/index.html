@@ -33,81 +33,210 @@ Database interaction
 
 import asyncio
 import logging
+from contextlib import contextmanager
 
-from aiomysql.sa import create_engine
-from pymysql.err import OperationalError
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import DBAPIError, OperationalError
+from sqlalchemy.ext.asyncio import AsyncConnection as _AsyncConnection
+from sqlalchemy.ext.asyncio import AsyncEngine as _AsyncEngine
+from sqlalchemy.util import EMPTY_DICT
+
+from server.metrics import db_exceptions
 
 logger = logging.getLogger(__name__)
 
 
-class FAFDatabase:
-    def __init__(self, loop):
-        self._loop = loop
-        self.engine = None
+@contextmanager
+def stat_db_errors():
+    &#34;&#34;&#34;
+    Collect metrics on errors thrown
+    &#34;&#34;&#34;
+    try:
+        yield
+    except DBAPIError as e:
+        db_exceptions.labels(e.__class__.__name__, e.code).inc()
+        raise e
 
-    async def connect(
+
+class FAFDatabase:
+    def __init__(
         self,
-        host=&#34;localhost&#34;,
-        port=3306,
-        user=&#34;root&#34;,
-        password=&#34;&#34;,
-        db=&#34;faf_test&#34;,
-        minsize=1,
-        maxsize=1
+        host: str = &#34;localhost&#34;,
+        port: int = 3306,
+        user: str = &#34;root&#34;,
+        password: str = &#34;&#34;,
+        db: str = &#34;faf_test&#34;,
+        **kwargs
     ):
-        if self.engine is not None:
-            raise ValueError(&#34;DB is already connected!&#34;)
-        self.engine = await create_engine(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            db=db,
-            autocommit=True,
-            loop=self._loop,
-            minsize=minsize,
-            maxsize=maxsize,
+        kwargs[&#34;future&#34;] = True
+        sync_engine = create_engine(
+            f&#34;mysql+aiomysql://{user}:{password}@{host}:{port}/{db}&#34;,
+            **kwargs
         )
 
+        self.engine = AsyncEngine(sync_engine)
+
     def acquire(self):
-        return self.engine.acquire()
+        return self.engine.begin()
 
     async def close(self):
-        if self.engine is None:
-            return
-
-        self.engine.close()
-        await self.engine.wait_closed()
-        self.engine = None
+        await self.engine.dispose()
 
 
-async def deadlock_retry_execute(conn, *args, max_attempts=3):
-    for attempt in range(max_attempts - 1):
-        try:
-            return await conn.execute(*args)
-        except OperationalError as e:
-            error_text = str(e)
-            if any(msg in error_text for msg in (
-                &#34;Deadlock found&#34;,
-                &#34;Lock wait timeout exceeded&#34;
-            )):
-                logger.warning(
-                    &#34;Encountered deadlock during SQL execution. Attempts: %d&#34;,
-                    attempt + 1
+class AsyncEngine(_AsyncEngine):
+    &#34;&#34;&#34;
+    For overriding the connection class used to execute statements.
+
+    This could also be done by changing engine._connection_cls, however this
+    is undocumented and probably more fragile so we subclass instead.
+    &#34;&#34;&#34;
+
+    def connect(self):
+        return AsyncConnection(self)
+
+
+class AsyncConnection(_AsyncConnection):
+    async def execute(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        **kwargs
+    ):
+        with stat_db_errors():
+            return await self._execute(
+                statement,
+                parameters=parameters,
+                execution_options=execution_options,
+                **kwargs
+            )
+
+    async def _execute(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        **kwargs
+    ):
+        &#34;&#34;&#34;
+        Wrap strings in the text type automatically and allows bindparams to be
+        passed via kwargs.
+        &#34;&#34;&#34;
+        if isinstance(statement, str):
+            statement = text(statement)
+
+        if kwargs and parameters is None:
+            parameters = kwargs
+
+        return await super().execute(
+            statement,
+            parameters=parameters,
+            execution_options=execution_options
+        )
+
+    async def stream(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        **kwargs
+    ):
+        with stat_db_errors():
+            return await self._stream(
+                statement,
+                parameters=parameters,
+                execution_options=execution_options,
+                **kwargs
+            )
+
+    async def _stream(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        **kwargs
+    ):
+        &#34;&#34;&#34;
+        Wrap strings in the text type automatically and allows bindparams to be
+        passed via kwargs.
+        &#34;&#34;&#34;
+        if isinstance(statement, str):
+            statement = text(statement)
+
+        if kwargs and parameters is None:
+            parameters = kwargs
+
+        return await super().stream(
+            statement,
+            parameters=parameters,
+            execution_options=execution_options
+        )
+
+    async def deadlock_retry_execute(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        max_attempts=3,
+        **kwargs
+    ):
+        with stat_db_errors():
+            return await self._deadlock_retry_execute(
+                statement,
+                parameters=parameters,
+                execution_options=execution_options,
+                max_attempts=max_attempts,
+                **kwargs
+            )
+
+    async def _deadlock_retry_execute(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        max_attempts=3,
+        **kwargs
+    ):
+        for attempt in range(max_attempts - 1):
+            try:
+                return await self._execute(
+                    statement,
+                    parameters=parameters,
+                    execution_options=execution_options,
+                    **kwargs
                 )
-                # Exponential backoff
-                await asyncio.sleep(0.3 * 2 ** attempt)
-            else:
-                raise
+            except OperationalError as e:
+                error_text = str(e)
+                if any(msg in error_text for msg in (
+                    &#34;Deadlock found&#34;,
+                    &#34;Lock wait timeout exceeded&#34;
+                )):
+                    logger.warning(
+                        &#34;Encountered deadlock during SQL execution. Attempts: %d&#34;,
+                        attempt + 1
+                    )
+                    # Exponential backoff
+                    await asyncio.sleep(0.3 * 2 ** attempt)
+                else:
+                    raise
 
-    # On the final attempt we don&#39;t do any error handling
-    return await conn.execute(*args)</code></pre>
+        # On the final attempt we don&#39;t do any error handling
+        return await self._execute(
+            statement,
+            parameters=parameters,
+            execution_options=execution_options,
+            **kwargs
+        )</code></pre>
 </details>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
 <dt><code class="name"><a title="server.db.models" href="models.html">server.db.models</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt><code class="name"><a title="server.db.typedefs" href="typedefs.html">server.db.typedefs</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -118,36 +247,25 @@ async def deadlock_retry_execute(conn, *args, max_attempts=3):
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="server.db.deadlock_retry_execute"><code class="name flex">
-<span>async def <span class="ident">deadlock_retry_execute</span></span>(<span>conn, *args, max_attempts=3)</span>
+<dt id="server.db.stat_db_errors"><code class="name flex">
+<span>def <span class="ident">stat_db_errors</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Collect metrics on errors thrown</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def deadlock_retry_execute(conn, *args, max_attempts=3):
-    for attempt in range(max_attempts - 1):
-        try:
-            return await conn.execute(*args)
-        except OperationalError as e:
-            error_text = str(e)
-            if any(msg in error_text for msg in (
-                &#34;Deadlock found&#34;,
-                &#34;Lock wait timeout exceeded&#34;
-            )):
-                logger.warning(
-                    &#34;Encountered deadlock during SQL execution. Attempts: %d&#34;,
-                    attempt + 1
-                )
-                # Exponential backoff
-                await asyncio.sleep(0.3 * 2 ** attempt)
-            else:
-                raise
-
-    # On the final attempt we don&#39;t do any error handling
-    return await conn.execute(*args)</code></pre>
+<pre><code class="python">@contextmanager
+def stat_db_errors():
+    &#34;&#34;&#34;
+    Collect metrics on errors thrown
+    &#34;&#34;&#34;
+    try:
+        yield
+    except DBAPIError as e:
+        db_exceptions.labels(e.__class__.__name__, e.code).inc()
+        raise e</code></pre>
 </details>
 </dd>
 </dl>
@@ -155,9 +273,357 @@ async def deadlock_retry_execute(conn, *args, max_attempts=3):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="server.db.AsyncConnection"><code class="flex name class">
+<span>class <span class="ident">AsyncConnection</span></span>
+<span>(</span><span>async_engine, sync_connection=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>An asyncio proxy for a :class:<code>_engine.Connection</code>.</p>
+<p>:class:<code>_asyncio.AsyncConnection</code> is acquired using the
+:meth:<code>_asyncio.AsyncEngine.connect</code>
+method of :class:<code>_asyncio.AsyncEngine</code>::</p>
+<pre><code>from sqlalchemy.ext.asyncio import create_async_engine
+engine = create_async_engine("postgresql+asyncpg://user:pass@host/dbname")
+
+async with engine.connect() as conn:
+    result = await conn.execute(select(table))
+</code></pre>
+<div class="admonition versionadded">
+<p class="admonition-title">Added in version:&ensp;1.4</p>
+</div></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AsyncConnection(_AsyncConnection):
+    async def execute(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        **kwargs
+    ):
+        with stat_db_errors():
+            return await self._execute(
+                statement,
+                parameters=parameters,
+                execution_options=execution_options,
+                **kwargs
+            )
+
+    async def _execute(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        **kwargs
+    ):
+        &#34;&#34;&#34;
+        Wrap strings in the text type automatically and allows bindparams to be
+        passed via kwargs.
+        &#34;&#34;&#34;
+        if isinstance(statement, str):
+            statement = text(statement)
+
+        if kwargs and parameters is None:
+            parameters = kwargs
+
+        return await super().execute(
+            statement,
+            parameters=parameters,
+            execution_options=execution_options
+        )
+
+    async def stream(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        **kwargs
+    ):
+        with stat_db_errors():
+            return await self._stream(
+                statement,
+                parameters=parameters,
+                execution_options=execution_options,
+                **kwargs
+            )
+
+    async def _stream(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        **kwargs
+    ):
+        &#34;&#34;&#34;
+        Wrap strings in the text type automatically and allows bindparams to be
+        passed via kwargs.
+        &#34;&#34;&#34;
+        if isinstance(statement, str):
+            statement = text(statement)
+
+        if kwargs and parameters is None:
+            parameters = kwargs
+
+        return await super().stream(
+            statement,
+            parameters=parameters,
+            execution_options=execution_options
+        )
+
+    async def deadlock_retry_execute(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        max_attempts=3,
+        **kwargs
+    ):
+        with stat_db_errors():
+            return await self._deadlock_retry_execute(
+                statement,
+                parameters=parameters,
+                execution_options=execution_options,
+                max_attempts=max_attempts,
+                **kwargs
+            )
+
+    async def _deadlock_retry_execute(
+        self,
+        statement,
+        parameters=None,
+        execution_options=EMPTY_DICT,
+        max_attempts=3,
+        **kwargs
+    ):
+        for attempt in range(max_attempts - 1):
+            try:
+                return await self._execute(
+                    statement,
+                    parameters=parameters,
+                    execution_options=execution_options,
+                    **kwargs
+                )
+            except OperationalError as e:
+                error_text = str(e)
+                if any(msg in error_text for msg in (
+                    &#34;Deadlock found&#34;,
+                    &#34;Lock wait timeout exceeded&#34;
+                )):
+                    logger.warning(
+                        &#34;Encountered deadlock during SQL execution. Attempts: %d&#34;,
+                        attempt + 1
+                    )
+                    # Exponential backoff
+                    await asyncio.sleep(0.3 * 2 ** attempt)
+                else:
+                    raise
+
+        # On the final attempt we don&#39;t do any error handling
+        return await self._execute(
+            statement,
+            parameters=parameters,
+            execution_options=execution_options,
+            **kwargs
+        )</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>sqlalchemy.ext.asyncio.engine.AsyncConnection</li>
+<li>sqlalchemy.ext.asyncio.base.ProxyComparable</li>
+<li>sqlalchemy.ext.asyncio.base.ReversibleProxy</li>
+<li>sqlalchemy.ext.asyncio.base.StartableContext</li>
+<li>abc.ABC</li>
+<li>sqlalchemy.ext.asyncio.engine.AsyncConnectable</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="server.db.AsyncConnection.sync_connection"><code class="name">var <span class="ident">sync_connection</span> : sqlalchemy.future.engine.Connection</code></dt>
+<dd>
+<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
+</dd>
+<dt id="server.db.AsyncConnection.sync_engine"><code class="name">var <span class="ident">sync_engine</span> : sqlalchemy.future.engine.Engine</code></dt>
+<dd>
+<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="server.db.AsyncConnection.deadlock_retry_execute"><code class="name flex">
+<span>async def <span class="ident">deadlock_retry_execute</span></span>(<span>self, statement, parameters=None, execution_options=immutabledict({}), max_attempts=3, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def deadlock_retry_execute(
+    self,
+    statement,
+    parameters=None,
+    execution_options=EMPTY_DICT,
+    max_attempts=3,
+    **kwargs
+):
+    with stat_db_errors():
+        return await self._deadlock_retry_execute(
+            statement,
+            parameters=parameters,
+            execution_options=execution_options,
+            max_attempts=max_attempts,
+            **kwargs
+        )</code></pre>
+</details>
+</dd>
+<dt id="server.db.AsyncConnection.execute"><code class="name flex">
+<span>async def <span class="ident">execute</span></span>(<span>self, statement, parameters=None, execution_options=immutabledict({}), **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Executes a SQL statement construct and return a buffered
+:class:<code>_engine.Result</code>.</p>
+<p>:param object: The statement to be executed.
+This is always
+an object that is in both the :class:<code>_expression.ClauseElement</code> and
+:class:<code>_expression.Executable</code> hierarchies, including:</p>
+<ul>
+<li>:class:<code>_expression.Select</code></li>
+<li>:class:<code>_expression.Insert</code>, :class:<code>_expression.Update</code>,
+:class:<code>_expression.Delete</code></li>
+<li>:class:<code>_expression.TextClause</code> and
+:class:<code>_expression.TextualSelect</code></li>
+<li>:class:<code>_schema.DDL</code> and objects which inherit from
+:class:<code>_schema.DDLElement</code></li>
+</ul>
+<p>:param parameters: parameters which will be bound into the statement.
+This may be either a dictionary of parameter names to values,
+or a mutable sequence (e.g. a list) of dictionaries.
+When a
+list of dictionaries is passed, the underlying statement execution
+will make use of the DBAPI <code>cursor.executemany()</code> method.
+When a single dictionary is passed, the DBAPI <code>cursor.execute()</code>
+method will be used.</p>
+<p>:param execution_options: optional dictionary of execution options,
+which will be associated with the statement execution.
+This
+dictionary can provide a subset of the options that are accepted
+by :meth:<code>_future.Connection.execution_options</code>.</p>
+<p>:return: a :class:<code>_engine.Result</code> object.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def execute(
+    self,
+    statement,
+    parameters=None,
+    execution_options=EMPTY_DICT,
+    **kwargs
+):
+    with stat_db_errors():
+        return await self._execute(
+            statement,
+            parameters=parameters,
+            execution_options=execution_options,
+            **kwargs
+        )</code></pre>
+</details>
+</dd>
+<dt id="server.db.AsyncConnection.stream"><code class="name flex">
+<span>async def <span class="ident">stream</span></span>(<span>self, statement, parameters=None, execution_options=immutabledict({}), **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Execute a statement and return a streaming
+:class:<code>_asyncio.AsyncResult</code> object.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def stream(
+    self,
+    statement,
+    parameters=None,
+    execution_options=EMPTY_DICT,
+    **kwargs
+):
+    with stat_db_errors():
+        return await self._stream(
+            statement,
+            parameters=parameters,
+            execution_options=execution_options,
+            **kwargs
+        )</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="server.db.AsyncEngine"><code class="flex name class">
+<span>class <span class="ident">AsyncEngine</span></span>
+<span>(</span><span>sync_engine)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>For overriding the connection class used to execute statements.</p>
+<p>This could also be done by changing engine._connection_cls, however this
+is undocumented and probably more fragile so we subclass instead.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AsyncEngine(_AsyncEngine):
+    &#34;&#34;&#34;
+    For overriding the connection class used to execute statements.
+
+    This could also be done by changing engine._connection_cls, however this
+    is undocumented and probably more fragile so we subclass instead.
+    &#34;&#34;&#34;
+
+    def connect(self):
+        return AsyncConnection(self)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>sqlalchemy.ext.asyncio.engine.AsyncEngine</li>
+<li>sqlalchemy.ext.asyncio.base.ProxyComparable</li>
+<li>sqlalchemy.ext.asyncio.base.ReversibleProxy</li>
+<li>sqlalchemy.ext.asyncio.engine.AsyncConnectable</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="server.db.AsyncEngine.sync_engine"><code class="name">var <span class="ident">sync_engine</span> : sqlalchemy.future.engine.Engine</code></dt>
+<dd>
+<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="server.db.AsyncEngine.connect"><code class="name flex">
+<span>def <span class="ident">connect</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return an :class:<code>_asyncio.AsyncConnection</code> object.</p>
+<p>The :class:<code>_asyncio.AsyncConnection</code> will procure a database
+connection from the underlying connection pool when it is entered
+as an async context manager::</p>
+<pre><code>async with async_engine.connect() as conn:
+    result = await conn.execute(select(user_table))
+</code></pre>
+<p>The :class:<code>_asyncio.AsyncConnection</code> may also be started outside of a
+context manager by invoking its :meth:<code>_asyncio.AsyncConnection.start</code>
+method.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def connect(self):
+    return AsyncConnection(self)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 <dt id="server.db.FAFDatabase"><code class="flex name class">
 <span>class <span class="ident">FAFDatabase</span></span>
-<span>(</span><span>loop)</span>
+<span>(</span><span>host: str = 'localhost', port: int = 3306, user: str = 'root', password: str = '', db: str = 'faf_test', **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -166,44 +632,28 @@ async def deadlock_retry_execute(conn, *args, max_attempts=3):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class FAFDatabase:
-    def __init__(self, loop):
-        self._loop = loop
-        self.engine = None
-
-    async def connect(
+    def __init__(
         self,
-        host=&#34;localhost&#34;,
-        port=3306,
-        user=&#34;root&#34;,
-        password=&#34;&#34;,
-        db=&#34;faf_test&#34;,
-        minsize=1,
-        maxsize=1
+        host: str = &#34;localhost&#34;,
+        port: int = 3306,
+        user: str = &#34;root&#34;,
+        password: str = &#34;&#34;,
+        db: str = &#34;faf_test&#34;,
+        **kwargs
     ):
-        if self.engine is not None:
-            raise ValueError(&#34;DB is already connected!&#34;)
-        self.engine = await create_engine(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            db=db,
-            autocommit=True,
-            loop=self._loop,
-            minsize=minsize,
-            maxsize=maxsize,
+        kwargs[&#34;future&#34;] = True
+        sync_engine = create_engine(
+            f&#34;mysql+aiomysql://{user}:{password}@{host}:{port}/{db}&#34;,
+            **kwargs
         )
 
+        self.engine = AsyncEngine(sync_engine)
+
     def acquire(self):
-        return self.engine.acquire()
+        return self.engine.begin()
 
     async def close(self):
-        if self.engine is None:
-            return
-
-        self.engine.close()
-        await self.engine.wait_closed()
-        self.engine = None</code></pre>
+        await self.engine.dispose()</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -217,7 +667,7 @@ async def deadlock_retry_execute(conn, *args, max_attempts=3):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def acquire(self):
-    return self.engine.acquire()</code></pre>
+    return self.engine.begin()</code></pre>
 </details>
 </dd>
 <dt id="server.db.FAFDatabase.close"><code class="name flex">
@@ -230,46 +680,7 @@ async def deadlock_retry_execute(conn, *args, max_attempts=3):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def close(self):
-    if self.engine is None:
-        return
-
-    self.engine.close()
-    await self.engine.wait_closed()
-    self.engine = None</code></pre>
-</details>
-</dd>
-<dt id="server.db.FAFDatabase.connect"><code class="name flex">
-<span>async def <span class="ident">connect</span></span>(<span>self, host='localhost', port=3306, user='root', password='', db='faf_test', minsize=1, maxsize=1)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def connect(
-    self,
-    host=&#34;localhost&#34;,
-    port=3306,
-    user=&#34;root&#34;,
-    password=&#34;&#34;,
-    db=&#34;faf_test&#34;,
-    minsize=1,
-    maxsize=1
-):
-    if self.engine is not None:
-        raise ValueError(&#34;DB is already connected!&#34;)
-    self.engine = await create_engine(
-        host=host,
-        port=port,
-        user=user,
-        password=password,
-        db=db,
-        autocommit=True,
-        loop=self._loop,
-        minsize=minsize,
-        maxsize=maxsize,
-    )</code></pre>
+    await self.engine.dispose()</code></pre>
 </details>
 </dd>
 </dl>
@@ -291,21 +702,38 @@ async def deadlock_retry_execute(conn, *args, max_attempts=3):
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
 <li><code><a title="server.db.models" href="models.html">server.db.models</a></code></li>
+<li><code><a title="server.db.typedefs" href="typedefs.html">server.db.typedefs</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="server.db.deadlock_retry_execute" href="#server.db.deadlock_retry_execute">deadlock_retry_execute</a></code></li>
+<li><code><a title="server.db.stat_db_errors" href="#server.db.stat_db_errors">stat_db_errors</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
+<h4><code><a title="server.db.AsyncConnection" href="#server.db.AsyncConnection">AsyncConnection</a></code></h4>
+<ul class="">
+<li><code><a title="server.db.AsyncConnection.deadlock_retry_execute" href="#server.db.AsyncConnection.deadlock_retry_execute">deadlock_retry_execute</a></code></li>
+<li><code><a title="server.db.AsyncConnection.execute" href="#server.db.AsyncConnection.execute">execute</a></code></li>
+<li><code><a title="server.db.AsyncConnection.stream" href="#server.db.AsyncConnection.stream">stream</a></code></li>
+<li><code><a title="server.db.AsyncConnection.sync_connection" href="#server.db.AsyncConnection.sync_connection">sync_connection</a></code></li>
+<li><code><a title="server.db.AsyncConnection.sync_engine" href="#server.db.AsyncConnection.sync_engine">sync_engine</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.db.AsyncEngine" href="#server.db.AsyncEngine">AsyncEngine</a></code></h4>
+<ul class="">
+<li><code><a title="server.db.AsyncEngine.connect" href="#server.db.AsyncEngine.connect">connect</a></code></li>
+<li><code><a title="server.db.AsyncEngine.sync_engine" href="#server.db.AsyncEngine.sync_engine">sync_engine</a></code></li>
+</ul>
+</li>
+<li>
 <h4><code><a title="server.db.FAFDatabase" href="#server.db.FAFDatabase">FAFDatabase</a></code></h4>
 <ul class="">
 <li><code><a title="server.db.FAFDatabase.acquire" href="#server.db.FAFDatabase.acquire">acquire</a></code></li>
 <li><code><a title="server.db.FAFDatabase.close" href="#server.db.FAFDatabase.close">close</a></code></li>
-<li><code><a title="server.db.FAFDatabase.connect" href="#server.db.FAFDatabase.connect">connect</a></code></li>
 </ul>
 </li>
 </ul>

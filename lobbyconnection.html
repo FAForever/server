@@ -45,8 +45,8 @@ from hashlib import md5
 from typing import Optional
 
 import aiohttp
-import pymysql
 from sqlalchemy import and_, func, select
+from sqlalchemy.exc import DBAPIError, OperationalError, ProgrammingError
 
 import server.metrics as metrics
 from server.db import FAFDatabase
@@ -240,11 +240,10 @@ class LobbyConnection:
         raise ClientError(&#34;FAF no longer supports direct registration. Please use the website to register.&#34;, recoverable=True)
 
     async def command_coop_list(self, message):
-        &#34;&#34;&#34; Request for coop map list&#34;&#34;&#34;
+        &#34;&#34;&#34;Request for coop map list&#34;&#34;&#34;
         async with self._db.acquire() as conn:
-            result = await conn.execute(select([coop_map]))
+            result = await conn.stream(select([coop_map]))
 
-            maps = []
             campaigns = [
                 &#34;FA Campaign&#34;,
                 &#34;Aeon Vanilla Campaign&#34;,
@@ -253,23 +252,20 @@ class LobbyConnection:
                 &#34;Custom Missions&#34;
             ]
             async for row in result:
-                json_to_send = {
-                    &#34;command&#34;: &#34;coop_info&#34;,
-                    &#34;name&#34;: row[&#34;name&#34;],
-                    &#34;description&#34;: row[&#34;description&#34;],
-                    &#34;filename&#34;: row[&#34;filename&#34;],
-                    &#34;featured_mod&#34;: &#34;coop&#34;
-                }
-                if row[&#34;type&#34;] &lt; len(campaigns):
-                    json_to_send[&#34;type&#34;] = campaigns[row[&#34;type&#34;]]
-                else:
+                if row.type &gt;= len(campaigns):
                     # Don&#39;t sent corrupt data to the client...
-                    self._logger.error(&#34;Unknown coop type!&#34;)
+                    self._logger.error(&#34;Unknown coop type! %s&#34;, row.type)
                     continue
-                json_to_send[&#34;uid&#34;] = row[&#34;id&#34;]
-                maps.append(json_to_send)
 
-        await self.protocol.send_messages(maps)
+                await self.send({
+                    &#34;command&#34;: &#34;coop_info&#34;,
+                    &#34;uid&#34;: row.id,
+                    &#34;type&#34;: campaigns[row.type],
+                    &#34;name&#34;: row.name,
+                    &#34;description&#34;: row.description,
+                    &#34;filename&#34;: row.filename,
+                    &#34;featured_mod&#34;: &#34;coop&#34;
+                })
 
     async def command_matchmaker_info(self, message):
         await self.send({
@@ -423,33 +419,42 @@ class LobbyConnection:
 
         auth_method = &#34;password&#34;
         auth_error_message = &#34;Login not found or password incorrect. They are case sensitive.&#34;
-        row = await result.fetchone()
+        row = result.fetchone()
         if not row:
             raise AuthenticationError(auth_error_message, auth_method)
 
-        player_id = row[t_login.c.id]
-        real_username = row[t_login.c.login]
-        dbPassword = row[t_login.c.password]
-        steamid = row[t_login.c.steamid]
-        create_time = row[t_login.c.create_time]
-        ban_reason = row[lobby_ban.c.reason]
-        ban_expiry = row[lobby_ban.c.expires_at]
+        player_id = row.id
+        real_username = row.login
+        dbPassword = row.password
+        steamid = row.steamid
+        create_time = row.create_time
+        ban_reason = row.reason
+        ban_expiry = row.expires_at
 
         if dbPassword != password:
             raise AuthenticationError(auth_error_message, auth_method)
 
         now = datetime.utcnow()
         if ban_reason is not None and now &lt; ban_expiry:
-            self._logger.debug(&#34;Rejected login from banned user: %s, %s, %s&#34;,
-                               player_id, username, self.session)
+            self._logger.debug(
+                &#34;Rejected login from banned user: %s, %s, %s&#34;,
+                player_id, username, self.session
+            )
             raise BanError(ban_expiry, ban_reason)
 
         # New accounts are prevented from playing if they didn&#39;t link to steam
 
         if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() &gt; config.FORCE_STEAM_LINK_AFTER_DATE:
-            self._logger.debug(&#34;Rejected login from new user: %s, %s, %s&#34;, player_id, username, self.session)
+            self._logger.debug(
+                &#34;Rejected login from new user: %s, %s, %s&#34;,
+                player_id, username, self.session
+            )
             raise ClientError(
-                &#39;Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on &lt;a href=&#34;{steamlink_url}&#34;&gt;{steamlink_url}&lt;/a&gt;.&#39;.format(steamlink_url=config.WWW_URL + &#34;/account/link&#34;),
+                &#34;Unfortunately, you must currently link your account to Steam &#34;
+                &#34;in order to play Forged Alliance Forever. You can do so on &#34;
+                &#39;&lt;a href=&#34;{steamlink_url}&#34;&gt;{steamlink_url}&lt;/a&gt;.&#39;.format(
+                    steamlink_url=config.WWW_URL + &#34;/account/link&#34;
+                ),
                 recoverable=False)
 
         return player_id, real_username, steamid
@@ -544,7 +549,7 @@ class LobbyConnection:
                             level=ban_level,
                         )
                     )
-                except pymysql.MySQLError as e:
+                except DBAPIError as e:
                     raise ClientError(f&#34;Banning failed: {e}&#34;)
 
             return False
@@ -562,7 +567,7 @@ class LobbyConnection:
                 select([t_login.c.login, t_login.c.steamid])
                 .where(t_login.c.id == player_id)
             )
-            row = await result.fetchone()
+            row = result.fetchone()
 
             if not row:
                 self._logger.warning(&#34;User id not found in database possible fraudulent token: %s&#34;, player_id)
@@ -698,7 +703,7 @@ class LobbyConnection:
                 )
             )
 
-            async for row in result:
+            for row in result:
                 target_id, status = row[&#34;subject_id&#34;], row[&#34;status&#34;]
                 if status == &#34;FRIEND&#34;:
                     friends.append(target_id)
@@ -735,10 +740,12 @@ class LobbyConnection:
 
         try:
             await conn.execute(
-                &#34;UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s&#34;,
-                (irc_pass, login)
+                &#34;UPDATE anope.anope_db_NickCore &#34;
+                &#34;SET pass = :passwd WHERE display = :display&#34;,
+                passwd=irc_pass,
+                display=login
             )
-        except (pymysql.OperationalError, pymysql.ProgrammingError):
+        except (OperationalError, ProgrammingError):
             self._logger.error(&#34;Failure updating NickServ password for %s&#34;, login)
 
     async def command_restore_game_session(self, message):
@@ -782,8 +789,6 @@ class LobbyConnection:
         action = message[&#34;action&#34;]
 
         if action == &#34;list_avatar&#34;:
-            avatarList = []
-
             async with self._db.acquire() as conn:
                 result = await conn.execute(
                     select([
@@ -798,12 +803,13 @@ class LobbyConnection:
                     )
                 )
 
-                async for row in result:
-                    avatar = {&#34;url&#34;: row[&#34;url&#34;], &#34;tooltip&#34;: row[&#34;tooltip&#34;]}
-                    avatarList.append(avatar)
-
-                if avatarList:
-                    await self.send({&#34;command&#34;: &#34;avatar&#34;, &#34;avatarlist&#34;: avatarList})
+                await self.send({
+                    &#34;command&#34;: &#34;avatar&#34;,
+                    &#34;avatarlist&#34;: [
+                        {&#34;url&#34;: row.url, &#34;tooltip&#34;: row.tooltip}
+                        for row in result
+                    ]
+                })
 
         elif action == &#34;select&#34;:
             avatar_url = message[&#34;avatar&#34;]
@@ -822,7 +828,7 @@ class LobbyConnection:
                             )
                         )
                     )
-                    row = await result.fetchone()
+                    row = result.fetchone()
                     if not row:
                         return
 
@@ -840,7 +846,7 @@ class LobbyConnection:
                         avatars.update().where(
                             and_(
                                 avatars.c.idUser == self.player.id,
-                                avatars.c.idAvatar == row[avatars_list.c.id]
+                                avatars.c.idAvatar == row.id
                             )
                         ).values(
                             selected=1
@@ -848,7 +854,7 @@ class LobbyConnection:
                     )
                     self.player.avatar = {
                         &#34;url&#34;: avatar_url,
-                        &#34;tooltip&#34;: row[avatars_list.c.tooltip]
+                        &#34;tooltip&#34;: row.tooltip
                     }
                 self.player_service.mark_dirty(self.player)
         else:
@@ -1083,7 +1089,7 @@ class LobbyConnection:
             if type == &#34;start&#34;:
                 result = await conn.execute(&#34;SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100&#34;)
 
-                async for row in result:
+                for row in result:
                     uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = (row[i] for i in range(12))
                     try:
                         link = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/&#34; + filename)
@@ -1102,9 +1108,14 @@ class LobbyConnection:
             elif type == &#34;like&#34;:
                 canLike = True
                 uid = message[&#34;uid&#34;]
-                result = await conn.execute(&#34;SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = %s LIMIT 1&#34;, (uid,))
+                result = await conn.execute(
+                    &#34;SELECT uid, name, version, author, ui, date, downloads, &#34;
+                    &#34;likes, played, description, filename, icon, likers FROM &#34;
+                    &#34;`table_mod` WHERE uid = :uid LIMIT 1&#34;,
+                    uid=uid
+                )
 
-                row = await result.fetchone()
+                row = result.fetchone()
                 uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = (row[i] for i in range(13))
                 link = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/&#34; + filename)
                 thumbstr = &#34;&#34;
@@ -1130,8 +1141,10 @@ class LobbyConnection:
                     await conn.execute(
                         &#34;UPDATE mod_stats s &#34;
                         &#34;JOIN mod_version v ON v.mod_id = s.mod_id &#34;
-                        &#34;SET s.likes = s.likes + 1, likers=%s WHERE v.uid = %s&#34;,
-                        json.dumps(likers), uid)
+                        &#34;SET s.likes = s.likes + 1, likers=:l WHERE v.uid=:id&#34;,
+                        l=json.dumps(likers),
+                        id=uid
+                    )
                     await self.send(out)
 
             elif type == &#34;download&#34;:
@@ -1271,16 +1284,18 @@ class LobbyConnection:
                 .where(lobby_ban.c.idUser == self.player.id)
                 .order_by(lobby_ban.c.expires_at.desc())
             )
+            row = result.fetchone()
 
-            data = await result.fetchone()
-            if data is None:
+            if row is None:
                 return
 
-            ban_expiry = data[ban.c.expires_at]
-            ban_reason = data[ban.c.reason]
+            ban_expiry = row.expires_at
+            ban_reason = row.reason
             if now &lt; ban_expiry:
-                self._logger.debug(&#34;Aborting connection of banned user: %s, %s, %s&#34;,
-                                   self.player.id, self.player.login, self.session)
+                self._logger.debug(
+                    &#34;Aborting connection of banned user: %s, %s, %s&#34;,
+                    self.player.id, self.player.login, self.session
+                )
                 raise BanError(ban_expiry, ban_reason)</code></pre>
 </details>
 </section>
@@ -1453,11 +1468,10 @@ class LobbyConnection:
         raise ClientError(&#34;FAF no longer supports direct registration. Please use the website to register.&#34;, recoverable=True)
 
     async def command_coop_list(self, message):
-        &#34;&#34;&#34; Request for coop map list&#34;&#34;&#34;
+        &#34;&#34;&#34;Request for coop map list&#34;&#34;&#34;
         async with self._db.acquire() as conn:
-            result = await conn.execute(select([coop_map]))
+            result = await conn.stream(select([coop_map]))
 
-            maps = []
             campaigns = [
                 &#34;FA Campaign&#34;,
                 &#34;Aeon Vanilla Campaign&#34;,
@@ -1466,23 +1480,20 @@ class LobbyConnection:
                 &#34;Custom Missions&#34;
             ]
             async for row in result:
-                json_to_send = {
-                    &#34;command&#34;: &#34;coop_info&#34;,
-                    &#34;name&#34;: row[&#34;name&#34;],
-                    &#34;description&#34;: row[&#34;description&#34;],
-                    &#34;filename&#34;: row[&#34;filename&#34;],
-                    &#34;featured_mod&#34;: &#34;coop&#34;
-                }
-                if row[&#34;type&#34;] &lt; len(campaigns):
-                    json_to_send[&#34;type&#34;] = campaigns[row[&#34;type&#34;]]
-                else:
+                if row.type &gt;= len(campaigns):
                     # Don&#39;t sent corrupt data to the client...
-                    self._logger.error(&#34;Unknown coop type!&#34;)
+                    self._logger.error(&#34;Unknown coop type! %s&#34;, row.type)
                     continue
-                json_to_send[&#34;uid&#34;] = row[&#34;id&#34;]
-                maps.append(json_to_send)
 
-        await self.protocol.send_messages(maps)
+                await self.send({
+                    &#34;command&#34;: &#34;coop_info&#34;,
+                    &#34;uid&#34;: row.id,
+                    &#34;type&#34;: campaigns[row.type],
+                    &#34;name&#34;: row.name,
+                    &#34;description&#34;: row.description,
+                    &#34;filename&#34;: row.filename,
+                    &#34;featured_mod&#34;: &#34;coop&#34;
+                })
 
     async def command_matchmaker_info(self, message):
         await self.send({
@@ -1636,33 +1647,42 @@ class LobbyConnection:
 
         auth_method = &#34;password&#34;
         auth_error_message = &#34;Login not found or password incorrect. They are case sensitive.&#34;
-        row = await result.fetchone()
+        row = result.fetchone()
         if not row:
             raise AuthenticationError(auth_error_message, auth_method)
 
-        player_id = row[t_login.c.id]
-        real_username = row[t_login.c.login]
-        dbPassword = row[t_login.c.password]
-        steamid = row[t_login.c.steamid]
-        create_time = row[t_login.c.create_time]
-        ban_reason = row[lobby_ban.c.reason]
-        ban_expiry = row[lobby_ban.c.expires_at]
+        player_id = row.id
+        real_username = row.login
+        dbPassword = row.password
+        steamid = row.steamid
+        create_time = row.create_time
+        ban_reason = row.reason
+        ban_expiry = row.expires_at
 
         if dbPassword != password:
             raise AuthenticationError(auth_error_message, auth_method)
 
         now = datetime.utcnow()
         if ban_reason is not None and now &lt; ban_expiry:
-            self._logger.debug(&#34;Rejected login from banned user: %s, %s, %s&#34;,
-                               player_id, username, self.session)
+            self._logger.debug(
+                &#34;Rejected login from banned user: %s, %s, %s&#34;,
+                player_id, username, self.session
+            )
             raise BanError(ban_expiry, ban_reason)
 
         # New accounts are prevented from playing if they didn&#39;t link to steam
 
         if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() &gt; config.FORCE_STEAM_LINK_AFTER_DATE:
-            self._logger.debug(&#34;Rejected login from new user: %s, %s, %s&#34;, player_id, username, self.session)
+            self._logger.debug(
+                &#34;Rejected login from new user: %s, %s, %s&#34;,
+                player_id, username, self.session
+            )
             raise ClientError(
-                &#39;Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on &lt;a href=&#34;{steamlink_url}&#34;&gt;{steamlink_url}&lt;/a&gt;.&#39;.format(steamlink_url=config.WWW_URL + &#34;/account/link&#34;),
+                &#34;Unfortunately, you must currently link your account to Steam &#34;
+                &#34;in order to play Forged Alliance Forever. You can do so on &#34;
+                &#39;&lt;a href=&#34;{steamlink_url}&#34;&gt;{steamlink_url}&lt;/a&gt;.&#39;.format(
+                    steamlink_url=config.WWW_URL + &#34;/account/link&#34;
+                ),
                 recoverable=False)
 
         return player_id, real_username, steamid
@@ -1757,7 +1777,7 @@ class LobbyConnection:
                             level=ban_level,
                         )
                     )
-                except pymysql.MySQLError as e:
+                except DBAPIError as e:
                     raise ClientError(f&#34;Banning failed: {e}&#34;)
 
             return False
@@ -1775,7 +1795,7 @@ class LobbyConnection:
                 select([t_login.c.login, t_login.c.steamid])
                 .where(t_login.c.id == player_id)
             )
-            row = await result.fetchone()
+            row = result.fetchone()
 
             if not row:
                 self._logger.warning(&#34;User id not found in database possible fraudulent token: %s&#34;, player_id)
@@ -1911,7 +1931,7 @@ class LobbyConnection:
                 )
             )
 
-            async for row in result:
+            for row in result:
                 target_id, status = row[&#34;subject_id&#34;], row[&#34;status&#34;]
                 if status == &#34;FRIEND&#34;:
                     friends.append(target_id)
@@ -1948,10 +1968,12 @@ class LobbyConnection:
 
         try:
             await conn.execute(
-                &#34;UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s&#34;,
-                (irc_pass, login)
+                &#34;UPDATE anope.anope_db_NickCore &#34;
+                &#34;SET pass = :passwd WHERE display = :display&#34;,
+                passwd=irc_pass,
+                display=login
             )
-        except (pymysql.OperationalError, pymysql.ProgrammingError):
+        except (OperationalError, ProgrammingError):
             self._logger.error(&#34;Failure updating NickServ password for %s&#34;, login)
 
     async def command_restore_game_session(self, message):
@@ -1995,8 +2017,6 @@ class LobbyConnection:
         action = message[&#34;action&#34;]
 
         if action == &#34;list_avatar&#34;:
-            avatarList = []
-
             async with self._db.acquire() as conn:
                 result = await conn.execute(
                     select([
@@ -2011,12 +2031,13 @@ class LobbyConnection:
                     )
                 )
 
-                async for row in result:
-                    avatar = {&#34;url&#34;: row[&#34;url&#34;], &#34;tooltip&#34;: row[&#34;tooltip&#34;]}
-                    avatarList.append(avatar)
-
-                if avatarList:
-                    await self.send({&#34;command&#34;: &#34;avatar&#34;, &#34;avatarlist&#34;: avatarList})
+                await self.send({
+                    &#34;command&#34;: &#34;avatar&#34;,
+                    &#34;avatarlist&#34;: [
+                        {&#34;url&#34;: row.url, &#34;tooltip&#34;: row.tooltip}
+                        for row in result
+                    ]
+                })
 
         elif action == &#34;select&#34;:
             avatar_url = message[&#34;avatar&#34;]
@@ -2035,7 +2056,7 @@ class LobbyConnection:
                             )
                         )
                     )
-                    row = await result.fetchone()
+                    row = result.fetchone()
                     if not row:
                         return
 
@@ -2053,7 +2074,7 @@ class LobbyConnection:
                         avatars.update().where(
                             and_(
                                 avatars.c.idUser == self.player.id,
-                                avatars.c.idAvatar == row[avatars_list.c.id]
+                                avatars.c.idAvatar == row.id
                             )
                         ).values(
                             selected=1
@@ -2061,7 +2082,7 @@ class LobbyConnection:
                     )
                     self.player.avatar = {
                         &#34;url&#34;: avatar_url,
-                        &#34;tooltip&#34;: row[avatars_list.c.tooltip]
+                        &#34;tooltip&#34;: row.tooltip
                     }
                 self.player_service.mark_dirty(self.player)
         else:
@@ -2296,7 +2317,7 @@ class LobbyConnection:
             if type == &#34;start&#34;:
                 result = await conn.execute(&#34;SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100&#34;)
 
-                async for row in result:
+                for row in result:
                     uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = (row[i] for i in range(12))
                     try:
                         link = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/&#34; + filename)
@@ -2315,9 +2336,14 @@ class LobbyConnection:
             elif type == &#34;like&#34;:
                 canLike = True
                 uid = message[&#34;uid&#34;]
-                result = await conn.execute(&#34;SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = %s LIMIT 1&#34;, (uid,))
+                result = await conn.execute(
+                    &#34;SELECT uid, name, version, author, ui, date, downloads, &#34;
+                    &#34;likes, played, description, filename, icon, likers FROM &#34;
+                    &#34;`table_mod` WHERE uid = :uid LIMIT 1&#34;,
+                    uid=uid
+                )
 
-                row = await result.fetchone()
+                row = result.fetchone()
                 uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = (row[i] for i in range(13))
                 link = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/&#34; + filename)
                 thumbstr = &#34;&#34;
@@ -2343,8 +2369,10 @@ class LobbyConnection:
                     await conn.execute(
                         &#34;UPDATE mod_stats s &#34;
                         &#34;JOIN mod_version v ON v.mod_id = s.mod_id &#34;
-                        &#34;SET s.likes = s.likes + 1, likers=%s WHERE v.uid = %s&#34;,
-                        json.dumps(likers), uid)
+                        &#34;SET s.likes = s.likes + 1, likers=:l WHERE v.uid=:id&#34;,
+                        l=json.dumps(likers),
+                        id=uid
+                    )
                     await self.send(out)
 
             elif type == &#34;download&#34;:
@@ -2484,16 +2512,18 @@ class LobbyConnection:
                 .where(lobby_ban.c.idUser == self.player.id)
                 .order_by(lobby_ban.c.expires_at.desc())
             )
+            row = result.fetchone()
 
-            data = await result.fetchone()
-            if data is None:
+            if row is None:
                 return
 
-            ban_expiry = data[ban.c.expires_at]
-            ban_reason = data[ban.c.reason]
+            ban_expiry = row.expires_at
+            ban_reason = row.reason
             if now &lt; ban_expiry:
-                self._logger.debug(&#34;Aborting connection of banned user: %s, %s, %s&#34;,
-                                   self.player.id, self.player.login, self.session)
+                self._logger.debug(
+                    &#34;Aborting connection of banned user: %s, %s, %s&#34;,
+                    self.player.id, self.player.login, self.session
+                )
                 raise BanError(ban_expiry, ban_reason)</code></pre>
 </details>
 <h3>Instance variables</h3>
@@ -2553,16 +2583,18 @@ def authenticated(self):
             .where(lobby_ban.c.idUser == self.player.id)
             .order_by(lobby_ban.c.expires_at.desc())
         )
+        row = result.fetchone()
 
-        data = await result.fetchone()
-        if data is None:
+        if row is None:
             return
 
-        ban_expiry = data[ban.c.expires_at]
-        ban_reason = data[ban.c.reason]
+        ban_expiry = row.expires_at
+        ban_reason = row.reason
         if now &lt; ban_expiry:
-            self._logger.debug(&#34;Aborting connection of banned user: %s, %s, %s&#34;,
-                               self.player.id, self.player.login, self.session)
+            self._logger.debug(
+                &#34;Aborting connection of banned user: %s, %s, %s&#34;,
+                self.player.id, self.player.login, self.session
+            )
             raise BanError(ban_expiry, ban_reason)</code></pre>
 </details>
 </dd>
@@ -2643,7 +2675,7 @@ def authenticated(self):
                         level=ban_level,
                     )
                 )
-            except pymysql.MySQLError as e:
+            except DBAPIError as e:
                 raise ClientError(f&#34;Banning failed: {e}&#34;)
 
         return False
@@ -2678,33 +2710,42 @@ def authenticated(self):
 
     auth_method = &#34;password&#34;
     auth_error_message = &#34;Login not found or password incorrect. They are case sensitive.&#34;
-    row = await result.fetchone()
+    row = result.fetchone()
     if not row:
         raise AuthenticationError(auth_error_message, auth_method)
 
-    player_id = row[t_login.c.id]
-    real_username = row[t_login.c.login]
-    dbPassword = row[t_login.c.password]
-    steamid = row[t_login.c.steamid]
-    create_time = row[t_login.c.create_time]
-    ban_reason = row[lobby_ban.c.reason]
-    ban_expiry = row[lobby_ban.c.expires_at]
+    player_id = row.id
+    real_username = row.login
+    dbPassword = row.password
+    steamid = row.steamid
+    create_time = row.create_time
+    ban_reason = row.reason
+    ban_expiry = row.expires_at
 
     if dbPassword != password:
         raise AuthenticationError(auth_error_message, auth_method)
 
     now = datetime.utcnow()
     if ban_reason is not None and now &lt; ban_expiry:
-        self._logger.debug(&#34;Rejected login from banned user: %s, %s, %s&#34;,
-                           player_id, username, self.session)
+        self._logger.debug(
+            &#34;Rejected login from banned user: %s, %s, %s&#34;,
+            player_id, username, self.session
+        )
         raise BanError(ban_expiry, ban_reason)
 
     # New accounts are prevented from playing if they didn&#39;t link to steam
 
     if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() &gt; config.FORCE_STEAM_LINK_AFTER_DATE:
-        self._logger.debug(&#34;Rejected login from new user: %s, %s, %s&#34;, player_id, username, self.session)
+        self._logger.debug(
+            &#34;Rejected login from new user: %s, %s, %s&#34;,
+            player_id, username, self.session
+        )
         raise ClientError(
-            &#39;Unfortunately, you must currently link your account to Steam in order to play Forged Alliance Forever. You can do so on &lt;a href=&#34;{steamlink_url}&#34;&gt;{steamlink_url}&lt;/a&gt;.&#39;.format(steamlink_url=config.WWW_URL + &#34;/account/link&#34;),
+            &#34;Unfortunately, you must currently link your account to Steam &#34;
+            &#34;in order to play Forged Alliance Forever. You can do so on &#34;
+            &#39;&lt;a href=&#34;{steamlink_url}&#34;&gt;{steamlink_url}&lt;/a&gt;.&#39;.format(
+                steamlink_url=config.WWW_URL + &#34;/account/link&#34;
+            ),
             recoverable=False)
 
     return player_id, real_username, steamid</code></pre>
@@ -2841,7 +2882,7 @@ async def command_accept_party_invite(self, message):
             select([t_login.c.login, t_login.c.steamid])
             .where(t_login.c.id == player_id)
         )
-        row = await result.fetchone()
+        row = result.fetchone()
 
         if not row:
             self._logger.warning(&#34;User id not found in database possible fraudulent token: %s&#34;, player_id)
@@ -2874,8 +2915,6 @@ async def command_accept_party_invite(self, message):
     action = message[&#34;action&#34;]
 
     if action == &#34;list_avatar&#34;:
-        avatarList = []
-
         async with self._db.acquire() as conn:
             result = await conn.execute(
                 select([
@@ -2890,12 +2929,13 @@ async def command_accept_party_invite(self, message):
                 )
             )
 
-            async for row in result:
-                avatar = {&#34;url&#34;: row[&#34;url&#34;], &#34;tooltip&#34;: row[&#34;tooltip&#34;]}
-                avatarList.append(avatar)
-
-            if avatarList:
-                await self.send({&#34;command&#34;: &#34;avatar&#34;, &#34;avatarlist&#34;: avatarList})
+            await self.send({
+                &#34;command&#34;: &#34;avatar&#34;,
+                &#34;avatarlist&#34;: [
+                    {&#34;url&#34;: row.url, &#34;tooltip&#34;: row.tooltip}
+                    for row in result
+                ]
+            })
 
     elif action == &#34;select&#34;:
         avatar_url = message[&#34;avatar&#34;]
@@ -2914,7 +2954,7 @@ async def command_accept_party_invite(self, message):
                         )
                     )
                 )
-                row = await result.fetchone()
+                row = result.fetchone()
                 if not row:
                     return
 
@@ -2932,7 +2972,7 @@ async def command_accept_party_invite(self, message):
                     avatars.update().where(
                         and_(
                             avatars.c.idUser == self.player.id,
-                            avatars.c.idAvatar == row[avatars_list.c.id]
+                            avatars.c.idAvatar == row.id
                         )
                     ).values(
                         selected=1
@@ -2940,7 +2980,7 @@ async def command_accept_party_invite(self, message):
                 )
                 self.player.avatar = {
                     &#34;url&#34;: avatar_url,
-                    &#34;tooltip&#34;: row[avatars_list.c.tooltip]
+                    &#34;tooltip&#34;: row.tooltip
                 }
             self.player_service.mark_dirty(self.player)
     else:
@@ -2957,11 +2997,10 @@ async def command_accept_party_invite(self, message):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def command_coop_list(self, message):
-    &#34;&#34;&#34; Request for coop map list&#34;&#34;&#34;
+    &#34;&#34;&#34;Request for coop map list&#34;&#34;&#34;
     async with self._db.acquire() as conn:
-        result = await conn.execute(select([coop_map]))
+        result = await conn.stream(select([coop_map]))
 
-        maps = []
         campaigns = [
             &#34;FA Campaign&#34;,
             &#34;Aeon Vanilla Campaign&#34;,
@@ -2970,23 +3009,20 @@ async def command_accept_party_invite(self, message):
             &#34;Custom Missions&#34;
         ]
         async for row in result:
-            json_to_send = {
-                &#34;command&#34;: &#34;coop_info&#34;,
-                &#34;name&#34;: row[&#34;name&#34;],
-                &#34;description&#34;: row[&#34;description&#34;],
-                &#34;filename&#34;: row[&#34;filename&#34;],
-                &#34;featured_mod&#34;: &#34;coop&#34;
-            }
-            if row[&#34;type&#34;] &lt; len(campaigns):
-                json_to_send[&#34;type&#34;] = campaigns[row[&#34;type&#34;]]
-            else:
+            if row.type &gt;= len(campaigns):
                 # Don&#39;t sent corrupt data to the client...
-                self._logger.error(&#34;Unknown coop type!&#34;)
+                self._logger.error(&#34;Unknown coop type! %s&#34;, row.type)
                 continue
-            json_to_send[&#34;uid&#34;] = row[&#34;id&#34;]
-            maps.append(json_to_send)
 
-    await self.protocol.send_messages(maps)</code></pre>
+            await self.send({
+                &#34;command&#34;: &#34;coop_info&#34;,
+                &#34;uid&#34;: row.id,
+                &#34;type&#34;: campaigns[row.type],
+                &#34;name&#34;: row.name,
+                &#34;description&#34;: row.description,
+                &#34;filename&#34;: row.filename,
+                &#34;featured_mod&#34;: &#34;coop&#34;
+            })</code></pre>
 </details>
 </dd>
 <dt id="server.lobbyconnection.LobbyConnection.command_create_account"><code class="name flex">
@@ -3331,7 +3367,7 @@ async def command_kick_player_from_party(self, message):
         if type == &#34;start&#34;:
             result = await conn.execute(&#34;SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100&#34;)
 
-            async for row in result:
+            for row in result:
                 uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = (row[i] for i in range(12))
                 try:
                     link = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/&#34; + filename)
@@ -3350,9 +3386,14 @@ async def command_kick_player_from_party(self, message):
         elif type == &#34;like&#34;:
             canLike = True
             uid = message[&#34;uid&#34;]
-            result = await conn.execute(&#34;SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likers FROM `table_mod` WHERE uid = %s LIMIT 1&#34;, (uid,))
+            result = await conn.execute(
+                &#34;SELECT uid, name, version, author, ui, date, downloads, &#34;
+                &#34;likes, played, description, filename, icon, likers FROM &#34;
+                &#34;`table_mod` WHERE uid = :uid LIMIT 1&#34;,
+                uid=uid
+            )
 
-            row = await result.fetchone()
+            row = result.fetchone()
             uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = (row[i] for i in range(13))
             link = urllib.parse.urljoin(config.CONTENT_URL, &#34;faf/vault/&#34; + filename)
             thumbstr = &#34;&#34;
@@ -3378,8 +3419,10 @@ async def command_kick_player_from_party(self, message):
                 await conn.execute(
                     &#34;UPDATE mod_stats s &#34;
                     &#34;JOIN mod_version v ON v.mod_id = s.mod_id &#34;
-                    &#34;SET s.likes = s.likes + 1, likers=%s WHERE v.uid = %s&#34;,
-                    json.dumps(likers), uid)
+                    &#34;SET s.likes = s.likes + 1, likers=:l WHERE v.uid=:id&#34;,
+                    l=json.dumps(likers),
+                    id=uid
+                )
                 await self.send(out)
 
         elif type == &#34;download&#34;:
@@ -3893,7 +3936,7 @@ async def command_kick_player_from_party(self, message):
             )
         )
 
-        async for row in result:
+        for row in result:
             target_id, status = row[&#34;subject_id&#34;], row[&#34;status&#34;]
             if status == &#34;FRIEND&#34;:
                 friends.append(target_id)
@@ -4053,10 +4096,12 @@ a fatal warning it should disconnect and not attempt to reconnect.</li>
 
     try:
         await conn.execute(
-            &#34;UPDATE anope.anope_db_NickCore SET pass = %s WHERE display = %s&#34;,
-            (irc_pass, login)
+            &#34;UPDATE anope.anope_db_NickCore &#34;
+            &#34;SET pass = :passwd WHERE display = :display&#34;,
+            passwd=irc_pass,
+            display=login
         )
-    except (pymysql.OperationalError, pymysql.ProgrammingError):
+    except (OperationalError, ProgrammingError):
         self._logger.error(&#34;Failure updating NickServ password for %s&#34;, login)</code></pre>
 </details>
 </dd>

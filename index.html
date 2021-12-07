@@ -1078,11 +1078,12 @@ interval.</p></div>
             uids = str(args).split()
             self.game.mods = {uid: &#34;Unknown sim mod&#34; for uid in uids}
             async with self._db.acquire() as conn:
-                result = await conn.execute(
-                    text(&#34;SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids&#34;),
-                    ids=tuple(uids))
-                async for row in result:
-                    self.game.mods[row[&#34;uid&#34;]] = row[&#34;name&#34;]
+                rows = await conn.execute(
+                    &#34;SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids&#34;,
+                    ids=tuple(uids)
+                )
+                for row in rows:
+                    self.game.mods[row.uid] = row.name
         else:
             self._logger.warning(&#34;Ignoring game mod: %s, %s&#34;, mode, args)
             return
@@ -1156,13 +1157,13 @@ interval.</p></div>
                     coop_map.c.filename == self.game.map_file_path
                 )
             )
-            row = await result.fetchone()
+            row = result.fetchone()
             if not row:
                 self._logger.debug(
                     &#34;can&#39;t find coop map: %s&#34;, self.game.map_file_path
                 )
                 return
-            mission = row[&#34;id&#34;]
+            mission = row.id
 
             # Each player in a co-op game will send the OperationComplete
             # message but we only need to perform this insert once
@@ -1310,9 +1311,11 @@ interval.</p></div>
             if len(self.game.mods.keys()) &gt; 0:
                 async with self._db.acquire() as conn:
                     uids = list(self.game.mods.keys())
-                    await conn.execute(text(
-                        &#34;&#34;&#34; UPDATE mod_stats s JOIN mod_version v ON v.mod_id = s.mod_id
-                            SET s.times_played = s.times_played + 1 WHERE v.uid in :ids&#34;&#34;&#34;),
+                    await conn.execute(
+                        &#34;UPDATE mod_stats s JOIN mod_version v ON &#34;
+                        &#34;v.mod_id = s.mod_id &#34;
+                        &#34;SET s.times_played = s.times_played + 1 &#34;
+                        &#34;WHERE v.uid in :ids&#34;,
                         ids=tuple(uids)
                     )
         elif state == &#34;Ended&#34;:
@@ -1819,11 +1822,12 @@ included for documentation purposes.</p></div>
         uids = str(args).split()
         self.game.mods = {uid: &#34;Unknown sim mod&#34; for uid in uids}
         async with self._db.acquire() as conn:
-            result = await conn.execute(
-                text(&#34;SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids&#34;),
-                ids=tuple(uids))
-            async for row in result:
-                self.game.mods[row[&#34;uid&#34;]] = row[&#34;name&#34;]
+            rows = await conn.execute(
+                &#34;SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids&#34;,
+                ids=tuple(uids)
+            )
+            for row in rows:
+                self.game.mods[row.uid] = row.name
     else:
         self._logger.warning(&#34;Ignoring game mod: %s, %s&#34;, mode, args)
         return
@@ -1935,9 +1939,11 @@ included for documentation purposes.</p></div>
         if len(self.game.mods.keys()) &gt; 0:
             async with self._db.acquire() as conn:
                 uids = list(self.game.mods.keys())
-                await conn.execute(text(
-                    &#34;&#34;&#34; UPDATE mod_stats s JOIN mod_version v ON v.mod_id = s.mod_id
-                        SET s.times_played = s.times_played + 1 WHERE v.uid in :ids&#34;&#34;&#34;),
+                await conn.execute(
+                    &#34;UPDATE mod_stats s JOIN mod_version v ON &#34;
+                    &#34;v.mod_id = s.mod_id &#34;
+                    &#34;SET s.times_played = s.times_played + 1 &#34;
+                    &#34;WHERE v.uid in :ids&#34;,
                     ids=tuple(uids)
                 )
     elif state == &#34;Ended&#34;:
@@ -2047,13 +2053,13 @@ included for documentation purposes.</p></div>
                 coop_map.c.filename == self.game.map_file_path
             )
         )
-        row = await result.fetchone()
+        row = result.fetchone()
         if not row:
             self._logger.debug(
                 &#34;can&#39;t find coop map: %s&#34;, self.game.map_file_path
             )
             return
-        mission = row[&#34;id&#34;]
+        mission = row.id
 
         # Each player in a co-op game will send the OperationComplete
         # message but we only need to perform this insert once
@@ -2304,8 +2310,8 @@ cause the caller to be disconnected as well.</p></div>
         message_queue_service: MessageQueueService
     ):
         self._db = database
-        self._dirty_games = set()
-        self._dirty_queues = set()
+        self._dirty_games: Set[Game] = set()
+        self._dirty_queues: Set[MatchmakerQueue] = set()
         self.player_service = player_service
         self.game_stats_service = game_stats_service
         self._rating_service = rating_service
@@ -2315,8 +2321,8 @@ cause the caller to be disconnected as well.</p></div>
         # Populated below in really_update_static_ish_data.
         self.featured_mods = dict()
 
-        # A set of mod ids that are allowed in ranked games (everyone loves caching)
-        self.ranked_mods = set()
+        # A set of mod ids that are allowed in ranked games
+        self.ranked_mods: Set[str] = set()
 
         # The set of active games
         self._games: Dict[int, Game] = dict()
@@ -2341,9 +2347,7 @@ cause the caller to be disconnected as well.</p></div>
             # doing LAST_UPDATE_ID to get the id number, and then doing an UPDATE when the actual
             # data to go into the row becomes available: we now only do a single insert for each
             # game, and don&#39;t end up with 800,000 junk rows in the database.
-            result = await conn.execute(&#34;SELECT MAX(id) FROM game_stats&#34;)
-            row = await result.fetchone()
-            self.game_id_counter = row[0]
+            self.game_id_counter = await conn.scalar(&#34;SELECT MAX(id) FROM game_stats&#34;)
 
     async def update_data(self):
         &#34;&#34;&#34;
@@ -2351,18 +2355,29 @@ cause the caller to be disconnected as well.</p></div>
         time we need, but which can in principle change over time.
         &#34;&#34;&#34;
         async with self._db.acquire() as conn:
-            result = await conn.execute(&#34;SELECT `id`, `gamemod`, `name`, description, publish, `order` FROM game_featuredMods&#34;)
+            rows = await conn.execute(select([
+                game_featuredMods.c.id,
+                game_featuredMods.c.gamemod,
+                game_featuredMods.c.name,
+                game_featuredMods.c.description,
+                game_featuredMods.c.publish,
+                game_featuredMods.c.order
+            ]).select_from(game_featuredMods))
 
-            async for row in result:
-                mod_id, name, full_name, description, publish, order = (row[i] for i in range(6))
-                self.featured_mods[name] = FeaturedMod(
-                    mod_id, name, full_name, description, publish, order)
+            for row in rows:
+                self.featured_mods[row.gamemod] = FeaturedMod(
+                    row.id,
+                    row.gamemod,
+                    row.name,
+                    row.description,
+                    row.publish,
+                    row.order
+                )
 
             result = await conn.execute(&#34;SELECT uid FROM table_mod WHERE ranked = 1&#34;)
-            rows = await result.fetchall()
 
             # Turn resultset into a list of uids
-            self.ranked_mods = set(map(lambda x: x[0], rows))
+            self.ranked_mods = {row.uid for row in result}
 
     def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
         if isinstance(obj, Game):
@@ -2660,9 +2675,7 @@ def pending_games(self) -&gt; List[Game]:
         # doing LAST_UPDATE_ID to get the id number, and then doing an UPDATE when the actual
         # data to go into the row becomes available: we now only do a single insert for each
         # game, and don&#39;t end up with 800,000 junk rows in the database.
-        result = await conn.execute(&#34;SELECT MAX(id) FROM game_stats&#34;)
-        row = await result.fetchone()
-        self.game_id_counter = row[0]</code></pre>
+        self.game_id_counter = await conn.scalar(&#34;SELECT MAX(id) FROM game_stats&#34;)</code></pre>
 </details>
 </dd>
 <dt id="server.GameService.mark_dirty"><code class="name flex">
@@ -2795,18 +2808,29 @@ time we need, but which can in principle change over time.</p></div>
     time we need, but which can in principle change over time.
     &#34;&#34;&#34;
     async with self._db.acquire() as conn:
-        result = await conn.execute(&#34;SELECT `id`, `gamemod`, `name`, description, publish, `order` FROM game_featuredMods&#34;)
+        rows = await conn.execute(select([
+            game_featuredMods.c.id,
+            game_featuredMods.c.gamemod,
+            game_featuredMods.c.name,
+            game_featuredMods.c.description,
+            game_featuredMods.c.publish,
+            game_featuredMods.c.order
+        ]).select_from(game_featuredMods))
 
-        async for row in result:
-            mod_id, name, full_name, description, publish, order = (row[i] for i in range(6))
-            self.featured_mods[name] = FeaturedMod(
-                mod_id, name, full_name, description, publish, order)
+        for row in rows:
+            self.featured_mods[row.gamemod] = FeaturedMod(
+                row.id,
+                row.gamemod,
+                row.name,
+                row.description,
+                row.publish,
+                row.order
+            )
 
         result = await conn.execute(&#34;SELECT uid FROM table_mod WHERE ranked = 1&#34;)
-        rows = await result.fetchall()
 
         # Turn resultset into a list of uids
-        self.ranked_mods = set(map(lambda x: x[0], rows))</code></pre>
+        self.ranked_mods = {row.uid for row in result}</code></pre>
 </details>
 </dd>
 </dl>
@@ -3692,7 +3716,7 @@ statistics, and launches the games.</p></div>
             )
         )
         map_pool_maps = {}
-        async for row in result:
+        for row in result:
             id_ = row.id
             name = row.name
             if id_ not in map_pool_maps:
@@ -3704,7 +3728,7 @@ statistics, and launches the games.</p></div>
                 )
             elif row.map_params is not None:
                 try:
-                    params = row.map_params
+                    params = json.loads(row.map_params)
                     map_type = params[&#34;type&#34;]
                     if map_type == &#34;neroxis&#34;:
                         map_list.append(
@@ -3719,8 +3743,8 @@ statistics, and launches the games.</p></div>
 
                 except Exception:
                     self._logger.warning(
-                        &#34;Failed to load map in map pool %d &#34;
-                        &#34;parameters specified as %s&#34;,
+                        &#34;Failed to load map in map pool %d. &#34;
+                        &#34;Parameters are &#39;%s&#39;&#34;,
                         row.id,
                         row.map_params,
                         exc_info=True
@@ -3752,7 +3776,7 @@ statistics, and launches the games.</p></div>
         # map pools
         errored = set()
         matchmaker_queues = defaultdict(lambda: defaultdict(list))
-        async for row in result:
+        for row in result:
             name = row.technical_name
             if name in errored:
                 continue
@@ -3762,7 +3786,7 @@ statistics, and launches the games.</p></div>
                 info[&#34;mod&#34;] = row.gamemod
                 info[&#34;rating_type&#34;] = row.rating_type
                 info[&#34;team_size&#34;] = row.team_size
-                info[&#34;params&#34;] = row.params
+                info[&#34;params&#34;] = json.loads(row.params) if row.params else None
                 info[&#34;map_pools&#34;].append((
                     row.map_pool_id,
                     row.min_rating,
@@ -4106,7 +4130,7 @@ statistics, and launches the games.</p></div>
                 ).order_by(game_stats.c.startTime.desc()).limit(limit)
 
                 result.extend([
-                    row.mapId async for row in await conn.execute(query)
+                    row.mapId for row in await conn.execute(query)
                 ])
         return result
 
@@ -4179,7 +4203,7 @@ statistics, and launches the games.</p></div>
         )
     )
     map_pool_maps = {}
-    async for row in result:
+    for row in result:
         id_ = row.id
         name = row.name
         if id_ not in map_pool_maps:
@@ -4191,7 +4215,7 @@ statistics, and launches the games.</p></div>
             )
         elif row.map_params is not None:
             try:
-                params = row.map_params
+                params = json.loads(row.map_params)
                 map_type = params[&#34;type&#34;]
                 if map_type == &#34;neroxis&#34;:
                     map_list.append(
@@ -4206,8 +4230,8 @@ statistics, and launches the games.</p></div>
 
             except Exception:
                 self._logger.warning(
-                    &#34;Failed to load map in map pool %d &#34;
-                    &#34;parameters specified as %s&#34;,
+                    &#34;Failed to load map in map pool %d. &#34;
+                    &#34;Parameters are &#39;%s&#39;&#34;,
                     row.id,
                     row.map_params,
                     exc_info=True
@@ -4249,7 +4273,7 @@ statistics, and launches the games.</p></div>
     # map pools
     errored = set()
     matchmaker_queues = defaultdict(lambda: defaultdict(list))
-    async for row in result:
+    for row in result:
         name = row.technical_name
         if name in errored:
             continue
@@ -4259,7 +4283,7 @@ statistics, and launches the games.</p></div>
             info[&#34;mod&#34;] = row.gamemod
             info[&#34;rating_type&#34;] = row.rating_type
             info[&#34;team_size&#34;] = row.team_size
-            info[&#34;params&#34;] = row.params
+            info[&#34;params&#34;] = json.loads(row.params) if row.params else None
             info[&#34;map_pools&#34;].append((
                 row.map_pool_id,
                 row.min_rating,
@@ -4312,7 +4336,7 @@ statistics, and launches the games.</p></div>
             ).order_by(game_stats.c.startTime.desc()).limit(limit)
 
             result.extend([
-                row.mapId async for row in await conn.execute(query)
+                row.mapId for row in await conn.execute(query)
             ])
     return result</code></pre>
 </details>
@@ -5647,7 +5671,7 @@ with other players.</p></div>
                 .select_from(user_group_assignment.join(user_group))
                 .where(user_group_assignment.c.user_id == player.id)
             )
-            player.user_groups = {row.technical_name async for row in result}
+            player.user_groups = {row.technical_name for row in result}
 
             sql = select([
                 avatars_list.c.url,
@@ -5668,15 +5692,20 @@ with other players.</p></div>
             ).where(login.c.id == player.id)  # yapf: disable
 
             result = await conn.execute(sql)
-            row = await result.fetchone()
+            row = result.fetchone()
             if not row:
-                self._logger.warning(&#34;Did not find data for player with id %i&#34;, player.id)
+                self._logger.warning(
+                    &#34;Did not find data for player with id %i&#34;,
+                    player.id
+                )
                 return
 
+            row = row._mapping
             player.clan = row.get(clan.c.tag)
 
             url, tooltip = (
-                row.get(avatars_list.c.url), row.get(avatars_list.c.tooltip)
+                row.get(avatars_list.c.url),
+                row.get(avatars_list.c.tooltip)
             )
             if url and tooltip:
                 player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
@@ -5695,13 +5724,13 @@ with other players.</p></div>
             leaderboard_rating.c.login_id == player.id
         )
         result = await conn.execute(sql)
-        rows = await result.fetchall()
 
         retrieved_ratings = {
-            row[&#34;technical_name&#34;]: (
-                (row[&#34;mean&#34;], row[&#34;deviation&#34;]), row[&#34;total_games&#34;]
+            row.technical_name: (
+                (row.mean, row.deviation),
+                row.total_games
             )
-            for row in rows
+            for row in result
         }
         for rating_type, (rating, total_games) in retrieved_ratings.items():
             player.ratings[rating_type] = rating
@@ -5732,11 +5761,13 @@ with other players.</p></div>
             login.c.id == player.id
         )
         result = await conn.execute(sql)
-        row = await result.fetchone()
+        row = result.fetchone()
 
         if row is None:
             self._logger.info(&#34;Found no ratings for Player with id %i&#34;, player.id)
             return
+
+        row = row._mapping
 
         table_map = {
             RatingType.GLOBAL: &#34;global_rating_{}&#34;,
@@ -5755,7 +5786,8 @@ with other players.</p></div>
                 continue
 
             player.ratings[rating_type] = (
-                row[table.format(&#34;mean&#34;)], row[table.format(&#34;deviation&#34;)]
+                row[table.format(&#34;mean&#34;)],
+                row[table.format(&#34;deviation&#34;)]
             )
             player.game_count[rating_type] = row[table.format(&#34;numGames&#34;)]
 
@@ -5783,7 +5815,7 @@ with other players.</p></div>
                     )
                 )
             )
-            row = await result.fetchone()
+            row = result.fetchone()
             return row is not None
 
     def is_uniqueid_exempt(self, user_id: int) -&gt; bool:
@@ -5820,8 +5852,7 @@ with other players.</p></div>
             result = await conn.execute(
                 &#34;SELECT `user_id` FROM uniqueid_exempt&#34;
             )
-            rows = await result.fetchall()
-            self.uniqueid_exempt = frozenset(map(lambda x: x[0], rows))
+            self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
     async def shutdown(self):
         tasks = []
@@ -5894,7 +5925,7 @@ def all_players(self) -&gt; ValuesView[Player]:
             .select_from(user_group_assignment.join(user_group))
             .where(user_group_assignment.c.user_id == player.id)
         )
-        player.user_groups = {row.technical_name async for row in result}
+        player.user_groups = {row.technical_name for row in result}
 
         sql = select([
             avatars_list.c.url,
@@ -5915,15 +5946,20 @@ def all_players(self) -&gt; ValuesView[Player]:
         ).where(login.c.id == player.id)  # yapf: disable
 
         result = await conn.execute(sql)
-        row = await result.fetchone()
+        row = result.fetchone()
         if not row:
-            self._logger.warning(&#34;Did not find data for player with id %i&#34;, player.id)
+            self._logger.warning(
+                &#34;Did not find data for player with id %i&#34;,
+                player.id
+            )
             return
 
+        row = row._mapping
         player.clan = row.get(clan.c.tag)
 
         url, tooltip = (
-            row.get(avatars_list.c.url), row.get(avatars_list.c.tooltip)
+            row.get(avatars_list.c.url),
+            row.get(avatars_list.c.tooltip)
         )
         if url and tooltip:
             player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
@@ -5972,7 +6008,7 @@ def all_players(self) -&gt; ValuesView[Player]:
                 )
             )
         )
-        row = await result.fetchone()
+        row = result.fetchone()
         return row is not None</code></pre>
 </details>
 </dd>
@@ -6081,8 +6117,7 @@ uniqueid check.</p></div>
         result = await conn.execute(
             &#34;SELECT `user_id` FROM uniqueid_exempt&#34;
         )
-        rows = await result.fetchall()
-        self.uniqueid_exempt = frozenset(map(lambda x: x[0], rows))</code></pre>
+        self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))</code></pre>
 </details>
 </dd>
 </dl>
@@ -6156,7 +6191,7 @@ atomic.</p></div>
                 )
             )
             result = await conn.execute(sql)
-            rows = await result.fetchall()
+            rows = result.fetchall()
 
             self.leaderboards.clear()
             self._rating_type_ids = {}
@@ -6365,11 +6400,9 @@ atomic.</p></div>
             leaderboard.c.technical_name,
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation
-        ]).join(leaderboard).where(or_(*[
-            leaderboard_rating.c.login_id == player_id
-            for player_id in player_ids
-        ]))
-        # TODO: Use leaderboard_rating.c.login_id.in_(player_ids) instead
+        ]).join(leaderboard).where(
+            leaderboard_rating.c.login_id.in_(player_ids)
+        )
         result = await conn.execute(sql)
 
         player_ratings = {
@@ -6377,7 +6410,7 @@ atomic.</p></div>
             for player_id in player_ids
         }
 
-        async for row in result:
+        for row in result:
             player_id, rating_type = row.login_id, row.technical_name
             player_ratings[player_id][rating_type] = (row.mean, row.deviation)
 
@@ -6405,7 +6438,7 @@ atomic.</p></div>
             for player_id in new_ratings.keys()
         ]
 
-        for player_id, new_rating, old_rating in ratings:
+        for player_id, old_rating, new_rating in ratings:
             self._logger.debug(
                 &#34;New %s rating for player with id %s: %s -&gt; %s&#34;,
                 rating_type,
@@ -6689,7 +6722,7 @@ atomic.</p></div>
             )
         )
         result = await conn.execute(sql)
-        rows = await result.fetchall()
+        rows = result.fetchall()
 
         self.leaderboards.clear()
         self._rating_type_ids = {}

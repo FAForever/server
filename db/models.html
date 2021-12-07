@@ -27,7 +27,6 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from sqlalchemy import (
-    JSON,
     TIME,
     TIMESTAMP,
     Boolean,
@@ -43,8 +42,7 @@
     Text
 )
 
-from ..games.game_results import GameOutcome
-from ..games.typedefs import Victory
+from .typedefs import GameOutcome, Victory
 
 metadata = MetaData()
 
@@ -293,7 +291,7 @@ map_pool_map_version = Table(
     Column(&#34;map_pool_id&#34;,    Integer,       ForeignKey(&#34;map_pool.id&#34;),      nullable=False),
     Column(&#34;map_version_id&#34;, Integer,       ForeignKey(&#34;map_version.id&#34;)),
     Column(&#34;weight&#34;,         Integer,       nullable=False),
-    Column(&#34;map_params&#34;,     JSON),
+    Column(&#34;map_params&#34;,     Text),
     Column(&#34;create_time&#34;,    TIMESTAMP,     nullable=False),
     Column(&#34;update_time&#34;,    TIMESTAMP,     nullable=False)
 )
@@ -322,7 +320,7 @@ matchmaker_queue = Table(
     Column(&#34;leaderboard_id&#34;,    Integer,        ForeignKey(&#34;leaderboard.id&#34;),       nullable=False),
     Column(&#34;name_key&#34;,          String(255),    nullable=False),
     Column(&#34;team_size&#34;,         Integer,        nullable=False),
-    Column(&#34;params&#34;,            JSON),
+    Column(&#34;params&#34;,            Text),
     Column(&#34;enabled&#34;,           Boolean,        nullable=False),
     Column(&#34;create_time&#34;,   TIMESTAMP,      nullable=False),
     Column(&#34;update_time&#34;,   TIMESTAMP,      nullable=False)

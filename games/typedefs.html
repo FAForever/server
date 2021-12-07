@@ -29,6 +29,7 @@
 <pre><code class="python">from enum import Enum, unique
 from typing import Any, Dict, List, NamedTuple, Optional, Set
 
+from server.db.typedefs import Victory
 from server.games.game_results import ArmyResult, GameOutcome
 from server.players import Player
 
@@ -53,14 +54,6 @@ class GameConnectionState(Enum):
 class InitMode(Enum):
     NORMAL_LOBBY = 0
     AUTO_LOBBY = 1
-
-
-@unique
-class Victory(Enum):
-    DEMORALIZATION = 0
-    DOMINATION = 1
-    ERADICATION = 2
-    SANDBOX = 3
 
 
 @unique
@@ -242,7 +235,23 @@ class FA(object):
     __slots__ = ()
 
     ENABLED = _FAEnabled()
-    DISABLED = _FADisabled()</code></pre>
+    DISABLED = _FADisabled()
+
+
+__all__ = (
+    &#34;BasicGameInfo&#34;,
+    &#34;EndedGameInfo&#34;,
+    &#34;FA&#34;,
+    &#34;FeaturedModType&#34;,
+    &#34;GameConnectionState&#34;,
+    &#34;GameState&#34;,
+    &#34;GameType&#34;,
+    &#34;InitMode&#34;,
+    &#34;TeamRatingSummary&#34;,
+    &#34;ValidityState&#34;,
+    &#34;Victory&#34;,
+    &#34;VisibilityState&#34;,
+)</code></pre>
 </details>
 </section>
 <section>
@@ -416,7 +425,7 @@ on the team and the team's outcome</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="server.games.typedefs.EndedGameInfo.from_basic"><code class="name flex">
-<span>def <span class="ident">from_basic</span></span>(<span>basic_info: <a title="server.games.typedefs.BasicGameInfo" href="#server.games.typedefs.BasicGameInfo">BasicGameInfo</a>, validity: <a title="server.games.typedefs.ValidityState" href="#server.games.typedefs.ValidityState">ValidityState</a>, team_outcomes: List[<a title="server.games.game_results.GameOutcome" href="game_results.html#server.games.game_results.GameOutcome">GameOutcome</a>], commander_kills: Dict[str, int], team_army_results: List[List[<a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a>]]) ‑> <a title="server.games.typedefs.EndedGameInfo" href="#server.games.typedefs.EndedGameInfo">EndedGameInfo</a></span>
+<span>def <span class="ident">from_basic</span></span>(<span>basic_info: <a title="server.games.typedefs.BasicGameInfo" href="#server.games.typedefs.BasicGameInfo">BasicGameInfo</a>, validity: <a title="server.games.typedefs.ValidityState" href="#server.games.typedefs.ValidityState">ValidityState</a>, team_outcomes: List[<a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>], commander_kills: Dict[str, int], team_army_results: List[List[<a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a>]]) ‑> <a title="server.games.typedefs.EndedGameInfo" href="#server.games.typedefs.EndedGameInfo">EndedGameInfo</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -739,7 +748,7 @@ def from_basic(
 </dd>
 <dt id="server.games.typedefs.TeamRatingSummary"><code class="flex name class">
 <span>class <span class="ident">TeamRatingSummary</span></span>
-<span>(</span><span>outcome: <a title="server.games.game_results.GameOutcome" href="game_results.html#server.games.game_results.GameOutcome">GameOutcome</a>, player_ids: Set[int], army_results: List[<a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a>])</span>
+<span>(</span><span>outcome: <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>, player_ids: Set[int], army_results: List[<a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a>])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>TeamRatingSummary(outcome, player_ids, army_results)</p></div>
@@ -762,7 +771,7 @@ def from_basic(
 <dd>
 <div class="desc"><p>Alias for field number 2</p></div>
 </dd>
-<dt id="server.games.typedefs.TeamRatingSummary.outcome"><code class="name">var <span class="ident">outcome</span> : <a title="server.games.game_results.GameOutcome" href="game_results.html#server.games.game_results.GameOutcome">GameOutcome</a></code></dt>
+<dt id="server.games.typedefs.TeamRatingSummary.outcome"><code class="name">var <span class="ident">outcome</span> : <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a></code></dt>
 <dd>
 <div class="desc"><p>Alias for field number 0</p></div>
 </dd>

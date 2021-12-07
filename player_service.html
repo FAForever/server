@@ -111,7 +111,7 @@ class PlayerService(Service):
                 .select_from(user_group_assignment.join(user_group))
                 .where(user_group_assignment.c.user_id == player.id)
             )
-            player.user_groups = {row.technical_name async for row in result}
+            player.user_groups = {row.technical_name for row in result}
 
             sql = select([
                 avatars_list.c.url,
@@ -132,15 +132,20 @@ class PlayerService(Service):
             ).where(login.c.id == player.id)  # yapf: disable
 
             result = await conn.execute(sql)
-            row = await result.fetchone()
+            row = result.fetchone()
             if not row:
-                self._logger.warning(&#34;Did not find data for player with id %i&#34;, player.id)
+                self._logger.warning(
+                    &#34;Did not find data for player with id %i&#34;,
+                    player.id
+                )
                 return
 
+            row = row._mapping
             player.clan = row.get(clan.c.tag)
 
             url, tooltip = (
-                row.get(avatars_list.c.url), row.get(avatars_list.c.tooltip)
+                row.get(avatars_list.c.url),
+                row.get(avatars_list.c.tooltip)
             )
             if url and tooltip:
                 player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
@@ -159,13 +164,13 @@ class PlayerService(Service):
             leaderboard_rating.c.login_id == player.id
         )
         result = await conn.execute(sql)
-        rows = await result.fetchall()
 
         retrieved_ratings = {
-            row[&#34;technical_name&#34;]: (
-                (row[&#34;mean&#34;], row[&#34;deviation&#34;]), row[&#34;total_games&#34;]
+            row.technical_name: (
+                (row.mean, row.deviation),
+                row.total_games
             )
-            for row in rows
+            for row in result
         }
         for rating_type, (rating, total_games) in retrieved_ratings.items():
             player.ratings[rating_type] = rating
@@ -196,11 +201,13 @@ class PlayerService(Service):
             login.c.id == player.id
         )
         result = await conn.execute(sql)
-        row = await result.fetchone()
+        row = result.fetchone()
 
         if row is None:
             self._logger.info(&#34;Found no ratings for Player with id %i&#34;, player.id)
             return
+
+        row = row._mapping
 
         table_map = {
             RatingType.GLOBAL: &#34;global_rating_{}&#34;,
@@ -219,7 +226,8 @@ class PlayerService(Service):
                 continue
 
             player.ratings[rating_type] = (
-                row[table.format(&#34;mean&#34;)], row[table.format(&#34;deviation&#34;)]
+                row[table.format(&#34;mean&#34;)],
+                row[table.format(&#34;deviation&#34;)]
             )
             player.game_count[rating_type] = row[table.format(&#34;numGames&#34;)]
 
@@ -247,7 +255,7 @@ class PlayerService(Service):
                     )
                 )
             )
-            row = await result.fetchone()
+            row = result.fetchone()
             return row is not None
 
     def is_uniqueid_exempt(self, user_id: int) -&gt; bool:
@@ -284,8 +292,7 @@ class PlayerService(Service):
             result = await conn.execute(
                 &#34;SELECT `user_id` FROM uniqueid_exempt&#34;
             )
-            rows = await result.fetchall()
-            self.uniqueid_exempt = frozenset(map(lambda x: x[0], rows))
+            self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
     async def shutdown(self):
         tasks = []
@@ -390,7 +397,7 @@ class PlayerService(Service):
                 .select_from(user_group_assignment.join(user_group))
                 .where(user_group_assignment.c.user_id == player.id)
             )
-            player.user_groups = {row.technical_name async for row in result}
+            player.user_groups = {row.technical_name for row in result}
 
             sql = select([
                 avatars_list.c.url,
@@ -411,15 +418,20 @@ class PlayerService(Service):
             ).where(login.c.id == player.id)  # yapf: disable
 
             result = await conn.execute(sql)
-            row = await result.fetchone()
+            row = result.fetchone()
             if not row:
-                self._logger.warning(&#34;Did not find data for player with id %i&#34;, player.id)
+                self._logger.warning(
+                    &#34;Did not find data for player with id %i&#34;,
+                    player.id
+                )
                 return
 
+            row = row._mapping
             player.clan = row.get(clan.c.tag)
 
             url, tooltip = (
-                row.get(avatars_list.c.url), row.get(avatars_list.c.tooltip)
+                row.get(avatars_list.c.url),
+                row.get(avatars_list.c.tooltip)
             )
             if url and tooltip:
                 player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
@@ -438,13 +450,13 @@ class PlayerService(Service):
             leaderboard_rating.c.login_id == player.id
         )
         result = await conn.execute(sql)
-        rows = await result.fetchall()
 
         retrieved_ratings = {
-            row[&#34;technical_name&#34;]: (
-                (row[&#34;mean&#34;], row[&#34;deviation&#34;]), row[&#34;total_games&#34;]
+            row.technical_name: (
+                (row.mean, row.deviation),
+                row.total_games
             )
-            for row in rows
+            for row in result
         }
         for rating_type, (rating, total_games) in retrieved_ratings.items():
             player.ratings[rating_type] = rating
@@ -475,11 +487,13 @@ class PlayerService(Service):
             login.c.id == player.id
         )
         result = await conn.execute(sql)
-        row = await result.fetchone()
+        row = result.fetchone()
 
         if row is None:
             self._logger.info(&#34;Found no ratings for Player with id %i&#34;, player.id)
             return
+
+        row = row._mapping
 
         table_map = {
             RatingType.GLOBAL: &#34;global_rating_{}&#34;,
@@ -498,7 +512,8 @@ class PlayerService(Service):
                 continue
 
             player.ratings[rating_type] = (
-                row[table.format(&#34;mean&#34;)], row[table.format(&#34;deviation&#34;)]
+                row[table.format(&#34;mean&#34;)],
+                row[table.format(&#34;deviation&#34;)]
             )
             player.game_count[rating_type] = row[table.format(&#34;numGames&#34;)]
 
@@ -526,7 +541,7 @@ class PlayerService(Service):
                     )
                 )
             )
-            row = await result.fetchone()
+            row = result.fetchone()
             return row is not None
 
     def is_uniqueid_exempt(self, user_id: int) -&gt; bool:
@@ -563,8 +578,7 @@ class PlayerService(Service):
             result = await conn.execute(
                 &#34;SELECT `user_id` FROM uniqueid_exempt&#34;
             )
-            rows = await result.fetchall()
-            self.uniqueid_exempt = frozenset(map(lambda x: x[0], rows))
+            self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
     async def shutdown(self):
         tasks = []
@@ -637,7 +651,7 @@ def all_players(self) -&gt; ValuesView[Player]:
             .select_from(user_group_assignment.join(user_group))
             .where(user_group_assignment.c.user_id == player.id)
         )
-        player.user_groups = {row.technical_name async for row in result}
+        player.user_groups = {row.technical_name for row in result}
 
         sql = select([
             avatars_list.c.url,
@@ -658,15 +672,20 @@ def all_players(self) -&gt; ValuesView[Player]:
         ).where(login.c.id == player.id)  # yapf: disable
 
         result = await conn.execute(sql)
-        row = await result.fetchone()
+        row = result.fetchone()
         if not row:
-            self._logger.warning(&#34;Did not find data for player with id %i&#34;, player.id)
+            self._logger.warning(
+                &#34;Did not find data for player with id %i&#34;,
+                player.id
+            )
             return
 
+        row = row._mapping
         player.clan = row.get(clan.c.tag)
 
         url, tooltip = (
-            row.get(avatars_list.c.url), row.get(avatars_list.c.tooltip)
+            row.get(avatars_list.c.url),
+            row.get(avatars_list.c.tooltip)
         )
         if url and tooltip:
             player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
@@ -715,7 +734,7 @@ def all_players(self) -&gt; ValuesView[Player]:
                 )
             )
         )
-        row = await result.fetchone()
+        row = result.fetchone()
         return row is not None</code></pre>
 </details>
 </dd>
@@ -824,8 +843,7 @@ uniqueid check.</p></div>
         result = await conn.execute(
             &#34;SELECT `user_id` FROM uniqueid_exempt&#34;
         )
-        rows = await result.fetchall()
-        self.uniqueid_exempt = frozenset(map(lambda x: x[0], rows))</code></pre>
+        self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))</code></pre>
 </details>
 </dd>
 </dl>

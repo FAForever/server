@@ -216,7 +216,7 @@ atomic.</p></div>
                 )
             )
             result = await conn.execute(sql)
-            rows = await result.fetchall()
+            rows = result.fetchall()
 
             self.leaderboards.clear()
             self._rating_type_ids = {}
@@ -425,11 +425,9 @@ atomic.</p></div>
             leaderboard.c.technical_name,
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation
-        ]).join(leaderboard).where(or_(*[
-            leaderboard_rating.c.login_id == player_id
-            for player_id in player_ids
-        ]))
-        # TODO: Use leaderboard_rating.c.login_id.in_(player_ids) instead
+        ]).join(leaderboard).where(
+            leaderboard_rating.c.login_id.in_(player_ids)
+        )
         result = await conn.execute(sql)
 
         player_ratings = {
@@ -437,7 +435,7 @@ atomic.</p></div>
             for player_id in player_ids
         }
 
-        async for row in result:
+        for row in result:
             player_id, rating_type = row.login_id, row.technical_name
             player_ratings[player_id][rating_type] = (row.mean, row.deviation)
 
@@ -465,7 +463,7 @@ atomic.</p></div>
             for player_id in new_ratings.keys()
         ]
 
-        for player_id, new_rating, old_rating in ratings:
+        for player_id, old_rating, new_rating in ratings:
             self._logger.debug(
                 &#34;New %s rating for player with id %s: %s -&gt; %s&#34;,
                 rating_type,
@@ -749,7 +747,7 @@ atomic.</p></div>
             )
         )
         result = await conn.execute(sql)
-        rows = await result.fetchall()
+        rows = result.fetchall()
 
         self.leaderboards.clear()
         self._rating_type_ids = {}

@@ -32,6 +32,10 @@ from collections.abc import Mapping
 from enum import Enum
 from typing import Dict, FrozenSet, Iterator, List, NamedTuple, Optional, Set
 
+from sqlalchemy import select
+
+from server.db.models import game_player_stats
+from server.db.typedefs import GameOutcome
 from server.decorators import with_logger
 
 
@@ -75,13 +79,6 @@ class ArmyResult(NamedTuple):
     army: Optional[int]
     army_outcome: str
     metadata: List[str]
-
-
-class GameOutcome(Enum):
-    VICTORY = &#34;VICTORY&#34;
-    DEFEAT = &#34;DEFEAT&#34;
-    DRAW = &#34;DRAW&#34;
-    UNKNOWN = &#34;UNKNOWN&#34;
 
 
 class GameResultReport(NamedTuple):
@@ -255,20 +252,20 @@ class GameResultReports(Mapping):
     async def from_db(cls, database, game_id):
         results = cls(game_id)
         async with database.acquire() as conn:
-            rows = await conn.execute(
-                &#34;SELECT `place`, `score`, `result` &#34;
-                &#34;FROM `game_player_stats` &#34;
-                &#34;WHERE `gameId`=%s&#34;,
-                (game_id,),
+            result = await conn.execute(
+                select([
+                    game_player_stats.c.place,
+                    game_player_stats.c.score,
+                    game_player_stats.c.result
+                ]).where(game_player_stats.c.gameId == game_id)
             )
 
-            async for row in rows:
-                startspot, score = row[0], row[1]
+            for row in result:
                 # FIXME: Assertion about startspot == army
                 with contextlib.suppress(ValueError):
-                    outcome = ArmyReportedOutcome(row[2])
-                    result = GameResultReport(0, startspot, outcome, score)
-                    results.add(result)
+                    outcome = ArmyReportedOutcome(row.result.value)
+                    report = GameResultReport(0, row.place, outcome, row.score)
+                    results.add(report)
         return results
 
 
@@ -340,7 +337,19 @@ def resolve_game(team_outcomes: List[Set[ArmyOutcome]]) -&gt; List[GameOutcome]:
         )
 
     # Otherwise everyone is DEFEAT, we return a draw
-    return [GameOutcome.DRAW, GameOutcome.DRAW]</code></pre>
+    return [GameOutcome.DRAW, GameOutcome.DRAW]
+
+
+__all__ = (
+    &#34;ArmyOutcome&#34;,
+    &#34;ArmyReportedOutcome&#34;,
+    &#34;ArmyResult&#34;,
+    &#34;GameOutcome&#34;,
+    &#34;GameResolutionError&#34;,
+    &#34;GameResultReport&#34;,
+    &#34;GameResultReports&#34;,
+    &#34;resolve_game&#34;
+)</code></pre>
 </details>
 </section>
 <section>
@@ -351,7 +360,7 @@ def resolve_game(team_outcomes: List[Set[ArmyOutcome]]) -&gt; List[GameOutcome]:
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="server.games.game_results.resolve_game"><code class="name flex">
-<span>def <span class="ident">resolve_game</span></span>(<span>team_outcomes: List[Set[<a title="server.games.game_results.ArmyOutcome" href="#server.games.game_results.ArmyOutcome">ArmyOutcome</a>]]) ‑> List[<a title="server.games.game_results.GameOutcome" href="#server.games.game_results.GameOutcome">GameOutcome</a>]</span>
+<span>def <span class="ident">resolve_game</span></span>(<span>team_outcomes: List[Set[<a title="server.games.game_results.ArmyOutcome" href="#server.games.game_results.ArmyOutcome">ArmyOutcome</a>]]) ‑> List[<a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Takes a list of length two containing sets of ArmyOutcome
@@ -891,20 +900,20 @@ for each army, but don't modify these.</p></div>
     async def from_db(cls, database, game_id):
         results = cls(game_id)
         async with database.acquire() as conn:
-            rows = await conn.execute(
-                &#34;SELECT `place`, `score`, `result` &#34;
-                &#34;FROM `game_player_stats` &#34;
-                &#34;WHERE `gameId`=%s&#34;,
-                (game_id,),
+            result = await conn.execute(
+                select([
+                    game_player_stats.c.place,
+                    game_player_stats.c.score,
+                    game_player_stats.c.result
+                ]).where(game_player_stats.c.gameId == game_id)
             )
 
-            async for row in rows:
-                startspot, score = row[0], row[1]
+            for row in result:
                 # FIXME: Assertion about startspot == army
                 with contextlib.suppress(ValueError):
-                    outcome = ArmyReportedOutcome(row[2])
-                    result = GameResultReport(0, startspot, outcome, score)
-                    results.add(result)
+                    outcome = ArmyReportedOutcome(row.result.value)
+                    report = GameResultReport(0, row.place, outcome, row.score)
+                    results.add(report)
         return results</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -930,20 +939,20 @@ for each army, but don't modify these.</p></div>
 async def from_db(cls, database, game_id):
     results = cls(game_id)
     async with database.acquire() as conn:
-        rows = await conn.execute(
-            &#34;SELECT `place`, `score`, `result` &#34;
-            &#34;FROM `game_player_stats` &#34;
-            &#34;WHERE `gameId`=%s&#34;,
-            (game_id,),
+        result = await conn.execute(
+            select([
+                game_player_stats.c.place,
+                game_player_stats.c.score,
+                game_player_stats.c.result
+            ]).where(game_player_stats.c.gameId == game_id)
         )
 
-        async for row in rows:
-            startspot, score = row[0], row[1]
+        for row in result:
             # FIXME: Assertion about startspot == army
             with contextlib.suppress(ValueError):
-                outcome = ArmyReportedOutcome(row[2])
-                result = GameResultReport(0, startspot, outcome, score)
-                results.add(result)
+                outcome = ArmyReportedOutcome(row.result.value)
+                report = GameResultReport(0, row.place, outcome, row.score)
+                results.add(report)
     return results</code></pre>
 </details>
 </dd>
