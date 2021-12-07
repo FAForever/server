@@ -9,12 +9,14 @@ from asyncio.locks import _ContextManagerMixin
 from functools import wraps
 from typing import (
     Any,
+    AsyncContextManager,
     Callable,
     Coroutine,
     List,
     Optional,
+    Protocol,
     Type,
-    Union,
+    cast,
     overload
 )
 
@@ -24,8 +26,10 @@ AsyncFunc = Callable[..., Coroutine[Any, Any, Any]]
 AsyncDecorator = Callable[[AsyncFunc], AsyncFunc]
 
 
-# TODO: Need python >= 3.8 for typing.Protocol
-AsyncLockable = Union[asyncio.Lock, "SpinLock"]
+class AsyncLock(Protocol, AsyncContextManager["AsyncLock"]):
+    def locked(self) -> bool: ...
+    async def acquire(self) -> bool: ...
+    def release(self) -> None: ...
 
 
 async def gather_without_exceptions(
@@ -119,7 +123,7 @@ def synchronized() -> AsyncDecorator: ...
 @overload
 def synchronized(function: AsyncFunc) -> AsyncFunc: ...
 @overload
-def synchronized(lock: Optional[AsyncLockable]) -> AsyncDecorator: ...
+def synchronized(lock: Optional[AsyncLock]) -> AsyncDecorator: ...
 
 
 def synchronized(*args):
@@ -139,7 +143,7 @@ def synchronized(*args):
 
 def _synchronize(
     function: AsyncFunc,
-    lock: Optional[AsyncLockable] = None
+    lock: Optional[AsyncLock] = None
 ) -> AsyncFunc:
     """Wrap an async function with an async lock."""
     @wraps(function)
@@ -147,7 +151,7 @@ def _synchronize(
         nonlocal lock
 
         if lock is None:
-            lock = asyncio.Lock()
+            lock = lock or cast(AsyncLock, asyncio.Lock())
 
         async with lock:
             return await function(*args, **kwargs)
