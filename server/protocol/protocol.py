@@ -2,7 +2,6 @@ import contextlib
 import json
 from abc import ABCMeta, abstractmethod
 from asyncio import StreamReader, StreamWriter
-from typing import List
 
 import server.metrics as metrics
 
@@ -58,7 +57,7 @@ class Protocol(metaclass=ABCMeta):
         """
         await self.send_raw(self.encode_message(message))
 
-    async def send_messages(self, messages: List[dict]) -> None:
+    async def send_messages(self, messages: list[dict]) -> None:
         """
         Send multiple messages in the form of a list of dictionaries.
 
@@ -94,7 +93,7 @@ class Protocol(metaclass=ABCMeta):
 
         self.write_raw(self.encode_message(message))
 
-    def write_messages(self, messages: List[dict]) -> None:
+    def write_messages(self, messages: list[dict]) -> None:
         """
         Write multiple message into the message buffer.
 

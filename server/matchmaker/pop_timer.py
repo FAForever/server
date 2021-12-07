@@ -1,7 +1,6 @@
 import asyncio
 from collections import deque
 from time import time
-from typing import Deque
 
 import server.metrics as metrics
 
@@ -28,8 +27,8 @@ class PopTimer(object):
     def __init__(self, queue: "MatchmakerQueue"):
         self.queue = queue
         # Set up deque's for calculating a moving average
-        self.last_queue_amounts: Deque[int] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
-        self.last_queue_times: Deque[float] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
+        self.last_queue_amounts: deque[int] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
+        self.last_queue_times: deque[float] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
 
         self._last_queue_pop = time()
         # Optimistically schedule first pop for half of the max pop time

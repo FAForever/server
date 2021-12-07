@@ -2,7 +2,7 @@ import contextlib
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from enum import Enum
-from typing import Dict, FrozenSet, Iterator, List, NamedTuple, Optional, Set
+from typing import Iterator, NamedTuple, Optional
 
 from sqlalchemy import select
 
@@ -50,7 +50,7 @@ class ArmyResult(NamedTuple):
     player_id: int
     army: Optional[int]
     army_outcome: str
-    metadata: List[str]
+    metadata: list[str]
 
 
 class GameResultReport(NamedTuple):
@@ -64,7 +64,7 @@ class GameResultReport(NamedTuple):
     army: int
     outcome: ArmyReportedOutcome
     score: int
-    metadata: FrozenSet[str] = frozenset()
+    metadata: frozenset[str] = frozenset()
 
 
 @with_logger
@@ -78,12 +78,12 @@ class GameResultReports(Mapping):
     def __init__(self, game_id: int):
         Mapping.__init__(self)
         self._game_id = game_id  # Just for logging
-        self._back: Dict[int, List[GameResultReport]] = {}
+        self._back: dict[int, list[GameResultReport]] = {}
         # Outcome caching
-        self._outcomes: Dict[int, ArmyOutcome] = {}
-        self._dirty_armies: Set[int] = set()
+        self._outcomes: dict[int, ArmyOutcome] = {}
+        self._dirty_armies: set[int] = set()
 
-    def __getitem__(self, key: int) -> List[GameResultReport]:
+    def __getitem__(self, key: int) -> list[GameResultReport]:
         return self._back[key]
 
     def __iter__(self) -> Iterator[int]:
@@ -157,7 +157,7 @@ class GameResultReports(Mapping):
         )
         return decision
 
-    def metadata(self, army: int) -> List[str]:
+    def metadata(self, army: int) -> list[str]:
         """
         If any users have sent metadata tags in their messages about this army
         this function will compare those tags across all messages trying to find
@@ -245,7 +245,7 @@ class GameResolutionError(Exception):
     pass
 
 
-def resolve_game(team_outcomes: List[Set[ArmyOutcome]]) -> List[GameOutcome]:
+def resolve_game(team_outcomes: list[set[ArmyOutcome]]) -> list[GameOutcome]:
     """
     Takes a list of length two containing sets of ArmyOutcome
     for individual players on a team

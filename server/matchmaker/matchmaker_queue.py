@@ -3,7 +3,7 @@ import time
 from collections import OrderedDict
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Iterable, Optional
 
 import server.metrics as metrics
 
@@ -49,8 +49,8 @@ class MatchmakerQueue:
         featured_mod: str,
         rating_type: str,
         team_size: int = 1,
-        params: Optional[Dict[str, Any]] = None,
-        map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = (),
+        params: Optional[dict[str, Any]] = None,
+        map_pools: Iterable[tuple[MapPool, Optional[int], Optional[int]]] = (),
     ):
         self.game_service = game_service
         self.name = name
@@ -61,7 +61,7 @@ class MatchmakerQueue:
         self.params = params or {}
         self.map_pools = {info[0].id: info for info in map_pools}
 
-        self._queue: Dict[Search, None] = OrderedDict()
+        self._queue: dict[Search, None] = OrderedDict()
         self.on_match_found = on_match_found
         self._is_running = True
 
@@ -85,7 +85,7 @@ class MatchmakerQueue:
                 continue
             return map_pool
 
-    def get_game_options(self) -> Dict[str, Any]:
+    def get_game_options(self) -> dict[str, Any]:
         return self.params.get("GameOptions") or None
 
     def initialize(self):
@@ -175,7 +175,7 @@ class MatchmakerQueue:
         )
 
         # filter out matches that were cancelled
-        matches: List[Match] = []
+        matches: list[Match] = []
         for match in proposed_matches:
             if self.match(match[0], match[1]):
                 matches.append(match)
@@ -200,7 +200,7 @@ class MatchmakerQueue:
 
     def _register_unmatched_searches(
         self,
-        unmatched_searches: List[Search],
+        unmatched_searches: list[Search],
     ):
         """
         Tells all unmatched searches that they went through a failed matching

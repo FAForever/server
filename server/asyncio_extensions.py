@@ -12,10 +12,8 @@ from typing import (
     AsyncContextManager,
     Callable,
     Coroutine,
-    List,
     Optional,
     Protocol,
-    Type,
     cast,
     overload
 )
@@ -33,9 +31,9 @@ class AsyncLock(Protocol, AsyncContextManager["AsyncLock"]):
 
 
 async def gather_without_exceptions(
-    tasks: List[asyncio.Task],
-    *exceptions: Type[BaseException],
-) -> List[Any]:
+    tasks: list[asyncio.Task],
+    *exceptions: type[BaseException],
+) -> list[Any]:
     """
     Run coroutines in parallel, raising the first exception that dosen't
     match any of the specified exception classes.

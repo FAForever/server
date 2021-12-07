@@ -1,6 +1,5 @@
 import os
 import time
-from typing import Dict
 
 import aiohttp
 from oauthlib.oauth2.rfc6749.errors import (
@@ -57,7 +56,7 @@ class OAuth2Session(object):
         creds = await self._make_request(data=data)
         self.update_tokens(creds)
 
-    def update_tokens(self, creds: Dict[str, str]) -> None:
+    def update_tokens(self, creds: dict[str, str]) -> None:
         self.token = creds["access_token"]
         self.refresh_token = creds.get("refresh_token")
         expires_in = creds.get("expires_in")
@@ -65,7 +64,7 @@ class OAuth2Session(object):
             self.token_expires_in = int(expires_in)
         self.token_time = time.time()
 
-    async def _make_request(self, data: Dict[str, str]) -> Dict[str, str]:
+    async def _make_request(self, data: dict[str, str]) -> dict[str, str]:
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.post(self.token_url, data=data) as resp:
                 return await resp.json()

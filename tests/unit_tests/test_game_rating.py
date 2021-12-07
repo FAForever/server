@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, NamedTuple, Optional
 from unittest import mock
 
 import pytest
@@ -34,8 +34,8 @@ class PersistenceError(Exception):
 
 class PersistedResults(NamedTuple):
     rating_type: Optional[str]
-    ratings: Dict[int, Any]
-    outcomes: Dict[int, Any]
+    ratings: dict[int, Any]
+    outcomes: dict[int, Any]
 
 
 @pytest.fixture
@@ -90,7 +90,7 @@ async def rating_service(database, player_service):
     mock_service.kill()
 
 
-def get_persisted_results(mock_service) -> List[PersistedResults]:
+def get_persisted_results(mock_service) -> list[PersistedResults]:
     args = mock_service._persist_rating_changes.await_args_list
 
     return [
@@ -177,7 +177,7 @@ def add_players_with_rating(player_factory, game, ratings, teams):
 async def report_results(game, message_list):
     """
     Parameter message_list of the form
-    List[(reporter_player_object, army_id_to_report_for, outcome_string, score)]
+    list[(reporter_player_object, army_id_to_report_for, outcome_string, score)]
     """
     for player, army_id, outcome_string, score in message_list:
         await game.add_result(player, army_id, outcome_string, score)

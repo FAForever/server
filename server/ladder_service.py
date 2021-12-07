@@ -7,7 +7,7 @@ import json
 import random
 import re
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Optional
 
 import aiocron
 from sqlalchemy import and_, func, select, text, true
@@ -50,11 +50,11 @@ class LadderService(Service):
         game_service: GameService,
     ):
         self._db = database
-        self._informed_players: Set[Player] = set()
+        self._informed_players: set[Player] = set()
         self.game_service = game_service
         self.queues = {}
 
-        self._searches: Dict[Player, Dict[str, Search]] = defaultdict(dict)
+        self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
 
     async def initialize(self) -> None:
         await self.update_data()
@@ -105,7 +105,7 @@ class LadderService(Service):
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
 
-    async def fetch_map_pools(self, conn) -> Dict[int, Tuple[str, List[Map]]]:
+    async def fetch_map_pools(self, conn) -> dict[int, tuple[str, list[Map]]]:
         result = await conn.execute(
             select([
                 map_pool.c.id,
@@ -210,7 +210,7 @@ class LadderService(Service):
 
     def start_search(
         self,
-        players: List[Player],
+        players: list[Player],
         queue_name: str,
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
@@ -377,8 +377,8 @@ class LadderService(Service):
 
     async def start_game(
         self,
-        team1: List[Player],
-        team2: List[Player],
+        team1: list[Player],
+        team2: list[Player],
         queue: MatchmakerQueue
     ) -> None:
         assert len(team1) == len(team2)
@@ -511,10 +511,10 @@ class LadderService(Service):
 
     async def get_game_history(
         self,
-        players: List[Player],
+        players: list[Player],
         queue_id: int,
         limit: int = 3
-    ) -> List[int]:
+    ) -> list[int]:
         async with self._db.acquire() as conn:
             result = []
             for player in players:
@@ -555,7 +555,7 @@ class LadderService(Service):
             queue.shutdown()
 
 
-def game_name(*teams: List[Player]) -> str:
+def game_name(*teams: list[Player]) -> str:
     """
     Generate a game name based on the players.
     """
@@ -563,7 +563,7 @@ def game_name(*teams: List[Player]) -> str:
     return " Vs ".join(_team_name(team) for team in teams)
 
 
-def _team_name(team: List[Player]) -> str:
+def _team_name(team: list[Player]) -> str:
     """
     Generate a team name based on the players. If all players are in the
     same clan, use their clan tag, otherwise use the name of the first

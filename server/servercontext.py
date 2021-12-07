@@ -4,7 +4,7 @@ Manages a group of connections using the same protocol over the same port
 
 import asyncio
 import socket
-from typing import Callable, Dict, Iterable, Type
+from typing import Callable, Iterable
 
 import server.metrics as metrics
 
@@ -26,14 +26,14 @@ class ServerContext:
         name: str,
         connection_factory: Callable[[], LobbyConnection],
         services: Iterable[Service],
-        protocol_class: Type[Protocol] = QDataStreamProtocol,
+        protocol_class: type[Protocol] = QDataStreamProtocol,
     ):
         super().__init__()
         self.name = name
         self._server = None
         self._connection_factory = connection_factory
         self._services = services
-        self.connections: Dict[LobbyConnection, Protocol] = {}
+        self.connections: dict[LobbyConnection, Protocol] = {}
         self.protocol_class = protocol_class
 
     def __repr__(self):

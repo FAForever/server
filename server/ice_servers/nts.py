@@ -4,7 +4,6 @@ Twilio API NTS token
 
 import asyncio
 from functools import partial
-from typing import Dict, List
 
 from twilio.rest import Client as TwilioRestClient
 
@@ -27,7 +26,7 @@ class TwilioNTS:
         self.twilio_token = token
         self.client = TwilioRestClient(self.twilio_account_sid, self.twilio_token)
 
-    async def server_tokens(self, ttl=None) -> List[Dict]:
+    async def server_tokens(self, ttl=None) -> list[dict[str]]:
         """
         Fetches token from Twilio
 

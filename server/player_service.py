@@ -3,7 +3,7 @@ Manages connected and authenticated players
 """
 
 import asyncio
-from typing import Optional, Set, ValuesView
+from typing import Optional, ValuesView
 
 import aiocron
 from sqlalchemy import and_, select
@@ -69,7 +69,7 @@ class PlayerService(Service):
     def mark_dirty(self, player: Player):
         self._dirty_players.add(player)
 
-    def pop_dirty_players(self) -> Set[Player]:
+    def pop_dirty_players(self) -> set[Player]:
         dirty_players = self._dirty_players
         self._dirty_players = set()
 

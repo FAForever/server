@@ -1,4 +1,4 @@
-from typing import Dict, List
+
 
 import trueskill
 
@@ -53,7 +53,7 @@ class GameRater:
 
         return player_rating_map
 
-    def get_outcome_map(self) -> Dict[PlayerID, GameOutcome]:
+    def get_outcome_map(self) -> dict[PlayerID, GameOutcome]:
         return self.outcome_map
 
 
@@ -104,11 +104,11 @@ class AdjustmentGameRater(GameRater):
 
         return new_adjusted_ratings
 
-    def get_outcome_map(self) -> Dict[PlayerID, GameOutcome]:
+    def get_outcome_map(self) -> dict[PlayerID, GameOutcome]:
         return self.rater.outcome_map
 
 
-def _ranks_from_team_outcomes(outcomes: List[GameOutcome]) -> List[int]:
+def _ranks_from_team_outcomes(outcomes: list[GameOutcome]) -> list[int]:
     if outcomes == [GameOutcome.DRAW, GameOutcome.DRAW]:
         return [0, 0]
     elif outcomes == [GameOutcome.VICTORY, GameOutcome.DEFEAT]:

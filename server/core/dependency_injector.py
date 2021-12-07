@@ -1,8 +1,7 @@
 import inspect
 from collections import ChainMap, defaultdict
-from typing import Dict, List
 
-DependencyGraph = Dict[str, List[str]]
+DependencyGraph = dict[str, list[str]]
 
 
 class DependencyInjector(object):
@@ -49,10 +48,10 @@ class DependencyInjector(object):
 
     def __init__(self) -> None:
         # Objects which are available to the constructors of injected objects
-        self.injectables: Dict[str, object] = {}
+        self.injectables: dict[str, object] = {}
 
     def add_injectables(
-        self, injectables: Dict[str, object] = {}, **kwargs: object
+        self, injectables: dict[str, object] = {}, **kwargs: object
     ) -> None:
         """
         Register additional objects that can be requested by injected classes.
@@ -61,8 +60,8 @@ class DependencyInjector(object):
         self.injectables.update(kwargs)
 
     def build_classes(
-        self, classes: Dict[str, type] = {}, **kwargs: type
-    ) -> Dict[str, object]:
+        self, classes: dict[str, type] = {}, **kwargs: type
+    ) -> dict[str, object]:
         """
         Resolve dependencies by name and instantiate each class.
         """
@@ -81,7 +80,7 @@ class DependencyInjector(object):
         self.add_injectables(**instances)
         return instances
 
-    def _make_dependency_graph(self, classes: Dict[str, type]) -> DependencyGraph:
+    def _make_dependency_graph(self, classes: dict[str, type]) -> DependencyGraph:
         """
         Build dependency graph
         """
@@ -100,14 +99,14 @@ class DependencyInjector(object):
     def _build_classes_from_dependencies(
         self,
         dep: DependencyGraph,
-        classes: Dict[str, type],
-        param_map: Dict[str, List[str]]
-    ) -> Dict[str, object]:
+        classes: dict[str, type],
+        param_map: dict[str, list[str]]
+    ) -> dict[str, object]:
         """
         Tries to build all classes in the dependency graph. Raises RuntimeError
         if some dependencies are not available or there was a cyclic dependency.
         """
-        instances: Dict[str, object] = {}
+        instances: dict[str, object] = {}
         resolved = ChainMap(instances, self.injectables)
 
         while True:

@@ -1,13 +1,13 @@
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from .dependency_injector import DependencyInjector
 
 CASE_PATTERN = re.compile(r"(?<!^)(?=[A-Z])")
-DependencyGraph = Dict[str, List[str]]
+DependencyGraph = dict[str, list[str]]
 
 
-service_registry: Dict[str, type] = {}
+service_registry: dict[str, type] = {}
 
 
 class Service():
@@ -43,7 +43,7 @@ class Service():
         pass  # pragma: no cover
 
 
-def create_services(injectables: Dict[str, object] = {}) -> Dict[str, Service]:
+def create_services(injectables: dict[str, object] = {}) -> dict[str, Service]:
     """
     Resolve service dependencies and instantiate each service. This should only
     be called once.

@@ -1,7 +1,7 @@
 import json
 import logging
 import time
-from typing import Any, List, Tuple
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -139,7 +139,7 @@ async def test_missing_teams_marked_invalid(game: Game, game_add_players):
 
 
 async def check_game_settings(
-    game: Game, settings: List[Tuple[str, Any, ValidityState]]
+    game: Game, settings: list[tuple[str, Any, ValidityState]]
 ):
     for key, value, expected in settings:
         old = game.gameOptions.get(key)

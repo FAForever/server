@@ -2,7 +2,7 @@
 Manages interactions between players and parties
 """
 
-from typing import Dict, List, Set
+
 
 from .core import Service
 from .decorators import with_logger
@@ -25,8 +25,8 @@ class PartyService(Service):
 
     def __init__(self, game_service: GameService):
         self.game_service = game_service
-        self.player_parties: Dict[Player, PlayerParty] = {}
-        self._dirty_parties: Set[PlayerParty] = set()
+        self.player_parties: dict[Player, PlayerParty] = {}
+        self._dirty_parties: set[PlayerParty] = set()
 
     async def initialize(self):
         self._update_task = at_interval(1, self.update_dirties)
@@ -161,7 +161,7 @@ class PartyService(Service):
 
         self.mark_dirty(party)
 
-    def set_factions(self, player: Player, factions: List[Faction]):
+    def set_factions(self, player: Player, factions: list[Faction]):
         if player not in self.player_parties:
             self.player_parties[player] = PlayerParty(player)
 

@@ -87,7 +87,7 @@ Distributed under GPLv3, see license.txt
 
 import asyncio
 import logging
-from typing import Dict, Optional, Set, Tuple, Type
+from typing import Optional
 
 from prometheus_client import start_http_server
 
@@ -164,7 +164,7 @@ class ServerInstance(object):
         twilio_nts: Optional[TwilioNTS],
         loop: asyncio.BaseEventLoop,
         # For testing
-        _override_services: Optional[Dict[str, Service]] = None
+        _override_services: Optional[dict[str, Service]] = None
     ):
         self.name = name
         self._logger = logging.getLogger(self.name)
@@ -175,7 +175,7 @@ class ServerInstance(object):
 
         self.started = False
 
-        self.contexts: Set[ServerContext] = set()
+        self.contexts: set[ServerContext] = set()
 
         self.services = _override_services or create_services({
             "server": self,
@@ -229,8 +229,8 @@ class ServerInstance(object):
 
     async def listen(
         self,
-        address: Tuple[str, int],
-        protocol_class: Type[Protocol] = QDataStreamProtocol
+        address: tuple[str, int],
+        protocol_class: type[Protocol] = QDataStreamProtocol
     ) -> ServerContext:
         """
         Start listening on a new address.

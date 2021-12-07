@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import List, Union
+from typing import Union
 
 
 class GpgNetServerProtocol(metaclass=ABCMeta):
@@ -38,7 +38,7 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         """
         await self.send_gpgnet_message("DisconnectFromPeer", [id])
 
-    async def send_gpgnet_message(self, command_id: str, arguments: List[Union[int, str, bool]]):
+    async def send_gpgnet_message(self, command_id: str, arguments: list[Union[int, str, bool]]):
         message = {"command": command_id, "args": arguments}
         await self.send(message)
 
@@ -48,12 +48,12 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
 
 
 class GpgNetClientProtocol(metaclass=ABCMeta):
-    def send_GameState(self, arguments: List[Union[int, str, bool]]) -> None:
+    def send_GameState(self, arguments: list[Union[int, str, bool]]) -> None:
         """
         Sent by the client when the state of LobbyComm changes
         """
         self.send_gpgnet_message("GameState", arguments)
 
     @abstractmethod
-    def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]) -> None:
+    def send_gpgnet_message(self, command_id, arguments: list[Union[int, str, bool]]) -> None:
         pass  # pragma: no cover

@@ -1,4 +1,4 @@
-from typing import List
+
 
 from server.config import config
 from server.core import Service
@@ -22,7 +22,7 @@ class GameStatsService(Service):
         self,
         player: Player,
         game: Game,
-        army_stats_list: List
+        army_stats_list: list
     ):
         try:
             await self._process_game_stats(player, game, army_stats_list)
@@ -39,7 +39,7 @@ class GameStatsService(Service):
         self,
         player: Player,
         game: Game,
-        army_stats_list: List
+        army_stats_list: list
     ):
         stats = None
         number_of_humans = 0

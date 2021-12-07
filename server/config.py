@@ -5,7 +5,7 @@ Server config variables
 import asyncio
 import logging
 import os
-from typing import Callable, Dict
+from typing import Callable
 
 import trueskill
 import yaml
@@ -128,7 +128,7 @@ class ConfigurationStore:
             key: value for key, value in vars(self).items() if key.isupper()
         }
 
-        self._callbacks: Dict[str, Callable] = {}
+        self._callbacks: dict[str, Callable] = {}
         self.refresh()
 
     def refresh(self) -> None:

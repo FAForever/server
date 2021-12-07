@@ -3,7 +3,7 @@ import json
 import logging
 import time
 from collections import defaultdict
-from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
+from typing import Any, Iterable, Optional
 
 from sqlalchemy import and_, bindparam
 from sqlalchemy.exc import DBAPIError
@@ -77,7 +77,7 @@ class Game():
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
         self.game_service = game_service
-        self._player_options: Dict[int, Dict[str, Any]] = defaultdict(dict)
+        self._player_options: dict[int, dict[str, Any]] = defaultdict(dict)
         self.launched_at = None
         self.ended = False
         self._logger = logging.getLogger(
@@ -92,7 +92,7 @@ class Game():
         self.map_file_path = f"maps/{map_}.zip"
         self.map_scenario_path = None
         self.password = None
-        self._players_at_launch: List[Player] = []
+        self._players_at_launch: list[Player] = []
         self.AIs = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
@@ -153,7 +153,7 @@ class Game():
         self._name = value[:max_len]
 
     @property
-    def armies(self) -> FrozenSet[int]:
+    def armies(self) -> frozenset[int]:
         return frozenset(
             self.get_player_option(player.id, "Army")
             for player in self.players
@@ -164,7 +164,7 @@ class Game():
         return self._results.is_mutually_agreed_draw(self.armies)
 
     @property
-    def players(self) -> List[Player]:
+    def players(self) -> list[Player]:
         """
         Players in the game
 
@@ -178,7 +178,7 @@ class Game():
         else:
             return self._players_at_launch
 
-    def get_connected_players(self) -> List[Player]:
+    def get_connected_players(self) -> list[Player]:
         """
         Get a collection of all players currently connected to the game.
         """
@@ -196,7 +196,7 @@ class Game():
         return self._connections.values()
 
     @property
-    def teams(self) -> FrozenSet[int]:
+    def teams(self) -> frozenset[int]:
         """
         A set of all teams of this game's players.
         """
@@ -243,7 +243,7 @@ class Game():
         team_sizes = set(len(team) for team in teams)
         return len(team_sizes) == 1
 
-    def get_team_sets(self) -> List[Set[Player]]:
+    def get_team_sets(self) -> list[set[Player]]:
         """
         Returns a list of teams represented as sets of players.
         Note that FFA players will be separated into individual teams.
@@ -287,7 +287,7 @@ class Game():
         army: int,
         result_type: str,
         score: int,
-        result_metadata: FrozenSet[str] = frozenset(),
+        result_metadata: frozenset[str] = frozenset(),
     ):
         """
         As computed by the game.
@@ -511,7 +511,7 @@ class Game():
             team_army_results,
         )
 
-    def _outcome_override_hook(self) -> Optional[List[GameOutcome]]:
+    def _outcome_override_hook(self) -> Optional[list[GameOutcome]]:
         return None
 
     async def load_results(self):
@@ -672,7 +672,7 @@ class Game():
         await self._validate_game_options(valid_options)
 
     async def _validate_game_options(
-        self, valid_options: Dict[str, Tuple[Any, ValidityState]]
+        self, valid_options: dict[str, tuple[Any, ValidityState]]
     ) -> bool:
         for key, value in self.gameOptions.items():
             if key in valid_options:

@@ -3,7 +3,7 @@ Manages the lifecycle of active games
 """
 
 from collections import Counter
-from typing import Dict, List, Optional, Set, Type, Union, ValuesView
+from typing import Optional, Union, ValuesView
 
 import aiocron
 from sqlalchemy import select
@@ -44,8 +44,8 @@ class GameService(Service):
         message_queue_service: MessageQueueService
     ):
         self._db = database
-        self._dirty_games: Set[Game] = set()
-        self._dirty_queues: Set[MatchmakerQueue] = set()
+        self._dirty_games: set[Game] = set()
+        self._dirty_queues: set[MatchmakerQueue] = set()
         self.player_service = player_service
         self.game_stats_service = game_stats_service
         self._rating_service = rating_service
@@ -56,10 +56,10 @@ class GameService(Service):
         self.featured_mods = dict()
 
         # A set of mod ids that are allowed in ranked games
-        self.ranked_mods: Set[str] = set()
+        self.ranked_mods: set[str] = set()
 
         # The set of active games
-        self._games: Dict[int, Game] = dict()
+        self._games: dict[int, Game] = dict()
 
     async def initialize(self) -> None:
         await self.initialise_game_counter()
@@ -119,13 +119,13 @@ class GameService(Service):
         elif isinstance(obj, MatchmakerQueue):
             self._dirty_queues.add(obj)
 
-    def pop_dirty_games(self) -> Set[Game]:
+    def pop_dirty_games(self) -> set[Game]:
         dirty_games = self._dirty_games
         self._dirty_games = set()
 
         return dirty_games
 
-    def pop_dirty_queues(self) -> Set[MatchmakerQueue]:
+    def pop_dirty_queues(self) -> set[MatchmakerQueue]:
         dirty_queues = self._dirty_queues
         self._dirty_queues = set()
 
@@ -139,7 +139,7 @@ class GameService(Service):
     def create_game(
         self,
         game_mode: str,
-        game_class: Type[Game] = CustomGame,
+        game_class: type[Game] = CustomGame,
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
@@ -192,12 +192,12 @@ class GameService(Service):
                 )
 
     @property
-    def live_games(self) -> List[Game]:
+    def live_games(self) -> list[Game]:
         return [game for game in self._games.values()
                 if game.state is GameState.LIVE]
 
     @property
-    def open_games(self) -> List[Game]:
+    def open_games(self) -> list[Game]:
         """
         Return all games that meet the client's definition of "not closed".
         Server game states are mapped to client game states as follows:
@@ -217,7 +217,7 @@ class GameService(Service):
         return self._games.values()
 
     @property
-    def pending_games(self) -> List[Game]:
+    def pending_games(self) -> list[Game]:
         return [game for game in self._games.values()
                 if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]
 
