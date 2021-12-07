@@ -4,6 +4,7 @@ Manages a group of connections using the same protocol over the same port
 
 import asyncio
 import socket
+from contextlib import contextmanager
 from typing import Callable, Iterable
 
 import server.metrics as metrics
@@ -108,20 +109,30 @@ class ServerContext:
         finally:
             del self.connections[connection]
             await protocol.close()
-            await connection.on_connection_lost()
+            with self.suppress_and_log(connection.on_connection_lost, Exception):
+                await connection.on_connection_lost()
 
             for service in self._services:
-                try:
+                with self.suppress_and_log(service.on_connection_lost, Exception):
                     service.on_connection_lost(connection)
-                except Exception:
-                    self._logger.warning(
-                        "Unexpected exception in %s.on_connection_lost",
-                        service.__class__.__name__,
-                        exc_info=True
-                    )
 
             self._logger.debug("%s: Client disconnected", self.name)
             metrics.user_connections.labels(
                 connection.user_agent,
                 connection.version
             ).dec()
+
+    @contextmanager
+    def suppress_and_log(self, func, *exceptions: type[BaseException]):
+        try:
+            yield
+        except exceptions:
+            if hasattr(func.__self__):
+                desc = f"{func.__self__.__class__}.{func.__name__}"
+            else:
+                desc = func.__name__
+            self._logger.warning(
+                "Unexpected exception in %s",
+                desc,
+                exc_info=True
+            )
