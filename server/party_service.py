@@ -2,8 +2,6 @@
 Manages interactions between players and parties
 """
 
-
-
 from .core import Service
 from .decorators import with_logger
 from .exceptions import ClientError

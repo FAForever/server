@@ -10,6 +10,7 @@ from .random_newbies import RandomlyMatchNewbies
 
 WeightedGraph = dict[Search, list[tuple[Search, float]]]
 
+
 class StableMarriage(MatchmakingPolicy1v1):
     def find(self, ranks: WeightedGraph) -> dict[Search, Search]:
         """Perform the stable matching algorithm until a maximal stable matching

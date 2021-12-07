@@ -26,7 +26,7 @@ class BucketTeamMatchmaker(Matchmaker):
         teams, searches_without_team = self._find_teams(searches, team_size)
 
         matchmaker1v1 = StableMarriageMatchmaker()
-        matches, unmatched_searches =  matchmaker1v1.find(teams, 1)
+        matches, unmatched_searches = matchmaker1v1.find(teams, 1)
 
         unmatched_searches.extend(searches_without_team)
         return matches, unmatched_searches
