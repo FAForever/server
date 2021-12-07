@@ -1092,8 +1092,7 @@ async def do_test_rating_adjustment(
         assert result.ratings == expected.ratings
         team1_outcomes = {id: GameOutcome.VICTORY for id in team1}
         team2_outcomes = {id: GameOutcome.DEFEAT for id in team2}
-        # TODO: When updating from 3.7 to 3.9, use dict union {} | {}
-        assert result.outcomes == {**team1_outcomes, **team2_outcomes}
+        assert result.outcomes == team1_outcomes | team2_outcomes
 
 
 # These ratings show up a lot because our tests have a lot of new players
