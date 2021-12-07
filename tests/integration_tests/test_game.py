@@ -165,19 +165,26 @@ async def get_player_ratings(proto, *names, rating_type="global"):
     return ratings
 
 
-async def get_player_ratings_all(proto, *names, messages=1):
+async def get_player_ratings_all(proto, *names, old_ratings={}):
     """
     Like `get_player_ratings` but find all rating types instead of just one and
-    return a nested dictionary containing all those ratings
+    return a nested dictionary containing all those ratings.
+
+    If old_ratings is passed, wait for ratings to be different from old_ratings.
     """
+    def _nested_keys(nested_dict):
+        return set(k + r for k, v in nested_dict.items() for r in v.keys())
+
     ratings = defaultdict(dict)
-    read_messages = 0
-    while set(ratings.keys()) != set(names) or read_messages < messages:
+    target_keys = _nested_keys(old_ratings)
+    while _nested_keys(ratings) != target_keys:
         msg = await read_until_command(proto, "player_info")
-        read_messages += 1
         for player_info in msg["players"]:
             for rating_type, rating in player_info["ratings"].items():
-                ratings[player_info["login"]][rating_type] = rating["rating"]
+                login = player_info["login"]
+                player_rating = tuple(rating["rating"])
+                if player_rating != old_ratings.get(login, {}).get(rating_type):
+                    ratings[login][rating_type] = player_rating
 
     return dict(ratings)
 
@@ -533,7 +540,7 @@ async def test_partial_game_ended_rates_game(lobby_server, tmp_user):
         await read_until_command(host_proto, "player_info", timeout=10)
 
 
-@fast_forward(15)
+@fast_forward(100)
 async def test_ladder_game_draw_bug(lobby_server, database):
     """
     This simulates the infamous "draw bug" where a player could self destruct
@@ -584,7 +591,16 @@ async def test_ladder_game_draw_bug(lobby_server, database):
         proto1,
         "ladder1",
         "ladder2",
-        messages=2
+        old_ratings={
+            "ladder1": {
+                "global": (1500, 500),
+                "ladder_1v1": (1500, 500),
+            },
+            "ladder2": {
+                "global": (1500, 500),
+                "ladder_1v1": (1500, 500),
+            },
+        }
     )
 
     # Both start at (1500, 500).
