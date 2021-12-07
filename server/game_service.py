@@ -6,12 +6,14 @@ from collections import Counter
 from typing import Dict, List, Optional, Set, Type, Union, ValuesView
 
 import aiocron
+from sqlalchemy import select
 
 from server.config import config
 
 from . import metrics
 from .core import Service
 from .db import FAFDatabase
+from .db.models import game_featuredMods
 from .decorators import with_logger
 from .games import (
     CustomGame,
@@ -42,8 +44,8 @@ class GameService(Service):
         message_queue_service: MessageQueueService
     ):
         self._db = database
-        self._dirty_games = set()
-        self._dirty_queues = set()
+        self._dirty_games: Set[Game] = set()
+        self._dirty_queues: Set[MatchmakerQueue] = set()
         self.player_service = player_service
         self.game_stats_service = game_stats_service
         self._rating_service = rating_service
@@ -53,8 +55,8 @@ class GameService(Service):
         # Populated below in really_update_static_ish_data.
         self.featured_mods = dict()
 
-        # A set of mod ids that are allowed in ranked games (everyone loves caching)
-        self.ranked_mods = set()
+        # A set of mod ids that are allowed in ranked games
+        self.ranked_mods: Set[str] = set()
 
         # The set of active games
         self._games: Dict[int, Game] = dict()
@@ -79,9 +81,7 @@ class GameService(Service):
             # doing LAST_UPDATE_ID to get the id number, and then doing an UPDATE when the actual
             # data to go into the row becomes available: we now only do a single insert for each
             # game, and don't end up with 800,000 junk rows in the database.
-            result = await conn.execute("SELECT MAX(id) FROM game_stats")
-            row = await result.fetchone()
-            self.game_id_counter = row[0]
+            self.game_id_counter = await conn.scalar("SELECT MAX(id) FROM game_stats")
 
     async def update_data(self):
         """
@@ -89,18 +89,29 @@ class GameService(Service):
         time we need, but which can in principle change over time.
         """
         async with self._db.acquire() as conn:
-            result = await conn.execute("SELECT `id`, `gamemod`, `name`, description, publish, `order` FROM game_featuredMods")
+            rows = await conn.execute(select([
+                game_featuredMods.c.id,
+                game_featuredMods.c.gamemod,
+                game_featuredMods.c.name,
+                game_featuredMods.c.description,
+                game_featuredMods.c.publish,
+                game_featuredMods.c.order
+            ]).select_from(game_featuredMods))
 
-            async for row in result:
-                mod_id, name, full_name, description, publish, order = (row[i] for i in range(6))
-                self.featured_mods[name] = FeaturedMod(
-                    mod_id, name, full_name, description, publish, order)
+            for row in rows:
+                self.featured_mods[row.gamemod] = FeaturedMod(
+                    row.id,
+                    row.gamemod,
+                    row.name,
+                    row.description,
+                    row.publish,
+                    row.order
+                )
 
             result = await conn.execute("SELECT uid FROM table_mod WHERE ranked = 1")
-            rows = await result.fetchall()
 
             # Turn resultset into a list of uids
-            self.ranked_mods = set(map(lambda x: x[0], rows))
+            self.ranked_mods = {row.uid for row in result}
 
     def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
         if isinstance(obj, Game):

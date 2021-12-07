@@ -4,6 +4,10 @@ from collections.abc import Mapping
 from enum import Enum
 from typing import Dict, FrozenSet, Iterator, List, NamedTuple, Optional, Set
 
+from sqlalchemy import select
+
+from server.db.models import game_player_stats
+from server.db.typedefs import GameOutcome
 from server.decorators import with_logger
 
 
@@ -47,13 +51,6 @@ class ArmyResult(NamedTuple):
     army: Optional[int]
     army_outcome: str
     metadata: List[str]
-
-
-class GameOutcome(Enum):
-    VICTORY = "VICTORY"
-    DEFEAT = "DEFEAT"
-    DRAW = "DRAW"
-    UNKNOWN = "UNKNOWN"
 
 
 class GameResultReport(NamedTuple):
@@ -227,20 +224,20 @@ class GameResultReports(Mapping):
     async def from_db(cls, database, game_id):
         results = cls(game_id)
         async with database.acquire() as conn:
-            rows = await conn.execute(
-                "SELECT `place`, `score`, `result` "
-                "FROM `game_player_stats` "
-                "WHERE `gameId`=%s",
-                (game_id,),
+            result = await conn.execute(
+                select([
+                    game_player_stats.c.place,
+                    game_player_stats.c.score,
+                    game_player_stats.c.result
+                ]).where(game_player_stats.c.gameId == game_id)
             )
 
-            async for row in rows:
-                startspot, score = row[0], row[1]
+            for row in result:
                 # FIXME: Assertion about startspot == army
                 with contextlib.suppress(ValueError):
-                    outcome = ArmyReportedOutcome(row[2])
-                    result = GameResultReport(0, startspot, outcome, score)
-                    results.add(result)
+                    outcome = ArmyReportedOutcome(row.result.value)
+                    report = GameResultReport(0, row.place, outcome, row.score)
+                    results.add(report)
         return results
 
 
@@ -313,3 +310,15 @@ def resolve_game(team_outcomes: List[Set[ArmyOutcome]]) -> List[GameOutcome]:
 
     # Otherwise everyone is DEFEAT, we return a draw
     return [GameOutcome.DRAW, GameOutcome.DRAW]
+
+
+__all__ = (
+    "ArmyOutcome",
+    "ArmyReportedOutcome",
+    "ArmyResult",
+    "GameOutcome",
+    "GameResolutionError",
+    "GameResultReport",
+    "GameResultReports",
+    "resolve_game"
+)

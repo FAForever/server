@@ -49,11 +49,11 @@ def custom_game(database, game_service, game_stats_service):
 
 async def game_player_scores(database, game):
     async with database.acquire() as conn:
-        results = await conn.execute(
-            "SELECT playerId, score FROM game_player_stats WHERE gameid = %s",
-            game.id
+        result = await conn.execute(
+            "SELECT playerId, score FROM game_player_stats WHERE gameid = :id",
+            {"id": game.id}
         )
-        return set(f.as_tuple() for f in await results.fetchall())
+        return set(tuple(f) for f in result.fetchall())
 
 
 async def test_initialization(game: Game):

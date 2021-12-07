@@ -6,11 +6,12 @@ import itertools
 from asyncio import Event, Lock
 
 import asynctest
-from aiomysql.sa import create_engine
 from hypothesis.internal.reflection import (
     define_function_signature,
     impersonate
 )
+
+from server.db import FAFDatabase
 
 
 # Copied over from PR #113 of pytest-asyncio. It will probably be available in
@@ -90,7 +91,7 @@ class MockConnectionContext:
         self._db._lock.release()
 
 
-class MockDatabase:
+class MockDatabase(FAFDatabase):
     """
     This class mocks the FAFDatabase class, rolling back all transactions
     performed during tests. To do that, it proxies the real db engine, giving
@@ -98,57 +99,44 @@ class MockDatabase:
     Since the server uses that single connection, it sees all changes made, but
     at the same time we can rollback all these changes once the test is over.
 
-    Note that right now the server relies on autocommit behaviour of aiomysql.
+    Note that right now the server relies on autocommit behaviour sqlalchemy.
     Any future manual commit() calls should be mocked here as well.
     """
-    def __init__(self, loop):
-        self._loop = loop
-        self.engine = None
+    def __init__(
+        self,
+        host: str = "localhost",
+        port: int = 3306,
+        user: str = "root",
+        password: str = "",
+        db: str = "faf_test",
+        **kwargs
+    ):
+        super().__init__(host, port, user, password, db, **kwargs)
         self._connection = None
         self._conn_present = Event()
-        self._keep = None
         self._lock = Lock()
         self._done = Event()
+        self._keep = asyncio.create_task(self._keep_connection())
 
-    async def connect(self, host="localhost", port=3306, user="root",
-                      password="", db="faf_test", minsize=1, maxsize=1):
-        if self.engine is not None:
-            raise ValueError("DB is already connected!")
-        self.engine = await create_engine(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            db=db,
-            autocommit=False,
-            loop=self._loop,
-            minsize=minsize,
-            maxsize=maxsize,
-            echo=True
-        )
-        self._keep = self._loop.create_task(self._keep_connection())
+    async def connect(self):
         await self._conn_present.wait()
 
     async def _keep_connection(self):
-        async with self.engine.acquire() as conn:
+        async with self.engine.begin() as conn:
             self._connection = conn
             self._conn_present.set()
             await self._done.wait()
+            await conn.rollback()
             self._connection = None
 
     def acquire(self):
         return MockConnectionContext(self)
 
     async def close(self):
-        if self.engine is None:
-            return
-
         async with self._lock:
             self._done.set()
             await self._keep
-            self.engine.close()
-            await self.engine.wait_closed()
-            self.engine = None
+            await self.engine.dispose()
 
 
 def autocontext(*auto_args):

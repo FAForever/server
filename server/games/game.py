@@ -5,12 +5,11 @@ import time
 from collections import defaultdict
 from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
 
-import pymysql
 from sqlalchemy import and_, bindparam
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.sql.functions import now as sql_now
 
 from server.config import FFA_TEAM
-from server.db import deadlock_retry_execute
 from server.db.models import (
     game_player_stats,
     game_stats,
@@ -567,7 +566,7 @@ class Game():
                 scoreTime=sql_now(),
                 result=bindparam("result"),
             )
-            await deadlock_retry_execute(conn, update_statement, rows)
+            await conn.deadlock_retry_execute(update_statement, rows)
 
     def get_basic_info(self) -> BasicGameInfo:
         return BasicGameInfo(
@@ -725,14 +724,15 @@ class Game():
             # so, and grab the map id at the same time.
             result = await conn.execute(
                 "SELECT id, ranked FROM map_version "
-                "WHERE lower(filename) = lower(%s)", (self.map_file_path, )
+                "WHERE lower(filename) = lower(:filename)",
+                filename=self.map_file_path
             )
-            row = await result.fetchone()
+            row = result.fetchone()
 
         is_generated = (self.map_file_path and "neroxis_map_generator" in self.map_file_path)
 
         if row:
-            self.map_id = row["id"]
+            self.map_id = row.id
 
         if (
             self.validity is ValidityState.VALID
@@ -811,7 +811,7 @@ class Game():
         try:
             async with self._db.acquire() as conn:
                 await conn.execute(game_player_stats.insert().values(query_args))
-        except pymysql.MySQLError:
+        except DBAPIError:
             self._logger.exception(
                 "Failed to update game_player_stats. Query args %s:", query_args
             )

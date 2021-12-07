@@ -1,6 +1,7 @@
 from enum import Enum, unique
 from typing import Any, Dict, List, NamedTuple, Optional, Set
 
+from server.db.typedefs import Victory
 from server.games.game_results import ArmyResult, GameOutcome
 from server.players import Player
 
@@ -25,14 +26,6 @@ class GameConnectionState(Enum):
 class InitMode(Enum):
     NORMAL_LOBBY = 0
     AUTO_LOBBY = 1
-
-
-@unique
-class Victory(Enum):
-    DEMORALIZATION = 0
-    DOMINATION = 1
-    ERADICATION = 2
-    SANDBOX = 3
 
 
 @unique
@@ -215,3 +208,19 @@ class FA(object):
 
     ENABLED = _FAEnabled()
     DISABLED = _FADisabled()
+
+
+__all__ = (
+    "BasicGameInfo",
+    "EndedGameInfo",
+    "FA",
+    "FeaturedModType",
+    "GameConnectionState",
+    "GameState",
+    "GameType",
+    "InitMode",
+    "TeamRatingSummary",
+    "ValidityState",
+    "Victory",
+    "VisibilityState",
+)

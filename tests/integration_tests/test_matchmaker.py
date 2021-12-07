@@ -133,7 +133,7 @@ async def test_game_matchmaking_start(lobby_server, database):
             game_player_stats.c.team,
             game_player_stats.c.place,
         ]).where(game_player_stats.c.gameId == msg["uid"]))
-        rows = await result.fetchall()
+        rows = result.fetchall()
         assert len(rows) == 2
         for row in rows:
             assert row["faction"] == 1
@@ -146,8 +146,8 @@ async def test_game_matchmaking_start(lobby_server, database):
         ]).select_from(
             matchmaker_queue_game.outerjoin(matchmaker_queue)
         ).where(matchmaker_queue_game.c.game_stats_id == msg["uid"]))
-        row = await result.fetchone()
-        assert row["technical_name"] == "ladder1v1"
+        row = result.fetchone()
+        assert row.technical_name == "ladder1v1"
 
 
 @fast_forward(15)

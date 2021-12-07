@@ -3,6 +3,7 @@ Manages interactions between players and matchmakers
 """
 
 import asyncio
+import json
 import random
 import re
 from collections import defaultdict
@@ -121,7 +122,7 @@ class LadderService(Service):
             )
         )
         map_pool_maps = {}
-        async for row in result:
+        for row in result:
             id_ = row.id
             name = row.name
             if id_ not in map_pool_maps:
@@ -133,7 +134,7 @@ class LadderService(Service):
                 )
             elif row.map_params is not None:
                 try:
-                    params = row.map_params
+                    params = json.loads(row.map_params)
                     map_type = params["type"]
                     if map_type == "neroxis":
                         map_list.append(
@@ -148,8 +149,8 @@ class LadderService(Service):
 
                 except Exception:
                     self._logger.warning(
-                        "Failed to load map in map pool %d "
-                        "parameters specified as %s",
+                        "Failed to load map in map pool %d. "
+                        "Parameters are '%s'",
                         row.id,
                         row.map_params,
                         exc_info=True
@@ -181,7 +182,7 @@ class LadderService(Service):
         # map pools
         errored = set()
         matchmaker_queues = defaultdict(lambda: defaultdict(list))
-        async for row in result:
+        for row in result:
             name = row.technical_name
             if name in errored:
                 continue
@@ -191,7 +192,7 @@ class LadderService(Service):
                 info["mod"] = row.gamemod
                 info["rating_type"] = row.rating_type
                 info["team_size"] = row.team_size
-                info["params"] = row.params
+                info["params"] = json.loads(row.params) if row.params else None
                 info["map_pools"].append((
                     row.map_pool_id,
                     row.min_rating,
@@ -535,7 +536,7 @@ class LadderService(Service):
                 ).order_by(game_stats.c.startTime.desc()).limit(limit)
 
                 result.extend([
-                    row.mapId async for row in await conn.execute(query)
+                    row.mapId for row in await conn.execute(query)
                 ])
         return result
 
