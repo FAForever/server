@@ -108,7 +108,9 @@ class ServerContext:
             self._logger.exception(ex)
         finally:
             del self.connections[connection]
-            await protocol.close()
+            # Do not wait for buffers to empty here. This could stop the process
+            # from exiting if the client isn't reading data.
+            protocol.abort()
             with self.suppress_and_log(connection.on_connection_lost, Exception):
                 await connection.on_connection_lost()
 

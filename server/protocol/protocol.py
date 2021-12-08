@@ -119,6 +119,9 @@ class Protocol(metaclass=ABCMeta):
 
         self.writer.write(data)
 
+    def abort(self) -> None:
+        self.writer.transport.close()
+
     async def close(self) -> None:
         """
         Close the underlying writer as soon as the buffer has emptied.
