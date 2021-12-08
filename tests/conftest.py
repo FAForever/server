@@ -122,13 +122,16 @@ def monkeypatch_context():
 
 
 @pytest.fixture(scope="session", autouse=True)
-async def test_data(request):
-    db = await global_database(request)
-    with open("tests/data/test-data.sql") as f:
-        async with db.acquire() as conn:
-            await conn.execute(f.read().replace(":", r"\:"))
+def test_data(request):
+    async def _test_data():
+        db = await global_database(request)
+        with open("tests/data/test-data.sql") as f:
+            async with db.acquire() as conn:
+                await conn.execute(f.read().replace(":", r"\:"))
 
-    await db.close()
+        await db.close()
+
+    asyncio.run(_test_data())
 
 
 async def global_database(request) -> FAFDatabase:
