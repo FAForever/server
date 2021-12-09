@@ -119,8 +119,6 @@ async def test_game_info_broadcast_on_connection_error(
 
 @fast_forward(30)
 async def test_backpressure_handling(lobby_server, caplog):
-    # TRACE will be spammed with thousands of messages
-    caplog.set_level(logging.DEBUG)
 
     _, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
@@ -129,6 +127,9 @@ async def test_backpressure_handling(lobby_server, caplog):
     # early as possible.
     proto.writer.transport.set_write_buffer_limits(high=0)
     proto.reader._limit = 0
+
+    # TRACE will be spammed with thousands of messages
+    caplog.set_level(logging.DEBUG)
 
     # It takes quite a lot of spamming for the read buffer to fill up.
     for _ in range(20_000):
