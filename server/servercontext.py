@@ -80,7 +80,7 @@ class ServerContext:
         self._logger.debug("%s stopped listening", self.name)
 
     def __contains__(self, connection):
-        return connection in self.connections.keys()
+        return connection in self.connections
 
     def write_broadcast(self, message, validate_fn=lambda _: True):
         self.write_broadcast_raw(
@@ -105,7 +105,10 @@ class ServerContext:
         self.connections[connection] = protocol
 
         try:
-            await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info("peername")))
+            await connection.on_connection_made(
+                protocol,
+                Address(*stream_writer.get_extra_info("peername"))
+            )
             metrics.user_connections.labels("None", "None").inc()
             while protocol.is_connected():
                 message = await protocol.read_message()
@@ -118,8 +121,8 @@ class ServerContext:
             asyncio.CancelledError,
         ):
             pass
-        except Exception as ex:
-            self._logger.exception(ex)
+        except Exception:
+            self._logger.exception()
         finally:
             del self.connections[connection]
             # Do not wait for buffers to empty here. This could stop the process

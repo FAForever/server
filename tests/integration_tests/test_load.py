@@ -119,7 +119,6 @@ async def test_game_info_broadcast_on_connection_error(
 
 @fast_forward(30)
 async def test_backpressure_handling(lobby_server, caplog):
-
     _, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
