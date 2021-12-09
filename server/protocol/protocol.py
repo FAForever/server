@@ -120,7 +120,8 @@ class Protocol(metaclass=ABCMeta):
         self.writer.write(data)
 
     def abort(self) -> None:
-        self.writer.transport.close()
+        # SelectorTransport only
+        self.writer.transport.abort()
 
     async def close(self) -> None:
         """

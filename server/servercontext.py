@@ -5,7 +5,7 @@ Manages a group of connections using the same protocol over the same port
 import asyncio
 import socket
 from contextlib import contextmanager
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Optional
 
 import server.metrics as metrics
 
@@ -58,12 +58,26 @@ class ServerContext:
     def sockets(self):
         return self._server.sockets
 
-    def wait_closed(self):
-        return self._server.wait_closed()
+    async def shutdown(self, timeout: Optional[float] = 5):
+        async def close_or_abort(conn, proto):
+            try:
+                await asyncio.wait_for(proto.close(), timeout)
+            except asyncio.TimeoutError:
+                proto.abort()
+                self._logger.warning(
+                    "Protocol did not terminate cleanly for '%s'",
+                    conn.get_user_identifier()
+                )
+        for fut in asyncio.as_completed([
+            close_or_abort(conn, proto)
+            for conn, proto in self.connections.items()
+        ]):
+            await fut
 
-    def close(self):
+    async def stop(self):
         self._server.close()
-        self._logger.debug("%s closed", self.name)
+        await self._server.wait_closed()
+        self._logger.debug("%s stopped listening", self.name)
 
     def __contains__(self, connection):
         return connection in self.connections.keys()

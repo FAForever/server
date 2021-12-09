@@ -251,21 +251,38 @@ class ServerInstance(object):
         return ctx
 
     async def shutdown(self):
-        for ctx in self.contexts:
-            ctx.close()
-
-        for ctx in self.contexts:
-            try:
-                await ctx.wait_closed()
-            except Exception:
+        results = await asyncio.gather(
+            *(ctx.stop() for ctx in self.contexts),
+            return_exceptions=True
+        )
+        for result, ctx in zip(results, self.contexts):
+            if isinstance(result, BaseException):
                 self._logger.error(
-                    "Encountered unexpected error when trying to shut down "
-                    "context %s",
+                    "Unexpected error when stopping context %s",
                     ctx
                 )
 
-        await asyncio.gather(*[
-            service.shutdown() for service in self.services.values()
-        ])
+        results = await asyncio.gather(
+            *(service.shutdown() for service in self.services.values()),
+            return_exceptions=True
+        )
+        for result, service in zip(results, self.services.values()):
+            if isinstance(result, BaseException):
+                self._logger.error(
+                    "Unexpected error when shutting down service %s",
+                    service
+                )
 
+        results = await asyncio.gather(
+            *(ctx.shutdown() for ctx in self.contexts),
+            return_exceptions=True
+        )
+        for result, ctx in zip(results, self.contexts):
+            if isinstance(result, BaseException):
+                self._logger.error(
+                    "Unexpected error when shutting down context %s",
+                    ctx
+                )
+
+        self.contexts.clear()
         self.started = False

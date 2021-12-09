@@ -152,12 +152,12 @@ async def lobby_server(
 
         yield ctx
 
-        ctx.close()
+        await ctx.stop()
+        await ctx.shutdown()
         # Close connected protocol objects
         # https://github.com/FAForever/server/issues/717
         for proto in ctx.__connected_client_protos:
-            proto.writer.close()
-        await ctx.wait_closed()
+            proto.abort()
         await exhaust_callbacks(event_loop)
 
 
