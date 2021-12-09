@@ -278,12 +278,14 @@ class PlayerService(Service):
                     )
                 )
 
-        for fut in asyncio.as_completed(tasks):
+        for fut in asyncio.as_completed(tasks, timeout=5):
             try:
                 await fut
-            except Exception as ex:
+            except Exception:
                 self._logger.debug(
-                    "Could not send shutdown message to %s: %s", player, ex
+                    "Could not send shutdown message to %s",
+                    player,
+                    exc_info=True
                 )
 
     def on_connection_lost(self, conn: "LobbyConnection") -> None:
