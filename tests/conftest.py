@@ -7,6 +7,7 @@ these should be put in the ``conftest.py'' relative to it.
 """
 
 import asyncio
+import gc
 import logging
 from contextlib import asynccontextmanager, contextmanager
 from typing import Iterable
@@ -96,6 +97,30 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "rabbitmq: marks tests as requiring a running instance of RabbitMQ"
     )
+
+
+@pytest.fixture
+def event_loop(request):
+    """
+    pytest-asyncio's event_loop fixture doesn't do any cleanup before closing
+    the loop. This can make task errors from previous tests leak into the test
+    output of later tests. We override the fixture here to implement the same
+    cleanup as in asyncio.run().
+    """
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    # Cleanup code copied from the python3.9 version of asyncio.run()
+    try:
+        asyncio.runners._cancel_all_tasks(loop)
+        loop.run_until_complete(loop.shutdown_asyncgens())
+        loop.run_until_complete(loop.shutdown_default_executor())
+    finally:
+        loop.close()
+        # Call the garbage collector to trigger ResourceWarning's as soon
+        # as possible (these are triggered in various __del__ methods).
+        # Without this, resources opened in one test can fail other tests
+        # when the warning is generated.
+        gc.collect()
 
 
 @pytest.fixture(scope="session")
