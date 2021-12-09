@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+from contextlib import closing
 from unittest import mock
 
 import pytest
@@ -66,6 +67,7 @@ async def context(mock_service):
     ctx = ServerContext("TestServer", make_connection, [mock_service])
     yield await ctx.listen("127.0.0.1", None), ctx
     ctx.close()
+    await ctx.wait_closed()
 
 
 async def test_serverside_abort(
@@ -75,13 +77,14 @@ async def test_serverside_abort(
     mock_service
 ):
     srv, ctx = mock_context
-    (reader, writer) = await asyncio.open_connection(*srv.sockets[0].getsockname())
-    proto = QDataStreamProtocol(reader, writer)
-    await proto.send_message({"some_junk": True})
-    await exhaust_callbacks(event_loop)
+    reader, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())
+    with closing(writer):
+        proto = QDataStreamProtocol(reader, writer)
+        await proto.send_message({"some_junk": True})
+        await exhaust_callbacks(event_loop)
 
-    mock_connection.on_connection_lost.assert_any_call()
-    mock_service.on_connection_lost.assert_called_once()
+        mock_connection.on_connection_lost.assert_any_call()
+        mock_service.on_connection_lost.assert_called_once()
 
 
 async def test_connection_broken_external(context):
@@ -91,9 +94,7 @@ async def test_connection_broken_external(context):
     still triggers the proper connection cleanup.
     """
     srv, ctx = context
-    (reader, writer) = await asyncio.open_connection(
-        *srv.sockets[0].getsockname()
-    )
+    _, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())
     writer.close()
     # Need this sleep for test to work, otherwise closed protocol isn't detected
     await asyncio.sleep(0)

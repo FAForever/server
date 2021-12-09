@@ -376,11 +376,8 @@ async def channel():
     connection = await aio_pika.connect(
         f"amqp://{config.MQ_USER}:{config.MQ_PASSWORD}@localhost/{config.MQ_VHOST}"
     )
-    channel = await connection.channel()
-
-    yield channel
-
-    await connection.close()
+    async with connection, connection.channel() as channel:
+        yield channel
 
 
 async def connect_mq_consumer(server, channel, routing_key):
