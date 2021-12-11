@@ -87,6 +87,7 @@ Distributed under GPLv3, see license.txt
 
 import asyncio
 import logging
+import time
 from typing import Optional
 
 from prometheus_client import start_http_server
@@ -221,9 +222,23 @@ class ServerInstance(object):
         if self.started:
             return
 
+        num_services = len(self.services)
+        self._logger.debug("Initializing %s services", num_services)
+
+        async def initialize(service):
+            start = time.perf_counter()
+            await service.initialize()
+            service._logger.debug(
+                "%s initialized in %0.2f seconds",
+                service.__class__.__name__,
+                time.perf_counter() - start
+            )
+
         await asyncio.gather(*[
-            service.initialize() for service in self.services.values()
+            initialize(service) for service in self.services.values()
         ])
+
+        self._logger.debug("Initialized %s services", num_services)
 
         self.started = True
 

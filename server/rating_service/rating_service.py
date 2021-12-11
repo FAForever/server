@@ -62,7 +62,6 @@ class RatingService(Service):
         await self.update_data()
         self._update_cron = aiocron.crontab("*/10 * * * *", func=self.update_data)
         self._accept_input = True
-        self._logger.debug("RatingService starting...")
         self._task = asyncio.create_task(self._handle_rating_queue())
 
     async def update_data(self):

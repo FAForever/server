@@ -41,7 +41,6 @@ class BroadcastService(Service):
             self.broadcast_ping,
             start=True
         )
-        self._logger.debug("Broadcast service initialized")
 
     async def report_dirties(self):
         """

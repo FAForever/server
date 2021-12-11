@@ -13,8 +13,10 @@ import os
 import platform
 import signal
 import sys
+import time
 from datetime import datetime
 
+import humanize
 from docopt import docopt
 
 import server
@@ -28,6 +30,8 @@ from server.protocol import SimpleJsonProtocol
 
 
 async def main():
+    global startup_time, shutdown_time
+
     version = os.environ.get("VERSION") or "dev"
     python_version = platform.python_version()
 
@@ -112,8 +116,14 @@ async def main():
         "start_time": datetime.utcnow().strftime("%m-%d %H:%M"),
         "game_uid": str(game_service.game_id_counter)
     })
+    logger.info(
+        "Server started in %0.2f seconds",
+        time.perf_counter() - startup_time
+    )
 
     await done
+
+    shutdown_time = time.perf_counter()
 
     # Cleanup
     await instance.shutdown()
@@ -124,6 +134,9 @@ async def main():
 
 
 if __name__ == "__main__":
+    startup_time = time.perf_counter()
+    shutdown_time = None
+
     args = docopt(__doc__, version="FAF Server")
     config_file = args.get("--configuration-file")
     if config_file:
@@ -145,3 +158,15 @@ if __name__ == "__main__":
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
     asyncio.run(main())
+
+    stop_time = time.perf_counter()
+    logger.info(
+        "Total server uptime: %s",
+        humanize.naturaldelta(stop_time - startup_time)
+    )
+
+    if shutdown_time is not None:
+        logger.info(
+            "Server shut down in %0.2f seconds",
+            stop_time - shutdown_time
+        )

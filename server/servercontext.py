@@ -7,6 +7,8 @@ import socket
 from contextlib import contextmanager
 from typing import Callable, Iterable, Optional
 
+import humanize
+
 import server.metrics as metrics
 
 from .core import Service
@@ -65,19 +67,26 @@ class ServerContext:
             except asyncio.TimeoutError:
                 proto.abort()
                 self._logger.warning(
-                    "Protocol did not terminate cleanly for '%s'",
+                    "%s: Protocol did not terminate cleanly for '%s'",
+                    self.name,
                     conn.get_user_identifier()
                 )
+        self._logger.debug(
+            "%s: Waiting up to %s for connections to close",
+            self.name,
+            humanize.naturaldelta(timeout)
+        )
         for fut in asyncio.as_completed([
             close_or_abort(conn, proto)
             for conn, proto in self.connections.items()
         ]):
             await fut
+        self._logger.debug("%s: All connections closed", self.name)
 
     async def stop(self):
         self._server.close()
         await self._server.wait_closed()
-        self._logger.debug("%s stopped listening", self.name)
+        self._logger.debug("%s: stop()", self.name)
 
     def __contains__(self, connection):
         return connection in self.connections
@@ -95,7 +104,9 @@ class ServerContext:
                     proto.write_raw(data)
             except Exception:
                 self._logger.exception(
-                    "Encountered error in broadcast: %s", conn
+                    "%s: Encountered error in broadcast: %s",
+                    self.name,
+                    conn
                 )
 
     async def client_connected(self, stream_reader, stream_writer):

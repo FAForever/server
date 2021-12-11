@@ -39,12 +39,12 @@ class GeoIpService(Service):
         self.db = None
         self.db_update_time = None
 
-        self.check_geoip_db_file_updated()
-
     def refresh_file_path(self):
         self.file_path = config.GEO_IP_DATABASE_PATH
 
     async def initialize(self) -> None:
+        self.check_geoip_db_file_updated()
+
         await self.check_update_geoip_db()
         # crontab: min hour day month day_of_week
         # Run every Wednesday because GeoLite2 is updated every first Tuesday
