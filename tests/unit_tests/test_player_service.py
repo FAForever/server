@@ -3,6 +3,7 @@ from unittest import mock
 import pytest
 
 from server.lobbyconnection import LobbyConnection
+from server.protocol import DisconnectedError
 from server.rating import RatingType
 
 pytestmark = pytest.mark.asyncio
@@ -125,17 +126,17 @@ async def test_broadcast_shutdown(player_factory, player_service):
 
     await player_service.shutdown()
 
-    player.lobby_connection.send_warning.assert_called_once()
+    player.lobby_connection.write_warning.assert_called_once()
 
 
 async def test_broadcast_shutdown_error(player_factory, player_service):
     player = player_factory()
     lconn = mock.create_autospec(LobbyConnection)
-    lconn.send_warning.side_effect = ValueError
+    lconn.write_warning.side_effect = DisconnectedError
     player.lobby_connection = lconn
 
     player_service[0] = player
 
     await player_service.shutdown()
 
-    player.lobby_connection.send_warning.assert_called_once()
+    player.lobby_connection.write_warning.assert_called_once()

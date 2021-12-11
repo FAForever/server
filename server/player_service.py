@@ -2,7 +2,7 @@
 Manages connected and authenticated players
 """
 
-import asyncio
+import contextlib
 from typing import Optional, ValuesView
 
 import aiocron
@@ -266,27 +266,15 @@ class PlayerService(Service):
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
     async def shutdown(self):
-        tasks = []
         for player in self:
             if player.lobby_connection is not None:
-                tasks.append(
-                    player.lobby_connection.send_warning(
+                with contextlib.suppress(Exception):
+                    player.lobby_connection.write_warning(
                         "The server has been shut down for maintenance, "
                         "but should be back online soon. If you experience any "
                         "problems, please restart your client. <br/><br/>"
                         "We apologize for this interruption."
                     )
-                )
-
-        for fut in asyncio.as_completed(tasks, timeout=5):
-            try:
-                await fut
-            except Exception:
-                self._logger.debug(
-                    "Could not send shutdown message to %s",
-                    player,
-                    exc_info=True
-                )
 
     def on_connection_lost(self, conn: "LobbyConnection") -> None:
         if not conn.player:
