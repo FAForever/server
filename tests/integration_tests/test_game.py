@@ -652,6 +652,7 @@ async def test_ladder_game_not_joinable(lobby_server):
     }
 
 
+@pytest.mark.flaky
 @fast_forward(60)
 async def test_gamestate_ended_clears_references(
     lobby_server,

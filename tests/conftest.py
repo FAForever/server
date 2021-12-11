@@ -97,6 +97,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "rabbitmq: marks tests as requiring a running instance of RabbitMQ"
     )
+    config.addinivalue_line(
+        "markers", "flaky: marks tests as known to be flaky"
+    )
 
 
 @pytest.fixture
