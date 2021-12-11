@@ -95,6 +95,8 @@ async def main():
     config.register_callback("PROFILING_DURATION", profiler.refresh)
     config.register_callback("PROFILING_INTERVAL", profiler.refresh)
 
+    await instance.start_services()
+
     ctrl_server = await server.run_control_server(player_service, game_service)
 
     async def restart_control_server():

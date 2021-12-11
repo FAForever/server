@@ -218,7 +218,7 @@ class ServerInstance(object):
                 )
 
     @synchronizedmethod
-    async def _start_services(self) -> None:
+    async def start_services(self) -> None:
         if self.started:
             return
 
@@ -251,7 +251,7 @@ class ServerInstance(object):
         Start listening on a new address.
         """
         if not self.started:
-            await self._start_services()
+            await self.start_services()
 
         ctx = ServerContext(
             f"{self.name}[{protocol_class.__name__}]",
