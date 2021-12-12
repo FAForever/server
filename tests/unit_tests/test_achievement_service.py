@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, Mock
+from unittest import mock
 
 import pytest
 
@@ -10,8 +10,8 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.fixture()
 def api_accessor():
-    m = Mock(spec=ApiAccessor)
-    m.update_achievements = AsyncMock(return_value=(200, MagicMock()))
+    m = mock.Mock(spec=ApiAccessor)
+    m.update_achievements = mock.AsyncMock(return_value=(200, mock.MagicMock()))
     m.api_session = SessionManager()
     return m
 
@@ -47,14 +47,18 @@ async def test_fill_queue(service: AchievementService):
 
 async def test_api_broken(service: AchievementService):
     queue = create_queue()
-    service.api_accessor.update_achievements = AsyncMock(return_value=(500, None))
+    service.api_accessor.update_achievements = mock.AsyncMock(
+        return_value=(500, None)
+    )
     result = await service.execute_batch_update(42, queue)
     assert result is None
 
 
 async def test_api_broken_2(service: AchievementService):
     queue = create_queue()
-    service.api_accessor.update_achievements = AsyncMock(side_effect=ConnectionError())
+    service.api_accessor.update_achievements = mock.AsyncMock(
+        side_effect=ConnectionError()
+    )
     result = await service.execute_batch_update(42, queue)
     assert result is None
 

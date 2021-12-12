@@ -1,7 +1,6 @@
 import re
 from hashlib import sha256
 from unittest import mock
-from unittest.mock import Mock
 
 import pytest
 from aiohttp import web
@@ -595,7 +594,7 @@ async def test_command_admin_closeFA(lobbyconnection, player_factory):
 
 
 async def test_game_subscription(lobbyconnection: LobbyConnection):
-    game = Mock()
+    game = mock.Mock()
     game.handle_action = mock.AsyncMock()
     lobbyconnection.game_connection = game
 
@@ -701,7 +700,7 @@ async def test_command_ice_servers(
     mock_nts_client
 ):
     lobbyconnection.send = mock.AsyncMock()
-    lobbyconnection.coturn_generator.server_tokens = Mock(
+    lobbyconnection.coturn_generator.server_tokens = mock.Mock(
         return_value=["coturn_tokens"]
     )
     mock_nts_client.server_tokens.return_value = ["twilio_tokens"]
@@ -726,7 +725,7 @@ async def test_broadcast(lobbyconnection: LobbyConnection, player_factory):
         tuna.id: tuna
     }
     lobbyconnection.player_service.__iter__.side_effect = data.values().__iter__
-    lobbyconnection.write_warning = Mock()
+    lobbyconnection.write_warning = mock.Mock()
 
     await lobbyconnection.on_message_received({
         "command": "admin",
@@ -751,7 +750,7 @@ async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, pla
         tuna.id: tuna
     }
     lobbyconnection.player_service.__iter__.side_effect = data.values().__iter__
-    lobbyconnection.write_warning = Mock()
+    lobbyconnection.write_warning = mock.Mock()
 
     # This should not leak any exceptions
     await lobbyconnection.on_message_received({
@@ -774,7 +773,7 @@ async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, play
         tuna.id: tuna
     }
     lobbyconnection.player_service.__iter__.side_effect = data.values().__iter__
-    lobbyconnection.write_warning = Mock()
+    lobbyconnection.write_warning = mock.Mock()
 
     # This should not leak any exceptions
     await lobbyconnection.on_message_received({

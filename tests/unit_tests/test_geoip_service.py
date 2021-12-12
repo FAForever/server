@@ -8,7 +8,7 @@ from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from time import time
-from unittest.mock import Mock
+from unittest import mock
 
 import pytest
 from aiohttp import web
@@ -47,7 +47,7 @@ async def test_check_update(fake_geoip_service, fake_geoip_path):
     server.config.GEO_IP_DATABASE_MAX_AGE_DAYS = 32
     server.config.GEO_IP_LICENSE_KEY = "Anything"
 
-    fake_geoip_service.load_db = Mock()
+    fake_geoip_service.load_db = mock.Mock()
     fake_geoip_service.download_geoip_db.reset_mock()
 
     await fake_geoip_service.check_update_geoip_db()
@@ -58,14 +58,14 @@ async def test_check_update(fake_geoip_service, fake_geoip_path):
 async def test_check_file_exist(fake_geoip_service, fake_geoip_path):
     # Set creation time into the past
     os.utime(fake_geoip_path, (time() - 60, time() - 60))
-    fake_geoip_service.load_db = Mock()
+    fake_geoip_service.load_db = mock.Mock()
     fake_geoip_service.db = None
     fake_geoip_service.db_update_time = None
 
     fake_geoip_service.check_geoip_db_file_updated()
 
     assert fake_geoip_service.load_db.call_count == 1
-    fake_geoip_service.db = Mock()
+    fake_geoip_service.db = mock.Mock()
     fake_geoip_service.db_update_time = datetime.now()
 
     fake_geoip_service.check_geoip_db_file_updated()
@@ -145,7 +145,7 @@ async def test_country_on_failed_db_load(geoip_service):
 
 
 async def test_load_db(geoip_service, test_geoip_path):
-    old_db = Mock()
+    old_db = mock.Mock()
     geoip_service.db = old_db
     geoip_service.file_path = test_geoip_path
 
@@ -159,7 +159,7 @@ async def test_load_db_not_overwrites_on_failed_load(
     geoip_service,
     fake_geoip_path
 ):
-    db = Mock()
+    db = mock.Mock()
 
     geoip_service.db = db
     geoip_service.file_path = fake_geoip_path
