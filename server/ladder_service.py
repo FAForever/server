@@ -503,7 +503,8 @@ class LadderService(Service):
             if game:
                 await game.on_game_end()
 
-            msg = {"command": "match_cancelled"}
+            game_id = game.id if game else None
+            msg = {"command": "match_cancelled", "game_id": game_id}
             for player in all_players:
                 if player.state == PlayerState.STARTING_AUTOMATCH:
                     player.state = PlayerState.IDLE

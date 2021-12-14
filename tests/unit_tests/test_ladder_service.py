@@ -206,8 +206,14 @@ async def test_start_game_timeout(
 
     LadderGame.timeout_game.assert_called_once()
     LadderGame.on_game_end.assert_called()
-    p1.lobby_connection.write.assert_called_once_with({"command": "match_cancelled"})
-    p2.lobby_connection.write.assert_called_once_with({"command": "match_cancelled"})
+    p1.lobby_connection.write.assert_called_once_with({
+        "command": "match_cancelled",
+        "game_id": 41956
+    })
+    p2.lobby_connection.write.assert_called_once_with({
+        "command": "match_cancelled",
+        "game_id": 41956
+    })
     assert p1.lobby_connection.launch_game.called
     # TODO: Once client supports `match_cancelled` change this to `assert not`
     # and uncomment the following lines.
