@@ -36,7 +36,7 @@ import json
 import random
 import re
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Optional
 
 import aiocron
 from sqlalchemy import and_, func, select, text, true
@@ -79,11 +79,11 @@ class LadderService(Service):
         game_service: GameService,
     ):
         self._db = database
-        self._informed_players: Set[Player] = set()
+        self._informed_players: set[Player] = set()
         self.game_service = game_service
         self.queues = {}
 
-        self._searches: Dict[Player, Dict[str, Search]] = defaultdict(dict)
+        self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
 
     async def initialize(self) -&gt; None:
         await self.update_data()
@@ -134,7 +134,7 @@ class LadderService(Service):
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
 
-    async def fetch_map_pools(self, conn) -&gt; Dict[int, Tuple[str, List[Map]]]:
+    async def fetch_map_pools(self, conn) -&gt; dict[int, tuple[str, list[Map]]]:
         result = await conn.execute(
             select([
                 map_pool.c.id,
@@ -239,7 +239,7 @@ class LadderService(Service):
 
     def start_search(
         self,
-        players: List[Player],
+        players: list[Player],
         queue_name: str,
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
@@ -406,8 +406,8 @@ class LadderService(Service):
 
     async def start_game(
         self,
-        team1: List[Player],
-        team2: List[Player],
+        team1: list[Player],
+        team2: list[Player],
         queue: MatchmakerQueue
     ) -&gt; None:
         assert len(team1) == len(team2)
@@ -540,10 +540,10 @@ class LadderService(Service):
 
     async def get_game_history(
         self,
-        players: List[Player],
+        players: list[Player],
         queue_id: int,
         limit: int = 3
-    ) -&gt; List[int]:
+    ) -&gt; list[int]:
         async with self._db.acquire() as conn:
             result = []
             for player in players:
@@ -584,7 +584,7 @@ class LadderService(Service):
             queue.shutdown()
 
 
-def game_name(*teams: List[Player]) -&gt; str:
+def game_name(*teams: list[Player]) -&gt; str:
     &#34;&#34;&#34;
     Generate a game name based on the players.
     &#34;&#34;&#34;
@@ -592,7 +592,7 @@ def game_name(*teams: List[Player]) -&gt; str:
     return &#34; Vs &#34;.join(_team_name(team) for team in teams)
 
 
-def _team_name(team: List[Player]) -&gt; str:
+def _team_name(team: list[Player]) -&gt; str:
     &#34;&#34;&#34;
     Generate a team name based on the players. If all players are in the
     same clan, use their clan tag, otherwise use the name of the first
@@ -623,7 +623,7 @@ def _team_name(team: List[Player]) -&gt; str:
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="server.ladder_service.game_name"><code class="name flex">
-<span>def <span class="ident">game_name</span></span>(<span>*teams: List[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]) ‑> str</span>
+<span>def <span class="ident">game_name</span></span>(<span>*teams: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]) ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Generate a game name based on the players.</p></div>
@@ -631,7 +631,7 @@ def _team_name(team: List[Player]) -&gt; str:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def game_name(*teams: List[Player]) -&gt; str:
+<pre><code class="python">def game_name(*teams: list[Player]) -&gt; str:
     &#34;&#34;&#34;
     Generate a game name based on the players.
     &#34;&#34;&#34;
@@ -655,7 +655,8 @@ statistics, and launches the games.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class LadderService(Service):
+<pre><code class="python">@with_logger
+class LadderService(Service):
     &#34;&#34;&#34;
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates
     statistics, and launches the games.
@@ -666,11 +667,11 @@ statistics, and launches the games.</p></div>
         game_service: GameService,
     ):
         self._db = database
-        self._informed_players: Set[Player] = set()
+        self._informed_players: set[Player] = set()
         self.game_service = game_service
         self.queues = {}
 
-        self._searches: Dict[Player, Dict[str, Search]] = defaultdict(dict)
+        self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
 
     async def initialize(self) -&gt; None:
         await self.update_data()
@@ -721,7 +722,7 @@ statistics, and launches the games.</p></div>
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
 
-    async def fetch_map_pools(self, conn) -&gt; Dict[int, Tuple[str, List[Map]]]:
+    async def fetch_map_pools(self, conn) -&gt; dict[int, tuple[str, list[Map]]]:
         result = await conn.execute(
             select([
                 map_pool.c.id,
@@ -826,7 +827,7 @@ statistics, and launches the games.</p></div>
 
     def start_search(
         self,
-        players: List[Player],
+        players: list[Player],
         queue_name: str,
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
@@ -993,8 +994,8 @@ statistics, and launches the games.</p></div>
 
     async def start_game(
         self,
-        team1: List[Player],
-        team2: List[Player],
+        team1: list[Player],
+        team2: list[Player],
         queue: MatchmakerQueue
     ) -&gt; None:
         assert len(team1) == len(team2)
@@ -1127,10 +1128,10 @@ statistics, and launches the games.</p></div>
 
     async def get_game_history(
         self,
-        players: List[Player],
+        players: list[Player],
         queue_id: int,
         limit: int = 3
-    ) -&gt; List[int]:
+    ) -&gt; list[int]:
         async with self._db.acquire() as conn:
             result = []
             for player in players:
@@ -1200,7 +1201,7 @@ statistics, and launches the games.</p></div>
 </details>
 </dd>
 <dt id="server.ladder_service.LadderService.fetch_map_pools"><code class="name flex">
-<span>async def <span class="ident">fetch_map_pools</span></span>(<span>self, conn) ‑> Dict[int, Tuple[str, List[<a title="server.types.Map" href="types.html#server.types.Map">Map</a>]]]</span>
+<span>async def <span class="ident">fetch_map_pools</span></span>(<span>self, conn) ‑> dict[int, tuple[str, list[<a title="server.types.Map" href="types.html#server.types.Map">Map</a>]]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1208,7 +1209,7 @@ statistics, and launches the games.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def fetch_map_pools(self, conn) -&gt; Dict[int, Tuple[str, List[Map]]]:
+<pre><code class="python">async def fetch_map_pools(self, conn) -&gt; dict[int, tuple[str, list[Map]]]:
     result = await conn.execute(
         select([
             map_pool.c.id,
@@ -1323,7 +1324,7 @@ statistics, and launches the games.</p></div>
 </details>
 </dd>
 <dt id="server.ladder_service.LadderService.get_game_history"><code class="name flex">
-<span>async def <span class="ident">get_game_history</span></span>(<span>self, players: List[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue_id: int, limit: int = 3) ‑> List[int]</span>
+<span>async def <span class="ident">get_game_history</span></span>(<span>self, players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue_id: int, limit: int = 3) ‑> list[int]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1333,10 +1334,10 @@ statistics, and launches the games.</p></div>
 </summary>
 <pre><code class="python">async def get_game_history(
     self,
-    players: List[Player],
+    players: list[Player],
     queue_id: int,
     limit: int = 3
-) -&gt; List[int]:
+) -&gt; list[int]:
     async with self._db.acquire() as conn:
         result = []
         for player in players:
@@ -1414,7 +1415,7 @@ so it should only perform fast operations.</p></div>
 </details>
 </dd>
 <dt id="server.ladder_service.LadderService.start_game"><code class="name flex">
-<span>async def <span class="ident">start_game</span></span>(<span>self, team1: List[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], team2: List[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> None</span>
+<span>async def <span class="ident">start_game</span></span>(<span>self, team1: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], team2: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1424,8 +1425,8 @@ so it should only perform fast operations.</p></div>
 </summary>
 <pre><code class="python">async def start_game(
     self,
-    team1: List[Player],
-    team2: List[Player],
+    team1: list[Player],
+    team2: list[Player],
     queue: MatchmakerQueue
 ) -&gt; None:
     assert len(team1) == len(team2)
@@ -1558,7 +1559,7 @@ so it should only perform fast operations.</p></div>
 </details>
 </dd>
 <dt id="server.ladder_service.LadderService.start_search"><code class="name flex">
-<span>def <span class="ident">start_search</span></span>(<span>self, players: List[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue_name: str, on_matched: Callable[[ForwardRef('Search'), ForwardRef('Search')], Any] = &lt;function LadderService.&lt;lambda&gt;&gt;)</span>
+<span>def <span class="ident">start_search</span></span>(<span>self, players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue_name: str, on_matched: Callable[[ForwardRef('Search'), ForwardRef('Search')], Any] = &lt;function LadderService.&lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1568,7 +1569,7 @@ so it should only perform fast operations.</p></div>
 </summary>
 <pre><code class="python">def start_search(
     self,
-    players: List[Player],
+    players: list[Player],
     queue_name: str,
     on_matched: OnMatchedCallback = lambda _1, _2: None
 ):

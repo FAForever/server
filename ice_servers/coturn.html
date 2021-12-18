@@ -41,7 +41,6 @@ import base64
 import hmac
 import time
 from hashlib import sha1
-from typing import Dict, List
 
 from server.config import config
 
@@ -51,7 +50,7 @@ class CoturnHMAC:
         self.coturn_hosts = coturn_hosts
         self.coturn_keys = coturn_keys
 
-    def server_tokens(self, username=&#34;faf-user&#34;, ttl=None) -&gt; List[Dict]:
+    def server_tokens(self, username=&#34;faf-user&#34;, ttl=None) -&gt; list[dict[str]]:
         if ttl is None:
             ttl = config.TWILIO_TTL  # pragma: no cover
 
@@ -109,7 +108,7 @@ class CoturnHMAC:
         self.coturn_hosts = coturn_hosts
         self.coturn_keys = coturn_keys
 
-    def server_tokens(self, username=&#34;faf-user&#34;, ttl=None) -&gt; List[Dict]:
+    def server_tokens(self, username=&#34;faf-user&#34;, ttl=None) -&gt; list[dict[str]]:
         if ttl is None:
             ttl = config.TWILIO_TTL  # pragma: no cover
 
@@ -145,7 +144,7 @@ class CoturnHMAC:
 <h3>Methods</h3>
 <dl>
 <dt id="server.ice_servers.coturn.CoturnHMAC.server_tokens"><code class="name flex">
-<span>def <span class="ident">server_tokens</span></span>(<span>self, username='faf-user', ttl=None) ‑> List[Dict[~KT, ~VT]]</span>
+<span>def <span class="ident">server_tokens</span></span>(<span>self, username='faf-user', ttl=None) ‑> list[dict[str]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -153,7 +152,7 @@ class CoturnHMAC:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def server_tokens(self, username=&#34;faf-user&#34;, ttl=None) -&gt; List[Dict]:
+<pre><code class="python">def server_tokens(self, username=&#34;faf-user&#34;, ttl=None) -&gt; list[dict[str]]:
     if ttl is None:
         ttl = config.TWILIO_TTL  # pragma: no cover
 

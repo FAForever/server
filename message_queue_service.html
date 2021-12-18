@@ -33,7 +33,6 @@ Interfaces with RabbitMQ
 
 import asyncio
 import json
-from typing import Dict
 
 import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
@@ -56,7 +55,6 @@ class MessageQueueService(Service):
     and providing an interface to publish messages.
     &#34;&#34;&#34;
     def __init__(self) -&gt; None:
-        self._logger.debug(&#34;Message queue service created.&#34;)
         self._connection = None
         self._channel = None
         self._exchanges = {}
@@ -155,7 +153,7 @@ class MessageQueueService(Service):
         self,
         exchange_name: str,
         routing: str,
-        payload: Dict,
+        payload: dict,
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -&gt; None:
@@ -240,13 +238,13 @@ and providing an interface to publish messages.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MessageQueueService(Service):
+<pre><code class="python">@with_logger
+class MessageQueueService(Service):
     &#34;&#34;&#34;
     Service handling connection to the message queue
     and providing an interface to publish messages.
     &#34;&#34;&#34;
     def __init__(self) -&gt; None:
-        self._logger.debug(&#34;Message queue service created.&#34;)
         self._connection = None
         self._channel = None
         self._exchanges = {}
@@ -345,7 +343,7 @@ and providing an interface to publish messages.</p></div>
         self,
         exchange_name: str,
         routing: str,
-        payload: Dict,
+        payload: dict,
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -&gt; None:
@@ -418,7 +416,7 @@ and providing an interface to publish messages.</p></div>
 </details>
 </dd>
 <dt id="server.message_queue_service.MessageQueueService.publish"><code class="name flex">
-<span>async def <span class="ident">publish</span></span>(<span>self, exchange_name: str, routing: str, payload: Dict[~KT, ~VT], mandatory: bool = False, delivery_mode: aio_pika.message.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
+<span>async def <span class="ident">publish</span></span>(<span>self, exchange_name: str, routing: str, payload: dict, mandatory: bool = False, delivery_mode: aio_pika.message.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -430,7 +428,7 @@ and providing an interface to publish messages.</p></div>
     self,
     exchange_name: str,
     routing: str,
-    payload: Dict,
+    payload: dict,
     mandatory: bool = False,
     delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
 ) -&gt; None:

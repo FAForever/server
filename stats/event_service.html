@@ -146,7 +146,8 @@ class EventService(Service):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class EventService(Service):
+<pre><code class="python">@with_logger
+class EventService(Service):
     def __init__(self, api_accessor: ApiAccessor):
         self.api_accessor = api_accessor
 

@@ -32,7 +32,7 @@ Manages the lifecycle of active games
 &#34;&#34;&#34;
 
 from collections import Counter
-from typing import Dict, List, Optional, Set, Type, Union, ValuesView
+from typing import Optional, Union, ValuesView
 
 import aiocron
 from sqlalchemy import select
@@ -73,8 +73,8 @@ class GameService(Service):
         message_queue_service: MessageQueueService
     ):
         self._db = database
-        self._dirty_games: Set[Game] = set()
-        self._dirty_queues: Set[MatchmakerQueue] = set()
+        self._dirty_games: set[Game] = set()
+        self._dirty_queues: set[MatchmakerQueue] = set()
         self.player_service = player_service
         self.game_stats_service = game_stats_service
         self._rating_service = rating_service
@@ -85,10 +85,10 @@ class GameService(Service):
         self.featured_mods = dict()
 
         # A set of mod ids that are allowed in ranked games
-        self.ranked_mods: Set[str] = set()
+        self.ranked_mods: set[str] = set()
 
         # The set of active games
-        self._games: Dict[int, Game] = dict()
+        self._games: dict[int, Game] = dict()
 
     async def initialize(self) -&gt; None:
         await self.initialise_game_counter()
@@ -148,13 +148,13 @@ class GameService(Service):
         elif isinstance(obj, MatchmakerQueue):
             self._dirty_queues.add(obj)
 
-    def pop_dirty_games(self) -&gt; Set[Game]:
+    def pop_dirty_games(self) -&gt; set[Game]:
         dirty_games = self._dirty_games
         self._dirty_games = set()
 
         return dirty_games
 
-    def pop_dirty_queues(self) -&gt; Set[MatchmakerQueue]:
+    def pop_dirty_queues(self) -&gt; set[MatchmakerQueue]:
         dirty_queues = self._dirty_queues
         self._dirty_queues = set()
 
@@ -168,7 +168,7 @@ class GameService(Service):
     def create_game(
         self,
         game_mode: str,
-        game_class: Type[Game] = CustomGame,
+        game_class: type[Game] = CustomGame,
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
@@ -221,12 +221,12 @@ class GameService(Service):
                 )
 
     @property
-    def live_games(self) -&gt; List[Game]:
+    def live_games(self) -&gt; list[Game]:
         return [game for game in self._games.values()
                 if game.state is GameState.LIVE]
 
     @property
-    def open_games(self) -&gt; List[Game]:
+    def open_games(self) -&gt; list[Game]:
         &#34;&#34;&#34;
         Return all games that meet the client&#39;s definition of &#34;not closed&#34;.
         Server game states are mapped to client game states as follows:
@@ -246,7 +246,7 @@ class GameService(Service):
         return self._games.values()
 
     @property
-    def pending_games(self) -&gt; List[Game]:
+    def pending_games(self) -&gt; list[Game]:
         return [game for game in self._games.values()
                 if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]
 
@@ -295,7 +295,8 @@ class GameService(Service):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GameService(Service):
+<pre><code class="python">@with_logger
+class GameService(Service):
     &#34;&#34;&#34;
     Utility class for maintaining lifecycle of games
     &#34;&#34;&#34;
@@ -308,8 +309,8 @@ class GameService(Service):
         message_queue_service: MessageQueueService
     ):
         self._db = database
-        self._dirty_games: Set[Game] = set()
-        self._dirty_queues: Set[MatchmakerQueue] = set()
+        self._dirty_games: set[Game] = set()
+        self._dirty_queues: set[MatchmakerQueue] = set()
         self.player_service = player_service
         self.game_stats_service = game_stats_service
         self._rating_service = rating_service
@@ -320,10 +321,10 @@ class GameService(Service):
         self.featured_mods = dict()
 
         # A set of mod ids that are allowed in ranked games
-        self.ranked_mods: Set[str] = set()
+        self.ranked_mods: set[str] = set()
 
         # The set of active games
-        self._games: Dict[int, Game] = dict()
+        self._games: dict[int, Game] = dict()
 
     async def initialize(self) -&gt; None:
         await self.initialise_game_counter()
@@ -383,13 +384,13 @@ class GameService(Service):
         elif isinstance(obj, MatchmakerQueue):
             self._dirty_queues.add(obj)
 
-    def pop_dirty_games(self) -&gt; Set[Game]:
+    def pop_dirty_games(self) -&gt; set[Game]:
         dirty_games = self._dirty_games
         self._dirty_games = set()
 
         return dirty_games
 
-    def pop_dirty_queues(self) -&gt; Set[MatchmakerQueue]:
+    def pop_dirty_queues(self) -&gt; set[MatchmakerQueue]:
         dirty_queues = self._dirty_queues
         self._dirty_queues = set()
 
@@ -403,7 +404,7 @@ class GameService(Service):
     def create_game(
         self,
         game_mode: str,
-        game_class: Type[Game] = CustomGame,
+        game_class: type[Game] = CustomGame,
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
@@ -456,12 +457,12 @@ class GameService(Service):
                 )
 
     @property
-    def live_games(self) -&gt; List[Game]:
+    def live_games(self) -&gt; list[Game]:
         return [game for game in self._games.values()
                 if game.state is GameState.LIVE]
 
     @property
-    def open_games(self) -&gt; List[Game]:
+    def open_games(self) -&gt; list[Game]:
         &#34;&#34;&#34;
         Return all games that meet the client&#39;s definition of &#34;not closed&#34;.
         Server game states are mapped to client game states as follows:
@@ -481,7 +482,7 @@ class GameService(Service):
         return self._games.values()
 
     @property
-    def pending_games(self) -&gt; List[Game]:
+    def pending_games(self) -&gt; list[Game]:
         return [game for game in self._games.values()
                 if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]
 
@@ -528,7 +529,7 @@ def all_games(self) -&gt; ValuesView[Game]:
     return self._games.values()</code></pre>
 </details>
 </dd>
-<dt id="server.game_service.GameService.live_games"><code class="name">var <span class="ident">live_games</span> : List[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
+<dt id="server.game_service.GameService.live_games"><code class="name">var <span class="ident">live_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -536,12 +537,12 @@ def all_games(self) -&gt; ValuesView[Game]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def live_games(self) -&gt; List[Game]:
+def live_games(self) -&gt; list[Game]:
     return [game for game in self._games.values()
             if game.state is GameState.LIVE]</code></pre>
 </details>
 </dd>
-<dt id="server.game_service.GameService.open_games"><code class="name">var <span class="ident">open_games</span> : List[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
+<dt id="server.game_service.GameService.open_games"><code class="name">var <span class="ident">open_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
 <div class="desc"><p>Return all games that meet the client's definition of "not closed".
 Server game states are mapped to client game states as follows:</p>
@@ -556,7 +557,7 @@ GameState.INITIALIZING: "closed",
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def open_games(self) -&gt; List[Game]:
+def open_games(self) -&gt; list[Game]:
     &#34;&#34;&#34;
     Return all games that meet the client&#39;s definition of &#34;not closed&#34;.
     Server game states are mapped to client game states as follows:
@@ -572,7 +573,7 @@ def open_games(self) -&gt; List[Game]:
             if game.state is GameState.LOBBY or game.state is GameState.LIVE]</code></pre>
 </details>
 </dd>
-<dt id="server.game_service.GameService.pending_games"><code class="name">var <span class="ident">pending_games</span> : List[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
+<dt id="server.game_service.GameService.pending_games"><code class="name">var <span class="ident">pending_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -580,7 +581,7 @@ def open_games(self) -&gt; List[Game]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def pending_games(self) -&gt; List[Game]:
+def pending_games(self) -&gt; list[Game]:
     return [game for game in self._games.values()
             if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]</code></pre>
 </details>
@@ -589,7 +590,7 @@ def pending_games(self) -&gt; List[Game]:
 <h3>Methods</h3>
 <dl>
 <dt id="server.game_service.GameService.create_game"><code class="name flex">
-<span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: Type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame, visibility=VisibilityState.PUBLIC, host: Optional[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>] = None, name: Optional[str] = None, mapname: Optional[str] = None, password: Optional[str] = None, matchmaker_queue_id: Optional[int] = None, **kwargs)</span>
+<span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame, visibility=VisibilityState.PUBLIC, host: Optional[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>] = None, name: Optional[str] = None, mapname: Optional[str] = None, password: Optional[str] = None, matchmaker_queue_id: Optional[int] = None, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Main entrypoint for creating new games</p></div>
@@ -600,7 +601,7 @@ def pending_games(self) -&gt; List[Game]:
 <pre><code class="python">def create_game(
     self,
     game_mode: str,
-    game_class: Type[Game] = CustomGame,
+    game_class: type[Game] = CustomGame,
     visibility=VisibilityState.PUBLIC,
     host: Optional[Player] = None,
     name: Optional[str] = None,
@@ -693,7 +694,7 @@ def pending_games(self) -&gt; List[Game]:
 </details>
 </dd>
 <dt id="server.game_service.GameService.pop_dirty_games"><code class="name flex">
-<span>def <span class="ident">pop_dirty_games</span></span>(<span>self) ‑> Set[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</span>
+<span>def <span class="ident">pop_dirty_games</span></span>(<span>self) ‑> set[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -701,7 +702,7 @@ def pending_games(self) -&gt; List[Game]:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def pop_dirty_games(self) -&gt; Set[Game]:
+<pre><code class="python">def pop_dirty_games(self) -&gt; set[Game]:
     dirty_games = self._dirty_games
     self._dirty_games = set()
 
@@ -709,7 +710,7 @@ def pending_games(self) -&gt; List[Game]:
 </details>
 </dd>
 <dt id="server.game_service.GameService.pop_dirty_queues"><code class="name flex">
-<span>def <span class="ident">pop_dirty_queues</span></span>(<span>self) ‑> Set[<a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>]</span>
+<span>def <span class="ident">pop_dirty_queues</span></span>(<span>self) ‑> set[<a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -717,7 +718,7 @@ def pending_games(self) -&gt; List[Game]:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def pop_dirty_queues(self) -&gt; Set[MatchmakerQueue]:
+<pre><code class="python">def pop_dirty_queues(self) -&gt; set[MatchmakerQueue]:
     dirty_queues = self._dirty_queues
     self._dirty_queues = set()
 

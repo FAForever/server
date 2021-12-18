@@ -27,7 +27,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from abc import ABCMeta, abstractmethod
-from typing import List, Union
+from typing import Union
 
 
 class GpgNetServerProtocol(metaclass=ABCMeta):
@@ -66,7 +66,7 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         await self.send_gpgnet_message(&#34;DisconnectFromPeer&#34;, [id])
 
-    async def send_gpgnet_message(self, command_id: str, arguments: List[Union[int, str, bool]]):
+    async def send_gpgnet_message(self, command_id: str, arguments: list[Union[int, str, bool]]):
         message = {&#34;command&#34;: command_id, &#34;args&#34;: arguments}
         await self.send(message)
 
@@ -76,14 +76,14 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
 
 
 class GpgNetClientProtocol(metaclass=ABCMeta):
-    def send_GameState(self, arguments: List[Union[int, str, bool]]) -&gt; None:
+    def send_GameState(self, arguments: list[Union[int, str, bool]]) -&gt; None:
         &#34;&#34;&#34;
         Sent by the client when the state of LobbyComm changes
         &#34;&#34;&#34;
         self.send_gpgnet_message(&#34;GameState&#34;, arguments)
 
     @abstractmethod
-    def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]) -&gt; None:
+    def send_gpgnet_message(self, command_id, arguments: list[Union[int, str, bool]]) -&gt; None:
         pass  # pragma: no cover</code></pre>
 </details>
 </section>
@@ -106,20 +106,20 @@ class GpgNetClientProtocol(metaclass=ABCMeta):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class GpgNetClientProtocol(metaclass=ABCMeta):
-    def send_GameState(self, arguments: List[Union[int, str, bool]]) -&gt; None:
+    def send_GameState(self, arguments: list[Union[int, str, bool]]) -&gt; None:
         &#34;&#34;&#34;
         Sent by the client when the state of LobbyComm changes
         &#34;&#34;&#34;
         self.send_gpgnet_message(&#34;GameState&#34;, arguments)
 
     @abstractmethod
-    def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]) -&gt; None:
+    def send_gpgnet_message(self, command_id, arguments: list[Union[int, str, bool]]) -&gt; None:
         pass  # pragma: no cover</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
 <dt id="server.protocol.gpgnet.GpgNetClientProtocol.send_GameState"><code class="name flex">
-<span>def <span class="ident">send_GameState</span></span>(<span>self, arguments: List[Union[int, str, bool]]) ‑> None</span>
+<span>def <span class="ident">send_GameState</span></span>(<span>self, arguments: list[typing.Union[int, str, bool]]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Sent by the client when the state of LobbyComm changes</p></div>
@@ -127,7 +127,7 @@ class GpgNetClientProtocol(metaclass=ABCMeta):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def send_GameState(self, arguments: List[Union[int, str, bool]]) -&gt; None:
+<pre><code class="python">def send_GameState(self, arguments: list[Union[int, str, bool]]) -&gt; None:
     &#34;&#34;&#34;
     Sent by the client when the state of LobbyComm changes
     &#34;&#34;&#34;
@@ -135,7 +135,7 @@ class GpgNetClientProtocol(metaclass=ABCMeta):
 </details>
 </dd>
 <dt id="server.protocol.gpgnet.GpgNetClientProtocol.send_gpgnet_message"><code class="name flex">
-<span>def <span class="ident">send_gpgnet_message</span></span>(<span>self, command_id, arguments: List[Union[int, str, bool]]) ‑> None</span>
+<span>def <span class="ident">send_gpgnet_message</span></span>(<span>self, command_id, arguments: list[typing.Union[int, str, bool]]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -144,7 +144,7 @@ class GpgNetClientProtocol(metaclass=ABCMeta):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]) -&gt; None:
+def send_gpgnet_message(self, command_id, arguments: list[Union[int, str, bool]]) -&gt; None:
     pass  # pragma: no cover</code></pre>
 </details>
 </dd>
@@ -195,7 +195,7 @@ def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]
         &#34;&#34;&#34;
         await self.send_gpgnet_message(&#34;DisconnectFromPeer&#34;, [id])
 
-    async def send_gpgnet_message(self, command_id: str, arguments: List[Union[int, str, bool]]):
+    async def send_gpgnet_message(self, command_id: str, arguments: list[Union[int, str, bool]]):
         message = {&#34;command&#34;: command_id, &#34;args&#34;: arguments}
         await self.send(message)
 
@@ -306,7 +306,7 @@ given peer</p>
 </details>
 </dd>
 <dt id="server.protocol.gpgnet.GpgNetServerProtocol.send_gpgnet_message"><code class="name flex">
-<span>async def <span class="ident">send_gpgnet_message</span></span>(<span>self, command_id: str, arguments: List[Union[int, str, bool]])</span>
+<span>async def <span class="ident">send_gpgnet_message</span></span>(<span>self, command_id: str, arguments: list[typing.Union[int, str, bool]])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -314,7 +314,7 @@ given peer</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def send_gpgnet_message(self, command_id: str, arguments: List[Union[int, str, bool]]):
+<pre><code class="python">async def send_gpgnet_message(self, command_id: str, arguments: list[Union[int, str, bool]]):
     message = {&#34;command&#34;: command_id, &#34;args&#34;: arguments}
     await self.send(message)</code></pre>
 </details>

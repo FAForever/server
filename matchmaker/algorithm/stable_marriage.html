@@ -29,17 +29,18 @@
 <pre><code class="python">import itertools
 import math
 import statistics as stats
-from typing import Dict, Iterable, List, Set, Tuple
+from typing import Iterable
 
 from ...decorators import with_logger
 from ..search import Match, Search
 from .matchmaker import Matchmaker, MatchmakingPolicy1v1
 from .random_newbies import RandomlyMatchNewbies
 
-WeightedGraph = Dict[Search, List[Tuple[Search, float]]]
+WeightedGraph = dict[Search, list[tuple[Search, float]]]
+
 
 class StableMarriage(MatchmakingPolicy1v1):
-    def find(self, ranks: WeightedGraph) -&gt; Dict[Search, Search]:
+    def find(self, ranks: WeightedGraph) -&gt; dict[Search, Search]:
         &#34;&#34;&#34;Perform the stable matching algorithm until a maximal stable matching
         is found.
         &#34;&#34;&#34;
@@ -108,7 +109,7 @@ class StableMarriageMatchmaker(Matchmaker):
     &#34;&#34;&#34;
     def find(
         self, searches: Iterable[Search], team_size: int
-    ) -&gt; Tuple[List[Match], List[Search]]:
+    ) -&gt; tuple[list[Match], list[Search]]:
         if team_size != 1:
             self._logger.error(
                 &#34;Invalid team size %i for stable marriage matchmaker will be ignored&#34;,
@@ -116,7 +117,7 @@ class StableMarriageMatchmaker(Matchmaker):
             )
 
         searches = list(searches)
-        matches: Dict[Search, Search] = {}
+        matches: dict[Search, Search] = {}
 
         self._logger.debug(&#34;Matching with stable marriage...&#34;)
         if len(searches) &lt; 30:
@@ -137,8 +138,8 @@ class StableMarriageMatchmaker(Matchmaker):
         return self._remove_duplicates(matches), unmatched_searches
 
     @staticmethod
-    def _remove_duplicates(matches: Dict[Search, Search]) -&gt; List[Match]:
-        matches_set: Set[Match] = set()
+    def _remove_duplicates(matches: dict[Search, Search]) -&gt; list[Match]:
+        matches_set: set[Match] = set()
         for s1, s2 in matches.items():
             if (s1, s2) in matches_set or (s2, s1) in matches_set:
                 continue
@@ -149,7 +150,7 @@ class StableMarriageMatchmaker(Matchmaker):
 @with_logger
 class _MatchingGraph:
     @staticmethod
-    def build_full(searches: List[Search]) -&gt; WeightedGraph:
+    def build_full(searches: list[Search]) -&gt; WeightedGraph:
         &#34;&#34;&#34;A graph in adjacency list representation, whose nodes are the searches
         and whose edges are the possible matchings for each node. Checks every
         possible edge for inclusion in the graph.
@@ -178,7 +179,7 @@ class _MatchingGraph:
         return adj_list
 
     @staticmethod
-    def build_fast(searches: List[Search]) -&gt; WeightedGraph:
+    def build_fast(searches: list[Search]) -&gt; WeightedGraph:
         &#34;&#34;&#34;Builds approximately the same graph as `build_full`, but does not
         check every possible edge.
 
@@ -289,7 +290,7 @@ high deviation as 0.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class StableMarriage(MatchmakingPolicy1v1):
-    def find(self, ranks: WeightedGraph) -&gt; Dict[Search, Search]:
+    def find(self, ranks: WeightedGraph) -&gt; dict[Search, Search]:
         &#34;&#34;&#34;Perform the stable matching algorithm until a maximal stable matching
         is found.
         &#34;&#34;&#34;
@@ -356,7 +357,7 @@ high deviation as 0.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.matchmaker.algorithm.stable_marriage.StableMarriage.find"><code class="name flex">
-<span>def <span class="ident">find</span></span>(<span>self, ranks: Dict[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, List[Tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, float]]]) ‑> Dict[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]</span>
+<span>def <span class="ident">find</span></span>(<span>self, ranks: dict[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, list[tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, float]]]) ‑> dict[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Perform the stable matching algorithm until a maximal stable matching
@@ -365,7 +366,7 @@ is found.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def find(self, ranks: WeightedGraph) -&gt; Dict[Search, Search]:
+<pre><code class="python">def find(self, ranks: WeightedGraph) -&gt; dict[Search, Search]:
     &#34;&#34;&#34;Perform the stable matching algorithm until a maximal stable matching
     is found.
     &#34;&#34;&#34;
@@ -419,14 +420,15 @@ and afterwards adds random matchups for previously unmatched new players.</p></d
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class StableMarriageMatchmaker(Matchmaker):
+<pre><code class="python">@with_logger
+class StableMarriageMatchmaker(Matchmaker):
     &#34;&#34;&#34;
     Runs stable marriage to produce a list of matches
     and afterwards adds random matchups for previously unmatched new players.
     &#34;&#34;&#34;
     def find(
         self, searches: Iterable[Search], team_size: int
-    ) -&gt; Tuple[List[Match], List[Search]]:
+    ) -&gt; tuple[list[Match], list[Search]]:
         if team_size != 1:
             self._logger.error(
                 &#34;Invalid team size %i for stable marriage matchmaker will be ignored&#34;,
@@ -434,7 +436,7 @@ and afterwards adds random matchups for previously unmatched new players.</p></d
             )
 
         searches = list(searches)
-        matches: Dict[Search, Search] = {}
+        matches: dict[Search, Search] = {}
 
         self._logger.debug(&#34;Matching with stable marriage...&#34;)
         if len(searches) &lt; 30:
@@ -455,8 +457,8 @@ and afterwards adds random matchups for previously unmatched new players.</p></d
         return self._remove_duplicates(matches), unmatched_searches
 
     @staticmethod
-    def _remove_duplicates(matches: Dict[Search, Search]) -&gt; List[Match]:
-        matches_set: Set[Match] = set()
+    def _remove_duplicates(matches: dict[Search, Search]) -&gt; list[Match]:
+        matches_set: set[Match] = set()
         for s1, s2 in matches.items():
             if (s1, s2) in matches_set or (s2, s1) in matches_set:
                 continue
@@ -471,7 +473,7 @@ and afterwards adds random matchups for previously unmatched new players.</p></d
 <h3>Methods</h3>
 <dl>
 <dt id="server.matchmaker.algorithm.stable_marriage.StableMarriageMatchmaker.find"><code class="name flex">
-<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> Tuple[List[Tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]], List[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
+<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> tuple[list[tuple['Search', 'Search']], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -481,7 +483,7 @@ and afterwards adds random matchups for previously unmatched new players.</p></d
 </summary>
 <pre><code class="python">def find(
     self, searches: Iterable[Search], team_size: int
-) -&gt; Tuple[List[Match], List[Search]]:
+) -&gt; tuple[list[Match], list[Search]]:
     if team_size != 1:
         self._logger.error(
             &#34;Invalid team size %i for stable marriage matchmaker will be ignored&#34;,
@@ -489,7 +491,7 @@ and afterwards adds random matchups for previously unmatched new players.</p></d
         )
 
     searches = list(searches)
-    matches: Dict[Search, Search] = {}
+    matches: dict[Search, Search] = {}
 
     self._logger.debug(&#34;Matching with stable marriage...&#34;)
     if len(searches) &lt; 30:

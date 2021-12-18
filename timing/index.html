@@ -171,7 +171,7 @@ __all__ = (&#34;LazyIntervalTimer&#34;, &#34;Timer&#34;, &#34;at_interval&#34;)<
         &#34;&#34;&#34;Called. Take care of exceptions using gather&#34;&#34;&#34;
         asyncio.gather(
             self.cron(*args, **kwargs),
-            loop=self.loop, return_exceptions=True
+            return_exceptions=True
         ).add_done_callback(self.set_result)
 
     def set_result(self, result):
@@ -220,7 +220,7 @@ __all__ = (&#34;LazyIntervalTimer&#34;, &#34;Timer&#34;, &#34;at_interval&#34;)<
     &#34;&#34;&#34;Called. Take care of exceptions using gather&#34;&#34;&#34;
     asyncio.gather(
         self.cron(*args, **kwargs),
-        loop=self.loop, return_exceptions=True
+        return_exceptions=True
     ).add_done_callback(self.set_result)</code></pre>
 </details>
 </dd>

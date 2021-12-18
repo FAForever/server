@@ -27,7 +27,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import time
-from typing import FrozenSet, List, NamedTuple, Optional
+from typing import NamedTuple, Optional
 
 from server.factions import Faction
 from server.matchmaker import Search
@@ -60,11 +60,11 @@ class PlayerParty():
         return iter(self._members.values())
 
     @property
-    def members(self) -&gt; FrozenSet[PartyMember]:
+    def members(self) -&gt; frozenset[PartyMember]:
         return frozenset(self._members.values())
 
     @property
-    def players(self) -&gt; List[Player]:
+    def players(self) -&gt; list[Player]:
         return list(member.player for member in self._members.values())
 
     def is_disbanded(self) -&gt; bool:
@@ -94,7 +94,7 @@ class PlayerParty():
 
         del self.invited_players[player]
 
-    def set_factions(self, player: Player, factions: List[Faction]) -&gt; None:
+    def set_factions(self, player: Player, factions: list[Faction]) -&gt; None:
         self._members[player].factions = factions
 
     def on_matched(self, search1: Search, search2: Search) -&gt; None:
@@ -201,11 +201,11 @@ class PlayerParty():
         return iter(self._members.values())
 
     @property
-    def members(self) -&gt; FrozenSet[PartyMember]:
+    def members(self) -&gt; frozenset[PartyMember]:
         return frozenset(self._members.values())
 
     @property
-    def players(self) -&gt; List[Player]:
+    def players(self) -&gt; list[Player]:
         return list(member.player for member in self._members.values())
 
     def is_disbanded(self) -&gt; bool:
@@ -235,7 +235,7 @@ class PlayerParty():
 
         del self.invited_players[player]
 
-    def set_factions(self, player: Player, factions: List[Faction]) -&gt; None:
+    def set_factions(self, player: Player, factions: list[Faction]) -&gt; None:
         self._members[player].factions = factions
 
     def on_matched(self, search1: Search, search2: Search) -&gt; None:
@@ -260,7 +260,7 @@ class PlayerParty():
 </details>
 <h3>Instance variables</h3>
 <dl>
-<dt id="server.team_matchmaker.player_party.PlayerParty.members"><code class="name">var <span class="ident">members</span> : FrozenSet[<a title="server.team_matchmaker.party_member.PartyMember" href="party_member.html#server.team_matchmaker.party_member.PartyMember">PartyMember</a>]</code></dt>
+<dt id="server.team_matchmaker.player_party.PlayerParty.members"><code class="name">var <span class="ident">members</span> : frozenset[<a title="server.team_matchmaker.party_member.PartyMember" href="party_member.html#server.team_matchmaker.party_member.PartyMember">PartyMember</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -268,11 +268,11 @@ class PlayerParty():
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def members(self) -&gt; FrozenSet[PartyMember]:
+def members(self) -&gt; frozenset[PartyMember]:
     return frozenset(self._members.values())</code></pre>
 </details>
 </dd>
-<dt id="server.team_matchmaker.player_party.PlayerParty.players"><code class="name">var <span class="ident">players</span> : List[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</code></dt>
+<dt id="server.team_matchmaker.player_party.PlayerParty.players"><code class="name">var <span class="ident">players</span> : list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -280,7 +280,7 @@ def members(self) -&gt; FrozenSet[PartyMember]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def players(self) -&gt; List[Player]:
+def players(self) -&gt; list[Player]:
     return list(member.player for member in self._members.values())</code></pre>
 </details>
 </dd>
@@ -429,7 +429,7 @@ def players(self) -&gt; List[Player]:
 </details>
 </dd>
 <dt id="server.team_matchmaker.player_party.PlayerParty.set_factions"><code class="name flex">
-<span>def <span class="ident">set_factions</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, factions: List[<a title="server.factions.Faction" href="../factions.html#server.factions.Faction">Faction</a>]) ‑> None</span>
+<span>def <span class="ident">set_factions</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, factions: list[<a title="server.factions.Faction" href="../factions.html#server.factions.Faction">Faction</a>]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -437,7 +437,7 @@ def players(self) -&gt; List[Player]:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def set_factions(self, player: Player, factions: List[Faction]) -&gt; None:
+<pre><code class="python">def set_factions(self, player: Player, factions: list[Faction]) -&gt; None:
     self._members[player].factions = factions</code></pre>
 </details>
 </dd>

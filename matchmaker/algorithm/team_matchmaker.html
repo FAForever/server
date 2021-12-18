@@ -30,7 +30,7 @@
 import statistics
 from collections import defaultdict
 from math import sqrt
-from typing import Dict, Iterable, List, NamedTuple, Set, Tuple
+from typing import Iterable, NamedTuple
 
 from sortedcontainers import SortedList
 
@@ -50,7 +50,7 @@ class GameCandidate(NamedTuple):
     quality: float
 
     @property
-    def all_searches(self) -&gt; Set[Search]:
+    def all_searches(self) -&gt; set[Search]:
         return set(search for team in self.match for search in team.get_original_searches())
 
 
@@ -84,7 +84,7 @@ class TeamMatchMaker(Matchmaker):
     8. pick the first game from the game list and remove all other games that contain the same players
     9. repeat 8. until the list is empty
     &#34;&#34;&#34;
-    def find(self, searches: Iterable[Search], team_size: int) -&gt; Tuple[List[Match], List[Search]]:
+    def find(self, searches: Iterable[Search], team_size: int) -&gt; tuple[list[Match], list[Search]]:
         if not searches:
             return [], []
 
@@ -130,7 +130,7 @@ class TeamMatchMaker(Matchmaker):
         return matches, list(searches)
 
     @staticmethod
-    def pick_neighboring_players(searches: List[Search], index: int, team_size: int) -&gt; List[Search]:
+    def pick_neighboring_players(searches: list[Search], index: int, team_size: int) -&gt; list[Search]:
         &#34;&#34;&#34;
         Picks searches from the list starting with the search at the given index and then expanding in both directions
         until there are enough players for a full game.
@@ -159,7 +159,7 @@ class TeamMatchMaker(Matchmaker):
                 number_of_players += len(candidate.players)
         return participants
 
-    def make_teams(self, participants: List[Search], team_size: int) -&gt; Tuple[Search, Search]:
+    def make_teams(self, participants: list[Search], team_size: int) -&gt; tuple[Search, Search]:
         &#34;&#34;&#34;
         Attempts to partition the given searches into two teams of the appropriate team size
         while also trying that both teams have the same cumulative rating.
@@ -205,11 +205,11 @@ class TeamMatchMaker(Matchmaker):
             raise UnevenTeamsException()
         return combined_team_a, combined_team_b
 
-    def _run_karmarkar_karp_algorithm(self, searches: List[Search]) -&gt; Tuple[List[Search], List[Search]]:
+    def _run_karmarkar_karp_algorithm(self, searches: list[Search]) -&gt; tuple[list[Search], list[Search]]:
         class Container:
             def __init__(self, rating_difference, content):
                 self.rating: int = rating_difference
-                self.content: List = content
+                self.content: list = content
 
             def holds_containers(self):
                 return len(self.content) == 2
@@ -263,8 +263,8 @@ class TeamMatchMaker(Matchmaker):
                     team_b.append(e.content[0])
         return team_a, team_b
 
-    def _searches_by_size(self, searches: List[Search]) -&gt; Dict[int, List[Search]]:
-        searches_by_size: Dict[int, List[Search]] = defaultdict(list)
+    def _searches_by_size(self, searches: list[Search]) -&gt; dict[int, list[Search]]:
+        searches_by_size: dict[int, list[Search]] = defaultdict(list)
 
         for search in searches:
             searches_by_size[len(search.players)].append(search)
@@ -276,7 +276,7 @@ class TeamMatchMaker(Matchmaker):
                 self._logger.debug(&#34;%i players: %s&#34;, i, searches_by_size[i])
         return searches_by_size
 
-    def _find_most_balanced_filler(self, avg: int, search: Search, single_player_searches: List[Search]) -&gt; Search:
+    def _find_most_balanced_filler(self, avg: int, search: Search, single_player_searches: list[Search]) -&gt; Search:
         &#34;&#34;&#34;
         If we simply fetch the highest/lowest rated single player search we may overshoot our
         goal to get the most balanced teams, so we try them all to find the one that brings us
@@ -324,7 +324,7 @@ class TeamMatchMaker(Matchmaker):
             newbie_bonus + time_bonus, rating_disparity, unfairness, deviation, rating_variety, quality)
         return GameCandidate(match, quality)
 
-    def pick_noncolliding_games(self, games: List[GameCandidate]) -&gt; List[Match]:
+    def pick_noncolliding_games(self, games: list[GameCandidate]) -&gt; list[Match]:
         &#34;&#34;&#34;
         This greedily picks all matches with disjoint players, starting with the game with the highest quality.
         This can miss more optimal solutions, but extensive testing showed that over many matchmaker
@@ -364,7 +364,7 @@ class TeamMatchMaker(Matchmaker):
 <dl>
 <dt id="server.matchmaker.algorithm.team_matchmaker.GameCandidate"><code class="flex name class">
 <span>class <span class="ident">GameCandidate</span></span>
-<span>(</span><span>match: Tuple[ForwardRef('Search'), ForwardRef('Search')], quality: float)</span>
+<span>(</span><span>match: tuple['Search', 'Search'], quality: float)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Holds the participating searches and a quality rating for a potential game
@@ -382,7 +382,7 @@ from the matchmaker. The quality is not the trueskill quality!</p></div>
     quality: float
 
     @property
-    def all_searches(self) -&gt; Set[Search]:
+    def all_searches(self) -&gt; set[Search]:
         return set(search for team in self.match for search in team.get_original_searches())</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -391,7 +391,7 @@ from the matchmaker. The quality is not the trueskill quality!</p></div>
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="server.matchmaker.algorithm.team_matchmaker.GameCandidate.all_searches"><code class="name">var <span class="ident">all_searches</span> : Set[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]</code></dt>
+<dt id="server.matchmaker.algorithm.team_matchmaker.GameCandidate.all_searches"><code class="name">var <span class="ident">all_searches</span> : set[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -399,11 +399,11 @@ from the matchmaker. The quality is not the trueskill quality!</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def all_searches(self) -&gt; Set[Search]:
+def all_searches(self) -&gt; set[Search]:
     return set(search for team in self.match for search in team.get_original_searches())</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.algorithm.team_matchmaker.GameCandidate.match"><code class="name">var <span class="ident">match</span> : Tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]</code></dt>
+<dt id="server.matchmaker.algorithm.team_matchmaker.GameCandidate.match"><code class="name">var <span class="ident">match</span> : tuple['Search', 'Search']</code></dt>
 <dd>
 <div class="desc"><p>Alias for field number 0</p></div>
 </dd>
@@ -457,7 +457,8 @@ If that is not the case perform the karmarkar-karp algorithm to get a good appro
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class TeamMatchMaker(Matchmaker):
+<pre><code class="python">@with_logger
+class TeamMatchMaker(Matchmaker):
     &#34;&#34;&#34;
     Matchmaker for teams of varied size. Untested for higher than 4v4 but it should work
 
@@ -478,7 +479,7 @@ If that is not the case perform the karmarkar-karp algorithm to get a good appro
     8. pick the first game from the game list and remove all other games that contain the same players
     9. repeat 8. until the list is empty
     &#34;&#34;&#34;
-    def find(self, searches: Iterable[Search], team_size: int) -&gt; Tuple[List[Match], List[Search]]:
+    def find(self, searches: Iterable[Search], team_size: int) -&gt; tuple[list[Match], list[Search]]:
         if not searches:
             return [], []
 
@@ -524,7 +525,7 @@ If that is not the case perform the karmarkar-karp algorithm to get a good appro
         return matches, list(searches)
 
     @staticmethod
-    def pick_neighboring_players(searches: List[Search], index: int, team_size: int) -&gt; List[Search]:
+    def pick_neighboring_players(searches: list[Search], index: int, team_size: int) -&gt; list[Search]:
         &#34;&#34;&#34;
         Picks searches from the list starting with the search at the given index and then expanding in both directions
         until there are enough players for a full game.
@@ -553,7 +554,7 @@ If that is not the case perform the karmarkar-karp algorithm to get a good appro
                 number_of_players += len(candidate.players)
         return participants
 
-    def make_teams(self, participants: List[Search], team_size: int) -&gt; Tuple[Search, Search]:
+    def make_teams(self, participants: list[Search], team_size: int) -&gt; tuple[Search, Search]:
         &#34;&#34;&#34;
         Attempts to partition the given searches into two teams of the appropriate team size
         while also trying that both teams have the same cumulative rating.
@@ -599,11 +600,11 @@ If that is not the case perform the karmarkar-karp algorithm to get a good appro
             raise UnevenTeamsException()
         return combined_team_a, combined_team_b
 
-    def _run_karmarkar_karp_algorithm(self, searches: List[Search]) -&gt; Tuple[List[Search], List[Search]]:
+    def _run_karmarkar_karp_algorithm(self, searches: list[Search]) -&gt; tuple[list[Search], list[Search]]:
         class Container:
             def __init__(self, rating_difference, content):
                 self.rating: int = rating_difference
-                self.content: List = content
+                self.content: list = content
 
             def holds_containers(self):
                 return len(self.content) == 2
@@ -657,8 +658,8 @@ If that is not the case perform the karmarkar-karp algorithm to get a good appro
                     team_b.append(e.content[0])
         return team_a, team_b
 
-    def _searches_by_size(self, searches: List[Search]) -&gt; Dict[int, List[Search]]:
-        searches_by_size: Dict[int, List[Search]] = defaultdict(list)
+    def _searches_by_size(self, searches: list[Search]) -&gt; dict[int, list[Search]]:
+        searches_by_size: dict[int, list[Search]] = defaultdict(list)
 
         for search in searches:
             searches_by_size[len(search.players)].append(search)
@@ -670,7 +671,7 @@ If that is not the case perform the karmarkar-karp algorithm to get a good appro
                 self._logger.debug(&#34;%i players: %s&#34;, i, searches_by_size[i])
         return searches_by_size
 
-    def _find_most_balanced_filler(self, avg: int, search: Search, single_player_searches: List[Search]) -&gt; Search:
+    def _find_most_balanced_filler(self, avg: int, search: Search, single_player_searches: list[Search]) -&gt; Search:
         &#34;&#34;&#34;
         If we simply fetch the highest/lowest rated single player search we may overshoot our
         goal to get the most balanced teams, so we try them all to find the one that brings us
@@ -718,7 +719,7 @@ If that is not the case perform the karmarkar-karp algorithm to get a good appro
             newbie_bonus + time_bonus, rating_disparity, unfairness, deviation, rating_variety, quality)
         return GameCandidate(match, quality)
 
-    def pick_noncolliding_games(self, games: List[GameCandidate]) -&gt; List[Match]:
+    def pick_noncolliding_games(self, games: list[GameCandidate]) -&gt; list[Match]:
         &#34;&#34;&#34;
         This greedily picks all matches with disjoint players, starting with the game with the highest quality.
         This can miss more optimal solutions, but extensive testing showed that over many matchmaker
@@ -754,7 +755,7 @@ If that is not the case perform the karmarkar-karp algorithm to get a good appro
 <h3>Static methods</h3>
 <dl>
 <dt id="server.matchmaker.algorithm.team_matchmaker.TeamMatchMaker.pick_neighboring_players"><code class="name flex">
-<span>def <span class="ident">pick_neighboring_players</span></span>(<span>searches: List[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], index: int, team_size: int) ‑> List[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]</span>
+<span>def <span class="ident">pick_neighboring_players</span></span>(<span>searches: list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], index: int, team_size: int) ‑> list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Picks searches from the list starting with the search at the given index and then expanding in both directions
@@ -766,7 +767,7 @@ until there are enough players for a full game.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@staticmethod
-def pick_neighboring_players(searches: List[Search], index: int, team_size: int) -&gt; List[Search]:
+def pick_neighboring_players(searches: list[Search], index: int, team_size: int) -&gt; list[Search]:
     &#34;&#34;&#34;
     Picks searches from the list starting with the search at the given index and then expanding in both directions
     until there are enough players for a full game.
@@ -800,7 +801,7 @@ def pick_neighboring_players(searches: List[Search], index: int, team_size: int)
 <h3>Methods</h3>
 <dl>
 <dt id="server.matchmaker.algorithm.team_matchmaker.TeamMatchMaker.assign_game_quality"><code class="name flex">
-<span>def <span class="ident">assign_game_quality</span></span>(<span>self, match: Tuple[ForwardRef('Search'), ForwardRef('Search')], team_size: int) ‑> <a title="server.matchmaker.algorithm.team_matchmaker.GameCandidate" href="#server.matchmaker.algorithm.team_matchmaker.GameCandidate">GameCandidate</a></span>
+<span>def <span class="ident">assign_game_quality</span></span>(<span>self, match: tuple['Search', 'Search'], team_size: int) ‑> <a title="server.matchmaker.algorithm.team_matchmaker.GameCandidate" href="#server.matchmaker.algorithm.team_matchmaker.GameCandidate">GameCandidate</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -839,7 +840,7 @@ def pick_neighboring_players(searches: List[Search], index: int, team_size: int)
 </details>
 </dd>
 <dt id="server.matchmaker.algorithm.team_matchmaker.TeamMatchMaker.find"><code class="name flex">
-<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> Tuple[List[Tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]], List[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
+<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> tuple[list[tuple['Search', 'Search']], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -847,7 +848,7 @@ def pick_neighboring_players(searches: List[Search], index: int, team_size: int)
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def find(self, searches: Iterable[Search], team_size: int) -&gt; Tuple[List[Match], List[Search]]:
+<pre><code class="python">def find(self, searches: Iterable[Search], team_size: int) -&gt; tuple[list[Match], list[Search]]:
     if not searches:
         return [], []
 
@@ -894,7 +895,7 @@ def pick_neighboring_players(searches: List[Search], index: int, team_size: int)
 </details>
 </dd>
 <dt id="server.matchmaker.algorithm.team_matchmaker.TeamMatchMaker.make_teams"><code class="name flex">
-<span>def <span class="ident">make_teams</span></span>(<span>self, participants: List[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> Tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]</span>
+<span>def <span class="ident">make_teams</span></span>(<span>self, participants: list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Attempts to partition the given searches into two teams of the appropriate team size
@@ -910,7 +911,7 @@ Raises UnevenTeamsException if one of the teams doesn't have the right size.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def make_teams(self, participants: List[Search], team_size: int) -&gt; Tuple[Search, Search]:
+<pre><code class="python">def make_teams(self, participants: list[Search], team_size: int) -&gt; tuple[Search, Search]:
     &#34;&#34;&#34;
     Attempts to partition the given searches into two teams of the appropriate team size
     while also trying that both teams have the same cumulative rating.
@@ -958,7 +959,7 @@ Raises UnevenTeamsException if one of the teams doesn't have the right size.</p>
 </details>
 </dd>
 <dt id="server.matchmaker.algorithm.team_matchmaker.TeamMatchMaker.pick_noncolliding_games"><code class="name flex">
-<span>def <span class="ident">pick_noncolliding_games</span></span>(<span>self, games: List[<a title="server.matchmaker.algorithm.team_matchmaker.GameCandidate" href="#server.matchmaker.algorithm.team_matchmaker.GameCandidate">GameCandidate</a>]) ‑> List[Tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
+<span>def <span class="ident">pick_noncolliding_games</span></span>(<span>self, games: list[<a title="server.matchmaker.algorithm.team_matchmaker.GameCandidate" href="#server.matchmaker.algorithm.team_matchmaker.GameCandidate">GameCandidate</a>]) ‑> list[tuple['Search', 'Search']]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This greedily picks all matches with disjoint players, starting with the game with the highest quality.
@@ -968,7 +969,7 @@ iterations there is no benefit to use a more sophisticated algorithm.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def pick_noncolliding_games(self, games: List[GameCandidate]) -&gt; List[Match]:
+<pre><code class="python">def pick_noncolliding_games(self, games: list[GameCandidate]) -&gt; list[Match]:
     &#34;&#34;&#34;
     This greedily picks all matches with disjoint players, starting with the game with the highest quality.
     This can miss more optimal solutions, but extensive testing showed that over many matchmaker

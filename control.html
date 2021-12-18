@@ -164,7 +164,8 @@ def to_dict_list(list_):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class ControlServer:
+<pre><code class="python">@with_logger
+class ControlServer:
     def __init__(
         self,
         game_service: GameService,

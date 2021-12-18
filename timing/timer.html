@@ -46,8 +46,15 @@ async def null_callback(*args):
 
 def wrap_func(func):
     &#34;&#34;&#34;wrap in a coroutine&#34;&#34;&#34;
-    if not asyncio.iscoroutinefunction(func):
-        return asyncio.coroutine(func)
+    if isinstance(func, functools.partial):
+        _func = func.func
+    else:
+        _func = func
+    if not asyncio.iscoroutinefunction(_func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
     return func
 
 
@@ -93,7 +100,7 @@ class Timer(object):
         &#34;&#34;&#34;Called. Take care of exceptions using gather&#34;&#34;&#34;
         asyncio.gather(
             self.cron(*args, **kwargs),
-            loop=self.loop, return_exceptions=True
+            return_exceptions=True
         ).add_done_callback(self.set_result)
 
     def set_result(self, result):
@@ -196,8 +203,15 @@ def at_interval(interval, func=None, args=(), start=True, loop=None):
 </summary>
 <pre><code class="python">def wrap_func(func):
     &#34;&#34;&#34;wrap in a coroutine&#34;&#34;&#34;
-    if not asyncio.iscoroutinefunction(func):
-        return asyncio.coroutine(func)
+    if isinstance(func, functools.partial):
+        _func = func.func
+    else:
+        _func = func
+    if not asyncio.iscoroutinefunction(_func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
     return func</code></pre>
 </details>
 </dd>
@@ -309,7 +323,7 @@ def at_interval(interval, func=None, args=(), start=True, loop=None):
         &#34;&#34;&#34;Called. Take care of exceptions using gather&#34;&#34;&#34;
         asyncio.gather(
             self.cron(*args, **kwargs),
-            loop=self.loop, return_exceptions=True
+            return_exceptions=True
         ).add_done_callback(self.set_result)
 
     def set_result(self, result):
@@ -358,7 +372,7 @@ def at_interval(interval, func=None, args=(), start=True, loop=None):
     &#34;&#34;&#34;Called. Take care of exceptions using gather&#34;&#34;&#34;
     asyncio.gather(
         self.cron(*args, **kwargs),
-        loop=self.loop, return_exceptions=True
+        return_exceptions=True
     ).add_done_callback(self.set_result)</code></pre>
 </details>
 </dd>

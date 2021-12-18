@@ -34,7 +34,7 @@ Server config variables
 import asyncio
 import logging
 import os
-from typing import Callable, Dict
+from typing import Callable
 
 import trueskill
 import yaml
@@ -157,7 +157,7 @@ class ConfigurationStore:
             key: value for key, value in vars(self).items() if key.isupper()
         }
 
-        self._callbacks: Dict[str, Callable] = {}
+        self._callbacks: dict[str, Callable] = {}
         self.refresh()
 
     def refresh(self) -&gt; None:
@@ -249,7 +249,8 @@ config.register_callback(&#34;LOG_LEVEL&#34;, set_log_level)</code></pre>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class ConfigurationStore:
+<pre><code class="python">@with_logger
+class ConfigurationStore:
     def __init__(self):
         &#34;&#34;&#34;
         Change default values here.
@@ -349,7 +350,7 @@ config.register_callback(&#34;LOG_LEVEL&#34;, set_log_level)</code></pre>
             key: value for key, value in vars(self).items() if key.isupper()
         }
 
-        self._callbacks: Dict[str, Callable] = {}
+        self._callbacks: dict[str, Callable] = {}
         self.refresh()
 
     def refresh(self) -&gt; None:

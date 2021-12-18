@@ -69,7 +69,6 @@ class BroadcastService(Service):
             self.broadcast_ping,
             start=True
         )
-        self._logger.debug(&#34;Broadcast service initialized&#34;)
 
     async def report_dirties(self):
         &#34;&#34;&#34;
@@ -166,7 +165,8 @@ class BroadcastService(Service):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class BroadcastService(Service):
+<pre><code class="python">@with_logger
+class BroadcastService(Service):
     &#34;&#34;&#34;
     Broadcast updates about changed entities.
     &#34;&#34;&#34;
@@ -196,7 +196,6 @@ class BroadcastService(Service):
             self.broadcast_ping,
             start=True
         )
-        self._logger.debug(&#34;Broadcast service initialized&#34;)
 
     async def report_dirties(self):
         &#34;&#34;&#34;

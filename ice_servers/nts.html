@@ -33,7 +33,6 @@ Twilio API NTS token
 
 import asyncio
 from functools import partial
-from typing import Dict, List
 
 from twilio.rest import Client as TwilioRestClient
 
@@ -56,7 +55,7 @@ class TwilioNTS:
         self.twilio_token = token
         self.client = TwilioRestClient(self.twilio_account_sid, self.twilio_token)
 
-    async def server_tokens(self, ttl=None) -&gt; List[Dict]:
+    async def server_tokens(self, ttl=None) -&gt; list[dict[str]]:
         &#34;&#34;&#34;
         Fetches token from Twilio
 
@@ -107,7 +106,7 @@ class TwilioNTS:
         self.twilio_token = token
         self.client = TwilioRestClient(self.twilio_account_sid, self.twilio_token)
 
-    async def server_tokens(self, ttl=None) -&gt; List[Dict]:
+    async def server_tokens(self, ttl=None) -&gt; list[dict[str]]:
         &#34;&#34;&#34;
         Fetches token from Twilio
 
@@ -124,7 +123,7 @@ class TwilioNTS:
 <h3>Methods</h3>
 <dl>
 <dt id="server.ice_servers.nts.TwilioNTS.server_tokens"><code class="name flex">
-<span>async def <span class="ident">server_tokens</span></span>(<span>self, ttl=None) ‑> List[Dict[~KT, ~VT]]</span>
+<span>async def <span class="ident">server_tokens</span></span>(<span>self, ttl=None) ‑> list[dict[str]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Fetches token from Twilio</p>
@@ -136,7 +135,7 @@ class TwilioNTS:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def server_tokens(self, ttl=None) -&gt; List[Dict]:
+<pre><code class="python">async def server_tokens(self, ttl=None) -&gt; list[dict[str]]:
     &#34;&#34;&#34;
     Fetches token from Twilio
 

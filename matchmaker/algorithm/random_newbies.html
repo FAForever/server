@@ -26,7 +26,7 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from typing import Dict, Iterable, List, Tuple
+<pre><code class="python">from typing import Iterable
 
 from ..search import Match, Search
 from .matchmaker import MatchmakingPolicy1v1
@@ -35,11 +35,11 @@ from .matchmaker import MatchmakingPolicy1v1
 class RandomlyMatchNewbies(MatchmakingPolicy1v1):
     def find(
         self, searches: Iterable[Search]
-    ) -&gt; Tuple[Dict[Search, Search], List[Match]]:
+    ) -&gt; tuple[dict[Search, Search], list[Match]]:
         self.matches.clear()
         searches_remaining_unmatched = set(searches)
 
-        unmatched_newbies: List[Search] = []
+        unmatched_newbies: list[Search] = []
         first_opponent = None
         for search in searches:
             if search.has_high_rated_player():
@@ -87,11 +87,11 @@ class RandomlyMatchNewbies(MatchmakingPolicy1v1):
 <pre><code class="python">class RandomlyMatchNewbies(MatchmakingPolicy1v1):
     def find(
         self, searches: Iterable[Search]
-    ) -&gt; Tuple[Dict[Search, Search], List[Match]]:
+    ) -&gt; tuple[dict[Search, Search], list[Match]]:
         self.matches.clear()
         searches_remaining_unmatched = set(searches)
 
-        unmatched_newbies: List[Search] = []
+        unmatched_newbies: list[Search] = []
         first_opponent = None
         for search in searches:
             if search.has_high_rated_player():
@@ -124,7 +124,7 @@ class RandomlyMatchNewbies(MatchmakingPolicy1v1):
 <h3>Methods</h3>
 <dl>
 <dt id="server.matchmaker.algorithm.random_newbies.RandomlyMatchNewbies.find"><code class="name flex">
-<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]) ‑> Tuple[Dict[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], List[Tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]]</span>
+<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]) ‑> tuple[dict[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], list[tuple['Search', 'Search']]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -134,11 +134,11 @@ class RandomlyMatchNewbies(MatchmakingPolicy1v1):
 </summary>
 <pre><code class="python">def find(
     self, searches: Iterable[Search]
-) -&gt; Tuple[Dict[Search, Search], List[Match]]:
+) -&gt; tuple[dict[Search, Search], list[Match]]:
     self.matches.clear()
     searches_remaining_unmatched = set(searches)
 
-    unmatched_newbies: List[Search] = []
+    unmatched_newbies: list[Search] = []
     first_opponent = None
     for search in searches:
         if search.has_high_rated_player():

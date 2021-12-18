@@ -31,8 +31,6 @@
 Manages interactions between players and parties
 &#34;&#34;&#34;
 
-from typing import Dict, List, Set
-
 from .core import Service
 from .decorators import with_logger
 from .exceptions import ClientError
@@ -54,8 +52,8 @@ class PartyService(Service):
 
     def __init__(self, game_service: GameService):
         self.game_service = game_service
-        self.player_parties: Dict[Player, PlayerParty] = {}
-        self._dirty_parties: Set[PlayerParty] = set()
+        self.player_parties: dict[Player, PlayerParty] = {}
+        self._dirty_parties: set[PlayerParty] = set()
 
     async def initialize(self):
         self._update_task = at_interval(1, self.update_dirties)
@@ -190,7 +188,7 @@ class PartyService(Service):
 
         self.mark_dirty(party)
 
-    def set_factions(self, player: Player, factions: List[Faction]):
+    def set_factions(self, player: Player, factions: list[Faction]):
         if player not in self.player_parties:
             self.player_parties[player] = PlayerParty(player)
 
@@ -246,7 +244,8 @@ with other players.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class PartyService(Service):
+<pre><code class="python">@with_logger
+class PartyService(Service):
     &#34;&#34;&#34;
     Service responsible for managing the player parties.
 
@@ -256,8 +255,8 @@ with other players.</p></div>
 
     def __init__(self, game_service: GameService):
         self.game_service = game_service
-        self.player_parties: Dict[Player, PlayerParty] = {}
-        self._dirty_parties: Set[PlayerParty] = set()
+        self.player_parties: dict[Player, PlayerParty] = {}
+        self._dirty_parties: set[PlayerParty] = set()
 
     async def initialize(self):
         self._update_task = at_interval(1, self.update_dirties)
@@ -392,7 +391,7 @@ with other players.</p></div>
 
         self.mark_dirty(party)
 
-    def set_factions(self, player: Player, factions: List[Faction]):
+    def set_factions(self, player: Player, factions: list[Faction]):
         if player not in self.player_parties:
             self.player_parties[player] = PlayerParty(player)
 
@@ -609,7 +608,7 @@ with other players.</p></div>
 </details>
 </dd>
 <dt id="server.party_service.PartyService.set_factions"><code class="name flex">
-<span>def <span class="ident">set_factions</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, factions: List[<a title="server.factions.Faction" href="factions.html#server.factions.Faction">Faction</a>])</span>
+<span>def <span class="ident">set_factions</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, factions: list[<a title="server.factions.Faction" href="factions.html#server.factions.Faction">Faction</a>])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -617,7 +616,7 @@ with other players.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def set_factions(self, player: Player, factions: List[Faction]):
+<pre><code class="python">def set_factions(self, player: Player, factions: list[Faction]):
     if player not in self.player_parties:
         self.player_parties[player] = PlayerParty(player)
 

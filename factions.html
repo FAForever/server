@@ -78,7 +78,8 @@ class Faction(IntEnum):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Faction(IntEnum):
+<pre><code class="python">@unique
+class Faction(IntEnum):
     uef = 1
     aeon = 2
     cybran = 3

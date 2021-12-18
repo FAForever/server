@@ -38,12 +38,12 @@ from asyncio.locks import _ContextManagerMixin
 from functools import wraps
 from typing import (
     Any,
+    AsyncContextManager,
     Callable,
     Coroutine,
-    List,
     Optional,
-    Type,
-    Union,
+    Protocol,
+    cast,
     overload
 )
 
@@ -53,14 +53,16 @@ AsyncFunc = Callable[..., Coroutine[Any, Any, Any]]
 AsyncDecorator = Callable[[AsyncFunc], AsyncFunc]
 
 
-# TODO: Need python &gt;= 3.8 for typing.Protocol
-AsyncLockable = Union[asyncio.Lock, &#34;SpinLock&#34;]
+class AsyncLock(Protocol, AsyncContextManager[&#34;AsyncLock&#34;]):
+    def locked(self) -&gt; bool: ...
+    async def acquire(self) -&gt; bool: ...
+    def release(self) -&gt; None: ...
 
 
 async def gather_without_exceptions(
-    tasks: List[asyncio.Task],
-    *exceptions: Type[BaseException],
-) -&gt; List[Any]:
+    tasks: list[asyncio.Task],
+    *exceptions: type[BaseException],
+) -&gt; list[Any]:
     &#34;&#34;&#34;
     Run coroutines in parallel, raising the first exception that dosen&#39;t
     match any of the specified exception classes.
@@ -148,7 +150,7 @@ def synchronized() -&gt; AsyncDecorator: ...
 @overload
 def synchronized(function: AsyncFunc) -&gt; AsyncFunc: ...
 @overload
-def synchronized(lock: Optional[AsyncLockable]) -&gt; AsyncDecorator: ...
+def synchronized(lock: Optional[AsyncLock]) -&gt; AsyncDecorator: ...
 
 
 def synchronized(*args):
@@ -168,7 +170,7 @@ def synchronized(*args):
 
 def _synchronize(
     function: AsyncFunc,
-    lock: Optional[AsyncLockable] = None
+    lock: Optional[AsyncLock] = None
 ) -&gt; AsyncFunc:
     &#34;&#34;&#34;Wrap an async function with an async lock.&#34;&#34;&#34;
     @wraps(function)
@@ -176,7 +178,7 @@ def _synchronize(
         nonlocal lock
 
         if lock is None:
-            lock = asyncio.Lock()
+            lock = lock or cast(AsyncLock, asyncio.Lock())
 
         async with lock:
             return await function(*args, **kwargs)
@@ -238,7 +240,7 @@ def _synchronize_method(
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="server.asyncio_extensions.gather_without_exceptions"><code class="name flex">
-<span>async def <span class="ident">gather_without_exceptions</span></span>(<span>tasks: List[_asyncio.Task], *exceptions: Type[BaseException]) ‑> List[Any]</span>
+<span>async def <span class="ident">gather_without_exceptions</span></span>(<span>tasks: list[_asyncio.Task], *exceptions: type[BaseException]) ‑> list[typing.Any]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Run coroutines in parallel, raising the first exception that dosen't
@@ -248,9 +250,9 @@ match any of the specified exception classes.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def gather_without_exceptions(
-    tasks: List[asyncio.Task],
-    *exceptions: Type[BaseException],
-) -&gt; List[Any]:
+    tasks: list[asyncio.Task],
+    *exceptions: type[BaseException],
+) -&gt; list[Any]:
     &#34;&#34;&#34;
     Run coroutines in parallel, raising the first exception that dosen&#39;t
     match any of the specified exception classes.
@@ -331,6 +333,92 @@ is to use a value based on the decorated function name.</li>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="server.asyncio_extensions.AsyncLock"><code class="flex name class">
+<span>class <span class="ident">AsyncLock</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Base class for protocol classes.</p>
+<p>Protocol classes are defined as::</p>
+<pre><code>class Proto(Protocol):
+    def meth(self) -&gt; int:
+        ...
+</code></pre>
+<p>Such classes are primarily used with static type checkers that recognize
+structural subtyping (static duck-typing), for example::</p>
+<pre><code>class C:
+    def meth(self) -&gt; int:
+        return 0
+
+def func(x: Proto) -&gt; int:
+    return x.meth()
+
+func(C())  # Passes static type check
+</code></pre>
+<p>See PEP 544 for details. Protocol classes decorated with
+@typing.runtime_checkable act as simple-minded runtime protocols that check
+only the presence of given attributes, ignoring their type signatures.
+Protocol classes can be generic, they are defined as::</p>
+<pre><code>class GenProto(Protocol[T]):
+    def meth(self) -&gt; T:
+        ...
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class AsyncLock(Protocol, AsyncContextManager[&#34;AsyncLock&#34;]):
+    def locked(self) -&gt; bool: ...
+    async def acquire(self) -&gt; bool: ...
+    def release(self) -&gt; None: ...</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>typing.Protocol</li>
+<li>contextlib.AbstractAsyncContextManager</li>
+<li>typing.Generic</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="server.asyncio_extensions.AsyncLock.acquire"><code class="name flex">
+<span>async def <span class="ident">acquire</span></span>(<span>self) ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def acquire(self) -&gt; bool: ...</code></pre>
+</details>
+</dd>
+<dt id="server.asyncio_extensions.AsyncLock.locked"><code class="name flex">
+<span>def <span class="ident">locked</span></span>(<span>self) ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def locked(self) -&gt; bool: ...</code></pre>
+</details>
+</dd>
+<dt id="server.asyncio_extensions.AsyncLock.release"><code class="name flex">
+<span>def <span class="ident">release</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def release(self) -&gt; None: ...</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 <dt id="server.asyncio_extensions.SpinLock"><code class="flex name class">
 <span>class <span class="ident">SpinLock</span></span>
 <span>(</span><span>sleep_duration: float = 0.01)</span>
@@ -471,6 +559,14 @@ sets it to locked and returns True.</p></div>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
+<li>
+<h4><code><a title="server.asyncio_extensions.AsyncLock" href="#server.asyncio_extensions.AsyncLock">AsyncLock</a></code></h4>
+<ul class="">
+<li><code><a title="server.asyncio_extensions.AsyncLock.acquire" href="#server.asyncio_extensions.AsyncLock.acquire">acquire</a></code></li>
+<li><code><a title="server.asyncio_extensions.AsyncLock.locked" href="#server.asyncio_extensions.AsyncLock.locked">locked</a></code></li>
+<li><code><a title="server.asyncio_extensions.AsyncLock.release" href="#server.asyncio_extensions.AsyncLock.release">release</a></code></li>
+</ul>
+</li>
 <li>
 <h4><code><a title="server.asyncio_extensions.SpinLock" href="#server.asyncio_extensions.SpinLock">SpinLock</a></code></h4>
 <ul class="">

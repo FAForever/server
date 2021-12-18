@@ -34,7 +34,7 @@ Game communication over GpgNet
 import asyncio
 import contextlib
 import json
-from typing import Any, List
+from typing import Any
 
 from sqlalchemy import select
 
@@ -230,7 +230,7 @@ class GameConnection(GpgNetServerProtocol):
                     offer=False
                 )
 
-    async def handle_action(self, command: str, args: List[Any]):
+    async def handle_action(self, command: str, args: list[Any]):
         &#34;&#34;&#34;
         Handle GpgNetSend messages, wrapped in the JSON protocol
         &#34;&#34;&#34;
@@ -278,7 +278,7 @@ class GameConnection(GpgNetServerProtocol):
 
         self._mark_dirty()
 
-    async def handle_game_mods(self, mode: Any, args: List[Any]):
+    async def handle_game_mods(self, mode: Any, args: list[Any]):
         if not self.is_host():
             return
 
@@ -535,7 +535,7 @@ class GameConnection(GpgNetServerProtocol):
             await self.on_connection_lost()
         self._mark_dirty()
 
-    async def handle_game_ended(self, *args:  List[Any]):
+    async def handle_game_ended(self, *args:  list[Any]):
         &#34;&#34;&#34;
         Signals that the simulation has ended.
         &#34;&#34;&#34;
@@ -546,28 +546,28 @@ class GameConnection(GpgNetServerProtocol):
         if self.game.ended:
             await self.game.on_game_end()
 
-    async def handle_rehost(self, *args: List[Any]):
+    async def handle_rehost(self, *args: list[Any]):
         &#34;&#34;&#34;
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
         pass
 
-    async def handle_bottleneck(self, *args: List[Any]):
+    async def handle_bottleneck(self, *args: list[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
         pass
 
-    async def handle_bottleneck_cleared(self, *args: List[Any]):
+    async def handle_bottleneck_cleared(self, *args: list[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
         pass
 
-    async def handle_disconnected(self, *args: List[Any]):
+    async def handle_disconnected(self, *args: list[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
@@ -692,7 +692,8 @@ COMMAND_HANDLERS = {
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GameConnection(GpgNetServerProtocol):
+<pre><code class="python">@with_logger
+class GameConnection(GpgNetServerProtocol):
     &#34;&#34;&#34;
     Responsible for connections to the game, using the GPGNet protocol
     &#34;&#34;&#34;
@@ -862,7 +863,7 @@ COMMAND_HANDLERS = {
                     offer=False
                 )
 
-    async def handle_action(self, command: str, args: List[Any]):
+    async def handle_action(self, command: str, args: list[Any]):
         &#34;&#34;&#34;
         Handle GpgNetSend messages, wrapped in the JSON protocol
         &#34;&#34;&#34;
@@ -910,7 +911,7 @@ COMMAND_HANDLERS = {
 
         self._mark_dirty()
 
-    async def handle_game_mods(self, mode: Any, args: List[Any]):
+    async def handle_game_mods(self, mode: Any, args: list[Any]):
         if not self.is_host():
             return
 
@@ -1167,7 +1168,7 @@ COMMAND_HANDLERS = {
             await self.on_connection_lost()
         self._mark_dirty()
 
-    async def handle_game_ended(self, *args:  List[Any]):
+    async def handle_game_ended(self, *args:  list[Any]):
         &#34;&#34;&#34;
         Signals that the simulation has ended.
         &#34;&#34;&#34;
@@ -1178,28 +1179,28 @@ COMMAND_HANDLERS = {
         if self.game.ended:
             await self.game.on_game_end()
 
-    async def handle_rehost(self, *args: List[Any]):
+    async def handle_rehost(self, *args: list[Any]):
         &#34;&#34;&#34;
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
         pass
 
-    async def handle_bottleneck(self, *args: List[Any]):
+    async def handle_bottleneck(self, *args: list[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
         pass
 
-    async def handle_bottleneck_cleared(self, *args: List[Any]):
+    async def handle_bottleneck_cleared(self, *args: list[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
         pass
 
-    async def handle_disconnected(self, *args: List[Any]):
+    async def handle_disconnected(self, *args: list[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
@@ -1450,7 +1451,7 @@ and deletes references to Player and Game held by this object.</p></div>
 </details>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_action"><code class="name flex">
-<span>async def <span class="ident">handle_action</span></span>(<span>self, command: str, args: List[Any])</span>
+<span>async def <span class="ident">handle_action</span></span>(<span>self, command: str, args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Handle GpgNetSend messages, wrapped in the JSON protocol</p></div>
@@ -1458,7 +1459,7 @@ and deletes references to Player and Game held by this object.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_action(self, command: str, args: List[Any]):
+<pre><code class="python">async def handle_action(self, command: str, args: list[Any]):
     &#34;&#34;&#34;
     Handle GpgNetSend messages, wrapped in the JSON protocol
     &#34;&#34;&#34;
@@ -1496,7 +1497,7 @@ and deletes references to Player and Game held by this object.</p></div>
 </details>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_bottleneck"><code class="name flex">
-<span>async def <span class="ident">handle_bottleneck</span></span>(<span>self, *args: List[Any])</span>
+<span>async def <span class="ident">handle_bottleneck</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
@@ -1505,7 +1506,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_bottleneck(self, *args: List[Any]):
+<pre><code class="python">async def handle_bottleneck(self, *args: list[Any]):
     &#34;&#34;&#34;
     Not sure what this command means. This is currently unused but
     included for documentation purposes.
@@ -1514,7 +1515,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_bottleneck_cleared"><code class="name flex">
-<span>async def <span class="ident">handle_bottleneck_cleared</span></span>(<span>self, *args: List[Any])</span>
+<span>async def <span class="ident">handle_bottleneck_cleared</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
@@ -1523,7 +1524,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_bottleneck_cleared(self, *args: List[Any]):
+<pre><code class="python">async def handle_bottleneck_cleared(self, *args: list[Any]):
     &#34;&#34;&#34;
     Not sure what this command means. This is currently unused but
     included for documentation purposes.
@@ -1578,7 +1579,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_disconnected"><code class="name flex">
-<span>async def <span class="ident">handle_disconnected</span></span>(<span>self, *args: List[Any])</span>
+<span>async def <span class="ident">handle_disconnected</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
@@ -1587,7 +1588,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_disconnected(self, *args: List[Any]):
+<pre><code class="python">async def handle_disconnected(self, *args: list[Any]):
     &#34;&#34;&#34;
     Not sure what this command means. This is currently unused but
     included for documentation purposes.
@@ -1609,7 +1610,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_game_ended"><code class="name flex">
-<span>async def <span class="ident">handle_game_ended</span></span>(<span>self, *args: List[Any])</span>
+<span>async def <span class="ident">handle_game_ended</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Signals that the simulation has ended.</p></div>
@@ -1617,7 +1618,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_game_ended(self, *args:  List[Any]):
+<pre><code class="python">async def handle_game_ended(self, *args:  list[Any]):
     &#34;&#34;&#34;
     Signals that the simulation has ended.
     &#34;&#34;&#34;
@@ -1646,7 +1647,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_game_mods"><code class="name flex">
-<span>async def <span class="ident">handle_game_mods</span></span>(<span>self, mode: Any, args: List[Any])</span>
+<span>async def <span class="ident">handle_game_mods</span></span>(<span>self, mode: Any, args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1654,7 +1655,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_game_mods(self, mode: Any, args: List[Any]):
+<pre><code class="python">async def handle_game_mods(self, mode: Any, args: list[Any]):
     if not self.is_host():
         return
 
@@ -1941,7 +1942,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_rehost"><code class="name flex">
-<span>async def <span class="ident">handle_rehost</span></span>(<span>self, *args: List[Any])</span>
+<span>async def <span class="ident">handle_rehost</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Signals that the user has rehosted the game. This is currently unused but
@@ -1950,7 +1951,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_rehost(self, *args: List[Any]):
+<pre><code class="python">async def handle_rehost(self, *args: list[Any]):
     &#34;&#34;&#34;
     Signals that the user has rehosted the game. This is currently unused but
     included for documentation purposes.

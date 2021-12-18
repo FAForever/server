@@ -30,7 +30,6 @@
 import json
 import struct
 from asyncio import IncompleteReadError
-from typing import Tuple
 
 from server.decorators import with_logger
 
@@ -44,7 +43,7 @@ class QDataStreamProtocol(Protocol):
     &#34;&#34;&#34;
 
     @staticmethod
-    def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
+    def read_qstring(buffer: bytes, pos: int = 0) -&gt; tuple[int, str]:
         &#34;&#34;&#34;
         Parse a serialized QString from buffer (A bytes like object) at given
         position.
@@ -168,13 +167,14 @@ PONG_MSG = QDataStreamProtocol.pack_message(&#34;PONG&#34;)</code></pre>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class QDataStreamProtocol(Protocol):
+<pre><code class="python">@with_logger
+class QDataStreamProtocol(Protocol):
     &#34;&#34;&#34;
     Implements the legacy QDataStream-based encoding scheme
     &#34;&#34;&#34;
 
     @staticmethod
-    def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
+    def read_qstring(buffer: bytes, pos: int = 0) -&gt; tuple[int, str]:
         &#34;&#34;&#34;
         Parse a serialized QString from buffer (A bytes like object) at given
         position.
@@ -373,7 +373,7 @@ def read_block(data):
 </details>
 </dd>
 <dt id="server.protocol.qdatastream.QDataStreamProtocol.read_qstring"><code class="name flex">
-<span>def <span class="ident">read_qstring</span></span>(<span>buffer: bytes, pos: int = 0) ‑> Tuple[int, str]</span>
+<span>def <span class="ident">read_qstring</span></span>(<span>buffer: bytes, pos: int = 0) ‑> tuple[int, str]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Parse a serialized QString from buffer (A bytes like object) at given
@@ -387,7 +387,7 @@ position.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@staticmethod
-def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
+def read_qstring(buffer: bytes, pos: int = 0) -&gt; tuple[int, str]:
     &#34;&#34;&#34;
     Parse a serialized QString from buffer (A bytes like object) at given
     position.

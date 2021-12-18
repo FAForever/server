@@ -30,7 +30,7 @@
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from enum import Enum
-from typing import Dict, FrozenSet, Iterator, List, NamedTuple, Optional, Set
+from typing import Iterator, NamedTuple, Optional
 
 from sqlalchemy import select
 
@@ -78,7 +78,7 @@ class ArmyResult(NamedTuple):
     player_id: int
     army: Optional[int]
     army_outcome: str
-    metadata: List[str]
+    metadata: list[str]
 
 
 class GameResultReport(NamedTuple):
@@ -92,7 +92,7 @@ class GameResultReport(NamedTuple):
     army: int
     outcome: ArmyReportedOutcome
     score: int
-    metadata: FrozenSet[str] = frozenset()
+    metadata: frozenset[str] = frozenset()
 
 
 @with_logger
@@ -106,12 +106,12 @@ class GameResultReports(Mapping):
     def __init__(self, game_id: int):
         Mapping.__init__(self)
         self._game_id = game_id  # Just for logging
-        self._back: Dict[int, List[GameResultReport]] = {}
+        self._back: dict[int, list[GameResultReport]] = {}
         # Outcome caching
-        self._outcomes: Dict[int, ArmyOutcome] = {}
-        self._dirty_armies: Set[int] = set()
+        self._outcomes: dict[int, ArmyOutcome] = {}
+        self._dirty_armies: set[int] = set()
 
-    def __getitem__(self, key: int) -&gt; List[GameResultReport]:
+    def __getitem__(self, key: int) -&gt; list[GameResultReport]:
         return self._back[key]
 
     def __iter__(self) -&gt; Iterator[int]:
@@ -185,7 +185,7 @@ class GameResultReports(Mapping):
         )
         return decision
 
-    def metadata(self, army: int) -&gt; List[str]:
+    def metadata(self, army: int) -&gt; list[str]:
         &#34;&#34;&#34;
         If any users have sent metadata tags in their messages about this army
         this function will compare those tags across all messages trying to find
@@ -273,7 +273,7 @@ class GameResolutionError(Exception):
     pass
 
 
-def resolve_game(team_outcomes: List[Set[ArmyOutcome]]) -&gt; List[GameOutcome]:
+def resolve_game(team_outcomes: list[set[ArmyOutcome]]) -&gt; list[GameOutcome]:
     &#34;&#34;&#34;
     Takes a list of length two containing sets of ArmyOutcome
     for individual players on a team
@@ -360,7 +360,7 @@ __all__ = (
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="server.games.game_results.resolve_game"><code class="name flex">
-<span>def <span class="ident">resolve_game</span></span>(<span>team_outcomes: List[Set[<a title="server.games.game_results.ArmyOutcome" href="#server.games.game_results.ArmyOutcome">ArmyOutcome</a>]]) ‑> List[<a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>]</span>
+<span>def <span class="ident">resolve_game</span></span>(<span>team_outcomes: list[set[<a title="server.games.game_results.ArmyOutcome" href="#server.games.game_results.ArmyOutcome">ArmyOutcome</a>]]) ‑> list[<a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Takes a list of length two containing sets of ArmyOutcome
@@ -379,7 +379,7 @@ either VICTORY and DEFEAT or DRAW and DRAW.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def resolve_game(team_outcomes: List[Set[ArmyOutcome]]) -&gt; List[GameOutcome]:
+<pre><code class="python">def resolve_game(team_outcomes: list[set[ArmyOutcome]]) -&gt; list[GameOutcome]:
     &#34;&#34;&#34;
     Takes a list of length two containing sets of ArmyOutcome
     for individual players on a team
@@ -579,7 +579,7 @@ results agree.</p></div>
 </dd>
 <dt id="server.games.game_results.ArmyResult"><code class="flex name class">
 <span>class <span class="ident">ArmyResult</span></span>
-<span>(</span><span>player_id: int, army: Optional[int], army_outcome: str, metadata: List[str])</span>
+<span>(</span><span>player_id: int, army: Optional[int], army_outcome: str, metadata: list[str])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Broadcast in the end of game rabbitmq message.</p></div>
@@ -594,7 +594,7 @@ results agree.</p></div>
     player_id: int
     army: Optional[int]
     army_outcome: str
-    metadata: List[str]</code></pre>
+    metadata: list[str]</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -610,7 +610,7 @@ results agree.</p></div>
 <dd>
 <div class="desc"><p>Alias for field number 2</p></div>
 </dd>
-<dt id="server.games.game_results.ArmyResult.metadata"><code class="name">var <span class="ident">metadata</span> : List[str]</code></dt>
+<dt id="server.games.game_results.ArmyResult.metadata"><code class="name">var <span class="ident">metadata</span> : list[str]</code></dt>
 <dd>
 <div class="desc"><p>Alias for field number 3</p></div>
 </dd>
@@ -630,7 +630,8 @@ results agree.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GameOutcome(Enum):
+<pre><code class="python">@unique
+class GameOutcome(Enum):
     VICTORY = &#34;VICTORY&#34;
     DEFEAT = &#34;DEFEAT&#34;
     DRAW = &#34;DRAW&#34;
@@ -681,7 +682,7 @@ results agree.</p></div>
 </dd>
 <dt id="server.games.game_results.GameResultReport"><code class="flex name class">
 <span>class <span class="ident">GameResultReport</span></span>
-<span>(</span><span>reporter: int, army: int, outcome: <a title="server.games.game_results.ArmyReportedOutcome" href="#server.games.game_results.ArmyReportedOutcome">ArmyReportedOutcome</a>, score: int, metadata: FrozenSet[str] = frozenset())</span>
+<span>(</span><span>reporter: int, army: int, outcome: <a title="server.games.game_results.ArmyReportedOutcome" href="#server.games.game_results.ArmyReportedOutcome">ArmyReportedOutcome</a>, score: int, metadata: frozenset[str] = frozenset())</span>
 </code></dt>
 <dd>
 <div class="desc"><p>These are sent from each player's FA when they quit the game. 'Score'
@@ -702,7 +703,7 @@ factors.</p></div>
     army: int
     outcome: ArmyReportedOutcome
     score: int
-    metadata: FrozenSet[str] = frozenset()</code></pre>
+    metadata: frozenset[str] = frozenset()</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -714,7 +715,7 @@ factors.</p></div>
 <dd>
 <div class="desc"><p>Alias for field number 1</p></div>
 </dd>
-<dt id="server.games.game_results.GameResultReport.metadata"><code class="name">var <span class="ident">metadata</span> : FrozenSet[str]</code></dt>
+<dt id="server.games.game_results.GameResultReport.metadata"><code class="name">var <span class="ident">metadata</span> : frozenset[str]</code></dt>
 <dd>
 <div class="desc"><p>Alias for field number 4</p></div>
 </dd>
@@ -744,7 +745,8 @@ for each army, but don't modify these.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GameResultReports(Mapping):
+<pre><code class="python">@with_logger
+class GameResultReports(Mapping):
     &#34;&#34;&#34;
     Collects all results from a single game. Allows to determine results for an
     army and game as a whole. Supports a dict-like access to lists of results
@@ -754,12 +756,12 @@ for each army, but don't modify these.</p></div>
     def __init__(self, game_id: int):
         Mapping.__init__(self)
         self._game_id = game_id  # Just for logging
-        self._back: Dict[int, List[GameResultReport]] = {}
+        self._back: dict[int, list[GameResultReport]] = {}
         # Outcome caching
-        self._outcomes: Dict[int, ArmyOutcome] = {}
-        self._dirty_armies: Set[int] = set()
+        self._outcomes: dict[int, ArmyOutcome] = {}
+        self._dirty_armies: set[int] = set()
 
-    def __getitem__(self, key: int) -&gt; List[GameResultReport]:
+    def __getitem__(self, key: int) -&gt; list[GameResultReport]:
         return self._back[key]
 
     def __iter__(self) -&gt; Iterator[int]:
@@ -833,7 +835,7 @@ for each army, but don't modify these.</p></div>
         )
         return decision
 
-    def metadata(self, army: int) -&gt; List[str]:
+    def metadata(self, army: int) -&gt; list[str]:
         &#34;&#34;&#34;
         If any users have sent metadata tags in their messages about this army
         this function will compare those tags across all messages trying to find
@@ -997,7 +999,7 @@ async def from_db(cls, database, game_id):
 </details>
 </dd>
 <dt id="server.games.game_results.GameResultReports.metadata"><code class="name flex">
-<span>def <span class="ident">metadata</span></span>(<span>self, army: int) ‑> List[str]</span>
+<span>def <span class="ident">metadata</span></span>(<span>self, army: int) ‑> list[str]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>If any users have sent metadata tags in their messages about this army
@@ -1007,7 +1009,7 @@ common ones to return.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def metadata(self, army: int) -&gt; List[str]:
+<pre><code class="python">def metadata(self, army: int) -&gt; list[str]:
     &#34;&#34;&#34;
     If any users have sent metadata tags in their messages about this army
     this function will compare those tags across all messages trying to find

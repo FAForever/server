@@ -33,7 +33,10 @@ Manages a group of connections using the same protocol over the same port
 
 import asyncio
 import socket
-from typing import Callable, Dict, Iterable, Type
+from contextlib import contextmanager
+from typing import Callable, Iterable, Optional
+
+import humanize
 
 import server.metrics as metrics
 
@@ -55,14 +58,14 @@ class ServerContext:
         name: str,
         connection_factory: Callable[[], LobbyConnection],
         services: Iterable[Service],
-        protocol_class: Type[Protocol] = QDataStreamProtocol,
+        protocol_class: type[Protocol] = QDataStreamProtocol,
     ):
         super().__init__()
         self.name = name
         self._server = None
         self._connection_factory = connection_factory
         self._services = services
-        self.connections: Dict[LobbyConnection, Protocol] = {}
+        self.connections: dict[LobbyConnection, Protocol] = {}
         self.protocol_class = protocol_class
 
     def __repr__(self):
@@ -86,15 +89,36 @@ class ServerContext:
     def sockets(self):
         return self._server.sockets
 
-    def wait_closed(self):
-        return self._server.wait_closed()
+    async def shutdown(self, timeout: Optional[float] = 5):
+        async def close_or_abort(conn, proto):
+            try:
+                await asyncio.wait_for(proto.close(), timeout)
+            except asyncio.TimeoutError:
+                proto.abort()
+                self._logger.warning(
+                    &#34;%s: Protocol did not terminate cleanly for &#39;%s&#39;&#34;,
+                    self.name,
+                    conn.get_user_identifier()
+                )
+        self._logger.debug(
+            &#34;%s: Waiting up to %s for connections to close&#34;,
+            self.name,
+            humanize.naturaldelta(timeout)
+        )
+        for fut in asyncio.as_completed([
+            close_or_abort(conn, proto)
+            for conn, proto in self.connections.items()
+        ]):
+            await fut
+        self._logger.debug(&#34;%s: All connections closed&#34;, self.name)
 
-    def close(self):
+    async def stop(self):
         self._server.close()
-        self._logger.debug(&#34;%s closed&#34;, self.name)
+        await self._server.wait_closed()
+        self._logger.debug(&#34;%s: stop()&#34;, self.name)
 
     def __contains__(self, connection):
-        return connection in self.connections.keys()
+        return connection in self.connections
 
     def write_broadcast(self, message, validate_fn=lambda _: True):
         self.write_broadcast_raw(
@@ -109,7 +133,9 @@ class ServerContext:
                     proto.write_raw(data)
             except Exception:
                 self._logger.exception(
-                    &#34;Encountered error in broadcast: %s&#34;, conn
+                    &#34;%s: Encountered error in broadcast: %s&#34;,
+                    self.name,
+                    conn
                 )
 
     async def client_connected(self, stream_reader, stream_writer):
@@ -119,7 +145,10 @@ class ServerContext:
         self.connections[connection] = protocol
 
         try:
-            await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info(&#34;peername&#34;)))
+            await connection.on_connection_made(
+                protocol,
+                Address(*stream_writer.get_extra_info(&#34;peername&#34;))
+            )
             metrics.user_connections.labels(&#34;None&#34;, &#34;None&#34;).inc()
             while protocol.is_connected():
                 message = await protocol.read_message()
@@ -132,28 +161,40 @@ class ServerContext:
             asyncio.CancelledError,
         ):
             pass
-        except Exception as ex:
-            self._logger.exception(ex)
+        except Exception:
+            self._logger.exception()
         finally:
             del self.connections[connection]
-            await protocol.close()
-            await connection.on_connection_lost()
+            # Do not wait for buffers to empty here. This could stop the process
+            # from exiting if the client isn&#39;t reading data.
+            protocol.abort()
+            with self.suppress_and_log(connection.on_connection_lost, Exception):
+                await connection.on_connection_lost()
 
             for service in self._services:
-                try:
+                with self.suppress_and_log(service.on_connection_lost, Exception):
                     service.on_connection_lost(connection)
-                except Exception:
-                    self._logger.warning(
-                        &#34;Unexpected exception in %s.on_connection_lost&#34;,
-                        service.__class__.__name__,
-                        exc_info=True
-                    )
 
             self._logger.debug(&#34;%s: Client disconnected&#34;, self.name)
             metrics.user_connections.labels(
                 connection.user_agent,
                 connection.version
-            ).dec()</code></pre>
+            ).dec()
+
+    @contextmanager
+    def suppress_and_log(self, func, *exceptions: type[BaseException]):
+        try:
+            yield
+        except exceptions:
+            if hasattr(func.__self__):
+                desc = f&#34;{func.__self__.__class__}.{func.__name__}&#34;
+            else:
+                desc = func.__name__
+            self._logger.warning(
+                &#34;Unexpected exception in %s&#34;,
+                desc,
+                exc_info=True
+            )</code></pre>
 </details>
 </section>
 <section>
@@ -167,7 +208,7 @@ class ServerContext:
 <dl>
 <dt id="server.servercontext.ServerContext"><code class="flex name class">
 <span>class <span class="ident">ServerContext</span></span>
-<span>(</span><span>name: str, connection_factory: Callable[[], <a title="server.lobbyconnection.LobbyConnection" href="lobbyconnection.html#server.lobbyconnection.LobbyConnection">LobbyConnection</a>], services: Iterable[<a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a>], protocol_class: Type[<a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>] = server.protocol.qdatastream.QDataStreamProtocol)</span>
+<span>(</span><span>name: str, connection_factory: Callable[[], <a title="server.lobbyconnection.LobbyConnection" href="lobbyconnection.html#server.lobbyconnection.LobbyConnection">LobbyConnection</a>], services: Iterable[<a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a>], protocol_class: type[<a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>] = server.protocol.qdatastream.QDataStreamProtocol)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Base class for managing connections and holding state about them.</p></div>
@@ -175,7 +216,8 @@ class ServerContext:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class ServerContext:
+<pre><code class="python">@with_logger
+class ServerContext:
     &#34;&#34;&#34;
     Base class for managing connections and holding state about them.
     &#34;&#34;&#34;
@@ -185,14 +227,14 @@ class ServerContext:
         name: str,
         connection_factory: Callable[[], LobbyConnection],
         services: Iterable[Service],
-        protocol_class: Type[Protocol] = QDataStreamProtocol,
+        protocol_class: type[Protocol] = QDataStreamProtocol,
     ):
         super().__init__()
         self.name = name
         self._server = None
         self._connection_factory = connection_factory
         self._services = services
-        self.connections: Dict[LobbyConnection, Protocol] = {}
+        self.connections: dict[LobbyConnection, Protocol] = {}
         self.protocol_class = protocol_class
 
     def __repr__(self):
@@ -216,15 +258,36 @@ class ServerContext:
     def sockets(self):
         return self._server.sockets
 
-    def wait_closed(self):
-        return self._server.wait_closed()
+    async def shutdown(self, timeout: Optional[float] = 5):
+        async def close_or_abort(conn, proto):
+            try:
+                await asyncio.wait_for(proto.close(), timeout)
+            except asyncio.TimeoutError:
+                proto.abort()
+                self._logger.warning(
+                    &#34;%s: Protocol did not terminate cleanly for &#39;%s&#39;&#34;,
+                    self.name,
+                    conn.get_user_identifier()
+                )
+        self._logger.debug(
+            &#34;%s: Waiting up to %s for connections to close&#34;,
+            self.name,
+            humanize.naturaldelta(timeout)
+        )
+        for fut in asyncio.as_completed([
+            close_or_abort(conn, proto)
+            for conn, proto in self.connections.items()
+        ]):
+            await fut
+        self._logger.debug(&#34;%s: All connections closed&#34;, self.name)
 
-    def close(self):
+    async def stop(self):
         self._server.close()
-        self._logger.debug(&#34;%s closed&#34;, self.name)
+        await self._server.wait_closed()
+        self._logger.debug(&#34;%s: stop()&#34;, self.name)
 
     def __contains__(self, connection):
-        return connection in self.connections.keys()
+        return connection in self.connections
 
     def write_broadcast(self, message, validate_fn=lambda _: True):
         self.write_broadcast_raw(
@@ -239,7 +302,9 @@ class ServerContext:
                     proto.write_raw(data)
             except Exception:
                 self._logger.exception(
-                    &#34;Encountered error in broadcast: %s&#34;, conn
+                    &#34;%s: Encountered error in broadcast: %s&#34;,
+                    self.name,
+                    conn
                 )
 
     async def client_connected(self, stream_reader, stream_writer):
@@ -249,7 +314,10 @@ class ServerContext:
         self.connections[connection] = protocol
 
         try:
-            await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info(&#34;peername&#34;)))
+            await connection.on_connection_made(
+                protocol,
+                Address(*stream_writer.get_extra_info(&#34;peername&#34;))
+            )
             metrics.user_connections.labels(&#34;None&#34;, &#34;None&#34;).inc()
             while protocol.is_connected():
                 message = await protocol.read_message()
@@ -262,28 +330,40 @@ class ServerContext:
             asyncio.CancelledError,
         ):
             pass
-        except Exception as ex:
-            self._logger.exception(ex)
+        except Exception:
+            self._logger.exception()
         finally:
             del self.connections[connection]
-            await protocol.close()
-            await connection.on_connection_lost()
+            # Do not wait for buffers to empty here. This could stop the process
+            # from exiting if the client isn&#39;t reading data.
+            protocol.abort()
+            with self.suppress_and_log(connection.on_connection_lost, Exception):
+                await connection.on_connection_lost()
 
             for service in self._services:
-                try:
+                with self.suppress_and_log(service.on_connection_lost, Exception):
                     service.on_connection_lost(connection)
-                except Exception:
-                    self._logger.warning(
-                        &#34;Unexpected exception in %s.on_connection_lost&#34;,
-                        service.__class__.__name__,
-                        exc_info=True
-                    )
 
             self._logger.debug(&#34;%s: Client disconnected&#34;, self.name)
             metrics.user_connections.labels(
                 connection.user_agent,
                 connection.version
-            ).dec()</code></pre>
+            ).dec()
+
+    @contextmanager
+    def suppress_and_log(self, func, *exceptions: type[BaseException]):
+        try:
+            yield
+        except exceptions:
+            if hasattr(func.__self__):
+                desc = f&#34;{func.__self__.__class__}.{func.__name__}&#34;
+            else:
+                desc = func.__name__
+            self._logger.warning(
+                &#34;Unexpected exception in %s&#34;,
+                desc,
+                exc_info=True
+            )</code></pre>
 </details>
 <h3>Instance variables</h3>
 <dl>
@@ -318,7 +398,10 @@ def sockets(self):
     self.connections[connection] = protocol
 
     try:
-        await connection.on_connection_made(protocol, Address(*stream_writer.get_extra_info(&#34;peername&#34;)))
+        await connection.on_connection_made(
+            protocol,
+            Address(*stream_writer.get_extra_info(&#34;peername&#34;))
+        )
         metrics.user_connections.labels(&#34;None&#34;, &#34;None&#34;).inc()
         while protocol.is_connected():
             message = await protocol.read_message()
@@ -331,42 +414,25 @@ def sockets(self):
         asyncio.CancelledError,
     ):
         pass
-    except Exception as ex:
-        self._logger.exception(ex)
+    except Exception:
+        self._logger.exception()
     finally:
         del self.connections[connection]
-        await protocol.close()
-        await connection.on_connection_lost()
+        # Do not wait for buffers to empty here. This could stop the process
+        # from exiting if the client isn&#39;t reading data.
+        protocol.abort()
+        with self.suppress_and_log(connection.on_connection_lost, Exception):
+            await connection.on_connection_lost()
 
         for service in self._services:
-            try:
+            with self.suppress_and_log(service.on_connection_lost, Exception):
                 service.on_connection_lost(connection)
-            except Exception:
-                self._logger.warning(
-                    &#34;Unexpected exception in %s.on_connection_lost&#34;,
-                    service.__class__.__name__,
-                    exc_info=True
-                )
 
         self._logger.debug(&#34;%s: Client disconnected&#34;, self.name)
         metrics.user_connections.labels(
             connection.user_agent,
             connection.version
         ).dec()</code></pre>
-</details>
-</dd>
-<dt id="server.servercontext.ServerContext.close"><code class="name flex">
-<span>def <span class="ident">close</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def close(self):
-    self._server.close()
-    self._logger.debug(&#34;%s closed&#34;, self.name)</code></pre>
 </details>
 </dd>
 <dt id="server.servercontext.ServerContext.listen"><code class="name flex">
@@ -393,8 +459,8 @@ def sockets(self):
     return self._server</code></pre>
 </details>
 </dd>
-<dt id="server.servercontext.ServerContext.wait_closed"><code class="name flex">
-<span>def <span class="ident">wait_closed</span></span>(<span>self)</span>
+<dt id="server.servercontext.ServerContext.shutdown"><code class="name flex">
+<span>async def <span class="ident">shutdown</span></span>(<span>self, timeout: Optional[float] = 5)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -402,8 +468,68 @@ def sockets(self):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def wait_closed(self):
-    return self._server.wait_closed()</code></pre>
+<pre><code class="python">async def shutdown(self, timeout: Optional[float] = 5):
+    async def close_or_abort(conn, proto):
+        try:
+            await asyncio.wait_for(proto.close(), timeout)
+        except asyncio.TimeoutError:
+            proto.abort()
+            self._logger.warning(
+                &#34;%s: Protocol did not terminate cleanly for &#39;%s&#39;&#34;,
+                self.name,
+                conn.get_user_identifier()
+            )
+    self._logger.debug(
+        &#34;%s: Waiting up to %s for connections to close&#34;,
+        self.name,
+        humanize.naturaldelta(timeout)
+    )
+    for fut in asyncio.as_completed([
+        close_or_abort(conn, proto)
+        for conn, proto in self.connections.items()
+    ]):
+        await fut
+    self._logger.debug(&#34;%s: All connections closed&#34;, self.name)</code></pre>
+</details>
+</dd>
+<dt id="server.servercontext.ServerContext.stop"><code class="name flex">
+<span>async def <span class="ident">stop</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def stop(self):
+    self._server.close()
+    await self._server.wait_closed()
+    self._logger.debug(&#34;%s: stop()&#34;, self.name)</code></pre>
+</details>
+</dd>
+<dt id="server.servercontext.ServerContext.suppress_and_log"><code class="name flex">
+<span>def <span class="ident">suppress_and_log</span></span>(<span>self, func, *exceptions: type[BaseException])</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@contextmanager
+def suppress_and_log(self, func, *exceptions: type[BaseException]):
+    try:
+        yield
+    except exceptions:
+        if hasattr(func.__self__):
+            desc = f&#34;{func.__self__.__class__}.{func.__name__}&#34;
+        else:
+            desc = func.__name__
+        self._logger.warning(
+            &#34;Unexpected exception in %s&#34;,
+            desc,
+            exc_info=True
+        )</code></pre>
 </details>
 </dd>
 <dt id="server.servercontext.ServerContext.write_broadcast"><code class="name flex">
@@ -438,7 +564,9 @@ def sockets(self):
                 proto.write_raw(data)
         except Exception:
             self._logger.exception(
-                &#34;Encountered error in broadcast: %s&#34;, conn
+                &#34;%s: Encountered error in broadcast: %s&#34;,
+                self.name,
+                conn
             )</code></pre>
 </details>
 </dd>
@@ -464,10 +592,11 @@ def sockets(self):
 <h4><code><a title="server.servercontext.ServerContext" href="#server.servercontext.ServerContext">ServerContext</a></code></h4>
 <ul class="two-column">
 <li><code><a title="server.servercontext.ServerContext.client_connected" href="#server.servercontext.ServerContext.client_connected">client_connected</a></code></li>
-<li><code><a title="server.servercontext.ServerContext.close" href="#server.servercontext.ServerContext.close">close</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.listen" href="#server.servercontext.ServerContext.listen">listen</a></code></li>
+<li><code><a title="server.servercontext.ServerContext.shutdown" href="#server.servercontext.ServerContext.shutdown">shutdown</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.sockets" href="#server.servercontext.ServerContext.sockets">sockets</a></code></li>
-<li><code><a title="server.servercontext.ServerContext.wait_closed" href="#server.servercontext.ServerContext.wait_closed">wait_closed</a></code></li>
+<li><code><a title="server.servercontext.ServerContext.stop" href="#server.servercontext.ServerContext.stop">stop</a></code></li>
+<li><code><a title="server.servercontext.ServerContext.suppress_and_log" href="#server.servercontext.ServerContext.suppress_and_log">suppress_and_log</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.write_broadcast" href="#server.servercontext.ServerContext.write_broadcast">write_broadcast</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.write_broadcast_raw" href="#server.servercontext.ServerContext.write_broadcast_raw">write_broadcast_raw</a></code></li>
 </ul>

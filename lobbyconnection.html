@@ -1102,7 +1102,7 @@ class LobbyConnection:
                                    downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
                                    ui=ui)
                         await self.send(out)
-                    except:
+                    except Exception:
                         self._logger.error(f&#34;Error handling table_mod row (uid: {uid})&#34;, exc_info=True)
 
             elif type == &#34;like&#34;:
@@ -1133,7 +1133,7 @@ class LobbyConnection:
                         canLike = False
                     else:
                         likers.append(self.player.id)
-                except:
+                except Exception:
                     likers = []
 
                 # TODO: Avoid sending all the mod info in the world just because we liked it?
@@ -1318,7 +1318,8 @@ class LobbyConnection:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class LobbyConnection:
+<pre><code class="python">@with_logger
+class LobbyConnection:
     @timed()
     def __init__(
         self,
@@ -2330,7 +2331,7 @@ class LobbyConnection:
                                    downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
                                    ui=ui)
                         await self.send(out)
-                    except:
+                    except Exception:
                         self._logger.error(f&#34;Error handling table_mod row (uid: {uid})&#34;, exc_info=True)
 
             elif type == &#34;like&#34;:
@@ -2361,7 +2362,7 @@ class LobbyConnection:
                         canLike = False
                     else:
                         likers.append(self.player.id)
-                except:
+                except Exception:
                     likers = []
 
                 # TODO: Avoid sending all the mod info in the world just because we liked it?
@@ -3380,7 +3381,7 @@ async def command_kick_player_from_party(self, message):
                                downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
                                ui=ui)
                     await self.send(out)
-                except:
+                except Exception:
                     self._logger.error(f&#34;Error handling table_mod row (uid: {uid})&#34;, exc_info=True)
 
         elif type == &#34;like&#34;:
@@ -3411,7 +3412,7 @@ async def command_kick_player_from_party(self, message):
                     canLike = False
                 else:
                     likers.append(self.player.id)
-            except:
+            except Exception:
                 likers = []
 
             # TODO: Avoid sending all the mod info in the world just because we liked it?

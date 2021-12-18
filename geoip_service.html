@@ -68,12 +68,12 @@ class GeoIpService(Service):
         self.db = None
         self.db_update_time = None
 
-        self.check_geoip_db_file_updated()
-
     def refresh_file_path(self):
         self.file_path = config.GEO_IP_DATABASE_PATH
 
     async def initialize(self) -&gt; None:
+        self.check_geoip_db_file_updated()
+
         await self.check_update_geoip_db()
         # crontab: min hour day month day_of_week
         # Run every Wednesday because GeoLite2 is updated every first Tuesday
@@ -351,7 +351,8 @@ the service will try to download a new file from tue url in <code><a title="serv
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GeoIpService(Service):
+<pre><code class="python">@with_logger
+class GeoIpService(Service):
     &#34;&#34;&#34;
     Service for managing the GeoIp database. This includes an asyncio crontab
     which periodically checks if the current file is out of date. If it is, then
@@ -367,12 +368,12 @@ the service will try to download a new file from tue url in <code><a title="serv
         self.db = None
         self.db_update_time = None
 
-        self.check_geoip_db_file_updated()
-
     def refresh_file_path(self):
         self.file_path = config.GEO_IP_DATABASE_PATH
 
     async def initialize(self) -&gt; None:
+        self.check_geoip_db_file_updated()
+
         await self.check_update_geoip_db()
         # crontab: min hour day month day_of_week
         # Run every Wednesday because GeoLite2 is updated every first Tuesday

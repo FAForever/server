@@ -67,7 +67,8 @@ class GameOutcome(Enum):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GameOutcome(Enum):
+<pre><code class="python">@unique
+class GameOutcome(Enum):
     VICTORY = &#34;VICTORY&#34;
     DEFEAT = &#34;DEFEAT&#34;
     DRAW = &#34;DRAW&#34;
@@ -107,7 +108,8 @@ class GameOutcome(Enum):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Victory(Enum):
+<pre><code class="python">@unique
+class Victory(Enum):
     DEMORALIZATION = 0
     DOMINATION = 1
     ERADICATION = 2

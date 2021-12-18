@@ -28,7 +28,6 @@
 </summary>
 <pre><code class="python">import os
 import time
-from typing import Dict
 
 import aiohttp
 from oauthlib.oauth2.rfc6749.errors import (
@@ -85,7 +84,7 @@ class OAuth2Session(object):
         creds = await self._make_request(data=data)
         self.update_tokens(creds)
 
-    def update_tokens(self, creds: Dict[str, str]) -&gt; None:
+    def update_tokens(self, creds: dict[str, str]) -&gt; None:
         self.token = creds[&#34;access_token&#34;]
         self.refresh_token = creds.get(&#34;refresh_token&#34;)
         expires_in = creds.get(&#34;expires_in&#34;)
@@ -93,7 +92,7 @@ class OAuth2Session(object):
             self.token_expires_in = int(expires_in)
         self.token_time = time.time()
 
-    async def _make_request(self, data: Dict[str, str]) -&gt; Dict[str, str]:
+    async def _make_request(self, data: dict[str, str]) -&gt; dict[str, str]:
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.post(self.token_url, data=data) as resp:
                 return await resp.json()
@@ -178,7 +177,7 @@ class OAuth2Session(object):
         creds = await self._make_request(data=data)
         self.update_tokens(creds)
 
-    def update_tokens(self, creds: Dict[str, str]) -&gt; None:
+    def update_tokens(self, creds: dict[str, str]) -&gt; None:
         self.token = creds[&#34;access_token&#34;]
         self.refresh_token = creds.get(&#34;refresh_token&#34;)
         expires_in = creds.get(&#34;expires_in&#34;)
@@ -186,7 +185,7 @@ class OAuth2Session(object):
             self.token_expires_in = int(expires_in)
         self.token_time = time.time()
 
-    async def _make_request(self, data: Dict[str, str]) -&gt; Dict[str, str]:
+    async def _make_request(self, data: dict[str, str]) -&gt; dict[str, str]:
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.post(self.token_url, data=data) as resp:
                 return await resp.json()
@@ -301,7 +300,7 @@ class OAuth2Session(object):
 </details>
 </dd>
 <dt id="server.api.oauth_session.OAuth2Session.update_tokens"><code class="name flex">
-<span>def <span class="ident">update_tokens</span></span>(<span>self, creds: Dict[str, str]) ‑> None</span>
+<span>def <span class="ident">update_tokens</span></span>(<span>self, creds: dict[str, str]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -309,7 +308,7 @@ class OAuth2Session(object):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def update_tokens(self, creds: Dict[str, str]) -&gt; None:
+<pre><code class="python">def update_tokens(self, creds: dict[str, str]) -&gt; None:
     self.token = creds[&#34;access_token&#34;]
     self.refresh_token = creds.get(&#34;refresh_token&#34;)
     expires_in = creds.get(&#34;expires_in&#34;)

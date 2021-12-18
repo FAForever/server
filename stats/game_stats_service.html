@@ -26,10 +26,9 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from typing import List
-
-from server.config import config
+<pre><code class="python">from server.config import config
 from server.core import Service
+from server.decorators import with_logger
 from server.games import FeaturedModType, Game
 from server.games.game_results import ArmyOutcome
 from server.players import Player
@@ -50,7 +49,7 @@ class GameStatsService(Service):
         self,
         player: Player,
         game: Game,
-        army_stats_list: List
+        army_stats_list: list
     ):
         try:
             await self._process_game_stats(player, game, army_stats_list)
@@ -67,7 +66,7 @@ class GameStatsService(Service):
         self,
         player: Player,
         game: Game,
-        army_stats_list: List
+        army_stats_list: list
     ):
         stats = None
         number_of_humans = 0
@@ -371,7 +370,8 @@ def _count(stats, function, *units):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GameStatsService(Service):
+<pre><code class="python">@with_logger
+class GameStatsService(Service):
     def __init__(self, event_service: EventService, achievement_service: AchievementService):
         self._event_service = event_service
         self._achievement_service = achievement_service
@@ -380,7 +380,7 @@ def _count(stats, function, *units):
         self,
         player: Player,
         game: Game,
-        army_stats_list: List
+        army_stats_list: list
     ):
         try:
             await self._process_game_stats(player, game, army_stats_list)
@@ -397,7 +397,7 @@ def _count(stats, function, *units):
         self,
         player: Player,
         game: Game,
-        army_stats_list: List
+        army_stats_list: list
     ):
         stats = None
         number_of_humans = 0
@@ -674,7 +674,7 @@ def _count(stats, function, *units):
 <h3>Methods</h3>
 <dl>
 <dt id="server.stats.game_stats_service.GameStatsService.process_game_stats"><code class="name flex">
-<span>async def <span class="ident">process_game_stats</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, game: <a title="server.games.game.Game" href="../games/game.html#server.games.game.Game">Game</a>, army_stats_list: List[~T])</span>
+<span>async def <span class="ident">process_game_stats</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, game: <a title="server.games.game.Game" href="../games/game.html#server.games.game.Game">Game</a>, army_stats_list: list)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -686,7 +686,7 @@ def _count(stats, function, *units):
     self,
     player: Player,
     game: Game,
-    army_stats_list: List
+    army_stats_list: list
 ):
     try:
         await self._process_game_stats(player, game, army_stats_list)

@@ -105,20 +105,20 @@ __all__ = (
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class GpgNetClientProtocol(metaclass=ABCMeta):
-    def send_GameState(self, arguments: List[Union[int, str, bool]]) -&gt; None:
+    def send_GameState(self, arguments: list[Union[int, str, bool]]) -&gt; None:
         &#34;&#34;&#34;
         Sent by the client when the state of LobbyComm changes
         &#34;&#34;&#34;
         self.send_gpgnet_message(&#34;GameState&#34;, arguments)
 
     @abstractmethod
-    def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]) -&gt; None:
+    def send_gpgnet_message(self, command_id, arguments: list[Union[int, str, bool]]) -&gt; None:
         pass  # pragma: no cover</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
 <dt id="server.protocol.GpgNetClientProtocol.send_GameState"><code class="name flex">
-<span>def <span class="ident">send_GameState</span></span>(<span>self, arguments: List[Union[int, str, bool]]) ‑> None</span>
+<span>def <span class="ident">send_GameState</span></span>(<span>self, arguments: list[typing.Union[int, str, bool]]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Sent by the client when the state of LobbyComm changes</p></div>
@@ -126,7 +126,7 @@ __all__ = (
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def send_GameState(self, arguments: List[Union[int, str, bool]]) -&gt; None:
+<pre><code class="python">def send_GameState(self, arguments: list[Union[int, str, bool]]) -&gt; None:
     &#34;&#34;&#34;
     Sent by the client when the state of LobbyComm changes
     &#34;&#34;&#34;
@@ -134,7 +134,7 @@ __all__ = (
 </details>
 </dd>
 <dt id="server.protocol.GpgNetClientProtocol.send_gpgnet_message"><code class="name flex">
-<span>def <span class="ident">send_gpgnet_message</span></span>(<span>self, command_id, arguments: List[Union[int, str, bool]]) ‑> None</span>
+<span>def <span class="ident">send_gpgnet_message</span></span>(<span>self, command_id, arguments: list[typing.Union[int, str, bool]]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -143,7 +143,7 @@ __all__ = (
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]) -&gt; None:
+def send_gpgnet_message(self, command_id, arguments: list[Union[int, str, bool]]) -&gt; None:
     pass  # pragma: no cover</code></pre>
 </details>
 </dd>
@@ -194,7 +194,7 @@ def send_gpgnet_message(self, command_id, arguments: List[Union[int, str, bool]]
         &#34;&#34;&#34;
         await self.send_gpgnet_message(&#34;DisconnectFromPeer&#34;, [id])
 
-    async def send_gpgnet_message(self, command_id: str, arguments: List[Union[int, str, bool]]):
+    async def send_gpgnet_message(self, command_id: str, arguments: list[Union[int, str, bool]]):
         message = {&#34;command&#34;: command_id, &#34;args&#34;: arguments}
         await self.send(message)
 
@@ -305,7 +305,7 @@ given peer</p>
 </details>
 </dd>
 <dt id="server.protocol.GpgNetServerProtocol.send_gpgnet_message"><code class="name flex">
-<span>async def <span class="ident">send_gpgnet_message</span></span>(<span>self, command_id: str, arguments: List[Union[int, str, bool]])</span>
+<span>async def <span class="ident">send_gpgnet_message</span></span>(<span>self, command_id: str, arguments: list[typing.Union[int, str, bool]])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -313,7 +313,7 @@ given peer</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def send_gpgnet_message(self, command_id: str, arguments: List[Union[int, str, bool]]):
+<pre><code class="python">async def send_gpgnet_message(self, command_id: str, arguments: list[Union[int, str, bool]]):
     message = {&#34;command&#34;: command_id, &#34;args&#34;: arguments}
     await self.send(message)</code></pre>
 </details>
@@ -373,7 +373,7 @@ given peer</p>
         &#34;&#34;&#34;
         await self.send_raw(self.encode_message(message))
 
-    async def send_messages(self, messages: List[dict]) -&gt; None:
+    async def send_messages(self, messages: list[dict]) -&gt; None:
         &#34;&#34;&#34;
         Send multiple messages in the form of a list of dictionaries.
 
@@ -409,7 +409,7 @@ given peer</p>
 
         self.write_raw(self.encode_message(message))
 
-    def write_messages(self, messages: List[dict]) -&gt; None:
+    def write_messages(self, messages: list[dict]) -&gt; None:
         &#34;&#34;&#34;
         Write multiple message into the message buffer.
 
@@ -434,6 +434,10 @@ given peer</p>
             raise DisconnectedError(&#34;Protocol is not connected!&#34;)
 
         self.writer.write(data)
+
+    def abort(self) -&gt; None:
+        # SelectorTransport only
+        self.writer.transport.abort()
 
     async def close(self) -&gt; None:
         &#34;&#34;&#34;
@@ -494,6 +498,20 @@ def encode_message(message: dict) -&gt; bytes:
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="server.protocol.Protocol.abort"><code class="name flex">
+<span>def <span class="ident">abort</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def abort(self) -&gt; None:
+    # SelectorTransport only
+    self.writer.transport.abort()</code></pre>
+</details>
+</dd>
 <dt id="server.protocol.Protocol.close"><code class="name flex">
 <span>async def <span class="ident">close</span></span>(<span>self) ‑> None</span>
 </code></dt>
@@ -617,7 +635,7 @@ async def read_message(self) -&gt; dict:
 </details>
 </dd>
 <dt id="server.protocol.Protocol.send_messages"><code class="name flex">
-<span>async def <span class="ident">send_messages</span></span>(<span>self, messages: List[dict]) ‑> None</span>
+<span>async def <span class="ident">send_messages</span></span>(<span>self, messages: list[dict]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Send multiple messages in the form of a list of dictionaries.</p>
@@ -628,7 +646,7 @@ async def read_message(self) -&gt; dict:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def send_messages(self, messages: List[dict]) -&gt; None:
+<pre><code class="python">async def send_messages(self, messages: list[dict]) -&gt; None:
     &#34;&#34;&#34;
     Send multiple messages in the form of a list of dictionaries.
 
@@ -692,7 +710,7 @@ incoming messages from other players.</p>
 </details>
 </dd>
 <dt id="server.protocol.Protocol.write_messages"><code class="name flex">
-<span>def <span class="ident">write_messages</span></span>(<span>self, messages: List[dict]) ‑> None</span>
+<span>def <span class="ident">write_messages</span></span>(<span>self, messages: list[dict]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Write multiple message into the message buffer.</p>
@@ -702,7 +720,7 @@ incoming messages from other players.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def write_messages(self, messages: List[dict]) -&gt; None:
+<pre><code class="python">def write_messages(self, messages: list[dict]) -&gt; None:
     &#34;&#34;&#34;
     Write multiple message into the message buffer.
 
@@ -753,13 +771,14 @@ incoming messages from other players.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class QDataStreamProtocol(Protocol):
+<pre><code class="python">@with_logger
+class QDataStreamProtocol(Protocol):
     &#34;&#34;&#34;
     Implements the legacy QDataStream-based encoding scheme
     &#34;&#34;&#34;
 
     @staticmethod
-    def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
+    def read_qstring(buffer: bytes, pos: int = 0) -&gt; tuple[int, str]:
         &#34;&#34;&#34;
         Parse a serialized QString from buffer (A bytes like object) at given
         position.
@@ -958,7 +977,7 @@ def read_block(data):
 </details>
 </dd>
 <dt id="server.protocol.QDataStreamProtocol.read_qstring"><code class="name flex">
-<span>def <span class="ident">read_qstring</span></span>(<span>buffer: bytes, pos: int = 0) ‑> Tuple[int, str]</span>
+<span>def <span class="ident">read_qstring</span></span>(<span>buffer: bytes, pos: int = 0) ‑> tuple[int, str]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Parse a serialized QString from buffer (A bytes like object) at given
@@ -972,7 +991,7 @@ position.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@staticmethod
-def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
+def read_qstring(buffer: bytes, pos: int = 0) -&gt; tuple[int, str]:
     &#34;&#34;&#34;
     Parse a serialized QString from buffer (A bytes like object) at given
     position.
@@ -1156,6 +1175,7 @@ def read_qstring(buffer: bytes, pos: int = 0) -&gt; Tuple[int, str]:
 <li>
 <h4><code><a title="server.protocol.Protocol" href="#server.protocol.Protocol">Protocol</a></code></h4>
 <ul class="two-column">
+<li><code><a title="server.protocol.Protocol.abort" href="#server.protocol.Protocol.abort">abort</a></code></li>
 <li><code><a title="server.protocol.Protocol.close" href="#server.protocol.Protocol.close">close</a></code></li>
 <li><code><a title="server.protocol.Protocol.drain" href="#server.protocol.Protocol.drain">drain</a></code></li>
 <li><code><a title="server.protocol.Protocol.encode_message" href="#server.protocol.Protocol.encode_message">encode_message</a></code></li>

@@ -73,7 +73,8 @@ class CustomGame(Game):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class CustomGame(Game):
+<pre><code class="python">@with_logger
+class CustomGame(Game):
     init_mode = InitMode.NORMAL_LOBBY
     game_type = GameType.CUSTOM
 

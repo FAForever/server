@@ -32,14 +32,14 @@ Type definitions for player ratings
 &#34;&#34;&#34;
 
 from dataclasses import dataclass
-from typing import Dict, NamedTuple, Optional, Set, Tuple, Union
+from typing import NamedTuple, Optional, Union
 
 import trueskill
 
 from server.config import config
 from server.weakattr import WeakAttribute
 
-AnyRating = Union[&#34;Rating&#34;, trueskill.Rating, Tuple[float, float]]
+AnyRating = Union[&#34;Rating&#34;, trueskill.Rating, tuple[float, float]]
 
 
 class Rating(NamedTuple):
@@ -102,13 +102,13 @@ class RatingType():
     LADDER_1V1 = &#34;ladder_1v1&#34;
 
 
-class PlayerRatings(Dict[str, Rating]):
-    def __init__(self, leaderboards: Dict[str, Leaderboard], init: bool = True):
+class PlayerRatings(dict[str, Rating]):
+    def __init__(self, leaderboards: dict[str, Leaderboard], init: bool = True):
         self.leaderboards = leaderboards
         # Rating types which are present but should be recomputed.
-        self.transient: Set[str] = set()
+        self.transient: set[str] = set()
         # Rating types which have been computed since the last rating update
-        self.clean: Set[str] = set()
+        self.clean: set[str] = set()
 
         # DEPRECATED: Initialize known rating types so the client can display them
         if init:
@@ -127,7 +127,7 @@ class PlayerRatings(Dict[str, Rating]):
     def __getitem__(
         self,
         rating_type: str,
-        history: Optional[Set[str]] = None,
+        history: Optional[set[str]] = None,
     ) -&gt; Rating:
         history = history or set()
         entry = self.get(rating_type)
@@ -152,7 +152,7 @@ class PlayerRatings(Dict[str, Rating]):
     def _get_initial_rating(
         self,
         rating_type: str,
-        history: Set[str],
+        history: set[str],
     ) -&gt; Rating:
         &#34;&#34;&#34;Create an initial rating when no rating exists yet.&#34;&#34;&#34;
         leaderboard = self.leaderboards.get(rating_type)
@@ -168,7 +168,7 @@ class PlayerRatings(Dict[str, Rating]):
 
         return Rating(rating.mean, min(rating.dev + 150, 250))
 
-    def update(self, other: Dict[str, Rating]):
+    def update(self, other: dict[str, Rating]):
         self.transient -= set(other)
         self.clean.clear()
         if isinstance(other, PlayerRatings):
@@ -288,12 +288,13 @@ assert 11 not in InclusiveRange(0, 10)</p></div>
 <span>(</span><span>id: int, technical_name: str, initializer: Optional[ForwardRef('<a title="server.rating.Leaderboard" href="#server.rating.Leaderboard">Leaderboard</a>')] = None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Leaderboard(id: int, technical_name: str, initializer: Union[ForwardRef('Leaderboard'), NoneType] = None)</p></div>
+<div class="desc"><p>Leaderboard(id: int, technical_name: str, initializer: Optional[ForwardRef('Leaderboard')] = None)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Leaderboard():
+<pre><code class="python">@dataclass(init=False)
+class Leaderboard():
     id: int
     technical_name: str
     # Need the type annotation here so that the dataclass decorator sees it as
@@ -354,7 +355,7 @@ weak reference.</p></div>
 </dd>
 <dt id="server.rating.PlayerRatings"><code class="flex name class">
 <span>class <span class="ident">PlayerRatings</span></span>
-<span>(</span><span>leaderboards: Dict[str, <a title="server.rating.Leaderboard" href="#server.rating.Leaderboard">Leaderboard</a>], init: bool = True)</span>
+<span>(</span><span>leaderboards: dict[str, <a title="server.rating.Leaderboard" href="#server.rating.Leaderboard">Leaderboard</a>], init: bool = True)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>dict() -&gt; new empty dictionary
@@ -372,13 +373,13 @@ dict(one=1, two=2)</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class PlayerRatings(Dict[str, Rating]):
-    def __init__(self, leaderboards: Dict[str, Leaderboard], init: bool = True):
+<pre><code class="python">class PlayerRatings(dict[str, Rating]):
+    def __init__(self, leaderboards: dict[str, Leaderboard], init: bool = True):
         self.leaderboards = leaderboards
         # Rating types which are present but should be recomputed.
-        self.transient: Set[str] = set()
+        self.transient: set[str] = set()
         # Rating types which have been computed since the last rating update
-        self.clean: Set[str] = set()
+        self.clean: set[str] = set()
 
         # DEPRECATED: Initialize known rating types so the client can display them
         if init:
@@ -397,7 +398,7 @@ dict(one=1, two=2)</p></div>
     def __getitem__(
         self,
         rating_type: str,
-        history: Optional[Set[str]] = None,
+        history: Optional[set[str]] = None,
     ) -&gt; Rating:
         history = history or set()
         entry = self.get(rating_type)
@@ -422,7 +423,7 @@ dict(one=1, two=2)</p></div>
     def _get_initial_rating(
         self,
         rating_type: str,
-        history: Set[str],
+        history: set[str],
     ) -&gt; Rating:
         &#34;&#34;&#34;Create an initial rating when no rating exists yet.&#34;&#34;&#34;
         leaderboard = self.leaderboards.get(rating_type)
@@ -438,7 +439,7 @@ dict(one=1, two=2)</p></div>
 
         return Rating(rating.mean, min(rating.dev + 150, 250))
 
-    def update(self, other: Dict[str, Rating]):
+    def update(self, other: dict[str, Rating]):
         self.transient -= set(other)
         self.clean.clear()
         if isinstance(other, PlayerRatings):
@@ -450,12 +451,11 @@ dict(one=1, two=2)</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.dict</li>
-<li>typing.Generic</li>
 </ul>
 <h3>Methods</h3>
 <dl>
 <dt id="server.rating.PlayerRatings.update"><code class="name flex">
-<span>def <span class="ident">update</span></span>(<span>self, other: Dict[str, <a title="server.rating.Rating" href="#server.rating.Rating">Rating</a>])</span>
+<span>def <span class="ident">update</span></span>(<span>self, other: dict[str, <a title="server.rating.Rating" href="#server.rating.Rating">Rating</a>])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>D.update([E, ]**F) -&gt; None.
@@ -470,7 +470,7 @@ D[k] = F[k]</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def update(self, other: Dict[str, Rating]):
+<pre><code class="python">def update(self, other: dict[str, Rating]):
     self.transient -= set(other)
     self.clean.clear()
     if isinstance(other, PlayerRatings):
@@ -548,7 +548,7 @@ mu, sigma.</p></div>
 </details>
 </dd>
 <dt id="server.rating.Rating.of"><code class="name flex">
-<span>def <span class="ident">of</span></span>(<span>value: Union[ForwardRef('<a title="server.rating.Rating" href="#server.rating.Rating">Rating</a>'), trueskill.Rating, Tuple[float, float]]) ‑> <a title="server.rating.Rating" href="#server.rating.Rating">Rating</a></span>
+<span>def <span class="ident">of</span></span>(<span>value: Union[ForwardRef('<a title="server.rating.Rating" href="#server.rating.Rating">Rating</a>'), trueskill.Rating, tuple[float, float]]) ‑> <a title="server.rating.Rating" href="#server.rating.Rating">Rating</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>

@@ -26,9 +26,7 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from typing import Dict, List
-
-import trueskill
+<pre><code class="python">import trueskill
 
 from server.config import config
 from server.games.game_results import GameOutcome
@@ -81,7 +79,7 @@ class GameRater:
 
         return player_rating_map
 
-    def get_outcome_map(self) -&gt; Dict[PlayerID, GameOutcome]:
+    def get_outcome_map(self) -&gt; dict[PlayerID, GameOutcome]:
         return self.outcome_map
 
 
@@ -132,11 +130,11 @@ class AdjustmentGameRater(GameRater):
 
         return new_adjusted_ratings
 
-    def get_outcome_map(self) -&gt; Dict[PlayerID, GameOutcome]:
+    def get_outcome_map(self) -&gt; dict[PlayerID, GameOutcome]:
         return self.rater.outcome_map
 
 
-def _ranks_from_team_outcomes(outcomes: List[GameOutcome]) -&gt; List[int]:
+def _ranks_from_team_outcomes(outcomes: list[GameOutcome]) -&gt; list[int]:
     if outcomes == [GameOutcome.DRAW, GameOutcome.DRAW]:
         return [0, 0]
     elif outcomes == [GameOutcome.VICTORY, GameOutcome.DEFEAT]:
@@ -158,7 +156,7 @@ def _ranks_from_team_outcomes(outcomes: List[GameOutcome]) -&gt; List[int]:
 <dl>
 <dt id="server.rating_service.game_rater.AdjustmentGameRater"><code class="flex name class">
 <span>class <span class="ident">AdjustmentGameRater</span></span>
-<span>(</span><span>rater: <a title="server.rating_service.game_rater.GameRater" href="#server.rating_service.game_rater.GameRater">GameRater</a>, base_ratings: Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>])</span>
+<span>(</span><span>rater: <a title="server.rating_service.game_rater.GameRater" href="#server.rating_service.game_rater.GameRater">GameRater</a>, base_ratings: dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>GameRater for performing adjustments using another GameRater</p></div>
@@ -166,7 +164,8 @@ def _ranks_from_team_outcomes(outcomes: List[GameOutcome]) -&gt; List[int]:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class AdjustmentGameRater(GameRater):
+<pre><code class="python">@with_logger
+class AdjustmentGameRater(GameRater):
     &#34;&#34;&#34;GameRater for performing adjustments using another GameRater&#34;&#34;&#34;
 
     def __init__(self, rater: GameRater, base_ratings: RatingDict):
@@ -212,7 +211,7 @@ def _ranks_from_team_outcomes(outcomes: List[GameOutcome]) -&gt; List[int]:
 
         return new_adjusted_ratings
 
-    def get_outcome_map(self) -&gt; Dict[PlayerID, GameOutcome]:
+    def get_outcome_map(self) -&gt; dict[PlayerID, GameOutcome]:
         return self.rater.outcome_map</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -222,7 +221,7 @@ def _ranks_from_team_outcomes(outcomes: List[GameOutcome]) -&gt; List[int]:
 <h3>Methods</h3>
 <dl>
 <dt id="server.rating_service.game_rater.AdjustmentGameRater.compute_rating"><code class="name flex">
-<span>def <span class="ident">compute_rating</span></span>(<span>self, ratings: Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]) ‑> Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</span>
+<span>def <span class="ident">compute_rating</span></span>(<span>self, ratings: dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]) ‑> dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adjust one rating to bring it closer to a different base rating. For
@@ -275,7 +274,7 @@ prevent rating manipulation.</p></div>
 </details>
 </dd>
 <dt id="server.rating_service.game_rater.AdjustmentGameRater.get_outcome_map"><code class="name flex">
-<span>def <span class="ident">get_outcome_map</span></span>(<span>self) ‑> Dict[int, <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>]</span>
+<span>def <span class="ident">get_outcome_map</span></span>(<span>self) ‑> dict[int, <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -283,7 +282,7 @@ prevent rating manipulation.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_outcome_map(self) -&gt; Dict[PlayerID, GameOutcome]:
+<pre><code class="python">def get_outcome_map(self) -&gt; dict[PlayerID, GameOutcome]:
     return self.rater.outcome_map</code></pre>
 </details>
 </dd>
@@ -299,7 +298,8 @@ prevent rating manipulation.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GameRater:
+<pre><code class="python">@with_logger
+class GameRater:
     def __init__(self, summary: GameRatingSummary):
         self.summary = summary
         self.outcome_map = {
@@ -336,7 +336,7 @@ prevent rating manipulation.</p></div>
 
         return player_rating_map
 
-    def get_outcome_map(self) -&gt; Dict[PlayerID, GameOutcome]:
+    def get_outcome_map(self) -&gt; dict[PlayerID, GameOutcome]:
         return self.outcome_map</code></pre>
 </details>
 <h3>Subclasses</h3>
@@ -346,7 +346,7 @@ prevent rating manipulation.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.rating_service.game_rater.GameRater.compute_rating"><code class="name flex">
-<span>def <span class="ident">compute_rating</span></span>(<span>self, ratings: Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]) ‑> Dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</span>
+<span>def <span class="ident">compute_rating</span></span>(<span>self, ratings: dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]) ‑> dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -381,7 +381,7 @@ prevent rating manipulation.</p></div>
 </details>
 </dd>
 <dt id="server.rating_service.game_rater.GameRater.get_outcome_map"><code class="name flex">
-<span>def <span class="ident">get_outcome_map</span></span>(<span>self) ‑> Dict[int, <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>]</span>
+<span>def <span class="ident">get_outcome_map</span></span>(<span>self) ‑> dict[int, <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -389,7 +389,7 @@ prevent rating manipulation.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_outcome_map(self) -&gt; Dict[PlayerID, GameOutcome]:
+<pre><code class="python">def get_outcome_map(self) -&gt; dict[PlayerID, GameOutcome]:
     return self.outcome_map</code></pre>
 </details>
 </dd>

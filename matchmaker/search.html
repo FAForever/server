@@ -31,7 +31,7 @@ import itertools
 import math
 import statistics
 import time
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, Optional
 
 import trueskill
 
@@ -41,7 +41,7 @@ from ..config import config
 from ..decorators import with_logger
 from ..players import Player
 
-Match = Tuple[&#34;Search&#34;, &#34;Search&#34;]
+Match = tuple[&#34;Search&#34;, &#34;Search&#34;]
 OnMatchedCallback = Callable[[&#34;Search&#34;, &#34;Search&#34;], Any]
 
 
@@ -57,7 +57,7 @@ class Search:
 
     def __init__(
         self,
-        players: List[Player],
+        players: list[Player],
         start_time: Optional[float] = None,
         rating_type: str = RatingType.LADDER_1V1,
         on_matched: OnMatchedCallback = lambda _1, _2: None
@@ -111,7 +111,7 @@ class Search:
         return max_rating &gt;= config.TOP_PLAYER_MIN_RATING
 
     @property
-    def ratings(self) -&gt; List[Rating]:
+    def ratings(self) -&gt; list[Rating]:
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
@@ -129,18 +129,18 @@ class Search:
         return statistics.mean(self.displayed_ratings)
 
     @property
-    def raw_ratings(self) -&gt; List[Rating]:
+    def raw_ratings(self) -&gt; list[Rating]:
         return [player.ratings[self.rating_type] for player in self.players]
 
     @property
-    def displayed_ratings(self) -&gt; List[float]:
+    def displayed_ratings(self) -&gt; list[float]:
         &#34;&#34;&#34;
         The client always displays mean - 3 * dev as a player&#39;s rating.
         So generally this is perceived as a player&#39;s true rating.
         &#34;&#34;&#34;
         return [rating.displayed() for rating in self.raw_ratings]
 
-    def _nearby_rating_range(self, delta: int) -&gt; Tuple[int, int]:
+    def _nearby_rating_range(self, delta: int) -&gt; tuple[int, int]:
         &#34;&#34;&#34;
         Returns &#39;boundary&#39; mu values for player matching. Adjust delta for
         different game qualities.
@@ -150,12 +150,12 @@ class Search:
         return rounded_mu - delta, rounded_mu + delta
 
     @property
-    def boundary_80(self) -&gt; Tuple[int, int]:
+    def boundary_80(self) -&gt; tuple[int, int]:
         &#34;&#34;&#34; Achieves roughly 80% quality. &#34;&#34;&#34;
         return self._nearby_rating_range(200)
 
     @property
-    def boundary_75(self) -&gt; Tuple[int, int]:
+    def boundary_75(self) -&gt; tuple[int, int]:
         &#34;&#34;&#34; Achieves roughly 75% quality. FIXME - why is it MORE restrictive??? &#34;&#34;&#34;
         return self._nearby_rating_range(100)
 
@@ -303,7 +303,7 @@ class Search:
             f&#34;{&#39;, has_newbie)&#39; if self.has_newbie() else &#39;)&#39;}&#34;
         )
 
-    def get_original_searches(self) -&gt; List[&#34;Search&#34;]:
+    def get_original_searches(self) -&gt; list[&#34;Search&#34;]:
         &#34;&#34;&#34;
         Returns the searches of which this Search is comprised,
         as if it were a CombinedSearch of one
@@ -321,11 +321,11 @@ class CombinedSearch(Search):
         self.searches = searches
 
     @property
-    def players(self) -&gt; List[Player]:
+    def players(self) -&gt; list[Player]:
         return list(itertools.chain(*[s.players for s in self.searches]))
 
     @property
-    def ratings(self) -&gt; List[Rating]:
+    def ratings(self) -&gt; list[Rating]:
         return list(itertools.chain(*[s.ratings for s in self.searches]))
 
     @property
@@ -337,11 +337,11 @@ class CombinedSearch(Search):
         return get_average_rating(self.searches)
 
     @property
-    def raw_ratings(self) -&gt; List[Rating]:
+    def raw_ratings(self) -&gt; list[Rating]:
         return list(itertools.chain(*[s.raw_ratings for s in self.searches]))
 
     @property
-    def displayed_ratings(self) -&gt; List[float]:
+    def displayed_ratings(self) -&gt; list[float]:
         return list(itertools.chain(*[s.displayed_ratings for s in self.searches]))
 
     @property
@@ -395,7 +395,7 @@ class CombinedSearch(Search):
     def __str__(self):
         return f&#34;CombinedSearch({&#39;,&#39;.join(str(s) for s in self.searches)})&#34;
 
-    def get_original_searches(self) -&gt; List[Search]:
+    def get_original_searches(self) -&gt; list[Search]:
         &#34;&#34;&#34;
         Returns the searches of which this CombinedSearch is comprised
         &#34;&#34;&#34;
@@ -447,11 +447,11 @@ class CombinedSearch(Search):
         self.searches = searches
 
     @property
-    def players(self) -&gt; List[Player]:
+    def players(self) -&gt; list[Player]:
         return list(itertools.chain(*[s.players for s in self.searches]))
 
     @property
-    def ratings(self) -&gt; List[Rating]:
+    def ratings(self) -&gt; list[Rating]:
         return list(itertools.chain(*[s.ratings for s in self.searches]))
 
     @property
@@ -463,11 +463,11 @@ class CombinedSearch(Search):
         return get_average_rating(self.searches)
 
     @property
-    def raw_ratings(self) -&gt; List[Rating]:
+    def raw_ratings(self) -&gt; list[Rating]:
         return list(itertools.chain(*[s.raw_ratings for s in self.searches]))
 
     @property
-    def displayed_ratings(self) -&gt; List[float]:
+    def displayed_ratings(self) -&gt; list[float]:
         return list(itertools.chain(*[s.displayed_ratings for s in self.searches]))
 
     @property
@@ -521,7 +521,7 @@ class CombinedSearch(Search):
     def __str__(self):
         return f&#34;CombinedSearch({&#39;,&#39;.join(str(s) for s in self.searches)})&#34;
 
-    def get_original_searches(self) -&gt; List[Search]:
+    def get_original_searches(self) -&gt; list[Search]:
         &#34;&#34;&#34;
         Returns the searches of which this CombinedSearch is comprised
         &#34;&#34;&#34;
@@ -608,7 +608,7 @@ def match_threshold(self) -&gt; float:
     return min(s.match_threshold for s in self.searches)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.search.CombinedSearch.players"><code class="name">var <span class="ident">players</span> : List[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</code></dt>
+<dt id="server.matchmaker.search.CombinedSearch.players"><code class="name">var <span class="ident">players</span> : list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -616,11 +616,11 @@ def match_threshold(self) -&gt; float:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def players(self) -&gt; List[Player]:
+def players(self) -&gt; list[Player]:
     return list(itertools.chain(*[s.players for s in self.searches]))</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.search.CombinedSearch.ratings"><code class="name">var <span class="ident">ratings</span> : List[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
+<dt id="server.matchmaker.search.CombinedSearch.ratings"><code class="name">var <span class="ident">ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -628,11 +628,11 @@ def players(self) -&gt; List[Player]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def ratings(self) -&gt; List[Rating]:
+def ratings(self) -&gt; list[Rating]:
     return list(itertools.chain(*[s.ratings for s in self.searches]))</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.search.CombinedSearch.raw_ratings"><code class="name">var <span class="ident">raw_ratings</span> : List[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
+<dt id="server.matchmaker.search.CombinedSearch.raw_ratings"><code class="name">var <span class="ident">raw_ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -640,7 +640,7 @@ def ratings(self) -&gt; List[Rating]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def raw_ratings(self) -&gt; List[Rating]:
+def raw_ratings(self) -&gt; list[Rating]:
     return list(itertools.chain(*[s.raw_ratings for s in self.searches]))</code></pre>
 </details>
 </dd>
@@ -661,7 +661,7 @@ def raw_ratings(self) -&gt; List[Rating]:
 </details>
 </dd>
 <dt id="server.matchmaker.search.CombinedSearch.get_original_searches"><code class="name flex">
-<span>def <span class="ident">get_original_searches</span></span>(<span>self) ‑> List[<a title="server.matchmaker.search.Search" href="#server.matchmaker.search.Search">Search</a>]</span>
+<span>def <span class="ident">get_original_searches</span></span>(<span>self) ‑> list[<a title="server.matchmaker.search.Search" href="#server.matchmaker.search.Search">Search</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns the searches of which this CombinedSearch is comprised</p></div>
@@ -669,7 +669,7 @@ def raw_ratings(self) -&gt; List[Rating]:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_original_searches(self) -&gt; List[Search]:
+<pre><code class="python">def get_original_searches(self) -&gt; list[Search]:
     &#34;&#34;&#34;
     Returns the searches of which this CombinedSearch is comprised
     &#34;&#34;&#34;
@@ -697,7 +697,7 @@ def raw_ratings(self) -&gt; List[Rating]:
 </dd>
 <dt id="server.matchmaker.search.Search"><code class="flex name class">
 <span>class <span class="ident">Search</span></span>
-<span>(</span><span>players: List[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], start_time: Optional[float] = None, rating_type: str = 'ladder_1v1', on_matched: Callable[[ForwardRef('<a title="server.matchmaker.search.Search" href="#server.matchmaker.search.Search">Search</a>'), ForwardRef('<a title="server.matchmaker.search.Search" href="#server.matchmaker.search.Search">Search</a>')], Any] = &lt;function Search.&lt;lambda&gt;&gt;)</span>
+<span>(</span><span>players: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], start_time: Optional[float] = None, rating_type: str = 'ladder_1v1', on_matched: Callable[[ForwardRef('<a title="server.matchmaker.search.Search" href="#server.matchmaker.search.Search">Search</a>'), ForwardRef('<a title="server.matchmaker.search.Search" href="#server.matchmaker.search.Search">Search</a>')], Any] = &lt;function Search.&lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Represents the state of a users search for a match.</p></div>
@@ -705,14 +705,15 @@ def raw_ratings(self) -&gt; List[Rating]:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Search:
+<pre><code class="python">@with_logger
+class Search:
     &#34;&#34;&#34;
     Represents the state of a users search for a match.
     &#34;&#34;&#34;
 
     def __init__(
         self,
-        players: List[Player],
+        players: list[Player],
         start_time: Optional[float] = None,
         rating_type: str = RatingType.LADDER_1V1,
         on_matched: OnMatchedCallback = lambda _1, _2: None
@@ -766,7 +767,7 @@ def raw_ratings(self) -&gt; List[Rating]:
         return max_rating &gt;= config.TOP_PLAYER_MIN_RATING
 
     @property
-    def ratings(self) -&gt; List[Rating]:
+    def ratings(self) -&gt; list[Rating]:
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
@@ -784,18 +785,18 @@ def raw_ratings(self) -&gt; List[Rating]:
         return statistics.mean(self.displayed_ratings)
 
     @property
-    def raw_ratings(self) -&gt; List[Rating]:
+    def raw_ratings(self) -&gt; list[Rating]:
         return [player.ratings[self.rating_type] for player in self.players]
 
     @property
-    def displayed_ratings(self) -&gt; List[float]:
+    def displayed_ratings(self) -&gt; list[float]:
         &#34;&#34;&#34;
         The client always displays mean - 3 * dev as a player&#39;s rating.
         So generally this is perceived as a player&#39;s true rating.
         &#34;&#34;&#34;
         return [rating.displayed() for rating in self.raw_ratings]
 
-    def _nearby_rating_range(self, delta: int) -&gt; Tuple[int, int]:
+    def _nearby_rating_range(self, delta: int) -&gt; tuple[int, int]:
         &#34;&#34;&#34;
         Returns &#39;boundary&#39; mu values for player matching. Adjust delta for
         different game qualities.
@@ -805,12 +806,12 @@ def raw_ratings(self) -&gt; List[Rating]:
         return rounded_mu - delta, rounded_mu + delta
 
     @property
-    def boundary_80(self) -&gt; Tuple[int, int]:
+    def boundary_80(self) -&gt; tuple[int, int]:
         &#34;&#34;&#34; Achieves roughly 80% quality. &#34;&#34;&#34;
         return self._nearby_rating_range(200)
 
     @property
-    def boundary_75(self) -&gt; Tuple[int, int]:
+    def boundary_75(self) -&gt; tuple[int, int]:
         &#34;&#34;&#34; Achieves roughly 75% quality. FIXME - why is it MORE restrictive??? &#34;&#34;&#34;
         return self._nearby_rating_range(100)
 
@@ -958,7 +959,7 @@ def raw_ratings(self) -&gt; List[Rating]:
             f&#34;{&#39;, has_newbie)&#39; if self.has_newbie() else &#39;)&#39;}&#34;
         )
 
-    def get_original_searches(self) -&gt; List[&#34;Search&#34;]:
+    def get_original_searches(self) -&gt; list[&#34;Search&#34;]:
         &#34;&#34;&#34;
         Returns the searches of which this Search is comprised,
         as if it were a CombinedSearch of one
@@ -983,7 +984,7 @@ def average_rating(self) -&gt; float:
     return statistics.mean(self.displayed_ratings)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.search.Search.boundary_75"><code class="name">var <span class="ident">boundary_75</span> : Tuple[int, int]</code></dt>
+<dt id="server.matchmaker.search.Search.boundary_75"><code class="name">var <span class="ident">boundary_75</span> : tuple[int, int]</code></dt>
 <dd>
 <div class="desc"><p>Achieves roughly 75% quality. FIXME - why is it MORE restrictive???</p></div>
 <details class="source">
@@ -991,12 +992,12 @@ def average_rating(self) -&gt; float:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def boundary_75(self) -&gt; Tuple[int, int]:
+def boundary_75(self) -&gt; tuple[int, int]:
     &#34;&#34;&#34; Achieves roughly 75% quality. FIXME - why is it MORE restrictive??? &#34;&#34;&#34;
     return self._nearby_rating_range(100)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.search.Search.boundary_80"><code class="name">var <span class="ident">boundary_80</span> : Tuple[int, int]</code></dt>
+<dt id="server.matchmaker.search.Search.boundary_80"><code class="name">var <span class="ident">boundary_80</span> : tuple[int, int]</code></dt>
 <dd>
 <div class="desc"><p>Achieves roughly 80% quality.</p></div>
 <details class="source">
@@ -1004,7 +1005,7 @@ def boundary_75(self) -&gt; Tuple[int, int]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def boundary_80(self) -&gt; Tuple[int, int]:
+def boundary_80(self) -&gt; tuple[int, int]:
     &#34;&#34;&#34; Achieves roughly 80% quality. &#34;&#34;&#34;
     return self._nearby_rating_range(200)</code></pre>
 </details>
@@ -1021,7 +1022,7 @@ def cumulative_rating(self) -&gt; float:
     return sum(self.displayed_ratings)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.search.Search.displayed_ratings"><code class="name">var <span class="ident">displayed_ratings</span> : List[float]</code></dt>
+<dt id="server.matchmaker.search.Search.displayed_ratings"><code class="name">var <span class="ident">displayed_ratings</span> : list[float]</code></dt>
 <dd>
 <div class="desc"><p>The client always displays mean - 3 * dev as a player's rating.
 So generally this is perceived as a player's true rating.</p></div>
@@ -1030,7 +1031,7 @@ So generally this is perceived as a player's true rating.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def displayed_ratings(self) -&gt; List[float]:
+def displayed_ratings(self) -&gt; list[float]:
     &#34;&#34;&#34;
     The client always displays mean - 3 * dev as a player&#39;s rating.
     So generally this is perceived as a player&#39;s true rating.
@@ -1097,7 +1098,7 @@ def match_threshold(self) -&gt; float:
     return max(0.8 * self.quality_against_self - self.search_expansion, 0)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.search.Search.ratings"><code class="name">var <span class="ident">ratings</span> : List[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
+<dt id="server.matchmaker.search.Search.ratings"><code class="name">var <span class="ident">ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1105,7 +1106,7 @@ def match_threshold(self) -&gt; float:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def ratings(self) -&gt; List[Rating]:
+def ratings(self) -&gt; list[Rating]:
     ratings = []
     for player, rating in zip(self.players, self.raw_ratings):
         # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
@@ -1115,7 +1116,7 @@ def ratings(self) -&gt; List[Rating]:
     return ratings</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.search.Search.raw_ratings"><code class="name">var <span class="ident">raw_ratings</span> : List[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
+<dt id="server.matchmaker.search.Search.raw_ratings"><code class="name">var <span class="ident">raw_ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1123,7 +1124,7 @@ def ratings(self) -&gt; List[Rating]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def raw_ratings(self) -&gt; List[Rating]:
+def raw_ratings(self) -&gt; list[Rating]:
     return [player.ratings[self.rating_type] for player in self.players]</code></pre>
 </details>
 </dd>
@@ -1231,7 +1232,7 @@ def search_expansion(self) -&gt; float:
 </details>
 </dd>
 <dt id="server.matchmaker.search.Search.get_original_searches"><code class="name flex">
-<span>def <span class="ident">get_original_searches</span></span>(<span>self) ‑> List[<a title="server.matchmaker.search.Search" href="#server.matchmaker.search.Search">Search</a>]</span>
+<span>def <span class="ident">get_original_searches</span></span>(<span>self) ‑> list['<a title="server.matchmaker.search.Search" href="#server.matchmaker.search.Search">Search</a>']</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns the searches of which this Search is comprised,
@@ -1240,7 +1241,7 @@ as if it were a CombinedSearch of one</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_original_searches(self) -&gt; List[&#34;Search&#34;]:
+<pre><code class="python">def get_original_searches(self) -&gt; list[&#34;Search&#34;]:
     &#34;&#34;&#34;
     Returns the searches of which this Search is comprised,
     as if it were a CombinedSearch of one

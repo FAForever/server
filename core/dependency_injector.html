@@ -28,9 +28,8 @@
 </summary>
 <pre><code class="python">import inspect
 from collections import ChainMap, defaultdict
-from typing import Dict, List
 
-DependencyGraph = Dict[str, List[str]]
+DependencyGraph = dict[str, list[str]]
 
 
 class DependencyInjector(object):
@@ -77,10 +76,10 @@ class DependencyInjector(object):
 
     def __init__(self) -&gt; None:
         # Objects which are available to the constructors of injected objects
-        self.injectables: Dict[str, object] = {}
+        self.injectables: dict[str, object] = {}
 
     def add_injectables(
-        self, injectables: Dict[str, object] = {}, **kwargs: object
+        self, injectables: dict[str, object] = {}, **kwargs: object
     ) -&gt; None:
         &#34;&#34;&#34;
         Register additional objects that can be requested by injected classes.
@@ -89,8 +88,8 @@ class DependencyInjector(object):
         self.injectables.update(kwargs)
 
     def build_classes(
-        self, classes: Dict[str, type] = {}, **kwargs: type
-    ) -&gt; Dict[str, object]:
+        self, classes: dict[str, type] = {}, **kwargs: type
+    ) -&gt; dict[str, object]:
         &#34;&#34;&#34;
         Resolve dependencies by name and instantiate each class.
         &#34;&#34;&#34;
@@ -109,7 +108,7 @@ class DependencyInjector(object):
         self.add_injectables(**instances)
         return instances
 
-    def _make_dependency_graph(self, classes: Dict[str, type]) -&gt; DependencyGraph:
+    def _make_dependency_graph(self, classes: dict[str, type]) -&gt; DependencyGraph:
         &#34;&#34;&#34;
         Build dependency graph
         &#34;&#34;&#34;
@@ -128,14 +127,14 @@ class DependencyInjector(object):
     def _build_classes_from_dependencies(
         self,
         dep: DependencyGraph,
-        classes: Dict[str, type],
-        param_map: Dict[str, List[str]]
-    ) -&gt; Dict[str, object]:
+        classes: dict[str, type],
+        param_map: dict[str, list[str]]
+    ) -&gt; dict[str, object]:
         &#34;&#34;&#34;
         Tries to build all classes in the dependency graph. Raises RuntimeError
         if some dependencies are not available or there was a cyclic dependency.
         &#34;&#34;&#34;
-        instances: Dict[str, object] = {}
+        instances: dict[str, object] = {}
         resolved = ChainMap(instances, self.injectables)
 
         while True:
@@ -279,10 +278,10 @@ another class in the class list).</p>
 
     def __init__(self) -&gt; None:
         # Objects which are available to the constructors of injected objects
-        self.injectables: Dict[str, object] = {}
+        self.injectables: dict[str, object] = {}
 
     def add_injectables(
-        self, injectables: Dict[str, object] = {}, **kwargs: object
+        self, injectables: dict[str, object] = {}, **kwargs: object
     ) -&gt; None:
         &#34;&#34;&#34;
         Register additional objects that can be requested by injected classes.
@@ -291,8 +290,8 @@ another class in the class list).</p>
         self.injectables.update(kwargs)
 
     def build_classes(
-        self, classes: Dict[str, type] = {}, **kwargs: type
-    ) -&gt; Dict[str, object]:
+        self, classes: dict[str, type] = {}, **kwargs: type
+    ) -&gt; dict[str, object]:
         &#34;&#34;&#34;
         Resolve dependencies by name and instantiate each class.
         &#34;&#34;&#34;
@@ -311,7 +310,7 @@ another class in the class list).</p>
         self.add_injectables(**instances)
         return instances
 
-    def _make_dependency_graph(self, classes: Dict[str, type]) -&gt; DependencyGraph:
+    def _make_dependency_graph(self, classes: dict[str, type]) -&gt; DependencyGraph:
         &#34;&#34;&#34;
         Build dependency graph
         &#34;&#34;&#34;
@@ -330,14 +329,14 @@ another class in the class list).</p>
     def _build_classes_from_dependencies(
         self,
         dep: DependencyGraph,
-        classes: Dict[str, type],
-        param_map: Dict[str, List[str]]
-    ) -&gt; Dict[str, object]:
+        classes: dict[str, type],
+        param_map: dict[str, list[str]]
+    ) -&gt; dict[str, object]:
         &#34;&#34;&#34;
         Tries to build all classes in the dependency graph. Raises RuntimeError
         if some dependencies are not available or there was a cyclic dependency.
         &#34;&#34;&#34;
-        instances: Dict[str, object] = {}
+        instances: dict[str, object] = {}
         resolved = ChainMap(instances, self.injectables)
 
         while True:
@@ -387,7 +386,7 @@ another class in the class list).</p>
 <h3>Methods</h3>
 <dl>
 <dt id="server.core.dependency_injector.DependencyInjector.add_injectables"><code class="name flex">
-<span>def <span class="ident">add_injectables</span></span>(<span>self, injectables: Dict[str, object] = {}, **kwargs: object) ‑> None</span>
+<span>def <span class="ident">add_injectables</span></span>(<span>self, injectables: dict[str, object] = {}, **kwargs: object) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Register additional objects that can be requested by injected classes.</p></div>
@@ -396,7 +395,7 @@ another class in the class list).</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def add_injectables(
-    self, injectables: Dict[str, object] = {}, **kwargs: object
+    self, injectables: dict[str, object] = {}, **kwargs: object
 ) -&gt; None:
     &#34;&#34;&#34;
     Register additional objects that can be requested by injected classes.
@@ -406,7 +405,7 @@ another class in the class list).</p>
 </details>
 </dd>
 <dt id="server.core.dependency_injector.DependencyInjector.build_classes"><code class="name flex">
-<span>def <span class="ident">build_classes</span></span>(<span>self, classes: Dict[str, type] = {}, **kwargs: type) ‑> Dict[str, object]</span>
+<span>def <span class="ident">build_classes</span></span>(<span>self, classes: dict[str, type] = {}, **kwargs: type) ‑> dict[str, object]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Resolve dependencies by name and instantiate each class.</p></div>
@@ -415,8 +414,8 @@ another class in the class list).</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def build_classes(
-    self, classes: Dict[str, type] = {}, **kwargs: type
-) -&gt; Dict[str, object]:
+    self, classes: dict[str, type] = {}, **kwargs: type
+) -&gt; dict[str, object]:
     &#34;&#34;&#34;
     Resolve dependencies by name and instantiate each class.
     &#34;&#34;&#34;

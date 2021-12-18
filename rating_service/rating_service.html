@@ -27,7 +27,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">import asyncio
-from typing import Dict, List, Optional
+from typing import Optional
 
 import aiocron
 import pymysql
@@ -78,8 +78,8 @@ class RatingService(Service):
         self._accept_input = False
         self._queue = asyncio.Queue()
         self._task = None
-        self._rating_type_ids: Optional[Dict[str, int]] = None
-        self.leaderboards: Dict[str, Leaderboard] = {}
+        self._rating_type_ids: Optional[dict[str, int]] = None
+        self.leaderboards: dict[str, Leaderboard] = {}
         self._message_queue_service = message_queue_service
 
     async def initialize(self) -&gt; None:
@@ -90,7 +90,6 @@ class RatingService(Service):
         await self.update_data()
         self._update_cron = aiocron.crontab(&#34;*/10 * * * *&#34;, func=self.update_data)
         self._accept_input = True
-        self._logger.debug(&#34;RatingService starting...&#34;)
         self._task = asyncio.create_task(self._handle_rating_queue())
 
     async def update_data(self):
@@ -125,7 +124,7 @@ class RatingService(Service):
                 if init:
                     current.initializer = init
 
-    async def enqueue(self, game_info: Dict) -&gt; None:
+    async def enqueue(self, game_info: dict[str]) -&gt; None:
         if not self._accept_input:
             self._logger.warning(&#34;Dropped rating request %s&#34;, game_info)
             raise ServiceNotReadyError(
@@ -145,15 +144,17 @@ class RatingService(Service):
                 self._logger.debug(&#34;Now rating request %s&#34;, summary)
 
                 try:
-                    await self._rate(summary)
+                    # Make sure we finish writing rating changes even if the
+                    # server is shutting down
+                    await asyncio.shield(self._rate(summary))
                 except GameRatingError:
                     self._logger.warning(&#34;Error rating game %s&#34;, summary)
                 except Exception:  # pragma: no cover
                     self._logger.exception(&#34;Failed rating request %s&#34;, summary)
                 else:
                     self._logger.debug(&#34;Done rating request.&#34;)
-
-                self._queue.task_done()
+                finally:
+                    self._queue.task_done()
                 rating_service_backlog.set(self._queue.qsize())
         except asyncio.CancelledError:
             pass
@@ -225,7 +226,7 @@ class RatingService(Service):
         conn,
         game_id: int,
         rating_type: str,
-        player_ratings: Dict[PlayerID, PlayerRatings],
+        player_ratings: dict[PlayerID, PlayerRatings],
         rater: GameRater,
         update_game_player_stats: bool = True
     ) -&gt; Optional[GameRatingResult]:
@@ -309,8 +310,8 @@ class RatingService(Service):
             )
 
     async def _get_all_player_ratings(
-        self, conn, player_ids: List[PlayerID]
-    ) -&gt; Dict[PlayerID, PlayerRatings]:
+        self, conn, player_ids: list[PlayerID]
+    ) -&gt; dict[PlayerID, PlayerRatings]:
         sql = select([
             leaderboard_rating.c.login_id,
             leaderboard.c.technical_name,
@@ -339,7 +340,7 @@ class RatingService(Service):
         rating_type: str,
         old_ratings: RatingDict,
         new_ratings: RatingDict,
-        outcomes: Dict[PlayerID, GameOutcome],
+        outcomes: dict[PlayerID, GameOutcome],
         update_game_player_stats: bool = True
     ) -&gt; None:
         &#34;&#34;&#34;
@@ -486,7 +487,7 @@ class RatingService(Service):
         rating_type: str,
         old_ratings: RatingDict,
         new_ratings: RatingDict,
-        outcomes: Dict[PlayerID, GameOutcome],
+        outcomes: dict[PlayerID, GameOutcome],
     ):
         for player_id, new_rating in new_ratings.items():
             if player_id not in outcomes:
@@ -566,7 +567,8 @@ atomic.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class RatingService(Service):
+<pre><code class="python">@with_logger
+class RatingService(Service):
     &#34;&#34;&#34;
     Service responsible for calculating and saving trueskill rating updates.
     To avoid race conditions, rating updates from a single game ought to be
@@ -584,8 +586,8 @@ atomic.</p></div>
         self._accept_input = False
         self._queue = asyncio.Queue()
         self._task = None
-        self._rating_type_ids: Optional[Dict[str, int]] = None
-        self.leaderboards: Dict[str, Leaderboard] = {}
+        self._rating_type_ids: Optional[dict[str, int]] = None
+        self.leaderboards: dict[str, Leaderboard] = {}
         self._message_queue_service = message_queue_service
 
     async def initialize(self) -&gt; None:
@@ -596,7 +598,6 @@ atomic.</p></div>
         await self.update_data()
         self._update_cron = aiocron.crontab(&#34;*/10 * * * *&#34;, func=self.update_data)
         self._accept_input = True
-        self._logger.debug(&#34;RatingService starting...&#34;)
         self._task = asyncio.create_task(self._handle_rating_queue())
 
     async def update_data(self):
@@ -631,7 +632,7 @@ atomic.</p></div>
                 if init:
                     current.initializer = init
 
-    async def enqueue(self, game_info: Dict) -&gt; None:
+    async def enqueue(self, game_info: dict[str]) -&gt; None:
         if not self._accept_input:
             self._logger.warning(&#34;Dropped rating request %s&#34;, game_info)
             raise ServiceNotReadyError(
@@ -651,15 +652,17 @@ atomic.</p></div>
                 self._logger.debug(&#34;Now rating request %s&#34;, summary)
 
                 try:
-                    await self._rate(summary)
+                    # Make sure we finish writing rating changes even if the
+                    # server is shutting down
+                    await asyncio.shield(self._rate(summary))
                 except GameRatingError:
                     self._logger.warning(&#34;Error rating game %s&#34;, summary)
                 except Exception:  # pragma: no cover
                     self._logger.exception(&#34;Failed rating request %s&#34;, summary)
                 else:
                     self._logger.debug(&#34;Done rating request.&#34;)
-
-                self._queue.task_done()
+                finally:
+                    self._queue.task_done()
                 rating_service_backlog.set(self._queue.qsize())
         except asyncio.CancelledError:
             pass
@@ -731,7 +734,7 @@ atomic.</p></div>
         conn,
         game_id: int,
         rating_type: str,
-        player_ratings: Dict[PlayerID, PlayerRatings],
+        player_ratings: dict[PlayerID, PlayerRatings],
         rater: GameRater,
         update_game_player_stats: bool = True
     ) -&gt; Optional[GameRatingResult]:
@@ -815,8 +818,8 @@ atomic.</p></div>
             )
 
     async def _get_all_player_ratings(
-        self, conn, player_ids: List[PlayerID]
-    ) -&gt; Dict[PlayerID, PlayerRatings]:
+        self, conn, player_ids: list[PlayerID]
+    ) -&gt; dict[PlayerID, PlayerRatings]:
         sql = select([
             leaderboard_rating.c.login_id,
             leaderboard.c.technical_name,
@@ -845,7 +848,7 @@ atomic.</p></div>
         rating_type: str,
         old_ratings: RatingDict,
         new_ratings: RatingDict,
-        outcomes: Dict[PlayerID, GameOutcome],
+        outcomes: dict[PlayerID, GameOutcome],
         update_game_player_stats: bool = True
     ) -&gt; None:
         &#34;&#34;&#34;
@@ -992,7 +995,7 @@ atomic.</p></div>
         rating_type: str,
         old_ratings: RatingDict,
         new_ratings: RatingDict,
-        outcomes: Dict[PlayerID, GameOutcome],
+        outcomes: dict[PlayerID, GameOutcome],
     ):
         for player_id, new_rating in new_ratings.items():
             if player_id not in outcomes:
@@ -1057,7 +1060,7 @@ atomic.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.rating_service.rating_service.RatingService.enqueue"><code class="name flex">
-<span>async def <span class="ident">enqueue</span></span>(<span>self, game_info: Dict[~KT, ~VT]) ‑> None</span>
+<span>async def <span class="ident">enqueue</span></span>(<span>self, game_info: dict[str]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1065,7 +1068,7 @@ atomic.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def enqueue(self, game_info: Dict) -&gt; None:
+<pre><code class="python">async def enqueue(self, game_info: dict[str]) -&gt; None:
     if not self._accept_input:
         self._logger.warning(&#34;Dropped rating request %s&#34;, game_info)
         raise ServiceNotReadyError(

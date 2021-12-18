@@ -27,7 +27,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from abc import ABC, abstractmethod
-from typing import Dict, Iterable, List, Set, Tuple
+from typing import Iterable
 
 from ...decorators import with_logger
 from ..search import Match, Search
@@ -40,15 +40,15 @@ class Matchmaker(ABC):
         self,
         searches: Iterable[Search],
         team_size: int
-    ) -&gt; Tuple[List[Match], List[Search]]:
+    ) -&gt; tuple[list[Match], list[Search]]:
         pass
 
 
 @with_logger
 class MatchmakingPolicy1v1(object):
     def __init__(self):
-        self.matches: Dict[Search, Search] = {}
-        self.searches_remaining_unmatched: Set[Search] = set()
+        self.matches: dict[Search, Search] = {}
+        self.searches_remaining_unmatched: set[Search] = set()
 
     def _match(self, s1: Search, s2: Search):
         self._logger.debug(
@@ -92,13 +92,14 @@ inheritance.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Matchmaker(ABC):
+<pre><code class="python">@with_logger
+class Matchmaker(ABC):
     @abstractmethod
     def find(
         self,
         searches: Iterable[Search],
         team_size: int
-    ) -&gt; Tuple[List[Match], List[Search]]:
+    ) -&gt; tuple[list[Match], list[Search]]:
         pass</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -114,7 +115,7 @@ inheritance.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.matchmaker.algorithm.matchmaker.Matchmaker.find"><code class="name flex">
-<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> Tuple[List[Tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]], List[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
+<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> tuple[list[tuple['Search', 'Search']], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -127,7 +128,7 @@ def find(
     self,
     searches: Iterable[Search],
     team_size: int
-) -&gt; Tuple[List[Match], List[Search]]:
+) -&gt; tuple[list[Match], list[Search]]:
     pass</code></pre>
 </details>
 </dd>
@@ -142,10 +143,11 @@ def find(
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MatchmakingPolicy1v1(object):
+<pre><code class="python">@with_logger
+class MatchmakingPolicy1v1(object):
     def __init__(self):
-        self.matches: Dict[Search, Search] = {}
-        self.searches_remaining_unmatched: Set[Search] = set()
+        self.matches: dict[Search, Search] = {}
+        self.searches_remaining_unmatched: set[Search] = set()
 
     def _match(self, s1: Search, s2: Search):
         self._logger.debug(

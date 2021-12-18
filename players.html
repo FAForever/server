@@ -34,7 +34,7 @@ Player type definitions
 from collections import defaultdict
 from contextlib import suppress
 from enum import Enum, unique
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 from .factions import Faction
 from .protocol import DisconnectedError
@@ -69,7 +69,7 @@ class Player:
         login: str = None,
         session: int = 0,
         player_id: int = 0,
-        leaderboards: Dict[str, Leaderboard] = {},
+        leaderboards: dict[str, Leaderboard] = {},
         ratings=None,
         clan=None,
         game_count=None,
@@ -219,7 +219,7 @@ class Player:
 <dl>
 <dt id="server.players.Player"><code class="flex name class">
 <span>class <span class="ident">Player</span></span>
-<span>(</span><span>login: str = None, session: int = 0, player_id: int = 0, leaderboards: Dict[str, <a title="server.rating.Leaderboard" href="rating.html#server.rating.Leaderboard">Leaderboard</a>] = {}, ratings=None, clan=None, game_count=None, lobby_connection: Optional[ForwardRef('LobbyConnection')] = None)</span>
+<span>(</span><span>login: str = None, session: int = 0, player_id: int = 0, leaderboards: dict[str, <a title="server.rating.Leaderboard" href="rating.html#server.rating.Leaderboard">Leaderboard</a>] = {}, ratings=None, clan=None, game_count=None, lobby_connection: Optional[ForwardRef('LobbyConnection')] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Standard player object used for representing signed-in players.</p>
@@ -246,7 +246,7 @@ information about players.</p></div>
         login: str = None,
         session: int = 0,
         player_id: int = 0,
-        leaderboards: Dict[str, Leaderboard] = {},
+        leaderboards: dict[str, Leaderboard] = {},
         ratings=None,
         clan=None,
         game_count=None,
@@ -597,7 +597,8 @@ such as "Moderator"</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class PlayerState(Enum):
+<pre><code class="python">@unique
+class PlayerState(Enum):
     IDLE = 1
     PLAYING = 2
     HOSTING = 3

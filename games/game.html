@@ -31,7 +31,7 @@ import json
 import logging
 import time
 from collections import defaultdict
-from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
+from typing import Any, Iterable, Optional
 
 from sqlalchemy import and_, bindparam
 from sqlalchemy.exc import DBAPIError
@@ -105,7 +105,7 @@ class Game():
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
         self.game_service = game_service
-        self._player_options: Dict[int, Dict[str, Any]] = defaultdict(dict)
+        self._player_options: dict[int, dict[str, Any]] = defaultdict(dict)
         self.launched_at = None
         self.ended = False
         self._logger = logging.getLogger(
@@ -120,7 +120,7 @@ class Game():
         self.map_file_path = f&#34;maps/{map_}.zip&#34;
         self.map_scenario_path = None
         self.password = None
-        self._players_at_launch: List[Player] = []
+        self._players_at_launch: list[Player] = []
         self.AIs = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
@@ -181,7 +181,7 @@ class Game():
         self._name = value[:max_len]
 
     @property
-    def armies(self) -&gt; FrozenSet[int]:
+    def armies(self) -&gt; frozenset[int]:
         return frozenset(
             self.get_player_option(player.id, &#34;Army&#34;)
             for player in self.players
@@ -192,7 +192,7 @@ class Game():
         return self._results.is_mutually_agreed_draw(self.armies)
 
     @property
-    def players(self) -&gt; List[Player]:
+    def players(self) -&gt; list[Player]:
         &#34;&#34;&#34;
         Players in the game
 
@@ -206,7 +206,7 @@ class Game():
         else:
             return self._players_at_launch
 
-    def get_connected_players(self) -&gt; List[Player]:
+    def get_connected_players(self) -&gt; list[Player]:
         &#34;&#34;&#34;
         Get a collection of all players currently connected to the game.
         &#34;&#34;&#34;
@@ -224,7 +224,7 @@ class Game():
         return self._connections.values()
 
     @property
-    def teams(self) -&gt; FrozenSet[int]:
+    def teams(self) -&gt; frozenset[int]:
         &#34;&#34;&#34;
         A set of all teams of this game&#39;s players.
         &#34;&#34;&#34;
@@ -271,7 +271,7 @@ class Game():
         team_sizes = set(len(team) for team in teams)
         return len(team_sizes) == 1
 
-    def get_team_sets(self) -&gt; List[Set[Player]]:
+    def get_team_sets(self) -&gt; list[set[Player]]:
         &#34;&#34;&#34;
         Returns a list of teams represented as sets of players.
         Note that FFA players will be separated into individual teams.
@@ -315,7 +315,7 @@ class Game():
         army: int,
         result_type: str,
         score: int,
-        result_metadata: FrozenSet[str] = frozenset(),
+        result_metadata: frozenset[str] = frozenset(),
     ):
         &#34;&#34;&#34;
         As computed by the game.
@@ -539,7 +539,7 @@ class Game():
             team_army_results,
         )
 
-    def _outcome_override_hook(self) -&gt; Optional[List[GameOutcome]]:
+    def _outcome_override_hook(self) -&gt; Optional[list[GameOutcome]]:
         return None
 
     async def load_results(self):
@@ -700,7 +700,7 @@ class Game():
         await self._validate_game_options(valid_options)
 
     async def _validate_game_options(
-        self, valid_options: Dict[str, Tuple[Any, ValidityState]]
+        self, valid_options: dict[str, tuple[Any, ValidityState]]
     ) -&gt; bool:
         for key, value in self.gameOptions.items():
             if key in valid_options:
@@ -1030,7 +1030,7 @@ class Game():
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
         self.game_service = game_service
-        self._player_options: Dict[int, Dict[str, Any]] = defaultdict(dict)
+        self._player_options: dict[int, dict[str, Any]] = defaultdict(dict)
         self.launched_at = None
         self.ended = False
         self._logger = logging.getLogger(
@@ -1045,7 +1045,7 @@ class Game():
         self.map_file_path = f&#34;maps/{map_}.zip&#34;
         self.map_scenario_path = None
         self.password = None
-        self._players_at_launch: List[Player] = []
+        self._players_at_launch: list[Player] = []
         self.AIs = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
@@ -1106,7 +1106,7 @@ class Game():
         self._name = value[:max_len]
 
     @property
-    def armies(self) -&gt; FrozenSet[int]:
+    def armies(self) -&gt; frozenset[int]:
         return frozenset(
             self.get_player_option(player.id, &#34;Army&#34;)
             for player in self.players
@@ -1117,7 +1117,7 @@ class Game():
         return self._results.is_mutually_agreed_draw(self.armies)
 
     @property
-    def players(self) -&gt; List[Player]:
+    def players(self) -&gt; list[Player]:
         &#34;&#34;&#34;
         Players in the game
 
@@ -1131,7 +1131,7 @@ class Game():
         else:
             return self._players_at_launch
 
-    def get_connected_players(self) -&gt; List[Player]:
+    def get_connected_players(self) -&gt; list[Player]:
         &#34;&#34;&#34;
         Get a collection of all players currently connected to the game.
         &#34;&#34;&#34;
@@ -1149,7 +1149,7 @@ class Game():
         return self._connections.values()
 
     @property
-    def teams(self) -&gt; FrozenSet[int]:
+    def teams(self) -&gt; frozenset[int]:
         &#34;&#34;&#34;
         A set of all teams of this game&#39;s players.
         &#34;&#34;&#34;
@@ -1196,7 +1196,7 @@ class Game():
         team_sizes = set(len(team) for team in teams)
         return len(team_sizes) == 1
 
-    def get_team_sets(self) -&gt; List[Set[Player]]:
+    def get_team_sets(self) -&gt; list[set[Player]]:
         &#34;&#34;&#34;
         Returns a list of teams represented as sets of players.
         Note that FFA players will be separated into individual teams.
@@ -1240,7 +1240,7 @@ class Game():
         army: int,
         result_type: str,
         score: int,
-        result_metadata: FrozenSet[str] = frozenset(),
+        result_metadata: frozenset[str] = frozenset(),
     ):
         &#34;&#34;&#34;
         As computed by the game.
@@ -1464,7 +1464,7 @@ class Game():
             team_army_results,
         )
 
-    def _outcome_override_hook(self) -&gt; Optional[List[GameOutcome]]:
+    def _outcome_override_hook(self) -&gt; Optional[list[GameOutcome]]:
         return None
 
     async def load_results(self):
@@ -1625,7 +1625,7 @@ class Game():
         await self._validate_game_options(valid_options)
 
     async def _validate_game_options(
-        self, valid_options: Dict[str, Tuple[Any, ValidityState]]
+        self, valid_options: dict[str, tuple[Any, ValidityState]]
     ) -&gt; bool:
         for key, value in self.gameOptions.items():
             if key in valid_options:
@@ -1924,7 +1924,7 @@ class Game():
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="server.games.game.Game.armies"><code class="name">var <span class="ident">armies</span> : FrozenSet[int]</code></dt>
+<dt id="server.games.game.Game.armies"><code class="name">var <span class="ident">armies</span> : frozenset[int]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1932,7 +1932,7 @@ class Game():
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def armies(self) -&gt; FrozenSet[int]:
+def armies(self) -&gt; frozenset[int]:
     return frozenset(
         self.get_player_option(player.id, &#34;Army&#34;)
         for player in self.players
@@ -2074,7 +2074,7 @@ def name(self):
     return self._name</code></pre>
 </details>
 </dd>
-<dt id="server.games.game.Game.players"><code class="name">var <span class="ident">players</span> : List[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</code></dt>
+<dt id="server.games.game.Game.players"><code class="name">var <span class="ident">players</span> : list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</code></dt>
 <dd>
 <div class="desc"><p>Players in the game</p>
 <p>Depending on the state, it is either:
@@ -2086,7 +2086,7 @@ def name(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def players(self) -&gt; List[Player]:
+def players(self) -&gt; list[Player]:
     &#34;&#34;&#34;
     Players in the game
 
@@ -2101,7 +2101,7 @@ def players(self) -&gt; List[Player]:
         return self._players_at_launch</code></pre>
 </details>
 </dd>
-<dt id="server.games.game.Game.teams"><code class="name">var <span class="ident">teams</span> : FrozenSet[int]</code></dt>
+<dt id="server.games.game.Game.teams"><code class="name">var <span class="ident">teams</span> : frozenset[int]</code></dt>
 <dd>
 <div class="desc"><p>A set of all teams of this game's players.</p></div>
 <details class="source">
@@ -2109,7 +2109,7 @@ def players(self) -&gt; List[Player]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def teams(self) -&gt; FrozenSet[int]:
+def teams(self) -&gt; frozenset[int]:
     &#34;&#34;&#34;
     A set of all teams of this game&#39;s players.
     &#34;&#34;&#34;
@@ -2147,7 +2147,7 @@ def teams(self) -&gt; FrozenSet[int]:
 </details>
 </dd>
 <dt id="server.games.game.Game.add_result"><code class="name flex">
-<span>async def <span class="ident">add_result</span></span>(<span>self, reporter: int, army: int, result_type: str, score: int, result_metadata: FrozenSet[str] = frozenset())</span>
+<span>async def <span class="ident">add_result</span></span>(<span>self, reporter: int, army: int, result_type: str, score: int, result_metadata: frozenset[str] = frozenset())</span>
 </code></dt>
 <dd>
 <div class="desc"><p>As computed by the game.</p>
@@ -2170,7 +2170,7 @@ result message from the game, one or more words, optional</li>
     army: int,
     result_type: str,
     score: int,
-    result_metadata: FrozenSet[str] = frozenset(),
+    result_metadata: frozenset[str] = frozenset(),
 ):
     &#34;&#34;&#34;
     As computed by the game.
@@ -2323,7 +2323,7 @@ assigned an army or team, and deletes any AI's.</p></div>
 </details>
 </dd>
 <dt id="server.games.game.Game.get_connected_players"><code class="name flex">
-<span>def <span class="ident">get_connected_players</span></span>(<span>self) ‑> List[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</span>
+<span>def <span class="ident">get_connected_players</span></span>(<span>self) ‑> list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Get a collection of all players currently connected to the game.</p></div>
@@ -2331,7 +2331,7 @@ assigned an army or team, and deletes any AI's.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_connected_players(self) -&gt; List[Player]:
+<pre><code class="python">def get_connected_players(self) -&gt; list[Player]:
     &#34;&#34;&#34;
     Get a collection of all players currently connected to the game.
     &#34;&#34;&#34;
@@ -2375,7 +2375,7 @@ assigned an army or team, and deletes any AI's.</p></div>
 </details>
 </dd>
 <dt id="server.games.game.Game.get_team_sets"><code class="name flex">
-<span>def <span class="ident">get_team_sets</span></span>(<span>self) ‑> List[Set[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]]</span>
+<span>def <span class="ident">get_team_sets</span></span>(<span>self) ‑> list[set[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns a list of teams represented as sets of players.
@@ -2384,7 +2384,7 @@ Note that FFA players will be separated into individual teams.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_team_sets(self) -&gt; List[Set[Player]]:
+<pre><code class="python">def get_team_sets(self) -&gt; list[set[Player]]:
     &#34;&#34;&#34;
     Returns a list of teams represented as sets of players.
     Note that FFA players will be separated into individual teams.

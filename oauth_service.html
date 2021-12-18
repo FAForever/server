@@ -91,6 +91,7 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
                         jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
                         for jwk in jwks[&#34;keys&#34;]
                     }
+            self._logger.info(&#34;Got public keys from %s&#34;, config.HYDRA_JWKS_URI)
         except Exception:
             self._logger.exception(
                 &#34;Unable to retrieve jwks, token login will be unavailable!&#34;
@@ -143,7 +144,8 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class OAuthService(Service, name=&#34;oauth_service&#34;):
+<pre><code class="python">@with_logger
+class OAuthService(Service, name=&#34;oauth_service&#34;):
     &#34;&#34;&#34;
     Service for managing the OAuth token logins and verification.
     &#34;&#34;&#34;
@@ -191,6 +193,7 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
                         jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
                         for jwk in jwks[&#34;keys&#34;]
                     }
+            self._logger.info(&#34;Got public keys from %s&#34;, config.HYDRA_JWKS_URI)
         except Exception:
             self._logger.exception(
                 &#34;Unable to retrieve jwks, token login will be unavailable!&#34;
@@ -318,6 +321,7 @@ async def get_public_keys(self) -&gt; dict:
                     jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
                     for jwk in jwks[&#34;keys&#34;]
                 }
+        self._logger.info(&#34;Got public keys from %s&#34;, config.HYDRA_JWKS_URI)
     except Exception:
         self._logger.exception(
             &#34;Unable to retrieve jwks, token login will be unavailable!&#34;

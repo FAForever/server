@@ -192,7 +192,8 @@ Distributed under GPLv3, see license.txt
 
 import asyncio
 import logging
-from typing import Dict, Optional, Set, Tuple, Type
+import time
+from typing import Optional
 
 from prometheus_client import start_http_server
 
@@ -269,7 +270,7 @@ class ServerInstance(object):
         twilio_nts: Optional[TwilioNTS],
         loop: asyncio.BaseEventLoop,
         # For testing
-        _override_services: Optional[Dict[str, Service]] = None
+        _override_services: Optional[dict[str, Service]] = None
     ):
         self.name = name
         self._logger = logging.getLogger(self.name)
@@ -280,7 +281,7 @@ class ServerInstance(object):
 
         self.started = False
 
-        self.contexts: Set[ServerContext] = set()
+        self.contexts: set[ServerContext] = set()
 
         self.services = _override_services or create_services({
             &#34;server&#34;: self,
@@ -322,26 +323,40 @@ class ServerInstance(object):
                 )
 
     @synchronizedmethod
-    async def _start_services(self) -&gt; None:
+    async def start_services(self) -&gt; None:
         if self.started:
             return
 
+        num_services = len(self.services)
+        self._logger.debug(&#34;Initializing %s services&#34;, num_services)
+
+        async def initialize(service):
+            start = time.perf_counter()
+            await service.initialize()
+            service._logger.debug(
+                &#34;%s initialized in %0.2f seconds&#34;,
+                service.__class__.__name__,
+                time.perf_counter() - start
+            )
+
         await asyncio.gather(*[
-            service.initialize() for service in self.services.values()
+            initialize(service) for service in self.services.values()
         ])
+
+        self._logger.debug(&#34;Initialized %s services&#34;, num_services)
 
         self.started = True
 
     async def listen(
         self,
-        address: Tuple[str, int],
-        protocol_class: Type[Protocol] = QDataStreamProtocol
+        address: tuple[str, int],
+        protocol_class: type[Protocol] = QDataStreamProtocol
     ) -&gt; ServerContext:
         &#34;&#34;&#34;
         Start listening on a new address.
         &#34;&#34;&#34;
         if not self.started:
-            await self._start_services()
+            await self.start_services()
 
         ctx = ServerContext(
             f&#34;{self.name}[{protocol_class.__name__}]&#34;,
@@ -356,23 +371,40 @@ class ServerInstance(object):
         return ctx
 
     async def shutdown(self):
-        for ctx in self.contexts:
-            ctx.close()
-
-        for ctx in self.contexts:
-            try:
-                await ctx.wait_closed()
-            except Exception:
+        results = await asyncio.gather(
+            *(ctx.stop() for ctx in self.contexts),
+            return_exceptions=True
+        )
+        for result, ctx in zip(results, self.contexts):
+            if isinstance(result, BaseException):
                 self._logger.error(
-                    &#34;Encountered unexpected error when trying to shut down &#34;
-                    &#34;context %s&#34;,
+                    &#34;Unexpected error when stopping context %s&#34;,
                     ctx
                 )
 
-        await asyncio.gather(*[
-            service.shutdown() for service in self.services.values()
-        ])
+        results = await asyncio.gather(
+            *(service.shutdown() for service in self.services.values()),
+            return_exceptions=True
+        )
+        for result, service in zip(results, self.services.values()):
+            if isinstance(result, BaseException):
+                self._logger.error(
+                    &#34;Unexpected error when shutting down service %s&#34;,
+                    service
+                )
 
+        results = await asyncio.gather(
+            *(ctx.shutdown() for ctx in self.contexts),
+            return_exceptions=True
+        )
+        for result, ctx in zip(results, self.contexts):
+            if isinstance(result, BaseException):
+                self._logger.error(
+                    &#34;Unexpected error when shutting down context %s&#34;,
+                    ctx
+                )
+
+        self.contexts.clear()
         self.started = False</code></pre>
 </details>
 </section>
@@ -566,7 +598,8 @@ class ServerInstance(object):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class BroadcastService(Service):
+<pre><code class="python">@with_logger
+class BroadcastService(Service):
     &#34;&#34;&#34;
     Broadcast updates about changed entities.
     &#34;&#34;&#34;
@@ -596,7 +629,6 @@ class ServerInstance(object):
             self.broadcast_ping,
             start=True
         )
-        self._logger.debug(&#34;Broadcast service initialized&#34;)
 
     async def report_dirties(self):
         &#34;&#34;&#34;
@@ -799,15 +831,15 @@ interval.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class ConfigurationService(Service):
+<pre><code class="python">@with_logger
+class ConfigurationService(Service):
     def __init__(self) -&gt; None:
-        self._logger.info(&#34;Configuration service created.&#34;)
         self._store = config
         self._task = None
 
     async def initialize(self) -&gt; None:
         self._task = asyncio.create_task(self._worker_loop())
-        self._logger.info(&#34;Configuration service started.&#34;)
+        self._logger.info(&#34;Configuration service initialized&#34;)
 
     async def _worker_loop(self) -&gt; None:
         while True:
@@ -847,7 +879,8 @@ interval.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GameConnection(GpgNetServerProtocol):
+<pre><code class="python">@with_logger
+class GameConnection(GpgNetServerProtocol):
     &#34;&#34;&#34;
     Responsible for connections to the game, using the GPGNet protocol
     &#34;&#34;&#34;
@@ -1017,7 +1050,7 @@ interval.</p></div>
                     offer=False
                 )
 
-    async def handle_action(self, command: str, args: List[Any]):
+    async def handle_action(self, command: str, args: list[Any]):
         &#34;&#34;&#34;
         Handle GpgNetSend messages, wrapped in the JSON protocol
         &#34;&#34;&#34;
@@ -1065,7 +1098,7 @@ interval.</p></div>
 
         self._mark_dirty()
 
-    async def handle_game_mods(self, mode: Any, args: List[Any]):
+    async def handle_game_mods(self, mode: Any, args: list[Any]):
         if not self.is_host():
             return
 
@@ -1322,7 +1355,7 @@ interval.</p></div>
             await self.on_connection_lost()
         self._mark_dirty()
 
-    async def handle_game_ended(self, *args:  List[Any]):
+    async def handle_game_ended(self, *args:  list[Any]):
         &#34;&#34;&#34;
         Signals that the simulation has ended.
         &#34;&#34;&#34;
@@ -1333,28 +1366,28 @@ interval.</p></div>
         if self.game.ended:
             await self.game.on_game_end()
 
-    async def handle_rehost(self, *args: List[Any]):
+    async def handle_rehost(self, *args: list[Any]):
         &#34;&#34;&#34;
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
         pass
 
-    async def handle_bottleneck(self, *args: List[Any]):
+    async def handle_bottleneck(self, *args: list[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
         pass
 
-    async def handle_bottleneck_cleared(self, *args: List[Any]):
+    async def handle_bottleneck_cleared(self, *args: list[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
         pass
 
-    async def handle_disconnected(self, *args: List[Any]):
+    async def handle_disconnected(self, *args: list[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
@@ -1605,7 +1638,7 @@ and deletes references to Player and Game held by this object.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_action"><code class="name flex">
-<span>async def <span class="ident">handle_action</span></span>(<span>self, command: str, args: List[Any])</span>
+<span>async def <span class="ident">handle_action</span></span>(<span>self, command: str, args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Handle GpgNetSend messages, wrapped in the JSON protocol</p></div>
@@ -1613,7 +1646,7 @@ and deletes references to Player and Game held by this object.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_action(self, command: str, args: List[Any]):
+<pre><code class="python">async def handle_action(self, command: str, args: list[Any]):
     &#34;&#34;&#34;
     Handle GpgNetSend messages, wrapped in the JSON protocol
     &#34;&#34;&#34;
@@ -1651,7 +1684,7 @@ and deletes references to Player and Game held by this object.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_bottleneck"><code class="name flex">
-<span>async def <span class="ident">handle_bottleneck</span></span>(<span>self, *args: List[Any])</span>
+<span>async def <span class="ident">handle_bottleneck</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
@@ -1660,7 +1693,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_bottleneck(self, *args: List[Any]):
+<pre><code class="python">async def handle_bottleneck(self, *args: list[Any]):
     &#34;&#34;&#34;
     Not sure what this command means. This is currently unused but
     included for documentation purposes.
@@ -1669,7 +1702,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_bottleneck_cleared"><code class="name flex">
-<span>async def <span class="ident">handle_bottleneck_cleared</span></span>(<span>self, *args: List[Any])</span>
+<span>async def <span class="ident">handle_bottleneck_cleared</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
@@ -1678,7 +1711,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_bottleneck_cleared(self, *args: List[Any]):
+<pre><code class="python">async def handle_bottleneck_cleared(self, *args: list[Any]):
     &#34;&#34;&#34;
     Not sure what this command means. This is currently unused but
     included for documentation purposes.
@@ -1733,7 +1766,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_disconnected"><code class="name flex">
-<span>async def <span class="ident">handle_disconnected</span></span>(<span>self, *args: List[Any])</span>
+<span>async def <span class="ident">handle_disconnected</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
@@ -1742,7 +1775,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_disconnected(self, *args: List[Any]):
+<pre><code class="python">async def handle_disconnected(self, *args: list[Any]):
     &#34;&#34;&#34;
     Not sure what this command means. This is currently unused but
     included for documentation purposes.
@@ -1764,7 +1797,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_game_ended"><code class="name flex">
-<span>async def <span class="ident">handle_game_ended</span></span>(<span>self, *args: List[Any])</span>
+<span>async def <span class="ident">handle_game_ended</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Signals that the simulation has ended.</p></div>
@@ -1772,7 +1805,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_game_ended(self, *args:  List[Any]):
+<pre><code class="python">async def handle_game_ended(self, *args:  list[Any]):
     &#34;&#34;&#34;
     Signals that the simulation has ended.
     &#34;&#34;&#34;
@@ -1801,7 +1834,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_game_mods"><code class="name flex">
-<span>async def <span class="ident">handle_game_mods</span></span>(<span>self, mode: Any, args: List[Any])</span>
+<span>async def <span class="ident">handle_game_mods</span></span>(<span>self, mode: Any, args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1809,7 +1842,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_game_mods(self, mode: Any, args: List[Any]):
+<pre><code class="python">async def handle_game_mods(self, mode: Any, args: list[Any]):
     if not self.is_host():
         return
 
@@ -2096,7 +2129,7 @@ included for documentation purposes.</p></div>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_rehost"><code class="name flex">
-<span>async def <span class="ident">handle_rehost</span></span>(<span>self, *args: List[Any])</span>
+<span>async def <span class="ident">handle_rehost</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Signals that the user has rehosted the game. This is currently unused but
@@ -2105,7 +2138,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_rehost(self, *args: List[Any]):
+<pre><code class="python">async def handle_rehost(self, *args: list[Any]):
     &#34;&#34;&#34;
     Signals that the user has rehosted the game. This is currently unused but
     included for documentation purposes.
@@ -2297,7 +2330,8 @@ cause the caller to be disconnected as well.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GameService(Service):
+<pre><code class="python">@with_logger
+class GameService(Service):
     &#34;&#34;&#34;
     Utility class for maintaining lifecycle of games
     &#34;&#34;&#34;
@@ -2310,8 +2344,8 @@ cause the caller to be disconnected as well.</p></div>
         message_queue_service: MessageQueueService
     ):
         self._db = database
-        self._dirty_games: Set[Game] = set()
-        self._dirty_queues: Set[MatchmakerQueue] = set()
+        self._dirty_games: set[Game] = set()
+        self._dirty_queues: set[MatchmakerQueue] = set()
         self.player_service = player_service
         self.game_stats_service = game_stats_service
         self._rating_service = rating_service
@@ -2322,10 +2356,10 @@ cause the caller to be disconnected as well.</p></div>
         self.featured_mods = dict()
 
         # A set of mod ids that are allowed in ranked games
-        self.ranked_mods: Set[str] = set()
+        self.ranked_mods: set[str] = set()
 
         # The set of active games
-        self._games: Dict[int, Game] = dict()
+        self._games: dict[int, Game] = dict()
 
     async def initialize(self) -&gt; None:
         await self.initialise_game_counter()
@@ -2385,13 +2419,13 @@ cause the caller to be disconnected as well.</p></div>
         elif isinstance(obj, MatchmakerQueue):
             self._dirty_queues.add(obj)
 
-    def pop_dirty_games(self) -&gt; Set[Game]:
+    def pop_dirty_games(self) -&gt; set[Game]:
         dirty_games = self._dirty_games
         self._dirty_games = set()
 
         return dirty_games
 
-    def pop_dirty_queues(self) -&gt; Set[MatchmakerQueue]:
+    def pop_dirty_queues(self) -&gt; set[MatchmakerQueue]:
         dirty_queues = self._dirty_queues
         self._dirty_queues = set()
 
@@ -2405,7 +2439,7 @@ cause the caller to be disconnected as well.</p></div>
     def create_game(
         self,
         game_mode: str,
-        game_class: Type[Game] = CustomGame,
+        game_class: type[Game] = CustomGame,
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
@@ -2458,12 +2492,12 @@ cause the caller to be disconnected as well.</p></div>
                 )
 
     @property
-    def live_games(self) -&gt; List[Game]:
+    def live_games(self) -&gt; list[Game]:
         return [game for game in self._games.values()
                 if game.state is GameState.LIVE]
 
     @property
-    def open_games(self) -&gt; List[Game]:
+    def open_games(self) -&gt; list[Game]:
         &#34;&#34;&#34;
         Return all games that meet the client&#39;s definition of &#34;not closed&#34;.
         Server game states are mapped to client game states as follows:
@@ -2483,7 +2517,7 @@ cause the caller to be disconnected as well.</p></div>
         return self._games.values()
 
     @property
-    def pending_games(self) -&gt; List[Game]:
+    def pending_games(self) -&gt; list[Game]:
         return [game for game in self._games.values()
                 if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]
 
@@ -2530,7 +2564,7 @@ def all_games(self) -&gt; ValuesView[Game]:
     return self._games.values()</code></pre>
 </details>
 </dd>
-<dt id="server.GameService.live_games"><code class="name">var <span class="ident">live_games</span> : List[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
+<dt id="server.GameService.live_games"><code class="name">var <span class="ident">live_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -2538,12 +2572,12 @@ def all_games(self) -&gt; ValuesView[Game]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def live_games(self) -&gt; List[Game]:
+def live_games(self) -&gt; list[Game]:
     return [game for game in self._games.values()
             if game.state is GameState.LIVE]</code></pre>
 </details>
 </dd>
-<dt id="server.GameService.open_games"><code class="name">var <span class="ident">open_games</span> : List[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
+<dt id="server.GameService.open_games"><code class="name">var <span class="ident">open_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
 <div class="desc"><p>Return all games that meet the client's definition of "not closed".
 Server game states are mapped to client game states as follows:</p>
@@ -2558,7 +2592,7 @@ GameState.INITIALIZING: "closed",
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def open_games(self) -&gt; List[Game]:
+def open_games(self) -&gt; list[Game]:
     &#34;&#34;&#34;
     Return all games that meet the client&#39;s definition of &#34;not closed&#34;.
     Server game states are mapped to client game states as follows:
@@ -2574,7 +2608,7 @@ def open_games(self) -&gt; List[Game]:
             if game.state is GameState.LOBBY or game.state is GameState.LIVE]</code></pre>
 </details>
 </dd>
-<dt id="server.GameService.pending_games"><code class="name">var <span class="ident">pending_games</span> : List[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
+<dt id="server.GameService.pending_games"><code class="name">var <span class="ident">pending_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -2582,7 +2616,7 @@ def open_games(self) -&gt; List[Game]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def pending_games(self) -&gt; List[Game]:
+def pending_games(self) -&gt; list[Game]:
     return [game for game in self._games.values()
             if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]</code></pre>
 </details>
@@ -2591,7 +2625,7 @@ def pending_games(self) -&gt; List[Game]:
 <h3>Methods</h3>
 <dl>
 <dt id="server.GameService.create_game"><code class="name flex">
-<span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: Type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame, visibility=VisibilityState.PUBLIC, host: Optional[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>] = None, name: Optional[str] = None, mapname: Optional[str] = None, password: Optional[str] = None, matchmaker_queue_id: Optional[int] = None, **kwargs)</span>
+<span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame, visibility=VisibilityState.PUBLIC, host: Optional[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>] = None, name: Optional[str] = None, mapname: Optional[str] = None, password: Optional[str] = None, matchmaker_queue_id: Optional[int] = None, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Main entrypoint for creating new games</p></div>
@@ -2602,7 +2636,7 @@ def pending_games(self) -&gt; List[Game]:
 <pre><code class="python">def create_game(
     self,
     game_mode: str,
-    game_class: Type[Game] = CustomGame,
+    game_class: type[Game] = CustomGame,
     visibility=VisibilityState.PUBLIC,
     host: Optional[Player] = None,
     name: Optional[str] = None,
@@ -2695,7 +2729,7 @@ def pending_games(self) -&gt; List[Game]:
 </details>
 </dd>
 <dt id="server.GameService.pop_dirty_games"><code class="name flex">
-<span>def <span class="ident">pop_dirty_games</span></span>(<span>self) ‑> Set[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</span>
+<span>def <span class="ident">pop_dirty_games</span></span>(<span>self) ‑> set[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -2703,7 +2737,7 @@ def pending_games(self) -&gt; List[Game]:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def pop_dirty_games(self) -&gt; Set[Game]:
+<pre><code class="python">def pop_dirty_games(self) -&gt; set[Game]:
     dirty_games = self._dirty_games
     self._dirty_games = set()
 
@@ -2711,7 +2745,7 @@ def pending_games(self) -&gt; List[Game]:
 </details>
 </dd>
 <dt id="server.GameService.pop_dirty_queues"><code class="name flex">
-<span>def <span class="ident">pop_dirty_queues</span></span>(<span>self) ‑> Set[<a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>]</span>
+<span>def <span class="ident">pop_dirty_queues</span></span>(<span>self) ‑> set[<a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -2719,7 +2753,7 @@ def pending_games(self) -&gt; List[Game]:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def pop_dirty_queues(self) -&gt; Set[MatchmakerQueue]:
+<pre><code class="python">def pop_dirty_queues(self) -&gt; set[MatchmakerQueue]:
     dirty_queues = self._dirty_queues
     self._dirty_queues = set()
 
@@ -2856,7 +2890,8 @@ time we need, but which can in principle change over time.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GameStatsService(Service):
+<pre><code class="python">@with_logger
+class GameStatsService(Service):
     def __init__(self, event_service: EventService, achievement_service: AchievementService):
         self._event_service = event_service
         self._achievement_service = achievement_service
@@ -2865,7 +2900,7 @@ time we need, but which can in principle change over time.</p></div>
         self,
         player: Player,
         game: Game,
-        army_stats_list: List
+        army_stats_list: list
     ):
         try:
             await self._process_game_stats(player, game, army_stats_list)
@@ -2882,7 +2917,7 @@ time we need, but which can in principle change over time.</p></div>
         self,
         player: Player,
         game: Game,
-        army_stats_list: List
+        army_stats_list: list
     ):
         stats = None
         number_of_humans = 0
@@ -3159,7 +3194,7 @@ time we need, but which can in principle change over time.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.GameStatsService.process_game_stats"><code class="name flex">
-<span>async def <span class="ident">process_game_stats</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>, army_stats_list: List[~T])</span>
+<span>async def <span class="ident">process_game_stats</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>, army_stats_list: list)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3171,7 +3206,7 @@ time we need, but which can in principle change over time.</p></div>
     self,
     player: Player,
     game: Game,
-    army_stats_list: List
+    army_stats_list: list
 ):
     try:
         await self._process_game_stats(player, game, army_stats_list)
@@ -3209,7 +3244,8 @@ the service will try to download a new file from tue url in <code><a title="serv
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class GeoIpService(Service):
+<pre><code class="python">@with_logger
+class GeoIpService(Service):
     &#34;&#34;&#34;
     Service for managing the GeoIp database. This includes an asyncio crontab
     which periodically checks if the current file is out of date. If it is, then
@@ -3225,12 +3261,12 @@ the service will try to download a new file from tue url in <code><a title="serv
         self.db = None
         self.db_update_time = None
 
-        self.check_geoip_db_file_updated()
-
     def refresh_file_path(self):
         self.file_path = config.GEO_IP_DATABASE_PATH
 
     async def initialize(self) -&gt; None:
+        self.check_geoip_db_file_updated()
+
         await self.check_update_geoip_db()
         # crontab: min hour day month day_of_week
         # Run every Wednesday because GeoLite2 is updated every first Tuesday
@@ -3633,7 +3669,8 @@ statistics, and launches the games.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class LadderService(Service):
+<pre><code class="python">@with_logger
+class LadderService(Service):
     &#34;&#34;&#34;
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates
     statistics, and launches the games.
@@ -3644,11 +3681,11 @@ statistics, and launches the games.</p></div>
         game_service: GameService,
     ):
         self._db = database
-        self._informed_players: Set[Player] = set()
+        self._informed_players: set[Player] = set()
         self.game_service = game_service
         self.queues = {}
 
-        self._searches: Dict[Player, Dict[str, Search]] = defaultdict(dict)
+        self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
 
     async def initialize(self) -&gt; None:
         await self.update_data()
@@ -3699,7 +3736,7 @@ statistics, and launches the games.</p></div>
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
 
-    async def fetch_map_pools(self, conn) -&gt; Dict[int, Tuple[str, List[Map]]]:
+    async def fetch_map_pools(self, conn) -&gt; dict[int, tuple[str, list[Map]]]:
         result = await conn.execute(
             select([
                 map_pool.c.id,
@@ -3804,7 +3841,7 @@ statistics, and launches the games.</p></div>
 
     def start_search(
         self,
-        players: List[Player],
+        players: list[Player],
         queue_name: str,
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
@@ -3971,8 +4008,8 @@ statistics, and launches the games.</p></div>
 
     async def start_game(
         self,
-        team1: List[Player],
-        team2: List[Player],
+        team1: list[Player],
+        team2: list[Player],
         queue: MatchmakerQueue
     ) -&gt; None:
         assert len(team1) == len(team2)
@@ -4105,10 +4142,10 @@ statistics, and launches the games.</p></div>
 
     async def get_game_history(
         self,
-        players: List[Player],
+        players: list[Player],
         queue_id: int,
         limit: int = 3
-    ) -&gt; List[int]:
+    ) -&gt; list[int]:
         async with self._db.acquire() as conn:
             result = []
             for player in players:
@@ -4178,7 +4215,7 @@ statistics, and launches the games.</p></div>
 </details>
 </dd>
 <dt id="server.LadderService.fetch_map_pools"><code class="name flex">
-<span>async def <span class="ident">fetch_map_pools</span></span>(<span>self, conn) ‑> Dict[int, Tuple[str, List[<a title="server.types.Map" href="types.html#server.types.Map">Map</a>]]]</span>
+<span>async def <span class="ident">fetch_map_pools</span></span>(<span>self, conn) ‑> dict[int, tuple[str, list[<a title="server.types.Map" href="types.html#server.types.Map">Map</a>]]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -4186,7 +4223,7 @@ statistics, and launches the games.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def fetch_map_pools(self, conn) -&gt; Dict[int, Tuple[str, List[Map]]]:
+<pre><code class="python">async def fetch_map_pools(self, conn) -&gt; dict[int, tuple[str, list[Map]]]:
     result = await conn.execute(
         select([
             map_pool.c.id,
@@ -4301,7 +4338,7 @@ statistics, and launches the games.</p></div>
 </details>
 </dd>
 <dt id="server.LadderService.get_game_history"><code class="name flex">
-<span>async def <span class="ident">get_game_history</span></span>(<span>self, players: List[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue_id: int, limit: int = 3) ‑> List[int]</span>
+<span>async def <span class="ident">get_game_history</span></span>(<span>self, players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue_id: int, limit: int = 3) ‑> list[int]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -4311,10 +4348,10 @@ statistics, and launches the games.</p></div>
 </summary>
 <pre><code class="python">async def get_game_history(
     self,
-    players: List[Player],
+    players: list[Player],
     queue_id: int,
     limit: int = 3
-) -&gt; List[int]:
+) -&gt; list[int]:
     async with self._db.acquire() as conn:
         result = []
         for player in players:
@@ -4392,7 +4429,7 @@ so it should only perform fast operations.</p></div>
 </details>
 </dd>
 <dt id="server.LadderService.start_game"><code class="name flex">
-<span>async def <span class="ident">start_game</span></span>(<span>self, team1: List[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], team2: List[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> None</span>
+<span>async def <span class="ident">start_game</span></span>(<span>self, team1: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], team2: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -4402,8 +4439,8 @@ so it should only perform fast operations.</p></div>
 </summary>
 <pre><code class="python">async def start_game(
     self,
-    team1: List[Player],
-    team2: List[Player],
+    team1: list[Player],
+    team2: list[Player],
     queue: MatchmakerQueue
 ) -&gt; None:
     assert len(team1) == len(team2)
@@ -4536,7 +4573,7 @@ so it should only perform fast operations.</p></div>
 </details>
 </dd>
 <dt id="server.LadderService.start_search"><code class="name flex">
-<span>def <span class="ident">start_search</span></span>(<span>self, players: List[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue_name: str, on_matched: Callable[[ForwardRef('Search'), ForwardRef('Search')], Any] = &lt;function LadderService.&lt;lambda&gt;&gt;)</span>
+<span>def <span class="ident">start_search</span></span>(<span>self, players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue_name: str, on_matched: Callable[[ForwardRef('Search'), ForwardRef('Search')], Any] = &lt;function LadderService.&lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -4546,7 +4583,7 @@ so it should only perform fast operations.</p></div>
 </summary>
 <pre><code class="python">def start_search(
     self,
-    players: List[Player],
+    players: list[Player],
     queue_name: str,
     on_matched: OnMatchedCallback = lambda _1, _2: None
 ):
@@ -4700,13 +4737,13 @@ and providing an interface to publish messages.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MessageQueueService(Service):
+<pre><code class="python">@with_logger
+class MessageQueueService(Service):
     &#34;&#34;&#34;
     Service handling connection to the message queue
     and providing an interface to publish messages.
     &#34;&#34;&#34;
     def __init__(self) -&gt; None:
-        self._logger.debug(&#34;Message queue service created.&#34;)
         self._connection = None
         self._channel = None
         self._exchanges = {}
@@ -4805,7 +4842,7 @@ and providing an interface to publish messages.</p></div>
         self,
         exchange_name: str,
         routing: str,
-        payload: Dict,
+        payload: dict,
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -&gt; None:
@@ -4878,7 +4915,7 @@ and providing an interface to publish messages.</p></div>
 </details>
 </dd>
 <dt id="server.MessageQueueService.publish"><code class="name flex">
-<span>async def <span class="ident">publish</span></span>(<span>self, exchange_name: str, routing: str, payload: Dict[~KT, ~VT], mandatory: bool = False, delivery_mode: aio_pika.message.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
+<span>async def <span class="ident">publish</span></span>(<span>self, exchange_name: str, routing: str, payload: dict, mandatory: bool = False, delivery_mode: aio_pika.message.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -4890,7 +4927,7 @@ and providing an interface to publish messages.</p></div>
     self,
     exchange_name: str,
     routing: str,
-    payload: Dict,
+    payload: dict,
     mandatory: bool = False,
     delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
 ) -&gt; None:
@@ -4966,7 +5003,8 @@ async def reconnect(self) -&gt; None:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class OAuthService(Service, name=&#34;oauth_service&#34;):
+<pre><code class="python">@with_logger
+class OAuthService(Service, name=&#34;oauth_service&#34;):
     &#34;&#34;&#34;
     Service for managing the OAuth token logins and verification.
     &#34;&#34;&#34;
@@ -5014,6 +5052,7 @@ async def reconnect(self) -&gt; None:
                         jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
                         for jwk in jwks[&#34;keys&#34;]
                     }
+            self._logger.info(&#34;Got public keys from %s&#34;, config.HYDRA_JWKS_URI)
         except Exception:
             self._logger.exception(
                 &#34;Unable to retrieve jwks, token login will be unavailable!&#34;
@@ -5141,6 +5180,7 @@ async def get_public_keys(self) -&gt; dict:
                     jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
                     for jwk in jwks[&#34;keys&#34;]
                 }
+        self._logger.info(&#34;Got public keys from %s&#34;, config.HYDRA_JWKS_URI)
     except Exception:
         self._logger.exception(
             &#34;Unable to retrieve jwks, token login will be unavailable!&#34;
@@ -5171,7 +5211,8 @@ with other players.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class PartyService(Service):
+<pre><code class="python">@with_logger
+class PartyService(Service):
     &#34;&#34;&#34;
     Service responsible for managing the player parties.
 
@@ -5181,8 +5222,8 @@ with other players.</p></div>
 
     def __init__(self, game_service: GameService):
         self.game_service = game_service
-        self.player_parties: Dict[Player, PlayerParty] = {}
-        self._dirty_parties: Set[PlayerParty] = set()
+        self.player_parties: dict[Player, PlayerParty] = {}
+        self._dirty_parties: set[PlayerParty] = set()
 
     async def initialize(self):
         self._update_task = at_interval(1, self.update_dirties)
@@ -5317,7 +5358,7 @@ with other players.</p></div>
 
         self.mark_dirty(party)
 
-    def set_factions(self, player: Player, factions: List[Faction]):
+    def set_factions(self, player: Player, factions: list[Faction]):
         if player not in self.player_parties:
             self.player_parties[player] = PlayerParty(player)
 
@@ -5534,7 +5575,7 @@ with other players.</p></div>
 </details>
 </dd>
 <dt id="server.PartyService.set_factions"><code class="name flex">
-<span>def <span class="ident">set_factions</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, factions: List[<a title="server.factions.Faction" href="factions.html#server.factions.Faction">Faction</a>])</span>
+<span>def <span class="ident">set_factions</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, factions: list[<a title="server.factions.Faction" href="factions.html#server.factions.Faction">Faction</a>])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -5542,7 +5583,7 @@ with other players.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def set_factions(self, player: Player, factions: List[Faction]):
+<pre><code class="python">def set_factions(self, player: Player, factions: list[Faction]):
     if player not in self.player_parties:
         self.player_parties[player] = PlayerParty(player)
 
@@ -5623,7 +5664,8 @@ with other players.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class PlayerService(Service):
+<pre><code class="python">@with_logger
+class PlayerService(Service):
     def __init__(self, database: FAFDatabase):
         self._db = database
         self._players = dict()
@@ -5658,7 +5700,7 @@ with other players.</p></div>
     def mark_dirty(self, player: Player):
         self._dirty_players.add(player)
 
-    def pop_dirty_players(self) -&gt; Set[Player]:
+    def pop_dirty_players(self) -&gt; set[Player]:
         dirty_players = self._dirty_players
         self._dirty_players = set()
 
@@ -5855,25 +5897,15 @@ with other players.</p></div>
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
     async def shutdown(self):
-        tasks = []
         for player in self:
             if player.lobby_connection is not None:
-                tasks.append(
-                    player.lobby_connection.send_warning(
+                with contextlib.suppress(Exception):
+                    player.lobby_connection.write_warning(
                         &#34;The server has been shut down for maintenance, &#34;
                         &#34;but should be back online soon. If you experience any &#34;
                         &#34;problems, please restart your client. &lt;br/&gt;&lt;br/&gt;&#34;
                         &#34;We apologize for this interruption.&#34;
                     )
-                )
-
-        for fut in asyncio.as_completed(tasks):
-            try:
-                await fut
-            except Exception as ex:
-                self._logger.debug(
-                    &#34;Could not send shutdown message to %s: %s&#34;, player, ex
-                )
 
     def on_connection_lost(self, conn: &#34;LobbyConnection&#34;) -&gt; None:
         if not conn.player:
@@ -6039,7 +6071,7 @@ def all_players(self) -&gt; ValuesView[Player]:
 </details>
 </dd>
 <dt id="server.PlayerService.pop_dirty_players"><code class="name flex">
-<span>def <span class="ident">pop_dirty_players</span></span>(<span>self) ‑> Set[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]</span>
+<span>def <span class="ident">pop_dirty_players</span></span>(<span>self) ‑> set[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -6047,7 +6079,7 @@ def all_players(self) -&gt; ValuesView[Player]:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def pop_dirty_players(self) -&gt; Set[Player]:
+<pre><code class="python">def pop_dirty_players(self) -&gt; set[Player]:
     dirty_players = self._dirty_players
     self._dirty_players = set()
 
@@ -6144,7 +6176,8 @@ atomic.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class RatingService(Service):
+<pre><code class="python">@with_logger
+class RatingService(Service):
     &#34;&#34;&#34;
     Service responsible for calculating and saving trueskill rating updates.
     To avoid race conditions, rating updates from a single game ought to be
@@ -6162,8 +6195,8 @@ atomic.</p></div>
         self._accept_input = False
         self._queue = asyncio.Queue()
         self._task = None
-        self._rating_type_ids: Optional[Dict[str, int]] = None
-        self.leaderboards: Dict[str, Leaderboard] = {}
+        self._rating_type_ids: Optional[dict[str, int]] = None
+        self.leaderboards: dict[str, Leaderboard] = {}
         self._message_queue_service = message_queue_service
 
     async def initialize(self) -&gt; None:
@@ -6174,7 +6207,6 @@ atomic.</p></div>
         await self.update_data()
         self._update_cron = aiocron.crontab(&#34;*/10 * * * *&#34;, func=self.update_data)
         self._accept_input = True
-        self._logger.debug(&#34;RatingService starting...&#34;)
         self._task = asyncio.create_task(self._handle_rating_queue())
 
     async def update_data(self):
@@ -6209,7 +6241,7 @@ atomic.</p></div>
                 if init:
                     current.initializer = init
 
-    async def enqueue(self, game_info: Dict) -&gt; None:
+    async def enqueue(self, game_info: dict[str]) -&gt; None:
         if not self._accept_input:
             self._logger.warning(&#34;Dropped rating request %s&#34;, game_info)
             raise ServiceNotReadyError(
@@ -6229,15 +6261,17 @@ atomic.</p></div>
                 self._logger.debug(&#34;Now rating request %s&#34;, summary)
 
                 try:
-                    await self._rate(summary)
+                    # Make sure we finish writing rating changes even if the
+                    # server is shutting down
+                    await asyncio.shield(self._rate(summary))
                 except GameRatingError:
                     self._logger.warning(&#34;Error rating game %s&#34;, summary)
                 except Exception:  # pragma: no cover
                     self._logger.exception(&#34;Failed rating request %s&#34;, summary)
                 else:
                     self._logger.debug(&#34;Done rating request.&#34;)
-
-                self._queue.task_done()
+                finally:
+                    self._queue.task_done()
                 rating_service_backlog.set(self._queue.qsize())
         except asyncio.CancelledError:
             pass
@@ -6309,7 +6343,7 @@ atomic.</p></div>
         conn,
         game_id: int,
         rating_type: str,
-        player_ratings: Dict[PlayerID, PlayerRatings],
+        player_ratings: dict[PlayerID, PlayerRatings],
         rater: GameRater,
         update_game_player_stats: bool = True
     ) -&gt; Optional[GameRatingResult]:
@@ -6393,8 +6427,8 @@ atomic.</p></div>
             )
 
     async def _get_all_player_ratings(
-        self, conn, player_ids: List[PlayerID]
-    ) -&gt; Dict[PlayerID, PlayerRatings]:
+        self, conn, player_ids: list[PlayerID]
+    ) -&gt; dict[PlayerID, PlayerRatings]:
         sql = select([
             leaderboard_rating.c.login_id,
             leaderboard.c.technical_name,
@@ -6423,7 +6457,7 @@ atomic.</p></div>
         rating_type: str,
         old_ratings: RatingDict,
         new_ratings: RatingDict,
-        outcomes: Dict[PlayerID, GameOutcome],
+        outcomes: dict[PlayerID, GameOutcome],
         update_game_player_stats: bool = True
     ) -&gt; None:
         &#34;&#34;&#34;
@@ -6570,7 +6604,7 @@ atomic.</p></div>
         rating_type: str,
         old_ratings: RatingDict,
         new_ratings: RatingDict,
-        outcomes: Dict[PlayerID, GameOutcome],
+        outcomes: dict[PlayerID, GameOutcome],
     ):
         for player_id, new_rating in new_ratings.items():
             if player_id not in outcomes:
@@ -6635,7 +6669,7 @@ atomic.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.RatingService.enqueue"><code class="name flex">
-<span>async def <span class="ident">enqueue</span></span>(<span>self, game_info: Dict[~KT, ~VT]) ‑> None</span>
+<span>async def <span class="ident">enqueue</span></span>(<span>self, game_info: dict[str]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -6643,7 +6677,7 @@ atomic.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def enqueue(self, game_info: Dict) -&gt; None:
+<pre><code class="python">async def enqueue(self, game_info: dict[str]) -&gt; None:
     if not self._accept_input:
         self._logger.warning(&#34;Dropped rating request %s&#34;, game_info)
         raise ServiceNotReadyError(
@@ -6779,7 +6813,7 @@ state, i.e. the same players, games, etc.</p></div>
         twilio_nts: Optional[TwilioNTS],
         loop: asyncio.BaseEventLoop,
         # For testing
-        _override_services: Optional[Dict[str, Service]] = None
+        _override_services: Optional[dict[str, Service]] = None
     ):
         self.name = name
         self._logger = logging.getLogger(self.name)
@@ -6790,7 +6824,7 @@ state, i.e. the same players, games, etc.</p></div>
 
         self.started = False
 
-        self.contexts: Set[ServerContext] = set()
+        self.contexts: set[ServerContext] = set()
 
         self.services = _override_services or create_services({
             &#34;server&#34;: self,
@@ -6832,26 +6866,40 @@ state, i.e. the same players, games, etc.</p></div>
                 )
 
     @synchronizedmethod
-    async def _start_services(self) -&gt; None:
+    async def start_services(self) -&gt; None:
         if self.started:
             return
 
+        num_services = len(self.services)
+        self._logger.debug(&#34;Initializing %s services&#34;, num_services)
+
+        async def initialize(service):
+            start = time.perf_counter()
+            await service.initialize()
+            service._logger.debug(
+                &#34;%s initialized in %0.2f seconds&#34;,
+                service.__class__.__name__,
+                time.perf_counter() - start
+            )
+
         await asyncio.gather(*[
-            service.initialize() for service in self.services.values()
+            initialize(service) for service in self.services.values()
         ])
+
+        self._logger.debug(&#34;Initialized %s services&#34;, num_services)
 
         self.started = True
 
     async def listen(
         self,
-        address: Tuple[str, int],
-        protocol_class: Type[Protocol] = QDataStreamProtocol
+        address: tuple[str, int],
+        protocol_class: type[Protocol] = QDataStreamProtocol
     ) -&gt; ServerContext:
         &#34;&#34;&#34;
         Start listening on a new address.
         &#34;&#34;&#34;
         if not self.started:
-            await self._start_services()
+            await self.start_services()
 
         ctx = ServerContext(
             f&#34;{self.name}[{protocol_class.__name__}]&#34;,
@@ -6866,29 +6914,46 @@ state, i.e. the same players, games, etc.</p></div>
         return ctx
 
     async def shutdown(self):
-        for ctx in self.contexts:
-            ctx.close()
-
-        for ctx in self.contexts:
-            try:
-                await ctx.wait_closed()
-            except Exception:
+        results = await asyncio.gather(
+            *(ctx.stop() for ctx in self.contexts),
+            return_exceptions=True
+        )
+        for result, ctx in zip(results, self.contexts):
+            if isinstance(result, BaseException):
                 self._logger.error(
-                    &#34;Encountered unexpected error when trying to shut down &#34;
-                    &#34;context %s&#34;,
+                    &#34;Unexpected error when stopping context %s&#34;,
                     ctx
                 )
 
-        await asyncio.gather(*[
-            service.shutdown() for service in self.services.values()
-        ])
+        results = await asyncio.gather(
+            *(service.shutdown() for service in self.services.values()),
+            return_exceptions=True
+        )
+        for result, service in zip(results, self.services.values()):
+            if isinstance(result, BaseException):
+                self._logger.error(
+                    &#34;Unexpected error when shutting down service %s&#34;,
+                    service
+                )
 
+        results = await asyncio.gather(
+            *(ctx.shutdown() for ctx in self.contexts),
+            return_exceptions=True
+        )
+        for result, ctx in zip(results, self.contexts):
+            if isinstance(result, BaseException):
+                self._logger.error(
+                    &#34;Unexpected error when shutting down context %s&#34;,
+                    ctx
+                )
+
+        self.contexts.clear()
         self.started = False</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
 <dt id="server.ServerInstance.listen"><code class="name flex">
-<span>async def <span class="ident">listen</span></span>(<span>self, address: Tuple[str, int], protocol_class: Type[<a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>] = server.protocol.qdatastream.QDataStreamProtocol) ‑> <a title="server.servercontext.ServerContext" href="servercontext.html#server.servercontext.ServerContext">ServerContext</a></span>
+<span>async def <span class="ident">listen</span></span>(<span>self, address: tuple[str, int], protocol_class: type[<a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>] = server.protocol.qdatastream.QDataStreamProtocol) ‑> <a title="server.servercontext.ServerContext" href="servercontext.html#server.servercontext.ServerContext">ServerContext</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Start listening on a new address.</p></div>
@@ -6898,14 +6963,14 @@ state, i.e. the same players, games, etc.</p></div>
 </summary>
 <pre><code class="python">async def listen(
     self,
-    address: Tuple[str, int],
-    protocol_class: Type[Protocol] = QDataStreamProtocol
+    address: tuple[str, int],
+    protocol_class: type[Protocol] = QDataStreamProtocol
 ) -&gt; ServerContext:
     &#34;&#34;&#34;
     Start listening on a new address.
     &#34;&#34;&#34;
     if not self.started:
-        await self._start_services()
+        await self.start_services()
 
     ctx = ServerContext(
         f&#34;{self.name}[{protocol_class.__name__}]&#34;,
@@ -6930,24 +6995,76 @@ state, i.e. the same players, games, etc.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def shutdown(self):
-    for ctx in self.contexts:
-        ctx.close()
-
-    for ctx in self.contexts:
-        try:
-            await ctx.wait_closed()
-        except Exception:
+    results = await asyncio.gather(
+        *(ctx.stop() for ctx in self.contexts),
+        return_exceptions=True
+    )
+    for result, ctx in zip(results, self.contexts):
+        if isinstance(result, BaseException):
             self._logger.error(
-                &#34;Encountered unexpected error when trying to shut down &#34;
-                &#34;context %s&#34;,
+                &#34;Unexpected error when stopping context %s&#34;,
                 ctx
             )
 
+    results = await asyncio.gather(
+        *(service.shutdown() for service in self.services.values()),
+        return_exceptions=True
+    )
+    for result, service in zip(results, self.services.values()):
+        if isinstance(result, BaseException):
+            self._logger.error(
+                &#34;Unexpected error when shutting down service %s&#34;,
+                service
+            )
+
+    results = await asyncio.gather(
+        *(ctx.shutdown() for ctx in self.contexts),
+        return_exceptions=True
+    )
+    for result, ctx in zip(results, self.contexts):
+        if isinstance(result, BaseException):
+            self._logger.error(
+                &#34;Unexpected error when shutting down context %s&#34;,
+                ctx
+            )
+
+    self.contexts.clear()
+    self.started = False</code></pre>
+</details>
+</dd>
+<dt id="server.ServerInstance.start_services"><code class="name flex">
+<span>async def <span class="ident">start_services</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@synchronizedmethod
+async def start_services(self) -&gt; None:
+    if self.started:
+        return
+
+    num_services = len(self.services)
+    self._logger.debug(&#34;Initializing %s services&#34;, num_services)
+
+    async def initialize(service):
+        start = time.perf_counter()
+        await service.initialize()
+        service._logger.debug(
+            &#34;%s initialized in %0.2f seconds&#34;,
+            service.__class__.__name__,
+            time.perf_counter() - start
+        )
+
     await asyncio.gather(*[
-        service.shutdown() for service in self.services.values()
+        initialize(service) for service in self.services.values()
     ])
 
-    self.started = False</code></pre>
+    self._logger.debug(&#34;Initialized %s services&#34;, num_services)
+
+    self.started = True</code></pre>
 </details>
 </dd>
 <dt id="server.ServerInstance.write_broadcast"><code class="name flex">
@@ -7211,6 +7328,7 @@ state, i.e. the same players, games, etc.</p></div>
 <ul class="">
 <li><code><a title="server.ServerInstance.listen" href="#server.ServerInstance.listen">listen</a></code></li>
 <li><code><a title="server.ServerInstance.shutdown" href="#server.ServerInstance.shutdown">shutdown</a></code></li>
+<li><code><a title="server.ServerInstance.start_services" href="#server.ServerInstance.start_services">start_services</a></code></li>
 <li><code><a title="server.ServerInstance.write_broadcast" href="#server.ServerInstance.write_broadcast">write_broadcast</a></code></li>
 </ul>
 </li>

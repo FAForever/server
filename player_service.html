@@ -31,8 +31,8 @@
 Manages connected and authenticated players
 &#34;&#34;&#34;
 
-import asyncio
-from typing import Optional, Set, ValuesView
+import contextlib
+from typing import Optional, ValuesView
 
 import aiocron
 from sqlalchemy import and_, select
@@ -98,7 +98,7 @@ class PlayerService(Service):
     def mark_dirty(self, player: Player):
         self._dirty_players.add(player)
 
-    def pop_dirty_players(self) -&gt; Set[Player]:
+    def pop_dirty_players(self) -&gt; set[Player]:
         dirty_players = self._dirty_players
         self._dirty_players = set()
 
@@ -295,25 +295,15 @@ class PlayerService(Service):
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
     async def shutdown(self):
-        tasks = []
         for player in self:
             if player.lobby_connection is not None:
-                tasks.append(
-                    player.lobby_connection.send_warning(
+                with contextlib.suppress(Exception):
+                    player.lobby_connection.write_warning(
                         &#34;The server has been shut down for maintenance, &#34;
                         &#34;but should be back online soon. If you experience any &#34;
                         &#34;problems, please restart your client. &lt;br/&gt;&lt;br/&gt;&#34;
                         &#34;We apologize for this interruption.&#34;
                     )
-                )
-
-        for fut in asyncio.as_completed(tasks):
-            try:
-                await fut
-            except Exception as ex:
-                self._logger.debug(
-                    &#34;Could not send shutdown message to %s: %s&#34;, player, ex
-                )
 
     def on_connection_lost(self, conn: &#34;LobbyConnection&#34;) -&gt; None:
         if not conn.player:
@@ -349,7 +339,8 @@ class PlayerService(Service):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class PlayerService(Service):
+<pre><code class="python">@with_logger
+class PlayerService(Service):
     def __init__(self, database: FAFDatabase):
         self._db = database
         self._players = dict()
@@ -384,7 +375,7 @@ class PlayerService(Service):
     def mark_dirty(self, player: Player):
         self._dirty_players.add(player)
 
-    def pop_dirty_players(self) -&gt; Set[Player]:
+    def pop_dirty_players(self) -&gt; set[Player]:
         dirty_players = self._dirty_players
         self._dirty_players = set()
 
@@ -581,25 +572,15 @@ class PlayerService(Service):
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
     async def shutdown(self):
-        tasks = []
         for player in self:
             if player.lobby_connection is not None:
-                tasks.append(
-                    player.lobby_connection.send_warning(
+                with contextlib.suppress(Exception):
+                    player.lobby_connection.write_warning(
                         &#34;The server has been shut down for maintenance, &#34;
                         &#34;but should be back online soon. If you experience any &#34;
                         &#34;problems, please restart your client. &lt;br/&gt;&lt;br/&gt;&#34;
                         &#34;We apologize for this interruption.&#34;
                     )
-                )
-
-        for fut in asyncio.as_completed(tasks):
-            try:
-                await fut
-            except Exception as ex:
-                self._logger.debug(
-                    &#34;Could not send shutdown message to %s: %s&#34;, player, ex
-                )
 
     def on_connection_lost(self, conn: &#34;LobbyConnection&#34;) -&gt; None:
         if not conn.player:
@@ -765,7 +746,7 @@ def all_players(self) -&gt; ValuesView[Player]:
 </details>
 </dd>
 <dt id="server.player_service.PlayerService.pop_dirty_players"><code class="name flex">
-<span>def <span class="ident">pop_dirty_players</span></span>(<span>self) ‑> Set[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]</span>
+<span>def <span class="ident">pop_dirty_players</span></span>(<span>self) ‑> set[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -773,7 +754,7 @@ def all_players(self) -&gt; ValuesView[Player]:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def pop_dirty_players(self) -&gt; Set[Player]:
+<pre><code class="python">def pop_dirty_players(self) -&gt; set[Player]:
     dirty_players = self._dirty_players
     self._dirty_players = set()
 
