@@ -344,6 +344,7 @@ async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
     await read_until_command(proto1, "match_found", timeout=5)
 
 
+@pytest.mark.flaky
 @fast_forward(200)
 async def test_anti_map_repetition(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)

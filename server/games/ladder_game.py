@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from server.config import config
 from server.players import Player
@@ -37,7 +37,7 @@ class LadderGame(Game):
         """
         return self._results.victory_only_score(army)
 
-    def _outcome_override_hook(self) -> Optional[List[GameOutcome]]:
+    def _outcome_override_hook(self) -> Optional[list[GameOutcome]]:
         if not config.LADDER_1V1_OUTCOME_OVERRIDE or len(self.players) > 2:
             return None
         team_sets = self.get_team_sets()

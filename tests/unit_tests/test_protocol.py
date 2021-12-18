@@ -1,6 +1,7 @@
 import asyncio
 import json
 import struct
+from contextlib import asynccontextmanager, closing
 from socket import socketpair
 
 import pytest
@@ -17,11 +18,15 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture(scope="session")
-def protocol_factory():
+def qstream_protocol_context():
+    @asynccontextmanager
     async def make_protocol():
-        rsock, _ = socketpair()
-        reader, writer = await asyncio.open_connection(sock=rsock)
-        return QDataStreamProtocol(reader, writer)
+        rsock, wsock = socketpair()
+        with closing(wsock):
+            reader, writer = await asyncio.open_connection(sock=rsock)
+            proto = QDataStreamProtocol(reader, writer)
+            yield proto
+            await proto.close()
 
     return make_protocol
 
@@ -29,13 +34,16 @@ def protocol_factory():
 @pytest.fixture
 def socket_pair():
     """A pair of connected sockets."""
-    return socketpair()
+    rsock, wsock = socketpair()
+    with closing(wsock):
+        yield rsock, wsock
 
 
 @pytest.fixture
 async def reader_writer(socket_pair):
     """A connected StreamReader, StreamWriter pair"""
     rsock, _ = socket_pair
+    # Socket closed by socket_pair fixture
     return await asyncio.open_connection(sock=rsock)
 
 
@@ -52,37 +60,39 @@ def writer(reader_writer):
 
 
 @pytest.fixture
-def qstream_protocol(reader, writer):
-    return QDataStreamProtocol(reader, writer)
+async def qstream_protocol(reader, writer):
+    proto = QDataStreamProtocol(reader, writer)
+    yield proto
+    await proto.close()
 
 
 @pytest.fixture(params=(QDataStreamProtocol, SimpleJsonProtocol))
-def protocol(request, reader, writer):
-    return request.param(reader, writer)
+async def protocol(request, reader, writer):
+    proto = request.param(reader, writer)
+    yield proto
+    await proto.close()
 
 
 @pytest.fixture
-def unix_srv(event_loop):
+async def unix_srv():
     async def do_nothing(client_reader, client_writer):
-        await client_reader.read()
+        with closing(client_writer):
+            await client_reader.read()
 
-    srv = event_loop.run_until_complete(
-        asyncio.start_unix_server(do_nothing, "/tmp/test.sock")
-    )
+    srv = await asyncio.start_unix_server(do_nothing, "/tmp/test.sock")
 
-    yield srv
+    with closing(srv):
+        yield srv
 
-    srv.close()
-    event_loop.run_until_complete(srv.wait_closed())
+    await srv.wait_closed()
 
 
 @pytest.fixture
 async def unix_protocol(unix_srv):
     (reader, writer) = await asyncio.open_unix_connection("/tmp/test.sock")
-    protocol = QDataStreamProtocol(reader, writer)
-    yield protocol
-
-    await protocol.close()
+    proto = QDataStreamProtocol(reader, writer)
+    yield proto
+    await proto.close()
 
 
 def st_messages():
@@ -150,13 +160,16 @@ async def test_QDataStreamProtocol_unpacks_evil_qstring(qstream_protocol, reader
     "with": 1000
 })
 @settings(max_examples=300)
-async def test_QDataStreamProtocol_pack_unpack(protocol_factory, message):
-    protocol = await protocol_factory()
-    protocol.reader.feed_data(
-        QDataStreamProtocol.pack_message(json.dumps(message))
-    )
+async def test_QDataStreamProtocol_pack_unpack(
+    qstream_protocol_context,
+    message
+):
+    async with qstream_protocol_context() as protocol:
+        protocol.reader.feed_data(
+            QDataStreamProtocol.pack_message(json.dumps(message))
+        )
 
-    assert message == await protocol.read_message()
+        assert message == await protocol.read_message()
 
 
 @given(message=st_messages())

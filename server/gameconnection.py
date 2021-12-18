@@ -5,7 +5,7 @@ Game communication over GpgNet
 import asyncio
 import contextlib
 import json
-from typing import Any, List
+from typing import Any
 
 from sqlalchemy import select
 
@@ -201,7 +201,7 @@ class GameConnection(GpgNetServerProtocol):
                     offer=False
                 )
 
-    async def handle_action(self, command: str, args: List[Any]):
+    async def handle_action(self, command: str, args: list[Any]):
         """
         Handle GpgNetSend messages, wrapped in the JSON protocol
         """
@@ -249,7 +249,7 @@ class GameConnection(GpgNetServerProtocol):
 
         self._mark_dirty()
 
-    async def handle_game_mods(self, mode: Any, args: List[Any]):
+    async def handle_game_mods(self, mode: Any, args: list[Any]):
         if not self.is_host():
             return
 
@@ -506,7 +506,7 @@ class GameConnection(GpgNetServerProtocol):
             await self.on_connection_lost()
         self._mark_dirty()
 
-    async def handle_game_ended(self, *args:  List[Any]):
+    async def handle_game_ended(self, *args:  list[Any]):
         """
         Signals that the simulation has ended.
         """
@@ -517,28 +517,28 @@ class GameConnection(GpgNetServerProtocol):
         if self.game.ended:
             await self.game.on_game_end()
 
-    async def handle_rehost(self, *args: List[Any]):
+    async def handle_rehost(self, *args: list[Any]):
         """
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
         """
         pass
 
-    async def handle_bottleneck(self, *args: List[Any]):
+    async def handle_bottleneck(self, *args: list[Any]):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         """
         pass
 
-    async def handle_bottleneck_cleared(self, *args: List[Any]):
+    async def handle_bottleneck_cleared(self, *args: list[Any]):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         """
         pass
 
-    async def handle_disconnected(self, *args: List[Any]):
+    async def handle_disconnected(self, *args: list[Any]):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.

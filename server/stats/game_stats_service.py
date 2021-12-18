@@ -1,7 +1,7 @@
-from typing import List
 
 from server.config import config
 from server.core import Service
+from server.decorators import with_logger
 from server.games import FeaturedModType, Game
 from server.games.game_results import ArmyOutcome
 from server.players import Player
@@ -22,7 +22,7 @@ class GameStatsService(Service):
         self,
         player: Player,
         game: Game,
-        army_stats_list: List
+        army_stats_list: list
     ):
         try:
             await self._process_game_stats(player, game, army_stats_list)
@@ -39,7 +39,7 @@ class GameStatsService(Service):
         self,
         player: Player,
         game: Game,
-        army_stats_list: List
+        army_stats_list: list
     ):
         stats = None
         number_of_humans = 0

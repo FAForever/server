@@ -1,11 +1,10 @@
 import json
 import logging
 import time
-from typing import Any, List, Tuple
+from typing import Any
 from unittest import mock
 
 import pytest
-from asynctest import CoroutineMock
 from trueskill import Rating
 
 from server.gameconnection import GameConnection, GameConnectionState
@@ -140,7 +139,7 @@ async def test_missing_teams_marked_invalid(game: Game, game_add_players):
 
 
 async def check_game_settings(
-    game: Game, settings: List[Tuple[str, Any, ValidityState]]
+    game: Game, settings: list[tuple[str, Any, ValidityState]]
 ):
     for key, value, expected in settings:
         old = game.gameOptions.get(key)
@@ -406,7 +405,7 @@ async def test_game_end_when_no_more_connections(
 ):
     game.state = GameState.LOBBY
 
-    game.on_game_end = CoroutineMock()
+    game.on_game_end = mock.AsyncMock()
     mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     game.add_game_connection(mock_game_connection)
     await game.remove_game_connection(mock_game_connection)
@@ -645,7 +644,7 @@ async def test_to_dict(game, player_factory):
 async def test_persist_results_not_called_with_one_player(
     game, player_factory
 ):
-    game.persist_results = CoroutineMock()
+    game.persist_results = mock.AsyncMock()
 
     game.state = GameState.LOBBY
     players = [
@@ -666,7 +665,7 @@ async def test_persist_results_not_called_with_no_results(
     game.state = GameState.LOBBY
     game_add_players(game, 2, team=2)
     game_add_players(game, 2, team=3)
-    game.persist_results = CoroutineMock()
+    game.persist_results = mock.AsyncMock()
     game.launched_at = time.time() - 60 * 20
 
     await game.launch()

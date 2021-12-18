@@ -1,7 +1,7 @@
 import asyncio
+from unittest import mock
 
 import pytest
-from asynctest import CoroutineMock
 
 from server.asyncio_extensions import (
     SpinLock,
@@ -31,7 +31,7 @@ async def raises_custom_error():
 
 
 async def test_gather_without_exceptions():
-    completes_correctly = CoroutineMock()
+    completes_correctly = mock.AsyncMock()
 
     with pytest.raises(CustomError):
         await gather_without_exceptions([
@@ -44,7 +44,7 @@ async def test_gather_without_exceptions():
 
 
 async def test_gather_without_exceptions_subclass():
-    completes_correctly = CoroutineMock()
+    completes_correctly = mock.AsyncMock()
 
     await gather_without_exceptions([
         raises_connection_error(),
@@ -160,8 +160,8 @@ async def test_synchronizedmethod():
     b = Test()
     # Calls to different instances should not block eachother
     await asyncio.wait(
-        [a.sleep_for_1s() for _ in range(500)] +
-        [b.sleep_for_1s() for _ in range(500)],
+        [asyncio.create_task(a.sleep_for_1s()) for _ in range(500)] +
+        [asyncio.create_task(b.sleep_for_1s()) for _ in range(500)],
         timeout=502
     )
 
@@ -187,7 +187,7 @@ async def test_synchronizedmethod_attrname():
     b = Test()
     # Calls to different instances should not block eachother
     await asyncio.wait(
-        [a.sleep_for_1s() for _ in range(500)] +
-        [b.sleep_for_1s() for _ in range(500)],
+        [asyncio.create_task(a.sleep_for_1s()) for _ in range(500)] +
+        [asyncio.create_task(b.sleep_for_1s()) for _ in range(500)],
         timeout=502
     )

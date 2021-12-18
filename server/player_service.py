@@ -2,8 +2,8 @@
 Manages connected and authenticated players
 """
 
-import asyncio
-from typing import Optional, Set, ValuesView
+import contextlib
+from typing import Optional, ValuesView
 
 import aiocron
 from sqlalchemy import and_, select
@@ -69,7 +69,7 @@ class PlayerService(Service):
     def mark_dirty(self, player: Player):
         self._dirty_players.add(player)
 
-    def pop_dirty_players(self) -> Set[Player]:
+    def pop_dirty_players(self) -> set[Player]:
         dirty_players = self._dirty_players
         self._dirty_players = set()
 
@@ -266,25 +266,15 @@ class PlayerService(Service):
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
     async def shutdown(self):
-        tasks = []
         for player in self:
             if player.lobby_connection is not None:
-                tasks.append(
-                    player.lobby_connection.send_warning(
+                with contextlib.suppress(Exception):
+                    player.lobby_connection.write_warning(
                         "The server has been shut down for maintenance, "
                         "but should be back online soon. If you experience any "
                         "problems, please restart your client. <br/><br/>"
                         "We apologize for this interruption."
                     )
-                )
-
-        for fut in asyncio.as_completed(tasks):
-            try:
-                await fut
-            except Exception as ex:
-                self._logger.debug(
-                    "Could not send shutdown message to %s: %s", player, ex
-                )
 
     def on_connection_lost(self, conn: "LobbyConnection") -> None:
         if not conn.player:

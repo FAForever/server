@@ -34,18 +34,6 @@ async def host(proto):
     return msg
 
 
-async def write_without_reading(proto):
-    # It takes quite a lot of spamming for the backpressure handling to take
-    # affect.
-    for _ in range(20_000):
-        await proto.send_message({
-            "command": "matchmaker_info",
-            "This is just to increase the message size": "DATA" * 1024
-        })
-
-    pytest.fail("The server did not apply backpressure to a spammer")
-
-
 @pytest.mark.slow
 @fast_forward(300)
 async def test_game_info_broadcast_on_connection_error(
@@ -131,9 +119,6 @@ async def test_game_info_broadcast_on_connection_error(
 
 @fast_forward(30)
 async def test_backpressure_handling(lobby_server, caplog):
-    # TRACE will be spammed with thousands of messages
-    caplog.set_level(logging.DEBUG)
-
     _, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
@@ -142,10 +127,15 @@ async def test_backpressure_handling(lobby_server, caplog):
     proto.writer.transport.set_write_buffer_limits(high=0)
     proto.reader._limit = 0
 
+    # TRACE will be spammed with thousands of messages
+    caplog.set_level(logging.DEBUG)
+
+    # It takes quite a lot of spamming for the read buffer to fill up.
+    for _ in range(20_000):
+        proto.write_message({
+            "command": "matchmaker_info",
+            "This is just to increase the message size": "DATA" * 1024
+        })
+
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(
-            # Due to some bizzare interaction, cancellation can hang so we
-            # prevent it with `shield`
-            asyncio.shield(write_without_reading(proto)),
-            timeout=10
-        )
+        await asyncio.wait_for(proto.drain(), timeout=10)

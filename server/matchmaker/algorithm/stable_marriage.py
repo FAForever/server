@@ -1,17 +1,18 @@
 import itertools
 import math
 import statistics as stats
-from typing import Dict, Iterable, List, Set, Tuple
+from typing import Iterable
 
 from ...decorators import with_logger
 from ..search import Match, Search
 from .matchmaker import Matchmaker, MatchmakingPolicy1v1
 from .random_newbies import RandomlyMatchNewbies
 
-WeightedGraph = Dict[Search, List[Tuple[Search, float]]]
+WeightedGraph = dict[Search, list[tuple[Search, float]]]
+
 
 class StableMarriage(MatchmakingPolicy1v1):
-    def find(self, ranks: WeightedGraph) -> Dict[Search, Search]:
+    def find(self, ranks: WeightedGraph) -> dict[Search, Search]:
         """Perform the stable matching algorithm until a maximal stable matching
         is found.
         """
@@ -80,7 +81,7 @@ class StableMarriageMatchmaker(Matchmaker):
     """
     def find(
         self, searches: Iterable[Search], team_size: int
-    ) -> Tuple[List[Match], List[Search]]:
+    ) -> tuple[list[Match], list[Search]]:
         if team_size != 1:
             self._logger.error(
                 "Invalid team size %i for stable marriage matchmaker will be ignored",
@@ -88,7 +89,7 @@ class StableMarriageMatchmaker(Matchmaker):
             )
 
         searches = list(searches)
-        matches: Dict[Search, Search] = {}
+        matches: dict[Search, Search] = {}
 
         self._logger.debug("Matching with stable marriage...")
         if len(searches) < 30:
@@ -109,8 +110,8 @@ class StableMarriageMatchmaker(Matchmaker):
         return self._remove_duplicates(matches), unmatched_searches
 
     @staticmethod
-    def _remove_duplicates(matches: Dict[Search, Search]) -> List[Match]:
-        matches_set: Set[Match] = set()
+    def _remove_duplicates(matches: dict[Search, Search]) -> list[Match]:
+        matches_set: set[Match] = set()
         for s1, s2 in matches.items():
             if (s1, s2) in matches_set or (s2, s1) in matches_set:
                 continue
@@ -121,7 +122,7 @@ class StableMarriageMatchmaker(Matchmaker):
 @with_logger
 class _MatchingGraph:
     @staticmethod
-    def build_full(searches: List[Search]) -> WeightedGraph:
+    def build_full(searches: list[Search]) -> WeightedGraph:
         """A graph in adjacency list representation, whose nodes are the searches
         and whose edges are the possible matchings for each node. Checks every
         possible edge for inclusion in the graph.
@@ -150,7 +151,7 @@ class _MatchingGraph:
         return adj_list
 
     @staticmethod
-    def build_fast(searches: List[Search]) -> WeightedGraph:
+    def build_fast(searches: list[Search]) -> WeightedGraph:
         """Builds approximately the same graph as `build_full`, but does not
         check every possible edge.
 

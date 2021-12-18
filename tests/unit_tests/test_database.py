@@ -1,6 +1,5 @@
 from unittest import mock
 
-import asynctest
 import pymysql
 import pytest
 from sqlalchemy.exc import OperationalError
@@ -13,7 +12,7 @@ from tests.utils import fast_forward
 @fast_forward(10)
 async def test_deadlock_retry_execute():
     mock_conn = mock.Mock()
-    mock_conn._execute = asynctest.CoroutineMock(
+    mock_conn._execute = mock.AsyncMock(
         side_effect=OperationalError(
             "QUERY", {}, pymysql.err.OperationalError(-1, "Deadlock found")
         )
@@ -39,7 +38,7 @@ async def test_deadlock_retry_execute_success():
             )
 
     mock_conn = mock.Mock()
-    mock_conn._execute = asynctest.CoroutineMock(side_effect=_execute)
+    mock_conn._execute = mock.AsyncMock(side_effect=_execute)
 
     await AsyncConnection._deadlock_retry_execute(mock_conn, "foo")
 

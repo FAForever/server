@@ -1,10 +1,9 @@
 import json
 from collections import defaultdict
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, NamedTuple, Optional
 from unittest import mock
 
 import pytest
-from asynctest import CoroutineMock
 
 from server.games import (
     CustomGame,
@@ -35,14 +34,14 @@ class PersistenceError(Exception):
 
 class PersistedResults(NamedTuple):
     rating_type: Optional[str]
-    ratings: Dict[int, Any]
-    outcomes: Dict[int, Any]
+    ratings: dict[int, Any]
+    outcomes: dict[int, Any]
 
 
 @pytest.fixture
 async def rating_service(database, player_service):
     mock_message_queue_service = mock.Mock()
-    mock_message_queue_service.publish = CoroutineMock()
+    mock_message_queue_service.publish = mock.AsyncMock()
 
     mock_service = RatingService(
         database,
@@ -50,8 +49,8 @@ async def rating_service(database, player_service):
         mock_message_queue_service
     )
 
-    mock_service._persist_rating_changes = CoroutineMock()
-    mock_service._create_initial_ratings = CoroutineMock()
+    mock_service._persist_rating_changes = mock.AsyncMock()
+    mock_service._create_initial_ratings = mock.AsyncMock()
 
     mock_ratings = defaultdict(dict)
 
@@ -82,9 +81,7 @@ async def rating_service(database, player_service):
         return player_ratings
 
     mock_service.set_mock_rating = set_mock_rating
-    mock_service._get_all_player_ratings = CoroutineMock(
-        wraps=get_mock_ratings
-    )
+    mock_service._get_all_player_ratings = mock.AsyncMock(wraps=get_mock_ratings)
 
     await mock_service.initialize()
 
@@ -93,7 +90,7 @@ async def rating_service(database, player_service):
     mock_service.kill()
 
 
-def get_persisted_results(mock_service) -> List[PersistedResults]:
+def get_persisted_results(mock_service) -> list[PersistedResults]:
     args = mock_service._persist_rating_changes.await_args_list
 
     return [
@@ -180,7 +177,7 @@ def add_players_with_rating(player_factory, game, ratings, teams):
 async def report_results(game, message_list):
     """
     Parameter message_list of the form
-    List[(reporter_player_object, army_id_to_report_for, outcome_string, score)]
+    list[(reporter_player_object, army_id_to_report_for, outcome_string, score)]
     """
     for player, army_id, outcome_string, score in message_list:
         await game.add_result(player, army_id, outcome_string, score)
@@ -1015,7 +1012,7 @@ async def test_single_wrong_report_still_rated_correctly(game: Game, player_fact
     # based on replay with UID 11255492
 
     # Mocking out database calls, since not all player IDs exist.
-    game.update_game_player_stats = CoroutineMock()
+    game.update_game_player_stats = mock.AsyncMock()
 
     game.state = GameState.LOBBY
 
@@ -1095,8 +1092,7 @@ async def do_test_rating_adjustment(
         assert result.ratings == expected.ratings
         team1_outcomes = {id: GameOutcome.VICTORY for id in team1}
         team2_outcomes = {id: GameOutcome.DEFEAT for id in team2}
-        # TODO: When updating from 3.7 to 3.9, use dict union {} | {}
-        assert result.outcomes == {**team1_outcomes, **team2_outcomes}
+        assert result.outcomes == team1_outcomes | team2_outcomes
 
 
 # These ratings show up a lot because our tests have a lot of new players

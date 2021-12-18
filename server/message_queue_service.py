@@ -4,7 +4,6 @@ Interfaces with RabbitMQ
 
 import asyncio
 import json
-from typing import Dict
 
 import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
@@ -27,7 +26,6 @@ class MessageQueueService(Service):
     and providing an interface to publish messages.
     """
     def __init__(self) -> None:
-        self._logger.debug("Message queue service created.")
         self._connection = None
         self._channel = None
         self._exchanges = {}
@@ -126,7 +124,7 @@ class MessageQueueService(Service):
         self,
         exchange_name: str,
         routing: str,
-        payload: Dict,
+        payload: dict,
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -> None:

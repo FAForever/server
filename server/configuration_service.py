@@ -12,13 +12,12 @@ from .decorators import with_logger
 @with_logger
 class ConfigurationService(Service):
     def __init__(self) -> None:
-        self._logger.info("Configuration service created.")
         self._store = config
         self._task = None
 
     async def initialize(self) -> None:
         self._task = asyncio.create_task(self._worker_loop())
-        self._logger.info("Configuration service started.")
+        self._logger.info("Configuration service initialized")
 
     async def _worker_loop(self) -> None:
         while True:

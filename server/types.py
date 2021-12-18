@@ -4,7 +4,7 @@ General type definitions
 
 import base64
 import random
-from typing import Any, Dict, NamedTuple, Optional
+from typing import Any, NamedTuple, Optional, Protocol
 
 
 class Address(NamedTuple):
@@ -27,7 +27,14 @@ class GameLaunchOptions(NamedTuple):
     faction: Optional[int] = None
     expected_players: Optional[int] = None
     map_position: Optional[int] = None
-    game_options: Optional[Dict[str, Any]] = None
+    game_options: Optional[dict[str, Any]] = None
+
+
+class MapPoolMap(Protocol):
+    id: int
+    weight: int
+
+    def get_map(self) -> "Map": ...
 
 
 class Map(NamedTuple):
@@ -40,7 +47,6 @@ class Map(NamedTuple):
         return self
 
 
-# FIXME: Use typing.Protocol in python3.8 to subtype with MAP
 class NeroxisGeneratedMap(NamedTuple):
     id: int
     version: str
@@ -75,8 +81,8 @@ class NeroxisGeneratedMap(NamedTuple):
 
     def get_map(self) -> Map:
         """
-            Generate a map name based on the version and parameters. If invalid parameters are specified
-            hand back None
+        Generate a map name based on the version and parameters. If invalid
+        parameters are specified hand back None
         """
         seed_bytes = random.getrandbits(64).to_bytes(8, "big")
         size_byte = (self.map_size_pixels // 64).to_bytes(1, "big")

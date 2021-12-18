@@ -2,7 +2,6 @@ import asyncio
 from unittest import mock
 
 import pytest
-from asynctest import CoroutineMock, create_autospec, exhaust_callbacks
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -15,7 +14,7 @@ from server.players import PlayerState
 from server.rating import RatingType
 from server.types import Map, NeroxisGeneratedMap
 from tests.conftest import make_player
-from tests.utils import autocontext, fast_forward
+from tests.utils import autocontext, exhaust_callbacks, fast_forward
 
 from .strategies import st_players
 
@@ -26,7 +25,7 @@ async def test_queue_initialization(database, game_service):
     ladder_service = LadderService(database, game_service)
 
     def make_mock_queue(*args, **kwargs):
-        queue = create_autospec(MatchmakerQueue)
+        queue = mock.create_autospec(MatchmakerQueue)
         queue.map_pools = {}
         return queue
 
@@ -119,7 +118,7 @@ async def test_load_from_database_new_data(ladder_service, database):
     assert test_queue.name == "test"
     assert test_queue._is_running
     # Queue pop times are 1 second for tests
-    test_queue.find_matches = CoroutineMock()
+    test_queue.find_matches = mock.AsyncMock()
     await asyncio.sleep(1.5)
 
     test_queue.find_matches.assert_called()
@@ -140,11 +139,11 @@ async def test_start_game_1v1(
     ladder_service, game_service = ladder_and_game_service
     queue = ladder_service.queues["ladder1v1"]
 
-    monkeypatch.setattr(LadderGame, "wait_hosted", CoroutineMock())
-    monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
-    monkeypatch.setattr(LadderGame, "timeout_game", CoroutineMock())
+    monkeypatch.setattr(LadderGame, "wait_hosted", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
     for player in (player1, player2):
-        player.lobby_connection.launch_game = CoroutineMock(
+        player.lobby_connection.launch_game = mock.AsyncMock(
             spec=LobbyConnection.launch_game
         )
 
@@ -172,9 +171,9 @@ async def test_start_game_with_game_options(
     p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
     p2 = player_factory("Rhiza", player_id=2, lobby_connection_spec="auto")
 
-    monkeypatch.setattr(LadderGame, "wait_hosted", CoroutineMock())
-    monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
-    monkeypatch.setattr(LadderGame, "timeout_game", CoroutineMock())
+    monkeypatch.setattr(LadderGame, "wait_hosted", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
 
     # We're cheating a little bit here for simplicity of the test. The queue
     # is actually set up to be 3v3 but `start_game` doesn't care.
@@ -200,8 +199,8 @@ async def test_start_game_timeout(
     p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
     p2 = player_factory("Rhiza", player_id=2, lobby_connection_spec="auto")
 
-    monkeypatch.setattr(LadderGame, "timeout_game", CoroutineMock())
-    monkeypatch.setattr(LadderGame, "on_game_end", CoroutineMock())
+    monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "on_game_end", mock.AsyncMock())
 
     await ladder_service.start_game([p1], [p2], queue)
 
@@ -236,11 +235,11 @@ async def test_start_game_with_teams(
     ladder_service, game_service = ladder_and_game_service
     queue = ladder_service.queues["tmm2v2"]
 
-    monkeypatch.setattr(LadderGame, "wait_hosted", CoroutineMock())
-    monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
-    monkeypatch.setattr(LadderGame, "timeout_game", CoroutineMock())
+    monkeypatch.setattr(LadderGame, "wait_hosted", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
     for player in (player1, player2, player3, player4):
-        player.lobby_connection.launch_game = CoroutineMock(
+        player.lobby_connection.launch_game = mock.AsyncMock(
             spec=LobbyConnection.launch_game
         )
 
@@ -307,8 +306,8 @@ async def test_start_game_start_spots(
         max_rating=None
     )
 
-    monkeypatch.setattr(LadderGame, "wait_hosted", CoroutineMock())
-    monkeypatch.setattr(LadderGame, "wait_launched", CoroutineMock())
+    monkeypatch.setattr(LadderGame, "wait_hosted", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock())
     await ladder_service.start_game(team1, team2, queue)
 
     game = game_service[game_service.game_id_counter]
@@ -356,13 +355,13 @@ async def test_search_info_message(
         player_id=1,
         ladder_rating=(1000, 10)
     )
-    p1.write_message = CoroutineMock()
+    p1.write_message = mock.Mock()
     p2 = player_factory(
         "Rhiza",
         player_id=2,
         ladder_rating=(1000, 10)
     )
-    p2.write_message = CoroutineMock()
+    p2.write_message = mock.Mock()
 
     ladder_service.start_search([p1, p2], "ladder1v1")
 
@@ -681,8 +680,8 @@ async def test_start_game_called_on_match(
         ladder_games=0
     )
 
-    ladder_service.start_game = CoroutineMock()
-    ladder_service.write_rating_progress = CoroutineMock()
+    ladder_service.start_game = mock.AsyncMock()
+    ladder_service.write_rating_progress = mock.Mock()
 
     ladder_service.start_search([p1], "ladder1v1")
     ladder_service.start_search([p2], "ladder1v1")
@@ -895,7 +894,7 @@ async def test_write_rating_progress_message(
     player_factory
 ):
     player = player_factory(ladder_rating=(1500, 500))
-    player.write_message = CoroutineMock()
+    player.write_message = mock.Mock()
 
     ladder_service.write_rating_progress(player, RatingType.LADDER_1V1)
 
@@ -919,7 +918,7 @@ async def test_write_rating_progress_message_2(
     player_factory
 ):
     player = player_factory(ladder_rating=(1500, 400.1235))
-    player.write_message = CoroutineMock()
+    player.write_message = mock.Mock()
 
     ladder_service.write_rating_progress(player, RatingType.LADDER_1V1)
 
@@ -937,7 +936,7 @@ async def test_write_rating_progress_other_rating(
         ladder_rating=(1500, 500),
         global_rating=(1500, 400.1235)
     )
-    player.write_message = CoroutineMock()
+    player.write_message = mock.Mock()
 
     # There's no reason we would call it with global, but the logic is the same
     # and global is an available rating that's not ladder

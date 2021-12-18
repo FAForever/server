@@ -15,8 +15,15 @@ async def null_callback(*args):
 
 def wrap_func(func):
     """wrap in a coroutine"""
-    if not asyncio.iscoroutinefunction(func):
-        return asyncio.coroutine(func)
+    if isinstance(func, functools.partial):
+        _func = func.func
+    else:
+        _func = func
+    if not asyncio.iscoroutinefunction(_func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
     return func
 
 
@@ -62,7 +69,7 @@ class Timer(object):
         """Called. Take care of exceptions using gather"""
         asyncio.gather(
             self.cron(*args, **kwargs),
-            loop=self.loop, return_exceptions=True
+            return_exceptions=True
         ).add_done_callback(self.set_result)
 
     def set_result(self, result):

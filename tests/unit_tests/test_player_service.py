@@ -1,8 +1,9 @@
-import asynctest
+from unittest import mock
+
 import pytest
-from mock import Mock
 
 from server.lobbyconnection import LobbyConnection
+from server.protocol import DisconnectedError
 from server.rating import RatingType
 
 pytestmark = pytest.mark.asyncio
@@ -31,7 +32,7 @@ async def test_fetch_player_data_legacy_rating(player_factory, player_service):
 
 async def test_fetch_ratings_nonexistent(player_factory, player_service):
     player = player_factory(player_id=-1)
-    player_service._logger = Mock()
+    player_service._logger = mock.Mock()
 
     async with player_service._db.acquire() as conn:
         await player_service._fetch_player_ratings(player, conn)
@@ -44,7 +45,7 @@ async def test_fetch_ratings_partially_nonexistent(player_factory, player_servic
     # Player 52 should not have leaderboard_rating entries
     # and no ladder1v1_rating entry, but a global_rating entry
     player = player_factory(player_id=52)
-    player_service._logger = Mock()
+    player_service._logger = mock.Mock()
 
     async with player_service._db.acquire() as conn:
         await player_service._fetch_player_ratings(player, conn)
@@ -119,23 +120,23 @@ async def test_update_data(player_service):
 
 async def test_broadcast_shutdown(player_factory, player_service):
     player = player_factory()
-    lconn = asynctest.create_autospec(LobbyConnection)
+    lconn = mock.create_autospec(LobbyConnection)
     player.lobby_connection = lconn
     player_service[0] = player
 
     await player_service.shutdown()
 
-    player.lobby_connection.send_warning.assert_called_once()
+    player.lobby_connection.write_warning.assert_called_once()
 
 
 async def test_broadcast_shutdown_error(player_factory, player_service):
     player = player_factory()
-    lconn = asynctest.create_autospec(LobbyConnection)
-    lconn.send_warning.side_effect = ValueError
+    lconn = mock.create_autospec(LobbyConnection)
+    lconn.write_warning.side_effect = DisconnectedError
     player.lobby_connection = lconn
 
     player_service[0] = player
 
     await player_service.shutdown()
 
-    player.lobby_connection.send_warning.assert_called_once()
+    player.lobby_connection.write_warning.assert_called_once()

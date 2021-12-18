@@ -4,14 +4,12 @@ import json
 import logging
 import textwrap
 from collections import defaultdict
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Callable
 from unittest import mock
 
 import aio_pika
-import asynctest
 import pytest
 from aiohttp import web
-from asynctest import exhaust_callbacks
 
 from server import (
     BroadcastService,
@@ -26,11 +24,12 @@ from server.control import ControlServer
 from server.db.models import login
 from server.protocol import Protocol
 from server.servercontext import ServerContext
+from tests.utils import exhaust_callbacks
 
 
 @pytest.fixture
 def mock_games():
-    return asynctest.create_autospec(GameService)
+    return mock.create_autospec(GameService)
 
 
 @pytest.fixture
@@ -153,12 +152,12 @@ async def lobby_server(
 
         yield ctx
 
-        ctx.close()
+        await ctx.stop()
+        await ctx.shutdown()
         # Close connected protocol objects
         # https://github.com/FAForever/server/issues/717
         for proto in ctx.__connected_client_protos:
-            proto.writer.close()
-        await ctx.wait_closed()
+            proto.abort()
         await exhaust_callbacks(event_loop)
 
 
@@ -292,7 +291,7 @@ async def connect_client(server: ServerContext) -> Protocol:
 
 
 async def perform_login(
-    proto: Protocol, credentials: Tuple[str, str]
+    proto: Protocol, credentials: tuple[str, str]
 ) -> None:
     login, pw = credentials
     pw_hash = hashlib.sha256(pw.encode("utf-8"))
@@ -308,8 +307,8 @@ async def perform_login(
 
 async def _read_until(
     proto: Protocol,
-    pred: Callable[[Dict[str, Any]], bool]
-) -> Dict[str, Any]:
+    pred: Callable[[dict[str, Any]], bool]
+) -> dict[str, Any]:
     while True:
         msg = await proto.read_message()
         try:
@@ -327,9 +326,9 @@ async def _read_until(
 
 async def read_until(
     proto: Protocol,
-    pred: Callable[[Dict[str, Any]], bool],
+    pred: Callable[[dict[str, Any]], bool],
     timeout: float = 60
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return await asyncio.wait_for(_read_until(proto, pred), timeout=timeout)
 
 
@@ -338,7 +337,7 @@ async def read_until_command(
     command: str,
     timeout: float = 60,
     **kwargs
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     kwargs["command"] = command
     return await asyncio.wait_for(
         _read_until(
@@ -377,11 +376,8 @@ async def channel():
     connection = await aio_pika.connect(
         f"amqp://{config.MQ_USER}:{config.MQ_PASSWORD}@localhost/{config.MQ_VHOST}"
     )
-    channel = await connection.channel()
-
-    yield channel
-
-    await connection.close()
+    async with connection, connection.channel() as channel:
+        yield channel
 
 
 async def connect_mq_consumer(server, channel, routing_key):

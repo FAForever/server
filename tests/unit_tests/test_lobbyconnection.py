@@ -1,12 +1,9 @@
 import re
 from hashlib import sha256
 from unittest import mock
-from unittest.mock import Mock
 
-import asynctest
 import pytest
 from aiohttp import web
-from asynctest import CoroutineMock
 from sqlalchemy import and_, select
 
 from server.config import config
@@ -65,27 +62,27 @@ def mock_player(player_factory):
 
 @pytest.fixture
 def mock_nts_client():
-    return asynctest.create_autospec(TwilioNTS)
+    return mock.create_autospec(TwilioNTS)
 
 
 @pytest.fixture
 def mock_players():
-    return asynctest.create_autospec(PlayerService)
+    return mock.create_autospec(PlayerService)
 
 
 @pytest.fixture
 def mock_games():
-    return asynctest.create_autospec(GameService)
+    return mock.create_autospec(GameService)
 
 
 @pytest.fixture
 def mock_protocol():
-    return asynctest.create_autospec(QDataStreamProtocol)
+    return mock.create_autospec(QDataStreamProtocol(mock.Mock(), mock.Mock()))
 
 
 @pytest.fixture
 def mock_geoip():
-    return asynctest.create_autospec(GeoIpService)
+    return mock.create_autospec(GeoIpService)
 
 
 @pytest.fixture
@@ -106,15 +103,15 @@ def lobbyconnection(
         game_service=mock_games,
         players=mock_players,
         nts_client=mock_nts_client,
-        ladder_service=asynctest.create_autospec(LadderService),
-        party_service=asynctest.create_autospec(PartyService),
-        rating_service=rating_service,
-        oauth_service=asynctest.create_autospec(OAuthService),
+        ladder_service=mock.create_autospec(LadderService),
+        party_service=mock.create_autospec(PartyService),
+        oauth_service=mock.create_autospec(OAuthService),
+        rating_service=rating_service
     )
 
     lc.player = mock_player
     lc.protocol = mock_protocol
-    lc.player_service.fetch_player_data = CoroutineMock()
+    lc.player_service.fetch_player_data = mock.AsyncMock()
     lc.peer_address = Address("127.0.0.1", 1234)
     lc._authenticated = True
     return lc
@@ -149,7 +146,7 @@ def policy_server(event_loop):
 
 async def test_unauthenticated_calls_abort(lobbyconnection, test_game_info):
     lobbyconnection._authenticated = False
-    lobbyconnection.abort = CoroutineMock()
+    lobbyconnection.abort = mock.AsyncMock()
 
     await lobbyconnection.on_message_received({
         "command": "game_host",
@@ -162,8 +159,8 @@ async def test_unauthenticated_calls_abort(lobbyconnection, test_game_info):
 
 
 async def test_bad_command_calls_abort(lobbyconnection):
-    lobbyconnection.send = CoroutineMock()
-    lobbyconnection.abort = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
+    lobbyconnection.abort = mock.AsyncMock()
 
     await lobbyconnection.on_message_received({
         "command": "this_isnt_real"
@@ -174,7 +171,7 @@ async def test_bad_command_calls_abort(lobbyconnection):
 
 
 async def test_command_pong_does_nothing(lobbyconnection):
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
 
     await lobbyconnection.on_message_received({
         "command": "pong"
@@ -184,7 +181,7 @@ async def test_command_pong_does_nothing(lobbyconnection):
 
 
 async def test_command_create_account_returns_error(lobbyconnection):
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
 
     await lobbyconnection.on_message_received({
         "command": "create_account"
@@ -199,7 +196,7 @@ async def test_command_create_account_returns_error(lobbyconnection):
 
 
 async def test_double_login(lobbyconnection, mock_players, player_factory):
-    lobbyconnection.check_policy_conformity = CoroutineMock(return_value=True)
+    lobbyconnection.check_policy_conformity = mock.AsyncMock(return_value=True)
     old_player = player_factory(lobby_connection_spec="auto")
     old_player.lobby_connection.player = old_player
     mock_players.get_player.return_value = old_player
@@ -221,8 +218,8 @@ async def test_double_login(lobbyconnection, mock_players, player_factory):
 
 
 async def test_double_login_disconnected(lobbyconnection, mock_players, player_factory):
-    lobbyconnection.abort = CoroutineMock()
-    lobbyconnection.check_policy_conformity = CoroutineMock(return_value=True)
+    lobbyconnection.abort = mock.AsyncMock()
+    lobbyconnection.check_policy_conformity = mock.AsyncMock(return_value=True)
     old_player = player_factory(lobby_connection_spec="auto")
     mock_players.get_player.return_value = old_player
 
@@ -264,11 +261,11 @@ async def test_command_game_host_creates_game(
 
 
 async def test_launch_game(lobbyconnection, game, player_factory):
-    old_game_conn = asynctest.create_autospec(GameConnection)
+    old_game_conn = mock.create_autospec(GameConnection)
 
     lobbyconnection.player = player_factory()
     lobbyconnection.game_connection = old_game_conn
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
     await lobbyconnection.launch_game(game)
 
     # Verify all side effects of launch_game here
@@ -288,7 +285,7 @@ async def test_command_game_host_creates_correct_game(
     players.hosting.state = PlayerState.IDLE
 
     lobbyconnection.game_service = game_service
-    lobbyconnection.launch_game = CoroutineMock()
+    lobbyconnection.launch_game = mock.AsyncMock()
 
     await lobbyconnection.on_message_received({
         "command": "game_host",
@@ -309,7 +306,7 @@ async def test_command_game_join_calls_join_game(
     players,
     game_stats_service
 ):
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
     game = Game(42, database, game_service, game_stats_service)
     game.state = GameState.LOBBY
@@ -349,7 +346,7 @@ async def test_command_game_join_uid_as_str(
     players,
     game_stats_service
 ):
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
     game = Game(42, database, game_service, game_stats_service)
     game.state = GameState.LOBBY
@@ -388,7 +385,7 @@ async def test_command_game_join_without_password(
     players,
     game_stats_service
 ):
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game)
     game.state = GameState.LOBBY
@@ -420,7 +417,7 @@ async def test_command_game_join_game_not_found(
     test_game_info,
     players
 ):
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
     lobbyconnection.player = players.joining
     players.joining.state = PlayerState.IDLE
@@ -443,7 +440,7 @@ async def test_command_game_join_game_bad_init_mode(
     test_game_info,
     players
 ):
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game)
     game.state = GameState.LOBBY
@@ -469,7 +466,7 @@ async def test_command_game_join_game_bad_init_mode(
 async def test_command_game_host_calls_host_game_invalid_title(
     lobbyconnection, mock_games, test_game_info_invalid
 ):
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
     mock_games.create_game = mock.Mock()
     await lobbyconnection.on_message_received({
         "command": "game_host",
@@ -481,7 +478,7 @@ async def test_command_game_host_calls_host_game_invalid_title(
 
 
 async def test_abort(mocker, lobbyconnection):
-    lobbyconnection.protocol.close = CoroutineMock()
+    lobbyconnection.protocol.close = mock.AsyncMock()
     await lobbyconnection.abort()
 
     lobbyconnection.protocol.close.assert_any_call()
@@ -493,7 +490,7 @@ async def test_send_game_list(mocker, database, lobbyconnection, game_stats_serv
                    mock.create_autospec(Game(22, database, mock.Mock(), game_stats_service))
 
     games.open_games = [game1, game2]
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
 
     await lobbyconnection.send_game_list()
 
@@ -597,8 +594,8 @@ async def test_command_admin_closeFA(lobbyconnection, player_factory):
 
 
 async def test_game_subscription(lobbyconnection: LobbyConnection):
-    game = Mock()
-    game.handle_action = CoroutineMock()
+    game = mock.Mock()
+    game.handle_action = mock.AsyncMock()
     lobbyconnection.game_connection = game
 
     await lobbyconnection.on_message_received({
@@ -611,7 +608,7 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
 
 
 async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection):
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.player.id = 2  # Dostya test user
 
     await lobbyconnection.on_message_received({
@@ -702,8 +699,8 @@ async def test_command_ice_servers(
     lobbyconnection: LobbyConnection,
     mock_nts_client
 ):
-    lobbyconnection.send = CoroutineMock()
-    lobbyconnection.coturn_generator.server_tokens = Mock(
+    lobbyconnection.send = mock.AsyncMock()
+    lobbyconnection.coturn_generator.server_tokens = mock.Mock(
         return_value=["coturn_tokens"]
     )
     mock_nts_client.server_tokens.return_value = ["twilio_tokens"]
@@ -728,7 +725,7 @@ async def test_broadcast(lobbyconnection: LobbyConnection, player_factory):
         tuna.id: tuna
     }
     lobbyconnection.player_service.__iter__.side_effect = data.values().__iter__
-    lobbyconnection.write_warning = Mock()
+    lobbyconnection.write_warning = mock.Mock()
 
     await lobbyconnection.on_message_received({
         "command": "admin",
@@ -753,7 +750,7 @@ async def test_broadcast_during_disconnect(lobbyconnection: LobbyConnection, pla
         tuna.id: tuna
     }
     lobbyconnection.player_service.__iter__.side_effect = data.values().__iter__
-    lobbyconnection.write_warning = Mock()
+    lobbyconnection.write_warning = mock.Mock()
 
     # This should not leak any exceptions
     await lobbyconnection.on_message_received({
@@ -776,7 +773,7 @@ async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, play
         tuna.id: tuna
     }
     lobbyconnection.player_service.__iter__.side_effect = data.values().__iter__
-    lobbyconnection.write_warning = Mock()
+    lobbyconnection.write_warning = mock.Mock()
 
     # This should not leak any exceptions
     await lobbyconnection.on_message_received({
@@ -790,7 +787,7 @@ async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, play
 
 async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker):
     del lobbyconnection.player.game_connection
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.player.state = PlayerState.IDLE
     await lobbyconnection.on_message_received({
         "command": "restore_game_session",
@@ -817,7 +814,7 @@ async def test_game_connection_not_restored_if_game_state_prohibits(
     database
 ):
     del lobbyconnection.player.game_connection
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.player.state = PlayerState.IDLE
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
@@ -997,7 +994,7 @@ async def test_command_matchmaker_info(
     lobbyconnection.ladder_service.queues = {
         "test": queue
     }
-    lobbyconnection.send = CoroutineMock()
+    lobbyconnection.send = mock.AsyncMock()
     await lobbyconnection.on_message_received({
         "command": "matchmaker_info"
     })
@@ -1019,7 +1016,7 @@ async def test_command_matchmaker_info(
 
 
 async def test_connection_lost(lobbyconnection):
-    lobbyconnection.game_connection = asynctest.create_autospec(GameConnection)
+    lobbyconnection.game_connection = mock.create_autospec(GameConnection)
     await lobbyconnection.on_connection_lost()
 
     lobbyconnection.game_connection.on_connection_lost.assert_called_once()
@@ -1048,11 +1045,11 @@ async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server
     config.FAF_POLICY_SERVER_BASE_URL = f"http://{host}:{port}"
 
     # 42 is not a valid player ID which should cause a SQL constraint error
-    lobbyconnection.abort = CoroutineMock()
+    lobbyconnection.abort = mock.AsyncMock()
     with pytest.raises(ClientError):
         await lobbyconnection.check_policy_conformity(42, "fraudulent", session=100)
 
-    lobbyconnection.abort = CoroutineMock()
+    lobbyconnection.abort = mock.AsyncMock()
     player_id = 200
     honest = await lobbyconnection.check_policy_conformity(player_id, "fraudulent", session=100)
     assert honest is False
@@ -1073,7 +1070,7 @@ async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
     config.FAF_POLICY_SERVER_BASE_URL = f"http://{host}:{port}"
 
     for result in ("vm", "already_associated", "fraudulent"):
-        lobbyconnection.abort = CoroutineMock()
+        lobbyconnection.abort = mock.AsyncMock()
         honest = await lobbyconnection.check_policy_conformity(1, result, session=100)
         assert honest is False
         lobbyconnection.abort.assert_called_once()

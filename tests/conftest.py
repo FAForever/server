@@ -7,15 +7,14 @@ these should be put in the ``conftest.py'' relative to it.
 """
 
 import asyncio
+import gc
 import logging
 from contextlib import asynccontextmanager, contextmanager
 from typing import Iterable
 from unittest import mock
 
-import asynctest
 import hypothesis
 import pytest
-from asynctest import CoroutineMock
 
 from server.api.api_accessor import ApiAccessor
 from server.api.oauth_session import OAuth2Session
@@ -98,6 +97,33 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "rabbitmq: marks tests as requiring a running instance of RabbitMQ"
     )
+    config.addinivalue_line(
+        "markers", "flaky: marks tests as known to be flaky"
+    )
+
+
+@pytest.fixture
+def event_loop(request):
+    """
+    pytest-asyncio's event_loop fixture doesn't do any cleanup before closing
+    the loop. This can make task errors from previous tests leak into the test
+    output of later tests. We override the fixture here to implement the same
+    cleanup as in asyncio.run().
+    """
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    # Cleanup code copied from the python3.9 version of asyncio.run()
+    try:
+        asyncio.runners._cancel_all_tasks(loop)
+        loop.run_until_complete(loop.shutdown_asyncgens())
+        loop.run_until_complete(loop.shutdown_default_executor())
+    finally:
+        loop.close()
+        # Call the garbage collector to trigger ResourceWarning's as soon
+        # as possible (these are triggered in various __del__ methods).
+        # Without this, resources opened in one test can fail other tests
+        # when the warning is generated.
+        gc.collect()
 
 
 @pytest.fixture(scope="session")
@@ -124,13 +150,16 @@ def monkeypatch_context():
 
 
 @pytest.fixture(scope="session", autouse=True)
-async def test_data(request):
-    db = await global_database(request)
-    with open("tests/data/test-data.sql") as f:
-        async with db.acquire() as conn:
-            await conn.execute(f.read().replace(":", r"\:"))
+def test_data(request):
+    async def _test_data():
+        db = await global_database(request)
+        with open("tests/data/test-data.sql") as f:
+            async with db.acquire() as conn:
+                await conn.execute(f.read().replace(":", r"\:"))
 
-    await db.close()
+        await db.close()
+
+    asyncio.run(_test_data())
 
 
 async def global_database(request) -> FAFDatabase:
@@ -222,13 +251,13 @@ def coop_game(database, players):
 
 
 def make_game(database, uid, players, game_type=Game):
-    mock_parent = CoroutineMock()
-    game = asynctest.create_autospec(
-        spec=game_type(uid, database, mock_parent, CoroutineMock())
+    mock_parent = mock.AsyncMock()
+    game = mock.create_autospec(
+        spec=game_type(uid, database, mock_parent, mock.AsyncMock())
     )
-    players.hosting.getGame = CoroutineMock(return_value=game)
-    players.joining.getGame = CoroutineMock(return_value=game)
-    players.peer.getGame = CoroutineMock(return_value=game)
+    players.hosting.getGame = mock.AsyncMock(return_value=game)
+    players.joining.getGame = mock.AsyncMock(return_value=game)
+    players.peer.getGame = mock.AsyncMock(return_value=game)
     game.host = players.hosting
     game.init_mode = InitMode.NORMAL_LOBBY
     game.name = "Some game name"
@@ -265,7 +294,7 @@ def make_player(
         elif lobby_connection_spec == "mock":
             conn = mock.Mock(spec=LobbyConnection)
         elif lobby_connection_spec == "auto":
-            conn = asynctest.create_autospec(LobbyConnection)
+            conn = mock.create_autospec(LobbyConnection)
         else:
             raise ValueError(f"Unknown spec type '{lobby_connection_spec}'")
 
@@ -341,7 +370,7 @@ async def game_service(
 @pytest.fixture
 async def geoip_service() -> GeoIpService:
     service = GeoIpService()
-    service.download_geoip_db = CoroutineMock()
+    service.download_geoip_db = mock.AsyncMock()
     await service.initialize()
     return service
 
@@ -387,7 +416,7 @@ def matchmaker_queue(game_service) -> MatchmakerQueue:
 
 @pytest.fixture
 def api_accessor():
-    session = asynctest.create_autospec(OAuth2Session)
+    session = mock.create_autospec(OAuth2Session)
     session.request.return_value = (200, "test")
 
     api_accessor = ApiAccessor()
