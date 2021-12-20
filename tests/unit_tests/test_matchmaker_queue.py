@@ -164,15 +164,6 @@ def test_search_no_match_wrong_type(matchmaker_players):
     assert not s1.matches_with(42)
 
 
-def test_search_boundaries(matchmaker_players):
-    p1 = matchmaker_players[0]
-    s1 = Search([p1])
-    assert p1.ratings[RatingType.LADDER_1V1][0] > s1.boundary_80[0]
-    assert p1.ratings[RatingType.LADDER_1V1][0] < s1.boundary_80[1]
-    assert p1.ratings[RatingType.LADDER_1V1][0] > s1.boundary_75[0]
-    assert p1.ratings[RatingType.LADDER_1V1][0] < s1.boundary_75[1]
-
-
 def test_search_expansion_controlled_by_failed_matching_attempts(matchmaker_players):
     p1 = matchmaker_players[1]
     s1 = Search([p1])

@@ -86,12 +86,12 @@ async def test_info_message(lobby_server):
 
     assert msg["queues"]
     for queue in msg["queues"]:
-        boundaries = queue["boundary_80s"]
+        num_players = queue["num_players"]
 
         if queue["queue_name"] == "tmm2v2":
-            assert boundaries == [[300, 700]]
+            assert num_players == 1
         else:
-            assert boundaries == []
+            assert num_players == 0
 
 
 @fast_forward(10)
