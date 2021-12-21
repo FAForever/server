@@ -1,6 +1,7 @@
 # FA Forever - Server
 ![Build Status](https://github.com/FAForever/server/actions/workflows/test.yml/badge.svg?branch=develop)
 [![codecov](https://codecov.io/gh/FAForever/server/branch/develop/graph/badge.svg?token=55ndgNQdUv)](https://codecov.io/gh/FAForever/server)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/ada42f6e09a341a88f3dae262a43e86e)](https://www.codacy.com/gh/FAForever/server/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=FAForever/server&amp;utm_campaign=Badge_Grade)
 [![docs](https://img.shields.io/badge/docs-latest-purple)](https://faforever.github.io/server/)
 [![license](https://img.shields.io/badge/license-GPLv3-blue)](license.txt)
 ![python](https://img.shields.io/badge/python-3.9-3776AB)
