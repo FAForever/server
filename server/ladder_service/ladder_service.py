@@ -12,17 +12,17 @@ from typing import Optional
 import aiocron
 from sqlalchemy import and_, func, select, text, true
 
-from .config import config
-from .core import Service
-from .db import FAFDatabase
-from .db.models import (
+from server.config import config
+from server.core import Service
+from server.db import FAFDatabase
+from server.db.models import (
     game_featuredMods,
     game_player_stats,
     game_stats,
     leaderboard
 )
-from .db.models import map as t_map
-from .db.models import (
+from server.db.models import map as t_map
+from server.db.models import (
     map_pool,
     map_pool_map_version,
     map_version,
@@ -30,13 +30,20 @@ from .db.models import (
     matchmaker_queue_game,
     matchmaker_queue_map_pool
 )
-from .decorators import with_logger
-from .game_service import GameService
-from .games import InitMode, LadderGame
-from .games.ladder_game import GameClosedError
-from .matchmaker import MapPool, MatchmakerQueue, OnMatchedCallback, Search
-from .players import Player, PlayerState
-from .types import GameLaunchOptions, Map, NeroxisGeneratedMap
+from server.decorators import with_logger
+from server.game_service import GameService
+from server.games import InitMode, LadderGame
+from server.games.ladder_game import GameClosedError
+from server.matchmaker import (
+    MapPool,
+    MatchmakerQueue,
+    OnMatchedCallback,
+    Search
+)
+from server.players import Player, PlayerState
+from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
+
+from .game_name import game_name
 
 
 @with_logger
@@ -563,34 +570,3 @@ class LadderService(Service):
     async def shutdown(self):
         for queue in self.queues.values():
             queue.shutdown()
-
-
-def game_name(*teams: list[Player]) -> str:
-    """
-    Generate a game name based on the players.
-    """
-
-    return " Vs ".join(_team_name(team) for team in teams)
-
-
-def _team_name(team: list[Player]) -> str:
-    """
-    Generate a team name based on the players. If all players are in the
-    same clan, use their clan tag, otherwise use the name of the first
-    player.
-    """
-    assert team
-
-    player_1_name = team[0].login
-
-    if len(team) == 1:
-        return player_1_name
-
-    clans = {player.clan for player in team}
-
-    if len(clans) == 1:
-        name = clans.pop() or player_1_name
-    else:
-        name = player_1_name
-
-    return f"Team {name}"
