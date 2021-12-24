@@ -114,7 +114,7 @@ async def test_handle_action_GameState_idle_adds_connection(
     game.add_game_connection.assert_called_with(game_connection)
 
 
-async def test_handle_action_GameState_idle_non_searching_player_aborts(
+async def test_handle_action_GameState_idle_sets_player_state(
     game_connection: GameConnection,
     players
 ):
@@ -125,7 +125,14 @@ async def test_handle_action_GameState_idle_non_searching_player_aborts(
 
     await game_connection.handle_action("GameState", ["Idle"])
 
-    game_connection.abort.assert_any_call()
+    assert players.hosting.state == PlayerState.HOSTING
+
+    game_connection.player = players.joining
+    players.joining.state = PlayerState.IDLE
+
+    await game_connection.handle_action("GameState", ["Idle"])
+
+    assert players.joining.state == PlayerState.JOINING
 
 
 async def test_handle_action_GameState_lobby_sends_HostGame(

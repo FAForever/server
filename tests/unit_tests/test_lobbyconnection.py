@@ -275,7 +275,7 @@ async def test_launch_game(lobbyconnection, game, player_factory):
     assert lobbyconnection.player.game == game
     assert lobbyconnection.player.game_connection == lobbyconnection.game_connection
     assert lobbyconnection.game_connection.player == lobbyconnection.player
-    assert lobbyconnection.player.state == PlayerState.JOINING
+    assert lobbyconnection.player.state == PlayerState.IDLE
     lobbyconnection.send.assert_called_once()
 
 
