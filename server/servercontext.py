@@ -18,7 +18,7 @@ import server.metrics as metrics
 from .core import Service
 from .decorators import with_logger
 from .lobbyconnection import LobbyConnection
-from .protocol import DisconnectedError, Protocol, QDataStreamProtocol
+from .protocol import DisconnectedError, Protocol, SimpleJsonProtocol
 from .types import Address
 
 MiB = 2 ** 20
@@ -36,7 +36,7 @@ class ServerContext:
         name: str,
         connection_factory: Callable[[], LobbyConnection],
         services: Iterable[Service],
-        protocol_class: type[Protocol] = QDataStreamProtocol,
+        protocol_class: type[Protocol] = SimpleJsonProtocol,
     ):
         super().__init__()
         self.name = name

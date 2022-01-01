@@ -1,12 +1,11 @@
 import asyncio
 
 from .game import Game
-from .typedefs import FA, GameType, InitMode, ValidityState, Victory
+from .typedefs import FA, GameType, ValidityState, Victory
 
 
 class CoopGame(Game):
     """Class for coop game"""
-    init_mode = InitMode.NORMAL_LOBBY
     game_type = GameType.COOP
 
     def __init__(self, *args, **kwargs):

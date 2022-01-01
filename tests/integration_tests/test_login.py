@@ -91,7 +91,7 @@ async def test_server_ban_revoked_or_expired(lobby_server, user):
     msg = await proto.read_message()
 
     assert msg["command"] == "welcome"
-    assert msg["login"] == user
+    assert msg["me"]["login"] == user
 
 
 async def test_server_login_valid(lobby_server, fixed_time):
@@ -121,8 +121,6 @@ async def test_server_login_valid(lobby_server, fixed_time):
         "command": "welcome",
         "me": me,
         "current_time": "1970-01-01T00:00:00+00:00",
-        "id": 3,
-        "login": "Rhiza"
     }
     msg = await proto.read_message()
     assert msg == {
@@ -167,8 +165,6 @@ async def test_server_login_valid_admin(lobby_server, fixed_time):
         "command": "welcome",
         "me": me,
         "current_time": "1970-01-01T00:00:00+00:00",
-        "id": 1,
-        "login": "test"
     }
     msg = await proto.read_message()
     assert msg == {
@@ -212,8 +208,6 @@ async def test_server_login_valid_moderator(lobby_server, fixed_time):
         "command": "welcome",
         "me": me,
         "current_time": "1970-01-01T00:00:00+00:00",
-        "id": 20,
-        "login": "moderator"
     }
     msg = await proto.read_message()
     assert msg == {
@@ -301,8 +295,6 @@ async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid, fix
     })
 
     msg = await proto.read_message()
-    assert msg["command"] == "irc_password"
-    msg = await proto.read_message()
     me = {
         "id": 3,
         "login": "Rhiza",
@@ -326,8 +318,6 @@ async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid, fix
         "command": "welcome",
         "me": me,
         "current_time": "1970-01-01T00:00:00+00:00",
-        "id": 3,
-        "login": "Rhiza"
     }
     msg = await proto.read_message()
     assert msg == {

@@ -7,7 +7,7 @@ from server.players import Player
 
 from .game import Game
 from .game_results import ArmyOutcome, GameOutcome
-from .typedefs import GameState, GameType, InitMode
+from .typedefs import GameState, GameType
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +23,6 @@ class GameClosedError(Exception):
 
 class LadderGame(Game):
     """Class for 1v1 ladder games"""
-
-    init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
 
     def __init__(self, id, *args, **kwargs):
