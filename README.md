@@ -82,25 +82,7 @@ list see [https://faforever.github.io/server/](https://faforever.github.io/serve
 The protocol is mainly JSON-encoded maps, containing at minimum a `command` key,
 representing the command to dispatch.
 
-The wire format uses [QDataStream](http://doc.qt.io/qt-5/qdatastream.html) (UTF-16, BigEndian).
-
-For the lobbyconnection, each message is of the form:
-```
-ACTION: QString
-```
-With most carrying a footer containing:
-```
-LOGIN: QString
-SESSION: QString
-```
-
 ## Incoming Packages
-
-##### Mod Vault
-
--   (deprecated) `{command: modvault, type: start}`: show the last 100 mods
--   (deprecated) `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
--   (deprecated) `{command: modvault, type: download, uid: <uid>}`: notify server about a download (for download counter), does not start the download
 
 ##### Social
 -   `{command: social_add, friend|foe: <player_id>}`: Add a friend or foe

@@ -4,7 +4,7 @@ from hashlib import sha256
 
 from websockets.client import connect as ws_connect
 
-from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
+from server.protocol import SimpleJsonProtocol
 from tests.integration_tests.conftest import read_until, read_until_command
 
 from .websocket_protocol import WebsocketProtocol
@@ -32,7 +32,7 @@ class FAFClient:
 
         await self.proto.close()
 
-    async def connect(self, host, port, protocol_class=QDataStreamProtocol):
+    async def connect(self, host, port, protocol_class=SimpleJsonProtocol):
         self.proto = protocol_class(
             *(await asyncio.open_connection(host, port))
         )
@@ -104,8 +104,8 @@ class FAFClient:
             "unique_id": unique_id
         })
         msg = await self.read_until_command("welcome")
-        self.player_id = msg["id"]
-        self.player_name = msg["login"]
+        self.player_id = msg["me"]["id"]
+        self.player_name = msg["me"]["login"]
         return msg
 
     def get_unique_id(self, session):

@@ -11,7 +11,7 @@ from server.db.models import ban, friends_and_foes
 from server.exceptions import BanError, ClientError
 from server.game_service import GameService
 from server.gameconnection import GameConnection
-from server.games import CustomGame, Game, GameState, InitMode, VisibilityState
+from server.games import CustomGame, Game, GameState, GameType, VisibilityState
 from server.geoip_service import GeoIpService
 from server.ladder_service import LadderService
 from server.lobbyconnection import LobbyConnection
@@ -20,7 +20,7 @@ from server.oauth_service import OAuthService
 from server.party_service import PartyService
 from server.player_service import PlayerService
 from server.players import PlayerState
-from server.protocol import DisconnectedError, QDataStreamProtocol
+from server.protocol import DisconnectedError, SimpleJsonProtocol
 from server.rating import InclusiveRange, RatingType
 from server.team_matchmaker import PlayerParty
 from server.types import Address
@@ -69,7 +69,7 @@ def mock_games():
 
 @pytest.fixture
 def mock_protocol():
-    return mock.create_autospec(QDataStreamProtocol(mock.Mock(), mock.Mock()))
+    return mock.create_autospec(SimpleJsonProtocol(mock.Mock(), mock.Mock()))
 
 
 @pytest.fixture
@@ -167,21 +167,6 @@ async def test_command_pong_does_nothing(lobbyconnection):
     })
 
     lobbyconnection.send.assert_not_called()
-
-
-async def test_command_create_account_returns_error(lobbyconnection):
-    lobbyconnection.send = mock.AsyncMock()
-
-    await lobbyconnection.on_message_received({
-        "command": "create_account"
-    })
-
-    lobbyconnection.send.assert_called_once_with({
-        "command": "notice",
-        "style": "error",
-        "text": ("FAF no longer supports direct registration. "
-                 "Please use the website to register.")
-    })
 
 
 async def test_double_login(lobbyconnection, mock_players, player_factory):
@@ -318,7 +303,6 @@ async def test_command_game_join_calls_join_game(
         "uid": 42,
         "mod": "faf",
         "name": "Test Game Name",
-        "init_mode": InitMode.NORMAL_LOBBY.value,
         "game_type": "custom",
         "rating_type": "global",
     }
@@ -358,7 +342,6 @@ async def test_command_game_join_uid_as_str(
         "mod": "faf",
         "uid": 42,
         "name": "Test Game Name",
-        "init_mode": InitMode.NORMAL_LOBBY.value,
         "game_type": "custom",
         "rating_type": "global",
     }
@@ -377,7 +360,7 @@ async def test_command_game_join_without_password(
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game)
     game.state = GameState.LOBBY
-    game.init_mode = InitMode.NORMAL_LOBBY
+    game.game_type = GameType.CUSTOM
     game.password = "password"
     game.game_mode = "faf"
     game.id = 42
@@ -422,7 +405,7 @@ async def test_command_game_join_game_not_found(
     })
 
 
-async def test_command_game_join_game_bad_init_mode(
+async def test_command_game_join_matchmaker_game(
     lobbyconnection,
     game_service,
     test_game_info,
@@ -432,7 +415,7 @@ async def test_command_game_join_game_bad_init_mode(
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game)
     game.state = GameState.LOBBY
-    game.init_mode = InitMode.AUTO_LOBBY
+    game.game_type = GameType.MATCHMAKER
     game.id = 42
     game.host = players.hosting
     game_service._games[42] = game
@@ -989,8 +972,6 @@ async def test_command_matchmaker_info(
                 "queue_pop_time_delta": 1.0,
                 "team_size": 1,
                 "num_players": 6,
-                "boundary_80s": [(1800, 2200), (300, 700), (800, 1200)],
-                "boundary_75s": [(1900, 2100), (400, 600), (900, 1100)]
             }
         ]
     })
