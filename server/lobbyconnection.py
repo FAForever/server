@@ -4,10 +4,7 @@ Handles requests from connected clients
 
 import asyncio
 import contextlib
-import json
 import random
-import urllib.parse
-import urllib.request
 from datetime import datetime
 from functools import wraps
 from typing import Optional
@@ -41,7 +38,7 @@ from .games import (
     Game,
     GameConnectionState,
     GameState,
-    InitMode,
+    GameType,
     VisibilityState
 )
 from .geoip_service import GeoIpService
@@ -132,7 +129,6 @@ class LobbyConnection:
                 "Bottleneck",  # sent by the game during reconnect
                 "ask_session",
                 "auth",
-                "create_account",
                 "hello",
                 "ping",
                 "pong",
@@ -205,9 +201,6 @@ class LobbyConnection:
 
     async def command_pong(self, msg):
         pass
-
-    async def command_create_account(self, message):
-        raise ClientError("FAF no longer supports direct registration. Please use the website to register.", recoverable=True)
 
     async def command_coop_list(self, message):
         """Request for coop map list"""
@@ -508,14 +501,6 @@ class LobbyConnection:
 
             username = row.login
 
-        # DEPRECATED: IRC passwords are handled outside of the lobby server.
-        # This message remains here for backwards compatibility, but the data
-        # sent is meaningless and can be ignored by clients.
-        await self.send({
-            "command": "irc_password",
-            "password": "deprecated"
-        })
-
         await self.on_player_login(
             player_id, username, unique_id, auth_method
         )
@@ -617,10 +602,6 @@ class LobbyConnection:
         await self.send({
             "command": "welcome",
             "me": self.player.to_dict(),
-
-            # For backwards compatibility for old clients. For now.
-            "id": self.player.id,
-            "login": username
         })
 
         # Tell player about everybody online. This must happen after "welcome".
@@ -854,7 +835,7 @@ class LobbyConnection:
             })
             return
 
-        if game.init_mode != InitMode.NORMAL_LOBBY:
+        if game.game_type not in (GameType.CUSTOM, GameType.COOP):
             raise ClientError("The game cannot be joined in this way.")
 
         if game.password != password:
@@ -869,9 +850,7 @@ class LobbyConnection:
 
     @ice_only
     async def command_game_matchmaking(self, message):
-        queue_name = str(
-            message.get("queue_name") or message.get("mod", "ladder1v1")
-        )
+        queue_name = str(message.get("queue_name", "ladder1v1"))
         state = str(message["state"])
 
         if state == "stop":
@@ -904,13 +883,6 @@ class LobbyConnection:
                 raise ClientError(
                     "Your party is too large to join that queue!",
                     recoverable=True
-                )
-
-            # TODO: Remove this legacy behavior, use party instead
-            if "faction" in message:
-                party.set_factions(
-                    self.player,
-                    [Faction.from_value(message["faction"])]
                 )
 
             self.ladder_service.start_search(
@@ -1035,88 +1007,12 @@ class LobbyConnection:
             # options are. Currently, options for ladder are hardcoded into the
             # client.
             "name": game.name,
-            # DEPRICATED: init_mode can be inferred from game_type
-            "init_mode": game.init_mode.value,
             "game_type": game.game_type.value,
             "rating_type": game.rating_type,
             **options._asdict()
         }
 
         return {k: v for k, v in cmd.items() if v is not None}
-
-    async def command_modvault(self, message):
-        type = message["type"]
-
-        async with self._db.acquire() as conn:
-            if type == "start":
-                result = await conn.execute("SELECT uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon FROM table_mod ORDER BY likes DESC LIMIT 100")
-
-                for row in result:
-                    uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon = (row[i] for i in range(12))
-                    try:
-                        link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
-                        thumbstr = ""
-                        if icon:
-                            thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
-
-                        out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
-                                   comments=[], description=description, played=played, likes=likes,
-                                   downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
-                                   ui=ui)
-                        await self.send(out)
-                    except Exception:
-                        self._logger.error(f"Error handling table_mod row (uid: {uid})", exc_info=True)
-
-            elif type == "like":
-                canLike = True
-                uid = message["uid"]
-                result = await conn.execute(
-                    "SELECT uid, name, version, author, ui, date, downloads, "
-                    "likes, played, description, filename, icon, likers FROM "
-                    "`table_mod` WHERE uid = :uid LIMIT 1",
-                    uid=uid
-                )
-
-                row = result.fetchone()
-                uid, name, version, author, ui, date, downloads, likes, played, description, filename, icon, likerList = (row[i] for i in range(13))
-                link = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/" + filename)
-                thumbstr = ""
-                if icon:
-                    thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
-
-                out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
-                           comments=[], description=description, played=played, likes=likes + 1,
-                           downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
-                           ui=ui)
-
-                try:
-                    likers = json.loads(likerList)
-                    if self.player.id in likers:
-                        canLike = False
-                    else:
-                        likers.append(self.player.id)
-                except Exception:
-                    likers = []
-
-                # TODO: Avoid sending all the mod info in the world just because we liked it?
-                if canLike:
-                    await conn.execute(
-                        "UPDATE mod_stats s "
-                        "JOIN mod_version v ON v.mod_id = s.mod_id "
-                        "SET s.likes = s.likes + 1, likers=:l WHERE v.uid=:id",
-                        l=json.dumps(likers),
-                        id=uid
-                    )
-                    await self.send(out)
-
-            elif type == "download":
-                uid = message["uid"]
-                await conn.execute(
-                    "UPDATE mod_stats s "
-                    "JOIN mod_version v ON v.mod_id = s.mod_id "
-                    "SET downloads=downloads+1 WHERE v.uid = %s", uid)
-            else:
-                raise ValueError("invalid type argument")
 
     async def command_ice_servers(self, message):
         if not self.player:

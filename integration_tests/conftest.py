@@ -16,7 +16,7 @@ async def client_factory():
         def __init__(self):
             self.clients = []
 
-        async def add_client(self, host="test.faforever.com", port=8001):
+        async def add_client(self, host="test.faforever.com", port=8002):
             client = FAFClient()
             await client.connect(host, port)
             self.clients.append(client)

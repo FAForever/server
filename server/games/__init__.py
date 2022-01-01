@@ -13,7 +13,6 @@ from .typedefs import (
     GameConnectionState,
     GameState,
     GameType,
-    InitMode,
     ValidityState,
     Victory,
     VisibilityState
@@ -39,7 +38,6 @@ __all__ = (
     "GameError",
     "GameState",
     "GameType",
-    "InitMode",
     "LadderGame",
     "ValidityState",
     "Victory",

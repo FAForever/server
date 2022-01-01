@@ -51,7 +51,6 @@ async def test_game_launch_message(lobby_server):
         "uid": 41956,
         "mod": "ladder1v1",
         "name": "ladder1 Vs ladder2",
-        "init_mode": 1,
         "game_type": "matchmaker",
         "rating_type": "ladder_1v1",
         "team": 2,
@@ -183,20 +182,11 @@ async def test_game_matchmaking_start_while_matched(lobby_server):
 async def test_game_matchmaking_timeout(lobby_server, game_service):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
-    msg1, msg2 = await asyncio.gather(
-        idle_response(proto1, timeout=120),
-        idle_response(proto2, timeout=120)
-    )
-    # LEGACY BEHAVIOUR: The host does not respond with the appropriate GameState
-    # so the match is cancelled. However, the client does not know how to
-    # handle `match_cancelled` messages so we still send `game_launch` to
-    # prevent the client from showing that it is searching when it really isn't.
+    msg1 = await idle_response(proto1, timeout=120)
     await read_until_command(proto2, "match_cancelled", timeout=120)
     await read_until_command(proto1, "match_cancelled", timeout=120)
 
-    assert msg1["uid"] == msg2["uid"]
     assert msg1["mod"] == "ladder1v1"
-    assert msg2["mod"] == "ladder1v1"
 
     # Ensure that the game is cleaned up
     await read_until_command(
@@ -207,7 +197,15 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     )
     assert game_service._games == {}
 
-    # Player's state is reset once they leave the game
+    # Player's state is not reset immediately
+    await proto1.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+    })
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto1, "search_info", state="start", timeout=5)
+
+    # Player's state is only reset once they leave the game
     await proto1.send_message({
         "command": "GameState",
         "target": "game",
@@ -216,18 +214,15 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     await proto1.send_message({
         "command": "game_matchmaking",
         "state": "start",
-        "faction": "uef"
     })
     await read_until_command(proto1, "search_info", state="start", timeout=5)
 
-    # And not before they've left the game
+    # But it is reset for the player who didn't make it into the game
     await proto2.send_message({
         "command": "game_matchmaking",
         "state": "start",
-        "faction": "uef"
     })
-    with pytest.raises(asyncio.TimeoutError):
-        await read_until_command(proto2, "search_info", state="start", timeout=5)
+    await read_until_command(proto2, "search_info", state="start", timeout=5)
 
 
 @fast_forward(120)
@@ -443,14 +438,12 @@ async def test_matchmaker_info_message(lobby_server, mocker):
     for queue in msg["queues"]:
         assert "queue_name" in queue
         assert "team_size" in queue
-        assert "num_players" in queue
 
         assert queue["queue_pop_time"] == "2019-07-01T16:53:21+00:00"
         assert queue["queue_pop_time_delta"] == math.ceil(
             config.QUEUE_POP_TIME_MAX / 2
         )
-        assert queue["boundary_80s"] == []
-        assert queue["boundary_75s"] == []
+        assert queue["num_players"] == 0
 
 
 @fast_forward(10)
@@ -477,14 +470,12 @@ async def test_command_matchmaker_info(lobby_server, mocker):
     for queue in msg["queues"]:
         assert "queue_name" in queue
         assert "team_size" in queue
-        assert "num_players" in queue
 
         assert queue["queue_pop_time"] == "2019-07-01T16:53:21+00:00"
         assert queue["queue_pop_time_delta"] == math.ceil(
             config.QUEUE_POP_TIME_MAX / 2
         )
-        assert queue["boundary_80s"] == []
-        assert queue["boundary_75s"] == []
+        assert queue["num_players"] == 0
 
 
 @fast_forward(10)
@@ -511,10 +502,10 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
             queue_message = next(
                 q for q in msg["queues"] if q["queue_name"] == "ladder1v1"
             )
-            if not queue_message["boundary_80s"]:
+            if queue_message["num_players"] == 0:
                 continue
 
-            assert len(queue_message["boundary_80s"]) == 1
+            assert queue_message["num_players"] == 1
 
             return
 
@@ -529,7 +520,7 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
     msg = await read_until_command(proto, "matchmaker_info")
 
     queue_message = next(q for q in msg["queues"] if q["queue_name"] == "ladder1v1")
-    assert len(queue_message["boundary_80s"]) == 0
+    assert queue_message["num_players"] == 0
 
 
 @fast_forward(10)

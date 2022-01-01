@@ -112,7 +112,7 @@ from .message_queue_service import MessageQueueService
 from .oauth_service import OAuthService
 from .party_service import PartyService
 from .player_service import PlayerService
-from .protocol import Protocol, QDataStreamProtocol
+from .protocol import Protocol, SimpleJsonProtocol
 from .rating_service.rating_service import RatingService
 from .servercontext import ServerContext
 from .stats.game_stats_service import GameStatsService
@@ -244,7 +244,7 @@ class ServerInstance(object):
         self,
         address: tuple[str, int],
         name: Optional[str] = None,
-        protocol_class: type[Protocol] = QDataStreamProtocol,
+        protocol_class: type[Protocol] = SimpleJsonProtocol,
         proxy: bool = False,
     ) -> ServerContext:
         """

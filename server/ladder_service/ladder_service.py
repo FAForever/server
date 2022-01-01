@@ -35,7 +35,7 @@ from server.db.models import (
 )
 from server.decorators import with_logger
 from server.game_service import GameService
-from server.games import InitMode, LadderGame
+from server.games import LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service.game_name import game_name
 from server.ladder_service.violation_service import ViolationService
@@ -524,7 +524,6 @@ class LadderService(Service):
                 rating_type=queue.rating_type,
                 max_players=len(all_players)
             )
-            game.init_mode = InitMode.AUTO_LOBBY
             game.map_file_path = map_path
             game.set_name_unchecked(game_name(team1, team2))
 
@@ -637,13 +636,8 @@ class LadderService(Service):
             await game.wait_hosted(60)
         except asyncio.TimeoutError:
             raise NotConnectedError([host])
-        finally:
-            # TODO: Once the client supports `match_cancelled`, don't
-            # send `launch_game` to the client if the host timed out. Until
-            # then, failing to send `launch_game` will cause the client to
-            # think it is searching for ladder, even though the server has
-            # already removed it from the queue.
 
+        try:
             # Launch the guests
             not_connected_guests = [
                 player for player in guests
@@ -660,7 +654,7 @@ class LadderService(Service):
                     is_host=False,
                     options=make_game_options(guest)
                 )
-        try:
+
             await game.wait_launched(60 + 10 * len(guests))
         except asyncio.TimeoutError:
             connected_players = game.get_connected_players()

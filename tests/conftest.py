@@ -23,7 +23,7 @@ from server.games import (
     CoopGame,
     FeaturedModType,
     Game,
-    InitMode,
+    GameType,
     ValidityState
 )
 from server.geoip_service import GeoIpService
@@ -240,7 +240,7 @@ def make_game(database, uid, players, game_type=Game):
     players.joining.getGame = mock.AsyncMock(return_value=game)
     players.peer.getGame = mock.AsyncMock(return_value=game)
     game.host = players.hosting
-    game.init_mode = InitMode.NORMAL_LOBBY
+    game.game_type = GameType.CUSTOM
     game.name = "Some game name"
     game.id = uid
     return game
