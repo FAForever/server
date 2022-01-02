@@ -348,20 +348,27 @@ class LadderService(Service):
             on_matched=on_matched
         )
 
-        for player in players:
+        self._add_search_to_queue(search, queue)
+
+    def _add_search_to_queue(
+        self,
+        search: Search,
+        queue: MatchmakerQueue,
+    ):
+        for player in search.players:
             player.state = PlayerState.SEARCHING_LADDER
 
             self.write_rating_progress(player, queue.rating_type)
 
             player.write_message({
                 "command": "search_info",
-                "queue_name": queue_name,
+                "queue_name": queue.name,
                 "state": "start"
             })
 
-            self._searches[player][queue_name] = search
+            self._searches[player][queue.name] = search
 
-        self._logger.info("%s started searching for %s", search, queue_name)
+        self._logger.info("%s started searching for %s", search, queue.name)
 
         asyncio.create_task(queue.search(search))
 
@@ -427,26 +434,28 @@ class LadderService(Service):
         return search
 
     def write_rating_progress(self, player: Player, rating_type: str) -> None:
-        if player not in self._informed_players:
-            self._informed_players.add(player)
-            _, deviation = player.ratings[rating_type]
+        if player in self._informed_players:
+            return
 
-            if deviation > 490:
-                player.write_message({
-                    "command": "notice",
-                    "style": "info",
-                    "text": (
-                        "<i>Welcome to the matchmaker</i><br><br><b>The "
-                        "matchmaking system needs to calibrate your skill level; "
-                        "your first few games may be more imbalanced as the "
-                        "system attempts to learn your capability as a player."
-                        "</b><br><b>"
-                        "Afterwards, you'll be more reliably matched up with "
-                        "people of your skill level: so don't worry if your "
-                        "first few games are uneven. This will improve as you "
-                        "play!</b>"
-                    )
-                })
+        self._informed_players.add(player)
+        _, deviation = player.ratings[rating_type]
+
+        if deviation > 490:
+            player.write_message({
+                "command": "notice",
+                "style": "info",
+                "text": (
+                    "<i>Welcome to the matchmaker</i><br><br><b>The "
+                    "matchmaking system needs to calibrate your skill level; "
+                    "your first few games may be more imbalanced as the "
+                    "system attempts to learn your capability as a player."
+                    "</b><br><b>"
+                    "Afterwards, you'll be more reliably matched up with "
+                    "people of your skill level: so don't worry if your "
+                    "first few games are uneven. This will improve as you "
+                    "play!</b>"
+                )
+            })
 
     def on_match_found(
         self,
@@ -508,16 +517,29 @@ class LadderService(Service):
             )
             self._cancel_match(all_players)
 
-            # Return any player that accepted the match back to the queue
-            # TODO: make this work with parties
+            # Return any search that fully accepted the match back to the queue
             for search in (s1, s2):
-                for player in search.players:
-                    if player in unready_players:
-                        self.cancel_search(player)
-                    else:
-                        search.unmatch()
-                        player.state = PlayerState.SEARCHING_LADDER
-                        asyncio.create_task(queue.search(search))
+                search_players = search.players
+                search_unready_players = [
+                    player
+                    for player in unready_players
+                    if player in search_players
+                ]
+                if not search_unready_players:
+                    search.unmatch()
+                    self._add_search_to_queue(search, queue)
+                    self._logger.debug(
+                        "%s auto requeued after failed match",
+                        search
+                    )
+                else:
+                    for player in search_players:
+                        player.write_message({
+                            "command": "match_notice",
+                            "unready_players": [
+                                p.id for p in search_unready_players
+                            ]
+                        })
 
             self.violation_service.register_violations(unready_players)
 

@@ -418,6 +418,57 @@ async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
     await read_until_command(proto1, "match_found", timeout=5)
 
 
+@fast_forward(130)
+async def test_game_matchmaking_no_accept_offer_auto_requeue(
+    lobby_server,
+    tmp_user,
+):
+    proto1, proto2 = await queue_temp_players_for_matchmaking(
+        lobby_server,
+        tmp_user,
+        num_players=2,
+        queue_name="ladder1v1",
+        player_name="Player",
+    )
+
+    await read_until_command(proto1, "match_found", timeout=30)
+    await read_until_command(proto2, "match_found", timeout=5)
+
+    # Only player 1 accepts the match
+    await read_until_command(proto1, "match_info", timeout=5)
+    await read_until_command(proto2, "match_info", timeout=5)
+    await proto1.send_message({"command": "match_ready"})
+    await read_until_command(proto1, "match_cancelled", timeout=120)
+
+    # Player 1 is automatically re-added to the queue, but player 2 is not
+    await read_until_command(proto1, "search_info", state="start", timeout=5)
+    msg = await read_until_command(proto1, "matchmaker_info", timeout=5)
+    queue_message = next(
+        queue
+        for queue in msg["queues"]
+        if queue["queue_name"] == "ladder1v1"
+    )
+    assert queue_message["num_players"] == 1
+
+    # A third player joins the queue and is matched with player 1
+    proto3, = await queue_temp_players_for_matchmaking(
+        lobby_server,
+        tmp_user,
+        num_players=1,
+        queue_name="ladder1v1",
+        player_name="Player",
+    )
+
+    await asyncio.gather(*[
+        read_until_match(proto)
+        for proto in (proto1, proto3)
+    ])
+    await asyncio.gather(
+        client_response(proto1),
+        client_response(proto3)
+    )
+
+
 @pytest.mark.flaky
 @fast_forward(200)
 async def test_anti_map_repetition(lobby_server):
@@ -567,7 +618,9 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
             msg = await read_until_command(proto, "matchmaker_info")
 
             queue_message = next(
-                q for q in msg["queues"] if q["queue_name"] == "ladder1v1"
+                queue
+                for queue in msg["queues"]
+                if queue["queue_name"] == "ladder1v1"
             )
             if queue_message["num_players"] == 0:
                 continue
@@ -586,7 +639,11 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
     # Update message because we left the queue
     msg = await read_until_command(proto, "matchmaker_info")
 
-    queue_message = next(q for q in msg["queues"] if q["queue_name"] == "ladder1v1")
+    queue_message = next(
+        queue
+        for queue in msg["queues"]
+        if queue["queue_name"] == "ladder1v1"
+    )
     assert queue_message["num_players"] == 0
 
 

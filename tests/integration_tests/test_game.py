@@ -220,13 +220,14 @@ async def queue_temp_players_for_matchmaking(
     tmp_user,
     num_players,
     queue_name,
+    player_name=None,
 ):
     """
     Queue an arbitrary number of players for matchmaking in a particular queue
     by setting up temp users.
     """
     users = await asyncio.gather(*[
-        tmp_user(queue_name)
+        tmp_user(player_name or queue_name)
         for _ in range(num_players)
     ])
     responses = await asyncio.gather(*[
