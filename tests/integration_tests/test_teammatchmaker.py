@@ -328,6 +328,7 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
         for proto in protos
     ])
     await read_until_command(protos[1], "search_info", state="start")
+    # tmm2v2 matches so ladder1v1 search is cancelled
     msg = await read_until_command(
         protos[0],
         "search_info",
@@ -336,10 +337,8 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
     assert msg["state"] == "stop"
 
     await client_response(protos[0])
+    await idle_response(protos[1])
 
-    await asyncio.gather(*[
-        idle_response(proto) for proto in protos[1:2]
-    ])
     # We don't send the `GameState: Lobby` command so the game should time out
     await read_until_command(protos[0], "match_cancelled", timeout=120)
 
@@ -455,10 +454,8 @@ async def test_game_matchmaking_timeout(lobby_server):
     protos, _ = await queue_players_for_matchmaking(lobby_server)
 
     await client_response(protos[0])
+    await idle_response(protos[1])
 
-    await asyncio.gather(*[
-        idle_response(proto) for proto in protos[1:2]
-    ])
     # We don't send the `GameState: Lobby` command so the game should time out
     await asyncio.gather(*[
         read_until_command(proto, "match_cancelled", timeout=120)
