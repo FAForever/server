@@ -53,9 +53,19 @@ async def join_game(proto: Protocol, uid: int):
     await asyncio.sleep(0.5)
 
 
-async def client_response(proto):
-    msg = await read_until_command(proto, "game_launch", timeout=10)
+async def client_response(proto, timeout=10):
+    msg = await read_until_command(proto, "game_launch", timeout=timeout)
     await open_fa(proto)
+    return msg
+
+
+async def idle_response(proto, timeout=10):
+    msg = await read_until_command(proto, "game_launch", timeout=timeout)
+    await proto.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Idle"]
+    })
     return msg
 
 
@@ -407,6 +417,55 @@ async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
     # There should be no further updates
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(mq_proto_all.read_message(), timeout=10)
+
+
+@fast_forward(30)
+async def test_double_host_message(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    await proto.send_message({
+        "command": "game_host",
+        "mod": "faf",
+        "visibility": "public",
+    })
+    await read_until_command(proto, "game_launch", timeout=10)
+
+    await proto.send_message({
+        "command": "game_host",
+        "mod": "faf",
+        "visibility": "public",
+    })
+    await read_until_command(proto, "game_launch", timeout=10)
+
+
+@fast_forward(30)
+async def test_double_join_message(lobby_server):
+    _, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    _, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await host_proto.send_message({
+        "command": "game_host",
+        "mod": "faf",
+        "visibility": "public",
+    })
+    msg = await client_response(host_proto)
+    game_id = msg["uid"]
+
+    await guest_proto.send_message({
+        "command": "game_join",
+        "uid": game_id
+    })
+    await read_until_command(guest_proto, "game_launch", timeout=10)
+
+    await guest_proto.send_message({
+        "command": "game_join",
+        "uid": game_id
+    })
+    await read_until_command(guest_proto, "game_launch", timeout=10)
 
 
 @fast_forward(100)

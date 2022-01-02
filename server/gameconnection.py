@@ -114,18 +114,14 @@ class GameConnection(GpgNetServerProtocol):
         This message is sent by FA when it doesn't know what to do.
         """
         assert self.game
-        state = self.player.state
 
-        if state == PlayerState.HOSTING:
+        if self.player == self.game.host:
             self.game.state = GameState.LOBBY
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
-            self.game.host = self.player
-        elif state == PlayerState.JOINING:
-            return
+            self.player.state = PlayerState.HOSTING
         else:
-            self._logger.error("Unknown PlayerState: %s", state)
-            await self.abort()
+            self.player.state = PlayerState.JOINING
 
     async def _handle_lobby_state(self):
         """

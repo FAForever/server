@@ -16,6 +16,7 @@ from tests.utils import fast_forward
 from .conftest import connect_and_sign_in, read_until, read_until_command
 from .test_game import (
     client_response,
+    idle_response,
     open_fa,
     queue_player_for_matchmaking,
     queue_players_for_matchmaking,
@@ -169,8 +170,8 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     msg1, msg2 = await asyncio.gather(
-        read_until_command(proto1, "game_launch", timeout=120),
-        read_until_command(proto2, "game_launch", timeout=120)
+        idle_response(proto1, timeout=120),
+        idle_response(proto2, timeout=120)
     )
     # LEGACY BEHAVIOUR: The host does not respond with the appropriate GameState
     # so the match is cancelled. However, the client does not know how to

@@ -1059,7 +1059,6 @@ class LobbyConnection:
             games=self.game_service
         )
 
-        self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
         self.player.game = game
         cmd = {
             "command": "game_launch",
