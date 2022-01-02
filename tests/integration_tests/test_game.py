@@ -420,7 +420,7 @@ async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
 
 
 @fast_forward(30)
-async def test_double_join_message(lobby_server):
+async def test_double_host_message(lobby_server):
     _, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
@@ -437,6 +437,35 @@ async def test_double_join_message(lobby_server):
         "visibility": "public",
     })
     await read_until_command(proto, "game_launch", timeout=10)
+
+
+@fast_forward(30)
+async def test_double_join_message(lobby_server):
+    _, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    _, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await host_proto.send_message({
+        "command": "game_host",
+        "mod": "faf",
+        "visibility": "public",
+    })
+    msg = await client_response(host_proto)
+    game_id = msg["uid"]
+
+    await guest_proto.send_message({
+        "command": "game_join",
+        "uid": game_id
+    })
+    await read_until_command(guest_proto, "game_launch", timeout=10)
+
+    await guest_proto.send_message({
+        "command": "game_join",
+        "uid": game_id
+    })
+    await read_until_command(guest_proto, "game_launch", timeout=10)
 
 
 @fast_forward(100)
