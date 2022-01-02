@@ -70,6 +70,7 @@ from .games import (
     CoopGame,
     CustomGame,
     FeaturedModType,
+    Game,
     GameConnectionState,
     GameState,
     InitMode,
@@ -115,11 +116,11 @@ class LobbyConnection:
         self.rating_service = rating_service
         self.oauth_service = oauth_service
         self._authenticated = False
-        self.player = None  # type: Player
-        self.game_connection = None  # type: GameConnection
-        self.peer_address = None  # type: Optional[Address]
+        self.player: Optional[Player] = None
+        self.game_connection: Optional[GameConnection] = None
+        self.peer_address: Optional[Address] = None
         self.session = int(random.randrange(0, 4294967295))
-        self.protocol: Protocol = None
+        self.protocol: Optional[Protocol] = None
         self.user_agent = None
         self.version = None
 
@@ -1039,15 +1040,42 @@ class LobbyConnection:
 
     async def launch_game(
         self,
-        game,
-        is_host=False,
-        options=GameLaunchOptions(),
-    ):
-        assert self.player is not None
-        # TODO: Fix setting up a ridiculous amount of cyclic pointers here
+        game: Game,
+        is_host: bool = False,
+        options: GameLaunchOptions = GameLaunchOptions(),
+    ) -&gt; None:
         if self.game_connection:
             await self.game_connection.abort(&#34;Player launched a new game&#34;)
+            self.game_connection = None
 
+        await self.send(self._prepare_launch_game(
+            game,
+            is_host=is_host,
+            options=options
+        ))
+
+    def write_launch_game(
+        self,
+        game: Game,
+        is_host: bool = False,
+        options: GameLaunchOptions = GameLaunchOptions(),
+    ) -&gt; None:
+        self.write(self._prepare_launch_game(
+            game,
+            is_host=is_host,
+            options=options
+        ))
+
+    def _prepare_launch_game(
+        self,
+        game: Game,
+        is_host: bool = False,
+        options: GameLaunchOptions = GameLaunchOptions(),
+    ):
+        assert self.player is not None
+        assert self.game_connection is None
+
+        # TODO: Fix setting up a ridiculous amount of cyclic pointers here
         if is_host:
             game.host = self.player
 
@@ -1080,7 +1108,7 @@ class LobbyConnection:
             **options._asdict()
         }
 
-        await self.send({k: v for k, v in cmd.items() if v is not None})
+        return {k: v for k, v in cmd.items() if v is not None}
 
     async def command_modvault(self, message):
         type = message[&#34;type&#34;]
@@ -1344,11 +1372,11 @@ class LobbyConnection:
         self.rating_service = rating_service
         self.oauth_service = oauth_service
         self._authenticated = False
-        self.player = None  # type: Player
-        self.game_connection = None  # type: GameConnection
-        self.peer_address = None  # type: Optional[Address]
+        self.player: Optional[Player] = None
+        self.game_connection: Optional[GameConnection] = None
+        self.peer_address: Optional[Address] = None
         self.session = int(random.randrange(0, 4294967295))
-        self.protocol: Protocol = None
+        self.protocol: Optional[Protocol] = None
         self.user_agent = None
         self.version = None
 
@@ -2268,15 +2296,42 @@ class LobbyConnection:
 
     async def launch_game(
         self,
-        game,
-        is_host=False,
-        options=GameLaunchOptions(),
-    ):
-        assert self.player is not None
-        # TODO: Fix setting up a ridiculous amount of cyclic pointers here
+        game: Game,
+        is_host: bool = False,
+        options: GameLaunchOptions = GameLaunchOptions(),
+    ) -&gt; None:
         if self.game_connection:
             await self.game_connection.abort(&#34;Player launched a new game&#34;)
+            self.game_connection = None
 
+        await self.send(self._prepare_launch_game(
+            game,
+            is_host=is_host,
+            options=options
+        ))
+
+    def write_launch_game(
+        self,
+        game: Game,
+        is_host: bool = False,
+        options: GameLaunchOptions = GameLaunchOptions(),
+    ) -&gt; None:
+        self.write(self._prepare_launch_game(
+            game,
+            is_host=is_host,
+            options=options
+        ))
+
+    def _prepare_launch_game(
+        self,
+        game: Game,
+        is_host: bool = False,
+        options: GameLaunchOptions = GameLaunchOptions(),
+    ):
+        assert self.player is not None
+        assert self.game_connection is None
+
+        # TODO: Fix setting up a ridiculous amount of cyclic pointers here
         if is_host:
             game.host = self.player
 
@@ -2309,7 +2364,7 @@ class LobbyConnection:
             **options._asdict()
         }
 
-        await self.send({k: v for k, v in cmd.items() if v is not None})
+        return {k: v for k, v in cmd.items() if v is not None}
 
     async def command_modvault(self, message):
         type = message[&#34;type&#34;]
@@ -3666,7 +3721,7 @@ async def command_kick_player_from_party(self, message):
 </details>
 </dd>
 <dt id="server.lobbyconnection.LobbyConnection.launch_game"><code class="name flex">
-<span>async def <span class="ident">launch_game</span></span>(<span>self, game, is_host=False, options=GameLaunchOptions(mapname=None, team=None, faction=None, expected_players=None, map_position=None, game_options=None))</span>
+<span>async def <span class="ident">launch_game</span></span>(<span>self, game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>, is_host: bool = False, options: <a title="server.types.GameLaunchOptions" href="types.html#server.types.GameLaunchOptions">GameLaunchOptions</a> = GameLaunchOptions(mapname=None, team=None, faction=None, expected_players=None, map_position=None, game_options=None)) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3676,48 +3731,19 @@ async def command_kick_player_from_party(self, message):
 </summary>
 <pre><code class="python">async def launch_game(
     self,
-    game,
-    is_host=False,
-    options=GameLaunchOptions(),
-):
-    assert self.player is not None
-    # TODO: Fix setting up a ridiculous amount of cyclic pointers here
+    game: Game,
+    is_host: bool = False,
+    options: GameLaunchOptions = GameLaunchOptions(),
+) -&gt; None:
     if self.game_connection:
         await self.game_connection.abort(&#34;Player launched a new game&#34;)
+        self.game_connection = None
 
-    if is_host:
-        game.host = self.player
-
-    self.game_connection = GameConnection(
-        database=self._db,
-        game=game,
-        player=self.player,
-        protocol=self.protocol,
-        player_service=self.player_service,
-        games=self.game_service
-    )
-
-    self.player.state = PlayerState.HOSTING if is_host else PlayerState.JOINING
-    self.player.game = game
-    cmd = {
-        &#34;command&#34;: &#34;game_launch&#34;,
-        &#34;args&#34;: [&#34;/numgames&#34;, self.player.game_count[game.rating_type]],
-        &#34;uid&#34;: game.id,
-        &#34;mod&#34;: game.game_mode,
-        # Following parameters may not be used by the client yet. They are
-        # needed for setting up auto-lobby style matches such as ladder, gw,
-        # and team machmaking where the server decides what these game
-        # options are. Currently, options for ladder are hardcoded into the
-        # client.
-        &#34;name&#34;: game.name,
-        # DEPRICATED: init_mode can be inferred from game_type
-        &#34;init_mode&#34;: game.init_mode.value,
-        &#34;game_type&#34;: game.game_type.value,
-        &#34;rating_type&#34;: game.rating_type,
-        **options._asdict()
-    }
-
-    await self.send({k: v for k, v in cmd.items() if v is not None})</code></pre>
+    await self.send(self._prepare_launch_game(
+        game,
+        is_host=is_host,
+        options=options
+    ))</code></pre>
 </details>
 </dd>
 <dt id="server.lobbyconnection.LobbyConnection.on_connection_lost"><code class="name flex">
@@ -4121,6 +4147,28 @@ a fatal warning it should disconnect and not attempt to reconnect.</li>
     self.protocol.write_message(message)</code></pre>
 </details>
 </dd>
+<dt id="server.lobbyconnection.LobbyConnection.write_launch_game"><code class="name flex">
+<span>def <span class="ident">write_launch_game</span></span>(<span>self, game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>, is_host: bool = False, options: <a title="server.types.GameLaunchOptions" href="types.html#server.types.GameLaunchOptions">GameLaunchOptions</a> = GameLaunchOptions(mapname=None, team=None, faction=None, expected_players=None, map_position=None, game_options=None)) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_launch_game(
+    self,
+    game: Game,
+    is_host: bool = False,
+    options: GameLaunchOptions = GameLaunchOptions(),
+) -&gt; None:
+    self.write(self._prepare_launch_game(
+        game,
+        is_host=is_host,
+        options=options
+    ))</code></pre>
+</details>
+</dd>
 <dt id="server.lobbyconnection.LobbyConnection.write_warning"><code class="name flex">
 <span>def <span class="ident">write_warning</span></span>(<span>self, message: str, fatal: bool = False, style: Optional[str] = None)</span>
 </code></dt>
@@ -4214,6 +4262,7 @@ a fatal warning it should disconnect and not attempt to reconnect.</li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.send_warning" href="#server.lobbyconnection.LobbyConnection.send_warning">send_warning</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.update_irc_password" href="#server.lobbyconnection.LobbyConnection.update_irc_password">update_irc_password</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.write" href="#server.lobbyconnection.LobbyConnection.write">write</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.write_launch_game" href="#server.lobbyconnection.LobbyConnection.write_launch_game">write_launch_game</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.write_warning" href="#server.lobbyconnection.LobbyConnection.write_warning">write_warning</a></code></li>
 </ul>
 </li>
