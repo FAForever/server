@@ -303,7 +303,7 @@ async def test_game_matchmaking_disconnect(lobby_server):
 
     msg = await read_until_command(proto2, "match_cancelled", timeout=120)
 
-    assert msg == {"command": "match_cancelled"}
+    assert msg == {"command": "match_cancelled", "game_id": 41956}
 
 
 @fast_forward(130)

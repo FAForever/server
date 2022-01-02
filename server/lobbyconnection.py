@@ -41,6 +41,7 @@ from .games import (
     CoopGame,
     CustomGame,
     FeaturedModType,
+    Game,
     GameConnectionState,
     GameState,
     InitMode,
@@ -86,11 +87,11 @@ class LobbyConnection:
         self.rating_service = rating_service
         self.oauth_service = oauth_service
         self._authenticated = False
-        self.player = None  # type: Player
-        self.game_connection = None  # type: GameConnection
-        self.peer_address = None  # type: Optional[Address]
+        self.player: Optional[Player] = None
+        self.game_connection: Optional[GameConnection] = None
+        self.peer_address: Optional[Address] = None
         self.session = int(random.randrange(0, 4294967295))
-        self.protocol: Protocol = None
+        self.protocol: Optional[Protocol] = None
         self.user_agent = None
         self.version = None
 
@@ -1010,15 +1011,42 @@ class LobbyConnection:
 
     async def launch_game(
         self,
-        game,
-        is_host=False,
-        options=GameLaunchOptions(),
-    ):
-        assert self.player is not None
-        # TODO: Fix setting up a ridiculous amount of cyclic pointers here
+        game: Game,
+        is_host: bool = False,
+        options: GameLaunchOptions = GameLaunchOptions(),
+    ) -> None:
         if self.game_connection:
             await self.game_connection.abort("Player launched a new game")
+            self.game_connection = None
 
+        await self.send(self._prepare_launch_game(
+            game,
+            is_host=is_host,
+            options=options
+        ))
+
+    def write_launch_game(
+        self,
+        game: Game,
+        is_host: bool = False,
+        options: GameLaunchOptions = GameLaunchOptions(),
+    ) -> None:
+        self.write(self._prepare_launch_game(
+            game,
+            is_host=is_host,
+            options=options
+        ))
+
+    def _prepare_launch_game(
+        self,
+        game: Game,
+        is_host: bool = False,
+        options: GameLaunchOptions = GameLaunchOptions(),
+    ):
+        assert self.player is not None
+        assert self.game_connection is None
+
+        # TODO: Fix setting up a ridiculous amount of cyclic pointers here
         if is_host:
             game.host = self.player
 
@@ -1051,7 +1079,7 @@ class LobbyConnection:
             **options._asdict()
         }
 
-        await self.send({k: v for k, v in cmd.items() if v is not None})
+        return {k: v for k, v in cmd.items() if v is not None}
 
     async def command_modvault(self, message):
         type = message["type"]

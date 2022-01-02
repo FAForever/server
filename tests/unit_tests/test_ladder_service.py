@@ -142,18 +142,14 @@ async def test_start_game_1v1(
     monkeypatch.setattr(LadderGame, "wait_hosted", mock.AsyncMock())
     monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock())
     monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
-    for player in (player1, player2):
-        player.lobby_connection.launch_game = mock.AsyncMock(
-            spec=LobbyConnection.launch_game
-        )
 
     await ladder_service.start_game([player1], [player2], queue)
 
     game = game_service[game_service.game_id_counter]
 
-    assert player1.lobby_connection.launch_game.called
+    assert player1.lobby_connection.write_launch_game.called
     # TODO: Once client supports `match_cancelled` change this to `assert not`
-    assert player2.lobby_connection.launch_game.called
+    assert player2.lobby_connection.write_launch_game.called
     assert isinstance(game, LadderGame)
     assert game.rating_type == queue.rating_type
     assert game.max_players == 2
@@ -206,14 +202,58 @@ async def test_start_game_timeout(
 
     LadderGame.timeout_game.assert_called_once()
     LadderGame.on_game_end.assert_called()
-    p1.lobby_connection.write.assert_called_once_with({"command": "match_cancelled"})
-    p2.lobby_connection.write.assert_called_once_with({"command": "match_cancelled"})
-    assert p1.lobby_connection.launch_game.called
+    p1.lobby_connection.write.assert_called_once_with({
+        "command": "match_cancelled",
+        "game_id": 41956
+    })
+    p2.lobby_connection.write.assert_called_once_with({
+        "command": "match_cancelled",
+        "game_id": 41956
+    })
+    assert p1.lobby_connection.write_launch_game.called
     # TODO: Once client supports `match_cancelled` change this to `assert not`
     # and uncomment the following lines.
-    assert p2.lobby_connection.launch_game.called
+    assert p2.lobby_connection.write_launch_game.called
     # assert p1.state is PlayerState.IDLE
     # assert p2.state is PlayerState.IDLE
+
+
+@fast_forward(200)
+async def test_start_game_timeout_on_send(
+    ladder_service: LadderService,
+    player_factory,
+    monkeypatch
+):
+    queue = ladder_service.queues["ladder1v1"]
+    p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
+    p2 = player_factory("Rhiza", player_id=2, lobby_connection_spec="auto")
+
+    monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "on_game_end", mock.AsyncMock())
+
+    async def wait_forever(*args, **kwargs):
+        await asyncio.sleep(1000)
+    # Even though launch_game isn't called by start_game, these mocks are
+    # important for the test in case someone refactors the code to call it.
+    p1.lobby_connection.launch_game.side_effect = wait_forever
+    p2.lobby_connection.launch_game.side_effect = wait_forever
+
+    await asyncio.wait_for(
+        ladder_service.start_game([p1], [p2], queue),
+        timeout=150
+    )
+
+    LadderGame.timeout_game.assert_called_once()
+    LadderGame.on_game_end.assert_called()
+    p1.lobby_connection.write.assert_called_once_with({
+        "command": "match_cancelled",
+        "game_id": 41956
+    })
+    p2.lobby_connection.write.assert_called_once_with({
+        "command": "match_cancelled",
+        "game_id": 41956
+    })
+    assert p1.lobby_connection.write_launch_game.called
 
 
 @given(
@@ -238,10 +278,6 @@ async def test_start_game_with_teams(
     monkeypatch.setattr(LadderGame, "wait_hosted", mock.AsyncMock())
     monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock())
     monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
-    for player in (player1, player2, player3, player4):
-        player.lobby_connection.launch_game = mock.AsyncMock(
-            spec=LobbyConnection.launch_game
-        )
 
     await ladder_service.start_game(
         [player1, player3],
@@ -251,10 +287,10 @@ async def test_start_game_with_teams(
 
     game = game_service[game_service.game_id_counter]
 
-    assert player1.lobby_connection.launch_game.called
-    assert player2.lobby_connection.launch_game.called
-    assert player3.lobby_connection.launch_game.called
-    assert player4.lobby_connection.launch_game.called
+    assert player1.lobby_connection.write_launch_game.called
+    assert player2.lobby_connection.write_launch_game.called
+    assert player3.lobby_connection.write_launch_game.called
+    assert player4.lobby_connection.write_launch_game.called
     assert isinstance(game, LadderGame)
     assert game.rating_type == queue.rating_type
     assert game.max_players == 4

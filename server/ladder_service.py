@@ -463,17 +463,19 @@ class LadderService(Service):
                 game_options=game_options
             )
 
-            def game_options(player: Player) -> GameLaunchOptions:
+            def make_game_options(player: Player) -> GameLaunchOptions:
                 return options._replace(
                     team=game.get_player_option(player.id, "Team"),
                     faction=player.faction,
                     map_position=game.get_player_option(player.id, "StartSpot")
                 )
 
-            await host.lobby_connection.launch_game(
-                game, is_host=True, options=game_options(host)
-            )
             try:
+                host.lobby_connection.write_launch_game(
+                    game,
+                    is_host=True,
+                    options=make_game_options(host)
+                )
                 await game.wait_hosted(60)
             finally:
                 # TODO: Once the client supports `match_cancelled`, don't
@@ -482,13 +484,13 @@ class LadderService(Service):
                 # think it is searching for ladder, even though the server has
                 # already removed it from the queue.
 
-                await asyncio.gather(*[
-                    guest.lobby_connection.launch_game(
-                        game, is_host=False, options=game_options(guest)
-                    )
-                    for guest in all_guests
-                    if guest.lobby_connection is not None
-                ])
+                for guest in all_guests:
+                    if guest.lobby_connection is not None:
+                        guest.lobby_connection.write_launch_game(
+                            game,
+                            is_host=False,
+                            options=make_game_options(guest)
+                        )
             await game.wait_launched(60 + 10 * len(all_guests))
             self._logger.debug("Ladder game launched successfully %s", game)
         except Exception as e:
@@ -503,7 +505,8 @@ class LadderService(Service):
             if game:
                 await game.on_game_end()
 
-            msg = {"command": "match_cancelled"}
+            game_id = game.id if game else None
+            msg = {"command": "match_cancelled", "game_id": game_id}
             for player in all_players:
                 if player.state == PlayerState.STARTING_AUTOMATCH:
                     player.state = PlayerState.IDLE
