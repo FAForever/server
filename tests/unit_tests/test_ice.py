@@ -52,7 +52,7 @@ def test_coturn_tokens(coturn_hmac, coturn_hosts, coturn_credentials):
                 f"turn:{host}?transport=tcp",
                 f"turn:{host}?transport=udp",
                 f"stun:{host}"
-            ]
+        ]
 
         assert server["credential"] == credential
         assert server["username"] == "124456:faf-test"

@@ -123,7 +123,7 @@ game_player_stats = Table(
     Column("color",         Integer, nullable=False),
     Column("team",          Integer, nullable=False),
     Column("place",         Integer, nullable=False),
-    # DEPRECATED: Use leaderboard_rating_journal instead. These columns should 
+    # DEPRECATED: Use leaderboard_rating_journal instead. These columns should
     # be dropped at some point.
     Column("mean",          Float,   nullable=False),
     Column("deviation",     Float,   nullable=False),

@@ -56,6 +56,7 @@ class TeamMatchMaker(Matchmaker):
     8. pick the first game from the game list and remove all other games that contain the same players
     9. repeat 8. until the list is empty
     """
+
     def find(self, searches: Iterable[Search], team_size: int) -> tuple[list[Match], list[Search]]:
         if not searches:
             return [], []

@@ -79,6 +79,7 @@ class StableMarriageMatchmaker(Matchmaker):
     Runs stable marriage to produce a list of matches
     and afterwards adds random matchups for previously unmatched new players.
     """
+
     def find(
         self, searches: Iterable[Search], team_size: int
     ) -> tuple[list[Match], list[Search]]:

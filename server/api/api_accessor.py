@@ -17,6 +17,7 @@ class SessionManager:
     """
     Garantor for API access
     """
+
     def __init__(self):
         self.session = None  # Instance of session
 
