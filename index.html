@@ -2331,6 +2331,7 @@ class GameService(Service):
     &#34;&#34;&#34;
     Utility class for maintaining lifecycle of games
     &#34;&#34;&#34;
+
     def __init__(
         self,
         database: FAFDatabase,
@@ -3671,6 +3672,7 @@ class LadderService(Service):
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates
     statistics, and launches the games.
     &#34;&#34;&#34;
+
     def __init__(
         self,
         database: FAFDatabase,
@@ -4745,6 +4747,7 @@ class MessageQueueService(Service):
     Service handling connection to the message queue
     and providing an interface to publish messages.
     &#34;&#34;&#34;
+
     def __init__(self) -&gt; None:
         self._connection = None
         self._channel = None

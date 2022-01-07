@@ -43,6 +43,7 @@ class ClientError(Exception):
     If recoverable is False, it is expected that the connection be terminated
     immediately.
     &#34;&#34;&#34;
+
     def __init__(self, message, recoverable=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.message = message
@@ -53,6 +54,7 @@ class BanError(Exception):
     &#34;&#34;&#34;
     Signals that an operation could not be completed because the user is banned.
     &#34;&#34;&#34;
+
     def __init__(self, ban_expiry, ban_reason, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ban_expiry = ban_expiry
@@ -79,6 +81,7 @@ class AuthenticationError(Exception):
     &#34;&#34;&#34;
     The operation failed to authenticate.
     &#34;&#34;&#34;
+
     def __init__(self, message, method, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.message = message
@@ -108,6 +111,7 @@ class AuthenticationError(Exception):
     &#34;&#34;&#34;
     The operation failed to authenticate.
     &#34;&#34;&#34;
+
     def __init__(self, message, method, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.message = message
@@ -133,6 +137,7 @@ class AuthenticationError(Exception):
     &#34;&#34;&#34;
     Signals that an operation could not be completed because the user is banned.
     &#34;&#34;&#34;
+
     def __init__(self, ban_expiry, ban_reason, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ban_expiry = ban_expiry
@@ -198,6 +203,7 @@ immediately.</p></div>
     If recoverable is False, it is expected that the connection be terminated
     immediately.
     &#34;&#34;&#34;
+
     def __init__(self, message, recoverable=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.message = message
