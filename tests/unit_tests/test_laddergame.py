@@ -18,7 +18,8 @@ def laddergame(database, game_service, game_stats_service):
         id_=465312,
         database=database,
         game_service=game_service,
-        game_stats_service=game_stats_service
+        game_stats_service=game_stats_service,
+        rating_type=RatingType.LADDER_1V1
     )
 
 
