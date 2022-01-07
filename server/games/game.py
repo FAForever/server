@@ -118,7 +118,7 @@ class Game():
         }
         self.mods = {}
         self._hosted_event = asyncio.Event()
-        self._launched_event = asyncio.Event()
+        self._launch_future = asyncio.Future()
 
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
@@ -277,7 +277,7 @@ class Game():
 
     async def wait_launched(self, timeout: float):
         return await asyncio.wait_for(
-            self._launched_event.wait(),
+            self._launch_future,
             timeout=timeout
         )
 
@@ -389,6 +389,9 @@ class Game():
 
         if self.state is GameState.LOBBY and player.id in self._player_options:
             del self._player_options[player.id]
+
+        if self.state is GameState.INITIALIZING:
+            self._launch_future.cancel()
 
         await self.check_sim_end()
 
@@ -703,7 +706,7 @@ class Game():
         await self.on_game_launched()
         await self.validate_game_settings()
 
-        self._launched_event.set()
+        self._launch_future.set_result(None)
         self._logger.info("Game launched")
 
     async def on_game_launched(self):

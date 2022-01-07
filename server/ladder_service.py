@@ -500,6 +500,11 @@ class LadderService(Service):
                     "Ladder game failed to start! %s setup timed out",
                     game
                 )
+            elif isinstance(e, asyncio.CancelledError):
+                self._logger.info(
+                    "Ladder game %s failed to start! Someone closed his game instance",
+                    game
+                )
             else:
                 self._logger.exception("Ladder game failed to start %s", game)
 
