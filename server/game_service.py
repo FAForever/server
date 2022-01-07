@@ -35,6 +35,7 @@ class GameService(Service):
     """
     Utility class for maintaining lifecycle of games
     """
+
     def __init__(
         self,
         database: FAFDatabase,

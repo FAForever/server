@@ -27,20 +27,20 @@ def player_factory(player_factory):
 @pytest.fixture
 def matchmaker_players(player_factory):
     return player_factory("Dostya", player_id=1, ladder_rating=(2300, 64)), \
-           player_factory("Brackman", player_id=2, ladder_rating=(1200, 72)), \
-           player_factory("Zoidberg", player_id=3, ladder_rating=(1300, 175)), \
-           player_factory("QAI", player_id=4, ladder_rating=(2350, 125)), \
-           player_factory("Rhiza", player_id=5, ladder_rating=(1200, 175)), \
-           player_factory("Newbie", player_id=6, ladder_rating=(1200, 175), ladder_games=config.NEWBIE_MIN_GAMES - 1)
+        player_factory("Brackman", player_id=2, ladder_rating=(1200, 72)), \
+        player_factory("Zoidberg", player_id=3, ladder_rating=(1300, 175)), \
+        player_factory("QAI", player_id=4, ladder_rating=(2350, 125)), \
+        player_factory("Rhiza", player_id=5, ladder_rating=(1200, 175)), \
+        player_factory("Newbie", player_id=6, ladder_rating=(1200, 175), ladder_games=config.NEWBIE_MIN_GAMES - 1)
 
 
 @pytest.fixture
 def matchmaker_players_all_match(player_factory):
     return player_factory("Dostya", player_id=1, ladder_rating=(1500, 50)), \
-           player_factory("Brackman", player_id=2, ladder_rating=(1500, 50)), \
-           player_factory("Zoidberg", player_id=3, ladder_rating=(1500, 50)), \
-           player_factory("QAI", player_id=4, ladder_rating=(1500, 50)), \
-           player_factory("Rhiza", player_id=5, ladder_rating=(1500, 50))
+        player_factory("Brackman", player_id=2, ladder_rating=(1500, 50)), \
+        player_factory("Zoidberg", player_id=3, ladder_rating=(1500, 50)), \
+        player_factory("QAI", player_id=4, ladder_rating=(1500, 50)), \
+        player_factory("Rhiza", player_id=5, ladder_rating=(1500, 50))
 
 
 def test_get_game_options_empty(queue_factory):
@@ -361,8 +361,8 @@ def test_queue_multiple_map_pools(
 @pytest.mark.asyncio
 async def test_queue_many(matchmaker_queue, player_factory):
     p1, p2, p3 = player_factory("Dostya", ladder_rating=(2200, 150)), \
-                 player_factory("Brackman", ladder_rating=(1500, 150)), \
-                 player_factory("Zoidberg", ladder_rating=(1500, 125))
+        player_factory("Brackman", ladder_rating=(1500, 150)), \
+        player_factory("Zoidberg", ladder_rating=(1500, 125))
 
     s1 = Search([p1])
     s2 = Search([p2])
@@ -384,8 +384,8 @@ async def test_queue_many(matchmaker_queue, player_factory):
 @pytest.mark.asyncio
 async def test_queue_race(matchmaker_queue, player_factory):
     p1, p2, p3 = player_factory("Dostya", ladder_rating=(2300, 150)), \
-                 player_factory("Brackman", ladder_rating=(2200, 150)), \
-                 player_factory("Zoidberg", ladder_rating=(2300, 125))
+        player_factory("Brackman", ladder_rating=(2200, 150)), \
+        player_factory("Zoidberg", ladder_rating=(2300, 125))
 
     async def find_matches():
         await asyncio.sleep(0.01)

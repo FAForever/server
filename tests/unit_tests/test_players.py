@@ -80,8 +80,8 @@ def test_serialize():
         player_id=42,
         login="Something",
         ratings={
-           RatingType.GLOBAL: (1234, 68),
-           RatingType.LADDER_1V1: (1500, 230),
+            RatingType.GLOBAL: (1234, 68),
+            RatingType.LADDER_1V1: (1500, 230),
         },
         clan="TOAST",
         game_count={RatingType.GLOBAL: 542}

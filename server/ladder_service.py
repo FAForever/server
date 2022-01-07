@@ -44,6 +44,7 @@ class LadderService(Service):
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates
     statistics, and launches the games.
     """
+
     def __init__(
         self,
         database: FAFDatabase,

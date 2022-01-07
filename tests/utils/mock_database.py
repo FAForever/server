@@ -26,6 +26,7 @@ class MockDatabase(FAFDatabase):
     Note that right now the server relies on autocommit behaviour sqlalchemy.
     Any future manual commit() calls should be mocked here as well.
     """
+
     def __init__(
         self,
         host: str = "localhost",

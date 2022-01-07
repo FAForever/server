@@ -16,6 +16,7 @@ class TwilioNTS:
 
     Creates new twilio NTS tokens
     """
+
     def __init__(self, sid=None, token=None):
         if sid is None:
             sid = config.TWILIO_ACCOUNT_SID  # pragma: no cover
