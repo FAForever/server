@@ -18,6 +18,7 @@ from server.games import (
     Victory,
     VisibilityState
 )
+from server.games.game import GameClosedError
 from server.games.game_results import ArmyOutcome
 from server.games.typedefs import FeaturedModType
 from server.rating import InclusiveRange, RatingType
@@ -398,6 +399,9 @@ async def test_remove_game_connection(
     game.add_game_connection(mock_game_connection)
     await game.remove_game_connection(mock_game_connection)
     assert players.hosting not in game.players
+    e = game._launch_future.exception()
+    assert type(e) is GameClosedError
+    assert e.args == mock_game_connection.player
 
 
 async def test_game_end_when_no_more_connections(

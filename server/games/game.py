@@ -47,6 +47,10 @@ class GameError(Exception):
     pass
 
 
+class GameClosedError(Exception):
+    pass
+
+
 class Game():
     """
     Object that lasts for the lifetime of a game on FAF.
@@ -390,8 +394,8 @@ class Game():
         if self.state is GameState.LOBBY and player.id in self._player_options:
             del self._player_options[player.id]
 
-        if self.state is GameState.INITIALIZING:
-            self._launch_future.cancel()
+        if self.state is GameState.INITIALIZING or self.state is GameState.LOBBY:
+            self._launch_future.set_exception(GameClosedError(player))
 
         await self.check_sim_end()
 
