@@ -18,15 +18,6 @@ class LadderGame(Game):
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
 
-    def __init__(self, id_, *args, **kwargs):
-        new_kwargs = {
-            "game_mode": FeaturedModType.LADDER_1V1,
-            "rating_type": RatingType.LADDER_1V1,
-            "max_players": 2,
-        }
-        new_kwargs.update(kwargs)
-        super().__init__(id_, *args, **new_kwargs)
-
     def is_winner(self, player: Player) -> bool:
         return self.get_player_outcome(player) is ArmyOutcome.VICTORY
 
