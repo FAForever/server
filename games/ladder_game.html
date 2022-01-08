@@ -46,15 +46,6 @@ class LadderGame(Game):
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
 
-    def __init__(self, id_, *args, **kwargs):
-        new_kwargs = {
-            &#34;game_mode&#34;: FeaturedModType.LADDER_1V1,
-            &#34;rating_type&#34;: RatingType.LADDER_1V1,
-            &#34;max_players&#34;: 2,
-        }
-        new_kwargs.update(kwargs)
-        super().__init__(id_, *args, **new_kwargs)
-
     def is_winner(self, player: Player) -&gt; bool:
         return self.get_player_outcome(player) is ArmyOutcome.VICTORY
 
@@ -92,7 +83,7 @@ class LadderGame(Game):
 <dl>
 <dt id="server.games.ladder_game.LadderGame"><code class="flex name class">
 <span>class <span class="ident">LadderGame</span></span>
-<span>(</span><span>id_, *args, **kwargs)</span>
+<span>(</span><span>id_: int, database: FAFDatabase, game_service: GameService, game_stats_service: GameStatsService, host: Optional[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>] = None, name: str = 'None', map_: str = 'SCMP_007', game_mode: str = 'faf', matchmaker_queue_id: Optional[int] = None, rating_type: Optional[str] = None, displayed_rating_range: Optional[<a title="server.rating.InclusiveRange" href="../rating.html#server.rating.InclusiveRange">InclusiveRange</a>] = None, enforce_rating_range: bool = False, max_players: int = 12, setup_timeout: int = 60)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Class for 1v1 ladder games</p></div>
@@ -105,15 +96,6 @@ class LadderGame(Game):
 
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
-
-    def __init__(self, id_, *args, **kwargs):
-        new_kwargs = {
-            &#34;game_mode&#34;: FeaturedModType.LADDER_1V1,
-            &#34;rating_type&#34;: RatingType.LADDER_1V1,
-            &#34;max_players&#34;: 2,
-        }
-        new_kwargs.update(kwargs)
-        super().__init__(id_, *args, **new_kwargs)
 
     def is_winner(self, player: Player) -&gt; bool:
         return self.get_player_outcome(player) is ArmyOutcome.VICTORY
