@@ -503,8 +503,8 @@ class LadderService(Service):
                 )
             elif isinstance(e, GameClosedError):
                 self._logger.info(
-                    "Ladder game %s failed to start! Player %s closed his game instance",
-                    game, e.args
+                    "Ladder game %s failed to start! Player %s closed their game instance",
+                    game, e.player
                 )
             else:
                 self._logger.exception("Ladder game failed to start %s", game)

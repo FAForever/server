@@ -257,9 +257,9 @@ async def test_start_game_timeout_on_send(
 
 
 async def test_start_game_game_closed(
-        ladder_service: LadderService,
-        player_factory,
-        monkeypatch
+    ladder_service: LadderService,
+    player_factory,
+    monkeypatch
 ):
     queue = ladder_service.queues["ladder1v1"]
     p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
