@@ -47,16 +47,6 @@ class GameError(Exception):
     pass
 
 
-class GameClosedError(Exception):
-    """
-    The game has been closed during the setup phase
-    """
-
-    def __init__(self, player: Player, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.player = player
-
-
 class Game:
     """
     Object that lasts for the lifetime of a game on FAF.
@@ -128,7 +118,6 @@ class Game:
         }
         self.mods = {}
         self._hosted_event = asyncio.Event()
-        self._launch_future = asyncio.Future()
 
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
@@ -276,20 +265,8 @@ class Game:
 
         return list(teams.values()) + ffa_players
 
-    async def wait_hosted(self, timeout: float):
-        return await asyncio.wait_for(
-            self._hosted_event.wait(),
-            timeout=timeout
-        )
-
     def set_hosted(self):
         self._hosted_event.set()
-
-    async def wait_launched(self, timeout: float):
-        return await asyncio.wait_for(
-            self._launch_future,
-            timeout=timeout
-        )
 
     async def add_result(
         self,
@@ -400,14 +377,12 @@ class Game:
         if self.state is GameState.LOBBY and player.id in self._player_options:
             del self._player_options[player.id]
 
-        if not self._launch_future.done() and (
-                self.state is GameState.INITIALIZING or self.state is GameState.LOBBY
-        ):
-            self._launch_future.set_exception(GameClosedError(player))
-
-        await self.check_sim_end()
-
         self._logger.info("Removed game connection %s", game_connection)
+
+        await self.handle_game_end(player)
+
+    async def handle_game_end(self, player):
+        await self.check_sim_end()
 
         host_left_lobby = (
             player == self.host and self.state is not GameState.LIVE
@@ -718,7 +693,6 @@ class Game:
         await self.on_game_launched()
         await self.validate_game_settings()
 
-        self._launch_future.set_result(None)
         self._logger.info("Game launched")
 
     async def on_game_launched(self):

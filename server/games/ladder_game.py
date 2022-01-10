@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Optional
 
@@ -7,9 +8,19 @@ from server.rating import RatingType
 
 from .game import Game
 from .game_results import ArmyOutcome, GameOutcome
-from .typedefs import FeaturedModType, GameType, InitMode
+from .typedefs import FeaturedModType, GameState, GameType, InitMode
 
 logger = logging.getLogger(__name__)
+
+
+class GameClosedError(Exception):
+    """
+    The game has been closed during the setup phase
+    """
+
+    def __init__(self, player: Player, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.player = player
 
 
 class LadderGame(Game):
@@ -17,6 +28,34 @@ class LadderGame(Game):
 
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
+
+    def __init__(self, id_, *args, **kwargs):
+        super().__init__(id_, *args, **kwargs)
+        self._launch_future = asyncio.Future()
+
+    async def wait_hosted(self, timeout: float):
+        return await asyncio.wait_for(
+            self._hosted_event.wait(),
+            timeout=timeout
+        )
+
+    async def wait_launched(self, timeout: float):
+        return await asyncio.wait_for(
+            self._launch_future,
+            timeout=timeout
+        )
+
+    async def launch(self):
+        await super().launch()
+        self._launch_future.set_result(None)
+
+    async def handle_game_end(self, player):
+        if not self._launch_future.done() and (
+            self.state in (GameState.INITIALIZING, GameState.LOBBY)
+        ):
+            self._launch_future.set_exception(GameClosedError(player))
+
+        await super().handle_game_end(player)
 
     def is_winner(self, player: Player) -> bool:
         return self.get_player_outcome(player) is ArmyOutcome.VICTORY

@@ -6,6 +6,7 @@ from sqlalchemy import and_, select
 from server.db.models import game_player_stats, leaderboard_rating
 from server.games import GameState, LadderGame, ValidityState
 from server.games.game_results import GameOutcome
+from server.games.ladder_game import GameClosedError
 from server.rating import RatingType
 from tests.unit_tests.test_game import add_connected_players
 
@@ -21,6 +22,20 @@ def laddergame(database, game_service, game_stats_service):
         game_stats_service=game_stats_service,
         rating_type=RatingType.LADDER_1V1
     )
+
+
+async def test_handle_game_end(laddergame, players):
+    laddergame.state = GameState.LOBBY
+    await laddergame.handle_game_end(players.hosting)
+    e = laddergame._launch_future.exception()
+    assert isinstance(e, GameClosedError)
+    assert e.player == players.hosting
+
+
+async def test_do_not_cancel_live_games(laddergame, players):
+    laddergame.state = GameState.LIVE
+    await laddergame.handle_game_end(players.hosting)
+    assert not laddergame._launch_future.done()
 
 
 async def test_results_ranked_by_victory(laddergame, players):

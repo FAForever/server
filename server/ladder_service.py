@@ -33,7 +33,7 @@ from .db.models import (
 from .decorators import with_logger
 from .game_service import GameService
 from .games import InitMode, LadderGame
-from .games.game import GameClosedError
+from .games.ladder_game import GameClosedError
 from .matchmaker import MapPool, MatchmakerQueue, OnMatchedCallback, Search
 from .players import Player, PlayerState
 from .types import GameLaunchOptions, Map, NeroxisGeneratedMap

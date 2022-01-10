@@ -8,7 +8,7 @@ from hypothesis import strategies as st
 from server import LadderService, LobbyConnection
 from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
 from server.games import LadderGame
-from server.games.game import GameClosedError
+from server.games.ladder_game import GameClosedError
 from server.ladder_service import game_name
 from server.matchmaker import MapPool, MatchmakerQueue
 from server.players import PlayerState
