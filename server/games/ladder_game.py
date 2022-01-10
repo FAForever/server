@@ -4,11 +4,10 @@ from typing import Optional
 
 from server.config import config
 from server.players import Player
-from server.rating import RatingType
 
 from .game import Game
 from .game_results import ArmyOutcome, GameOutcome
-from .typedefs import FeaturedModType, GameState, GameType, InitMode
+from .typedefs import GameState, GameType, InitMode
 
 logger = logging.getLogger(__name__)
 
