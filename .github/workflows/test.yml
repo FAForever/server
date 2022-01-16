@@ -103,7 +103,7 @@ jobs:
 
       - name: Run tests
         if: ${{ github.event_name != 'schedule' }}
-        run: pipenv run tests --cov-report=xml -m ""
+        run: pipenv run tests --cov-report=xml --color=yes -m ""
 
       - name: Run hypothesis tests with many examples
         if: ${{ github.event_name == 'schedule' }}
