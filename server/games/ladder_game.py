@@ -34,7 +34,7 @@ class LadderGame(Game):
 
     async def wait_hosted(self, timeout: float):
         return await asyncio.wait_for(
-            self._hosted_event.wait(),
+            self._hosted_future,
             timeout=timeout
         )
 
@@ -49,6 +49,12 @@ class LadderGame(Game):
         self._launch_future.set_result(None)
 
     async def check_game_finish(self, player):
+        if not self._hosted_future.done() and (
+            self.state in (GameState.INITIALIZING, GameState.LOBBY)
+        ):
+            assert self.host == player
+            self._hosted_future.set_exception(GameClosedError(player))
+
         if not self._launch_future.done() and (
             self.state in (GameState.INITIALIZING, GameState.LOBBY)
         ):

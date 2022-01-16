@@ -256,7 +256,7 @@ async def test_start_game_timeout_on_send(
     assert p1.lobby_connection.write_launch_game.called
 
 
-async def test_start_game_game_closed(
+async def test_start_game_game_closed_by_guest(
     ladder_service: LadderService,
     player_factory,
     monkeypatch
@@ -282,6 +282,38 @@ async def test_start_game_game_closed(
         "game_id": 41956
     })
     assert p1.lobby_connection.write_launch_game.called
+    assert p2.lobby_connection.write_launch_game.called
+    assert p1.state is PlayerState.IDLE
+    assert p2.state is PlayerState.IDLE
+
+
+async def test_start_game_game_closed_by_host(
+    ladder_service: LadderService,
+    player_factory,
+    monkeypatch
+):
+    queue = ladder_service.queues["ladder1v1"]
+    p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
+    p2 = player_factory("Rhiza", player_id=2, lobby_connection_spec="auto")
+
+    monkeypatch.setattr(LadderGame, "wait_hosted", mock.AsyncMock(side_effect=GameClosedError))
+    monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "on_game_finish", mock.AsyncMock())
+
+    await ladder_service.start_game([p1], [p2], queue)
+
+    LadderGame.on_game_finish.assert_called()
+    p1.lobby_connection.write.assert_called_once_with({
+        "command": "match_cancelled",
+        "game_id": 41956
+    })
+    p2.lobby_connection.write.assert_called_once_with({
+        "command": "match_cancelled",
+        "game_id": 41956
+    })
+    assert p1.lobby_connection.write_launch_game.called
+    # TODO: Once client supports `match_cancelled` change this to `assert not`
     assert p2.lobby_connection.write_launch_game.called
     assert p1.state is PlayerState.IDLE
     assert p2.state is PlayerState.IDLE

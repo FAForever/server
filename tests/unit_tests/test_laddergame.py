@@ -27,14 +27,18 @@ def laddergame(database, game_service, game_stats_service):
 async def test_handle_game_closed_manually(laddergame, players):
     laddergame.state = GameState.LOBBY
     await laddergame.check_game_finish(players.hosting)
-    e = laddergame._launch_future.exception()
-    assert isinstance(e, GameClosedError)
-    assert e.player == players.hosting
+    e1 = laddergame._hosted_future.exception()
+    assert isinstance(e1, GameClosedError)
+    assert e1.player == players.hosting
+    e2 = laddergame._launch_future.exception()
+    assert isinstance(e2, GameClosedError)
+    assert e2.player == players.hosting
 
 
 async def test_do_not_cancel_live_games(laddergame, players):
     laddergame.state = GameState.LIVE
     await laddergame.check_game_finish(players.hosting)
+    assert not laddergame._hosted_future.done()
     assert not laddergame._launch_future.done()
 
 

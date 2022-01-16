@@ -117,7 +117,7 @@ class Game:
             "Unranked": "No"
         }
         self.mods = {}
-        self._hosted_event = asyncio.Event()
+        self._hosted_future = asyncio.Future()
 
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
@@ -266,7 +266,7 @@ class Game:
         return list(teams.values()) + ffa_players
 
     def set_hosted(self):
-        self._hosted_event.set()
+        self._hosted_future.set_result(None)
 
     async def add_result(
         self,
