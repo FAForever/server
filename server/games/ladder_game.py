@@ -17,8 +17,8 @@ class GameClosedError(Exception):
     The game has been closed during the setup phase
     """
 
-    def __init__(self, player: Player, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, player: Player):
+        super().__init__()
         self.player = player
 
 
