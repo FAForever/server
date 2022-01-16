@@ -499,6 +499,9 @@ class GameConnection(GpgNetServerProtocol):
                         ids=tuple(uids)
                     )
         elif state == "Ended":
+            """
+            Signals that the FA executable has been closed
+            """
             await self.on_connection_lost()
         self._mark_dirty()
 
@@ -510,8 +513,8 @@ class GameConnection(GpgNetServerProtocol):
         await self.game.check_sim_end()
 
         # FIXME Move this into check_sim_end
-        if self.game.ended:
-            await self.game.on_game_end()
+        if self.game.finished:
+            await self.game.on_game_finish()
 
     async def handle_rehost(self, *args: list[Any]):
         """

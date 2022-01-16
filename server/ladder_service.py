@@ -510,7 +510,7 @@ class LadderService(Service):
                 self._logger.exception("Ladder game failed to start %s", game)
 
             if game:
-                await game.on_game_end()
+                await game.on_game_finish()
 
             game_id = game.id if game else None
             msg = {"command": "match_cancelled", "game_id": game_id}

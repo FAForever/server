@@ -48,13 +48,13 @@ class LadderGame(Game):
         await super().launch()
         self._launch_future.set_result(None)
 
-    async def handle_game_end(self, player):
+    async def check_game_finish(self, player):
         if not self._launch_future.done() and (
             self.state in (GameState.INITIALIZING, GameState.LOBBY)
         ):
             self._launch_future.set_exception(GameClosedError(player))
 
-        await super().handle_game_end(player)
+        await super().check_game_finish(player)
 
     def is_winner(self, player: Player) -> bool:
         return self.get_player_outcome(player) is ArmyOutcome.VICTORY

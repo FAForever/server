@@ -79,7 +79,7 @@ class Game:
         self.game_service = game_service
         self._player_options: dict[int, dict[str, Any]] = defaultdict(dict)
         self.launched_at = None
-        self.ended = False
+        self.finished = False
         self._logger = logging.getLogger(
             f"{self.__class__.__qualname__}.{id_}"
         )
@@ -126,7 +126,7 @@ class Game:
         await asyncio.sleep(timeout)
         if self.state is GameState.INITIALIZING:
             self._logger.debug("Game setup timed out, cancelling game")
-            await self.on_game_end()
+            await self.on_game_finish()
 
     @property
     def name(self):
@@ -364,7 +364,7 @@ class Game:
         """
         Remove a game connection from this game.
 
-        Will trigger `on_game_end` if there are no more active connections to the
+        Will trigger `on_game_finish` if there are no more active connections to the
         game.
         """
         if game_connection not in self._connections.values():
@@ -379,9 +379,9 @@ class Game:
 
         self._logger.info("Removed game connection %s", game_connection)
 
-        await self.handle_game_end(player)
+        await self.check_game_finish(player)
 
-    async def handle_game_end(self, player):
+    async def check_game_finish(self, player):
         await self.check_sim_end()
 
         host_left_lobby = (
@@ -389,22 +389,22 @@ class Game:
         )
 
         if self.state is not GameState.ENDED and (
-            self.ended or
+            self.finished or
             len(self._connections) == 0 or
             host_left_lobby
         ):
-            await self.on_game_end()
+            await self.on_game_finish()
         else:
             self._process_pending_army_stats()
 
     async def check_sim_end(self):
-        if self.ended:
+        if self.finished:
             return
         if self.state is not GameState.LIVE:
             return
         if [conn for conn in self.connections if not conn.finished_sim]:
             return
-        self.ended = True
+        self.finished = True
         async with self._db.acquire() as conn:
             await conn.execute(
                 game_stats.update().where(
@@ -414,7 +414,7 @@ class Game:
                 )
             )
 
-    async def on_game_end(self):
+    async def on_game_finish(self):
         try:
             if self.state is GameState.LOBBY:
                 self._logger.info("Game cancelled pre launch")

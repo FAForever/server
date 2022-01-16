@@ -197,12 +197,12 @@ async def test_start_game_timeout(
     p2 = player_factory("Rhiza", player_id=2, lobby_connection_spec="auto")
 
     monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
-    monkeypatch.setattr(LadderGame, "on_game_end", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "on_game_finish", mock.AsyncMock())
 
     await ladder_service.start_game([p1], [p2], queue)
 
     LadderGame.timeout_game.assert_called_once()
-    LadderGame.on_game_end.assert_called()
+    LadderGame.on_game_finish.assert_called()
     p1.lobby_connection.write.assert_called_once_with({
         "command": "match_cancelled",
         "game_id": 41956
@@ -229,7 +229,7 @@ async def test_start_game_timeout_on_send(
     p2 = player_factory("Rhiza", player_id=2, lobby_connection_spec="auto")
 
     monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
-    monkeypatch.setattr(LadderGame, "on_game_end", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "on_game_finish", mock.AsyncMock())
 
     async def wait_forever(*args, **kwargs):
         await asyncio.sleep(1000)
@@ -244,7 +244,7 @@ async def test_start_game_timeout_on_send(
     )
 
     LadderGame.timeout_game.assert_called_once()
-    LadderGame.on_game_end.assert_called()
+    LadderGame.on_game_finish.assert_called()
     p1.lobby_connection.write.assert_called_once_with({
         "command": "match_cancelled",
         "game_id": 41956
@@ -268,11 +268,11 @@ async def test_start_game_game_closed(
     monkeypatch.setattr(LadderGame, "wait_hosted", mock.AsyncMock())
     monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
     monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock(side_effect=GameClosedError))
-    monkeypatch.setattr(LadderGame, "on_game_end", mock.AsyncMock())
+    monkeypatch.setattr(LadderGame, "on_game_finish", mock.AsyncMock())
 
     await ladder_service.start_game([p1], [p2], queue)
 
-    LadderGame.on_game_end.assert_called()
+    LadderGame.on_game_finish.assert_called()
     p1.lobby_connection.write.assert_called_once_with({
         "command": "match_cancelled",
         "game_id": 41956

@@ -24,9 +24,9 @@ def laddergame(database, game_service, game_stats_service):
     )
 
 
-async def test_handle_game_end(laddergame, players):
+async def test_handle_game_closed_manually(laddergame, players):
     laddergame.state = GameState.LOBBY
-    await laddergame.handle_game_end(players.hosting)
+    await laddergame.check_game_finish(players.hosting)
     e = laddergame._launch_future.exception()
     assert isinstance(e, GameClosedError)
     assert e.player == players.hosting
@@ -34,7 +34,7 @@ async def test_handle_game_end(laddergame, players):
 
 async def test_do_not_cancel_live_games(laddergame, players):
     laddergame.state = GameState.LIVE
-    await laddergame.handle_game_end(players.hosting)
+    await laddergame.check_game_finish(players.hosting)
     assert not laddergame._launch_future.done()
 
 
@@ -121,7 +121,7 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
     laddergame.launched_at = time.time() - 60*20
     await laddergame.add_result(0, 0, "victory", 5)
     await laddergame.add_result(0, 1, "defeat", -5)
-    await laddergame.on_game_end()
+    await laddergame.on_game_finish()
 
     await laddergame.game_service._rating_service._join_rating_queue()
 
@@ -172,7 +172,7 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
     laddergame.launched_at = time.time() - 60*20
     await laddergame.add_result(0, 0, "victory", 5)
     await laddergame.add_result(0, 1, "defeat", -5)
-    await laddergame.on_game_end()
+    await laddergame.on_game_finish()
 
     await laddergame.game_service._rating_service._join_rating_queue()
 

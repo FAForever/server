@@ -509,24 +509,24 @@ async def test_handle_action_GameEnded_ends_sim(
     game: Game,
     game_connection: GameConnection
 ):
-    game.ended = False
+    game.finished = False
     await game_connection.handle_action("GameEnded", [])
 
     assert game_connection.finished_sim
     game.check_sim_end.assert_called_once()
-    game.on_game_end.assert_not_called()
+    game.on_game_finish.assert_not_called()
 
 
 async def test_handle_action_GameEnded_ends_game(
     game: Game,
     game_connection: GameConnection
 ):
-    game.ended = True
+    game.finished = True
     await game_connection.handle_action("GameEnded", [])
 
     assert game_connection.finished_sim
     game.check_sim_end.assert_called_once()
-    game.on_game_end.assert_called_once()
+    game.on_game_finish.assert_called_once()
 
 
 @pytest.mark.parametrize(
