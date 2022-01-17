@@ -1,5 +1,4 @@
-comment:
-  layout: "files"
+comment: false
 
 coverage:
   status:
