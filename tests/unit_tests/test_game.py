@@ -163,7 +163,7 @@ async def test_ffa_not_rated(game, game_add_players):
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20    # seconds
-    await game.on_game_end()
+    await game.on_game_finish()
     assert game.validity == ValidityState.FFA_NOT_RANKED
 
 
@@ -174,7 +174,7 @@ async def test_generated_map_is_rated(game, game_add_players):
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
-    await game.on_game_end()
+    await game.on_game_finish()
     assert game.validity == ValidityState.VALID
 
 
@@ -185,7 +185,7 @@ async def test_unranked_generated_map_not_rated(game, game_add_players):
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
-    await game.on_game_end()
+    await game.on_game_finish()
     assert game.validity == ValidityState.BAD_MAP
 
 
@@ -195,7 +195,7 @@ async def test_two_player_ffa_is_rated(game, game_add_players):
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20    # seconds
-    await game.on_game_end()
+    await game.on_game_finish()
     assert game.validity == ValidityState.VALID
 
 
@@ -207,7 +207,7 @@ async def test_multi_team_not_rated(game, game_add_players):
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20    # seconds
-    await game.on_game_end()
+    await game.on_game_finish()
     assert game.validity == ValidityState.MULTI_TEAM
 
 
@@ -229,7 +229,7 @@ async def test_has_ai_players_not_rated(game, game_add_players):
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20    # seconds
-    await game.on_game_end()
+    await game.on_game_finish()
     assert game.validity == ValidityState.HAS_AI_PLAYERS
 
 
@@ -240,7 +240,7 @@ async def test_uneven_teams_not_rated(game, game_add_players):
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20    # seconds
-    await game.on_game_end()
+    await game.on_game_finish()
     assert game.validity == ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 
@@ -252,7 +252,7 @@ async def test_single_team_not_rated(game, game_add_players):
     game.launched_at = time.time() - 60 * 20
     for i in range(n_players):
         await game.add_result(0, i + 1, "victory", 5)
-    await game.on_game_end()
+    await game.on_game_finish()
     assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 
@@ -405,12 +405,12 @@ async def test_game_end_when_no_more_connections(
 ):
     game.state = GameState.LOBBY
 
-    game.on_game_end = mock.AsyncMock()
+    game.on_game_finish = mock.AsyncMock()
     mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
     game.add_game_connection(mock_game_connection)
     await game.remove_game_connection(mock_game_connection)
 
-    game.on_game_end.assert_any_call()
+    game.on_game_finish.assert_any_call()
 
 
 async def test_game_sim_ends_when_no_more_connections(game: Game, players):
@@ -423,7 +423,7 @@ async def test_game_sim_ends_when_no_more_connections(game: Game, players):
 
     await game.remove_game_connection(host_conn)
     await game.remove_game_connection(join_conn)
-    assert game.ended
+    assert game.finished
 
 
 async def test_game_sim_ends_when_connections_ended_sim(game: Game, players):
@@ -437,7 +437,7 @@ async def test_game_sim_ends_when_connections_ended_sim(game: Game, players):
     host_conn.finished_sim = True
     join_conn.finished_sim = True
     await game.check_sim_end()
-    assert game.ended
+    assert game.finished
 
 
 @fast_forward(90)
@@ -508,7 +508,7 @@ async def test_game_ends_in_mutually_agreed_draw(game: Game, game_add_players):
 
     await game.add_result(players[0].id, 0, "mutual_draw", 0)
     await game.add_result(players[1].id, 1, "mutual_draw", 0)
-    await game.on_game_end()
+    await game.on_game_finish()
 
     assert game.validity is ValidityState.MUTUAL_DRAW
 
@@ -524,7 +524,7 @@ async def test_game_not_ends_in_unilatery_agreed_draw(
 
     await game.add_result(players.hosting.id, 0, "mutual_draw", 0)
     await game.add_result(players.joining.id, 1, "victory", 10)
-    await game.on_game_end()
+    await game.on_game_finish()
 
     assert game.validity is not ValidityState.MUTUAL_DRAW
 
@@ -536,7 +536,7 @@ async def test_game_is_invalid_due_to_desyncs(game: Game, players):
 
     await game.launch()
     game.desyncs = 30
-    await game.on_game_end()
+    await game.on_game_finish()
 
     assert game.validity is ValidityState.TOO_MANY_DESYNCS
 
@@ -559,7 +559,7 @@ async def test_on_game_end_single_player_gives_unknown_result(game):
     game.state = GameState.LIVE
     game.launched_at = time.time()
 
-    await game.on_game_end()
+    await game.on_game_finish()
     assert game.state is GameState.ENDED
     assert game.validity is ValidityState.UNKNOWN_RESULT
 
@@ -576,7 +576,7 @@ async def test_on_game_end_two_players_is_valid(
     await game.add_result(0, 1, "victory", 10)
     await game.add_result(1, 2, "defeat", -10)
 
-    await game.on_game_end()
+    await game.on_game_finish()
     assert game.state is GameState.ENDED
     assert game.validity is ValidityState.VALID
 
@@ -654,7 +654,7 @@ async def test_persist_results_not_called_with_one_player(
     await game.launch()
     assert len(game.players) == 1
     await game.add_result(0, 1, "victory", 5)
-    await game.on_game_end()
+    await game.on_game_finish()
 
     game.persist_results.assert_not_called()
 
@@ -669,7 +669,7 @@ async def test_persist_results_not_called_with_no_results(
     game.launched_at = time.time() - 60 * 20
 
     await game.launch()
-    await game.on_game_end()
+    await game.on_game_finish()
 
     assert len(game.players) == 4
     assert len(game._results) == 0
@@ -683,7 +683,7 @@ async def test_persist_results_called_with_two_players(game, game_add_players):
     await game.launch()
     assert len(game.players) == 2
     await game.add_result(0, 1, "victory", 5)
-    await game.on_game_end()
+    await game.on_game_finish()
 
     assert game.get_army_score(1) == 5
     assert len(game.players) == 2
@@ -704,7 +704,7 @@ async def test_persist_results_called_for_unranked(game, game_add_players):
     game.validity = ValidityState.BAD_UNIT_RESTRICTIONS
     assert len(game.players) == 2
     await game.add_result(0, 1, "victory", 5)
-    await game.on_game_end()
+    await game.on_game_finish()
 
     assert game.get_army_score(1) == 5
     assert len(game.players) == 2
@@ -809,7 +809,7 @@ async def test_partial_stats_not_affecting_rating_persistence(
     await game.add_result(0, 0, "victory", 10)
     await game.add_result(0, 1, "defeat", -10)
     game.report_army_stats('{"stats": []}')
-    await game.on_game_end()
+    await game.on_game_finish()
 
     # await game being rated
     await rating_service._join_rating_queue()
@@ -862,7 +862,7 @@ async def test_game_outcomes(game: Game, database, players):
     default_values_before_end = {(players.hosting.id, 0), (players.joining.id, 0)}
     assert await game_player_scores(database, game) == default_values_before_end
 
-    await game.on_game_end()
+    await game.on_game_finish()
     expected_scores = {(players.hosting.id, 1), (players.joining.id, 0)}
     assert await game_player_scores(database, game) == expected_scores
 
@@ -881,7 +881,7 @@ async def test_game_outcomes_no_results(game: Game, database, players):
     assert host_outcome is ArmyOutcome.UNKNOWN
     assert guest_outcome is ArmyOutcome.UNKNOWN
 
-    await game.on_game_end()
+    await game.on_game_finish()
     expected_scores = {(players.hosting.id, 0), (players.joining.id, 0)}
     assert await game_player_scores(database, game) == expected_scores
 

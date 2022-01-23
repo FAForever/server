@@ -33,6 +33,7 @@ from .db.models import (
 from .decorators import with_logger
 from .game_service import GameService
 from .games import InitMode, LadderGame
+from .games.ladder_game import GameClosedError
 from .matchmaker import MapPool, MatchmakerQueue, OnMatchedCallback, Search
 from .players import Player, PlayerState
 from .types import GameLaunchOptions, Map, NeroxisGeneratedMap
@@ -500,11 +501,16 @@ class LadderService(Service):
                     "Ladder game failed to start! %s setup timed out",
                     game
                 )
+            elif isinstance(e, GameClosedError):
+                self._logger.info(
+                    "Ladder game %s failed to start! Player %s closed their game instance",
+                    game, e.player
+                )
             else:
                 self._logger.exception("Ladder game failed to start %s", game)
 
             if game:
-                await game.on_game_end()
+                await game.on_game_finish()
 
             game_id = game.id if game else None
             msg = {"command": "match_cancelled", "game_id": game_id}
