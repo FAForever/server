@@ -1347,6 +1347,7 @@ class GameConnection(GpgNetServerProtocol):
                         &#34;WHERE v.uid in :ids&#34;,
                         ids=tuple(uids)
                     )
+        # Signals that the FA executable has been closed
         elif state == &#34;Ended&#34;:
             await self.on_connection_lost()
         self._mark_dirty()
@@ -1356,11 +1357,7 @@ class GameConnection(GpgNetServerProtocol):
         Signals that the simulation has ended.
         &#34;&#34;&#34;
         self.finished_sim = True
-        await self.game.check_sim_end()
-
-        # FIXME Move this into check_sim_end
-        if self.game.ended:
-            await self.game.on_game_end()
+        await self.game.check_game_finish(self.player)
 
     async def handle_rehost(self, *args: list[Any]):
         &#34;&#34;&#34;
@@ -1806,11 +1803,7 @@ included for documentation purposes.</p></div>
     Signals that the simulation has ended.
     &#34;&#34;&#34;
     self.finished_sim = True
-    await self.game.check_sim_end()
-
-    # FIXME Move this into check_sim_end
-    if self.game.ended:
-        await self.game.on_game_end()</code></pre>
+    await self.game.check_game_finish(self.player)</code></pre>
 </details>
 </dd>
 <dt id="server.GameConnection.handle_game_full"><code class="name flex">
@@ -1975,6 +1968,7 @@ included for documentation purposes.</p></div>
                     &#34;WHERE v.uid in :ids&#34;,
                     ids=tuple(uids)
                 )
+    # Signals that the FA executable has been closed
     elif state == &#34;Ended&#34;:
         await self.on_connection_lost()
     self._mark_dirty()</code></pre>
@@ -4128,11 +4122,16 @@ class LadderService(Service):
                     &#34;Ladder game failed to start! %s setup timed out&#34;,
                     game
                 )
+            elif isinstance(e, GameClosedError):
+                self._logger.info(
+                    &#34;Ladder game %s failed to start! Player %s closed their game instance&#34;,
+                    game, e.player
+                )
             else:
                 self._logger.exception(&#34;Ladder game failed to start %s&#34;, game)
 
             if game:
-                await game.on_game_end()
+                await game.on_game_finish()
 
             game_id = game.id if game else None
             msg = {&#34;command&#34;: &#34;match_cancelled&#34;, &#34;game_id&#34;: game_id}
@@ -4562,11 +4561,16 @@ so it should only perform fast operations.</p></div>
                 &#34;Ladder game failed to start! %s setup timed out&#34;,
                 game
             )
+        elif isinstance(e, GameClosedError):
+            self._logger.info(
+                &#34;Ladder game %s failed to start! Player %s closed their game instance&#34;,
+                game, e.player
+            )
         else:
             self._logger.exception(&#34;Ladder game failed to start %s&#34;, game)
 
         if game:
-            await game.on_game_end()
+            await game.on_game_finish()
 
         game_id = game.id if game else None
         msg = {&#34;command&#34;: &#34;match_cancelled&#34;, &#34;game_id&#34;: game_id}

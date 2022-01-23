@@ -26,18 +26,27 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import logging
+<pre><code class="python">import asyncio
+import logging
 from typing import Optional
 
 from server.config import config
 from server.players import Player
-from server.rating import RatingType
 
 from .game import Game
 from .game_results import ArmyOutcome, GameOutcome
-from .typedefs import FeaturedModType, GameType, InitMode
+from .typedefs import GameState, GameType, InitMode
 
 logger = logging.getLogger(__name__)
+
+
+class GameClosedError(Exception):
+    &#34;&#34;&#34;
+    The game has been closed during the setup phase
+    &#34;&#34;&#34;
+
+    def __init__(self, player: Player):
+        self.player = player
 
 
 class LadderGame(Game):
@@ -45,6 +54,40 @@ class LadderGame(Game):
 
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
+
+    def __init__(self, id_, *args, **kwargs):
+        super().__init__(id_, *args, **kwargs)
+        self._launch_future = asyncio.Future()
+
+    async def wait_hosted(self, timeout: float):
+        return await asyncio.wait_for(
+            self._hosted_future,
+            timeout=timeout
+        )
+
+    async def wait_launched(self, timeout: float):
+        return await asyncio.wait_for(
+            self._launch_future,
+            timeout=timeout
+        )
+
+    async def launch(self):
+        await super().launch()
+        self._launch_future.set_result(None)
+
+    async def check_game_finish(self, player):
+        if not self._hosted_future.done() and (
+            self.state in (GameState.INITIALIZING, GameState.LOBBY)
+        ):
+            assert self.host == player
+            self._hosted_future.set_exception(GameClosedError(player))
+
+        if not self._launch_future.done() and (
+            self.state in (GameState.INITIALIZING, GameState.LOBBY)
+        ):
+            self._launch_future.set_exception(GameClosedError(player))
+
+        await super().check_game_finish(player)
 
     def is_winner(self, player: Player) -&gt; bool:
         return self.get_player_outcome(player) is ArmyOutcome.VICTORY
@@ -81,9 +124,33 @@ class LadderGame(Game):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="server.games.ladder_game.GameClosedError"><code class="flex name class">
+<span>class <span class="ident">GameClosedError</span></span>
+<span>(</span><span>player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>The game has been closed during the setup phase</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GameClosedError(Exception):
+    &#34;&#34;&#34;
+    The game has been closed during the setup phase
+    &#34;&#34;&#34;
+
+    def __init__(self, player: Player):
+        self.player = player</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
 <dt id="server.games.ladder_game.LadderGame"><code class="flex name class">
 <span>class <span class="ident">LadderGame</span></span>
-<span>(</span><span>id_: int, database: FAFDatabase, game_service: GameService, game_stats_service: GameStatsService, host: Optional[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>] = None, name: str = 'None', map_: str = 'SCMP_007', game_mode: str = 'faf', matchmaker_queue_id: Optional[int] = None, rating_type: Optional[str] = None, displayed_rating_range: Optional[<a title="server.rating.InclusiveRange" href="../rating.html#server.rating.InclusiveRange">InclusiveRange</a>] = None, enforce_rating_range: bool = False, max_players: int = 12, setup_timeout: int = 60)</span>
+<span>(</span><span>id_, *args, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Class for 1v1 ladder games</p></div>
@@ -96,6 +163,40 @@ class LadderGame(Game):
 
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
+
+    def __init__(self, id_, *args, **kwargs):
+        super().__init__(id_, *args, **kwargs)
+        self._launch_future = asyncio.Future()
+
+    async def wait_hosted(self, timeout: float):
+        return await asyncio.wait_for(
+            self._hosted_future,
+            timeout=timeout
+        )
+
+    async def wait_launched(self, timeout: float):
+        return await asyncio.wait_for(
+            self._launch_future,
+            timeout=timeout
+        )
+
+    async def launch(self):
+        await super().launch()
+        self._launch_future.set_result(None)
+
+    async def check_game_finish(self, player):
+        if not self._hosted_future.done() and (
+            self.state in (GameState.INITIALIZING, GameState.LOBBY)
+        ):
+            assert self.host == player
+            self._hosted_future.set_exception(GameClosedError(player))
+
+        if not self._launch_future.done() and (
+            self.state in (GameState.INITIALIZING, GameState.LOBBY)
+        ):
+            self._launch_future.set_exception(GameClosedError(player))
+
+        await super().check_game_finish(player)
 
     def is_winner(self, player: Player) -&gt; bool:
         return self.get_player_outcome(player) is ArmyOutcome.VICTORY
@@ -139,6 +240,30 @@ class LadderGame(Game):
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="server.games.ladder_game.LadderGame.check_game_finish"><code class="name flex">
+<span>async def <span class="ident">check_game_finish</span></span>(<span>self, player)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def check_game_finish(self, player):
+    if not self._hosted_future.done() and (
+        self.state in (GameState.INITIALIZING, GameState.LOBBY)
+    ):
+        assert self.host == player
+        self._hosted_future.set_exception(GameClosedError(player))
+
+    if not self._launch_future.done() and (
+        self.state in (GameState.INITIALIZING, GameState.LOBBY)
+    ):
+        self._launch_future.set_exception(GameClosedError(player))
+
+    await super().check_game_finish(player)</code></pre>
+</details>
+</dd>
 <dt id="server.games.ladder_game.LadderGame.get_army_score"><code class="name flex">
 <span>def <span class="ident">get_army_score</span></span>(<span>self, army: int) ‑> int</span>
 </code></dt>
@@ -168,6 +293,38 @@ as 1 for win and 0 for anything else.</p></div>
 </summary>
 <pre><code class="python">def is_winner(self, player: Player) -&gt; bool:
     return self.get_player_outcome(player) is ArmyOutcome.VICTORY</code></pre>
+</details>
+</dd>
+<dt id="server.games.ladder_game.LadderGame.wait_hosted"><code class="name flex">
+<span>async def <span class="ident">wait_hosted</span></span>(<span>self, timeout: float)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def wait_hosted(self, timeout: float):
+    return await asyncio.wait_for(
+        self._hosted_future,
+        timeout=timeout
+    )</code></pre>
+</details>
+</dd>
+<dt id="server.games.ladder_game.LadderGame.wait_launched"><code class="name flex">
+<span>async def <span class="ident">wait_launched</span></span>(<span>self, timeout: float)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def wait_launched(self, timeout: float):
+    return await asyncio.wait_for(
+        self._launch_future,
+        timeout=timeout
+    )</code></pre>
 </details>
 </dd>
 </dl>
@@ -217,12 +374,18 @@ as 1 for win and 0 for anything else.</p></div>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
+<h4><code><a title="server.games.ladder_game.GameClosedError" href="#server.games.ladder_game.GameClosedError">GameClosedError</a></code></h4>
+</li>
+<li>
 <h4><code><a title="server.games.ladder_game.LadderGame" href="#server.games.ladder_game.LadderGame">LadderGame</a></code></h4>
-<ul class="">
+<ul class="two-column">
+<li><code><a title="server.games.ladder_game.LadderGame.check_game_finish" href="#server.games.ladder_game.LadderGame.check_game_finish">check_game_finish</a></code></li>
 <li><code><a title="server.games.ladder_game.LadderGame.game_type" href="#server.games.ladder_game.LadderGame.game_type">game_type</a></code></li>
 <li><code><a title="server.games.ladder_game.LadderGame.get_army_score" href="#server.games.ladder_game.LadderGame.get_army_score">get_army_score</a></code></li>
 <li><code><a title="server.games.ladder_game.LadderGame.init_mode" href="#server.games.ladder_game.LadderGame.init_mode">init_mode</a></code></li>
 <li><code><a title="server.games.ladder_game.LadderGame.is_winner" href="#server.games.ladder_game.LadderGame.is_winner">is_winner</a></code></li>
+<li><code><a title="server.games.ladder_game.LadderGame.wait_hosted" href="#server.games.ladder_game.LadderGame.wait_hosted">wait_hosted</a></code></li>
+<li><code><a title="server.games.ladder_game.LadderGame.wait_launched" href="#server.games.ladder_game.LadderGame.wait_launched">wait_launched</a></code></li>
 </ul>
 </li>
 </ul>

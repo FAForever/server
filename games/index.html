@@ -418,7 +418,7 @@ class CustomGame(Game):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Game():
+<pre><code class="python">class Game:
     &#34;&#34;&#34;
     Object that lasts for the lifetime of a game on FAF.
     &#34;&#34;&#34;
@@ -450,7 +450,7 @@ class CustomGame(Game):
         self.game_service = game_service
         self._player_options: dict[int, dict[str, Any]] = defaultdict(dict)
         self.launched_at = None
-        self.ended = False
+        self.finished = False
         self._logger = logging.getLogger(
             f&#34;{self.__class__.__qualname__}.{id_}&#34;
         )
@@ -488,8 +488,7 @@ class CustomGame(Game):
             &#34;Unranked&#34;: &#34;No&#34;
         }
         self.mods = {}
-        self._hosted_event = asyncio.Event()
-        self._launched_event = asyncio.Event()
+        self._hosted_future = asyncio.Future()
 
         self._logger.debug(&#34;%s created&#34;, self)
         asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
@@ -498,7 +497,7 @@ class CustomGame(Game):
         await asyncio.sleep(timeout)
         if self.state is GameState.INITIALIZING:
             self._logger.debug(&#34;Game setup timed out, cancelling game&#34;)
-            await self.on_game_end()
+            await self.on_game_finish()
 
     @property
     def name(self):
@@ -637,20 +636,8 @@ class CustomGame(Game):
 
         return list(teams.values()) + ffa_players
 
-    async def wait_hosted(self, timeout: float):
-        return await asyncio.wait_for(
-            self._hosted_event.wait(),
-            timeout=timeout
-        )
-
     def set_hosted(self):
-        self._hosted_event.set()
-
-    async def wait_launched(self, timeout: float):
-        return await asyncio.wait_for(
-            self._launched_event.wait(),
-            timeout=timeout
-        )
+        self._hosted_future.set_result(None)
 
     async def add_result(
         self,
@@ -748,7 +735,7 @@ class CustomGame(Game):
         &#34;&#34;&#34;
         Remove a game connection from this game.
 
-        Will trigger `on_game_end` if there are no more active connections to the
+        Will trigger `on_game_finish` if there are no more active connections to the
         game.
         &#34;&#34;&#34;
         if game_connection not in self._connections.values():
@@ -761,31 +748,34 @@ class CustomGame(Game):
         if self.state is GameState.LOBBY and player.id in self._player_options:
             del self._player_options[player.id]
 
-        await self.check_sim_end()
-
         self._logger.info(&#34;Removed game connection %s&#34;, game_connection)
+
+        await self.check_game_finish(player)
+
+    async def check_game_finish(self, player):
+        await self.check_sim_end()
 
         host_left_lobby = (
             player == self.host and self.state is not GameState.LIVE
         )
 
         if self.state is not GameState.ENDED and (
-            self.ended or
+            self.finished or
             len(self._connections) == 0 or
             host_left_lobby
         ):
-            await self.on_game_end()
+            await self.on_game_finish()
         else:
             self._process_pending_army_stats()
 
     async def check_sim_end(self):
-        if self.ended:
+        if self.finished:
             return
         if self.state is not GameState.LIVE:
             return
         if [conn for conn in self.connections if not conn.finished_sim]:
             return
-        self.ended = True
+        self.finished = True
         async with self._db.acquire() as conn:
             await conn.execute(
                 game_stats.update().where(
@@ -795,7 +785,7 @@ class CustomGame(Game):
                 )
             )
 
-    async def on_game_end(self):
+    async def on_game_finish(self):
         try:
             if self.state is GameState.LOBBY:
                 self._logger.info(&#34;Game cancelled pre launch&#34;)
@@ -1074,7 +1064,6 @@ class CustomGame(Game):
         await self.on_game_launched()
         await self.validate_game_settings()
 
-        self._launched_event.set()
         self._logger.info(&#34;Game launched&#34;)
 
     async def on_game_launched(self):
@@ -1627,6 +1616,32 @@ result message from the game, one or more words, optional</li>
     self._process_pending_army_stats()</code></pre>
 </details>
 </dd>
+<dt id="server.games.Game.check_game_finish"><code class="name flex">
+<span>async def <span class="ident">check_game_finish</span></span>(<span>self, player)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def check_game_finish(self, player):
+    await self.check_sim_end()
+
+    host_left_lobby = (
+        player == self.host and self.state is not GameState.LIVE
+    )
+
+    if self.state is not GameState.ENDED and (
+        self.finished or
+        len(self._connections) == 0 or
+        host_left_lobby
+    ):
+        await self.on_game_finish()
+    else:
+        self._process_pending_army_stats()</code></pre>
+</details>
+</dd>
 <dt id="server.games.Game.check_sim_end"><code class="name flex">
 <span>async def <span class="ident">check_sim_end</span></span>(<span>self)</span>
 </code></dt>
@@ -1637,13 +1652,13 @@ result message from the game, one or more words, optional</li>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def check_sim_end(self):
-    if self.ended:
+    if self.finished:
         return
     if self.state is not GameState.LIVE:
         return
     if [conn for conn in self.connections if not conn.finished_sim]:
         return
-    self.ended = True
+    self.finished = True
     async with self._db.acquire() as conn:
         await conn.execute(
             game_stats.update().where(
@@ -1894,7 +1909,6 @@ performance.</p></div>
     await self.on_game_launched()
     await self.validate_game_settings()
 
-    self._launched_event.set()
     self._logger.info(&#34;Game launched&#34;)</code></pre>
 </details>
 </dd>
@@ -1946,8 +1960,8 @@ performance.</p></div>
         )</code></pre>
 </details>
 </dd>
-<dt id="server.games.Game.on_game_end"><code class="name flex">
-<span>async def <span class="ident">on_game_end</span></span>(<span>self)</span>
+<dt id="server.games.Game.on_game_finish"><code class="name flex">
+<span>async def <span class="ident">on_game_finish</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1955,7 +1969,7 @@ performance.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def on_game_end(self):
+<pre><code class="python">async def on_game_finish(self):
     try:
         if self.state is GameState.LOBBY:
             self._logger.info(&#34;Game cancelled pre launch&#34;)
@@ -2085,7 +2099,7 @@ exist in the database.</p></div>
 </code></dt>
 <dd>
 <div class="desc"><p>Remove a game connection from this game.</p>
-<p>Will trigger <code>on_game_end</code> if there are no more active connections to the
+<p>Will trigger <code>on_game_finish</code> if there are no more active connections to the
 game.</p></div>
 <details class="source">
 <summary>
@@ -2095,7 +2109,7 @@ game.</p></div>
     &#34;&#34;&#34;
     Remove a game connection from this game.
 
-    Will trigger `on_game_end` if there are no more active connections to the
+    Will trigger `on_game_finish` if there are no more active connections to the
     game.
     &#34;&#34;&#34;
     if game_connection not in self._connections.values():
@@ -2108,22 +2122,9 @@ game.</p></div>
     if self.state is GameState.LOBBY and player.id in self._player_options:
         del self._player_options[player.id]
 
-    await self.check_sim_end()
-
     self._logger.info(&#34;Removed game connection %s&#34;, game_connection)
 
-    host_left_lobby = (
-        player == self.host and self.state is not GameState.LIVE
-    )
-
-    if self.state is not GameState.ENDED and (
-        self.ended or
-        len(self._connections) == 0 or
-        host_left_lobby
-    ):
-        await self.on_game_end()
-    else:
-        self._process_pending_army_stats()</code></pre>
+    await self.check_game_finish(player)</code></pre>
 </details>
 </dd>
 <dt id="server.games.Game.report_army_stats"><code class="name flex">
@@ -2224,7 +2225,7 @@ game.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def set_hosted(self):
-    self._hosted_event.set()</code></pre>
+    self._hosted_future.set_result(None)</code></pre>
 </details>
 </dd>
 <dt id="server.games.Game.set_name_unchecked"><code class="name flex">
@@ -2276,7 +2277,7 @@ game.</p></div>
     await asyncio.sleep(timeout)
     if self.state is GameState.INITIALIZING:
         self._logger.debug(&#34;Game setup timed out, cancelling game&#34;)
-        await self.on_game_end()</code></pre>
+        await self.on_game_finish()</code></pre>
 </details>
 </dd>
 <dt id="server.games.Game.to_dict"><code class="name flex">
@@ -2524,38 +2525,6 @@ care about recording stats for, after all).</p></div>
     await self.validate_game_mode_settings()</code></pre>
 </details>
 </dd>
-<dt id="server.games.Game.wait_hosted"><code class="name flex">
-<span>async def <span class="ident">wait_hosted</span></span>(<span>self, timeout: float)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def wait_hosted(self, timeout: float):
-    return await asyncio.wait_for(
-        self._hosted_event.wait(),
-        timeout=timeout
-    )</code></pre>
-</details>
-</dd>
-<dt id="server.games.Game.wait_launched"><code class="name flex">
-<span>async def <span class="ident">wait_launched</span></span>(<span>self, timeout: float)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def wait_launched(self, timeout: float):
-    return await asyncio.wait_for(
-        self._launched_event.wait(),
-        timeout=timeout
-    )</code></pre>
-</details>
-</dd>
 </dl>
 </dd>
 <dt id="server.games.GameConnectionState"><code class="flex name class">
@@ -2728,7 +2697,7 @@ class InitMode(Enum):
 </dd>
 <dt id="server.games.LadderGame"><code class="flex name class">
 <span>class <span class="ident">LadderGame</span></span>
-<span>(</span><span>id_: int, database: FAFDatabase, game_service: GameService, game_stats_service: GameStatsService, host: Optional[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>] = None, name: str = 'None', map_: str = 'SCMP_007', game_mode: str = 'faf', matchmaker_queue_id: Optional[int] = None, rating_type: Optional[str] = None, displayed_rating_range: Optional[<a title="server.rating.InclusiveRange" href="../rating.html#server.rating.InclusiveRange">InclusiveRange</a>] = None, enforce_rating_range: bool = False, max_players: int = 12, setup_timeout: int = 60)</span>
+<span>(</span><span>id_, *args, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Class for 1v1 ladder games</p></div>
@@ -2741,6 +2710,40 @@ class InitMode(Enum):
 
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
+
+    def __init__(self, id_, *args, **kwargs):
+        super().__init__(id_, *args, **kwargs)
+        self._launch_future = asyncio.Future()
+
+    async def wait_hosted(self, timeout: float):
+        return await asyncio.wait_for(
+            self._hosted_future,
+            timeout=timeout
+        )
+
+    async def wait_launched(self, timeout: float):
+        return await asyncio.wait_for(
+            self._launch_future,
+            timeout=timeout
+        )
+
+    async def launch(self):
+        await super().launch()
+        self._launch_future.set_result(None)
+
+    async def check_game_finish(self, player):
+        if not self._hosted_future.done() and (
+            self.state in (GameState.INITIALIZING, GameState.LOBBY)
+        ):
+            assert self.host == player
+            self._hosted_future.set_exception(GameClosedError(player))
+
+        if not self._launch_future.done() and (
+            self.state in (GameState.INITIALIZING, GameState.LOBBY)
+        ):
+            self._launch_future.set_exception(GameClosedError(player))
+
+        await super().check_game_finish(player)
 
     def is_winner(self, player: Player) -&gt; bool:
         return self.get_player_outcome(player) is ArmyOutcome.VICTORY
@@ -2784,6 +2787,30 @@ class InitMode(Enum):
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="server.games.LadderGame.check_game_finish"><code class="name flex">
+<span>async def <span class="ident">check_game_finish</span></span>(<span>self, player)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def check_game_finish(self, player):
+    if not self._hosted_future.done() and (
+        self.state in (GameState.INITIALIZING, GameState.LOBBY)
+    ):
+        assert self.host == player
+        self._hosted_future.set_exception(GameClosedError(player))
+
+    if not self._launch_future.done() and (
+        self.state in (GameState.INITIALIZING, GameState.LOBBY)
+    ):
+        self._launch_future.set_exception(GameClosedError(player))
+
+    await super().check_game_finish(player)</code></pre>
+</details>
+</dd>
 <dt id="server.games.LadderGame.get_army_score"><code class="name flex">
 <span>def <span class="ident">get_army_score</span></span>(<span>self, army: int) ‑> int</span>
 </code></dt>
@@ -2813,6 +2840,38 @@ as 1 for win and 0 for anything else.</p></div>
 </summary>
 <pre><code class="python">def is_winner(self, player: Player) -&gt; bool:
     return self.get_player_outcome(player) is ArmyOutcome.VICTORY</code></pre>
+</details>
+</dd>
+<dt id="server.games.LadderGame.wait_hosted"><code class="name flex">
+<span>async def <span class="ident">wait_hosted</span></span>(<span>self, timeout: float)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def wait_hosted(self, timeout: float):
+    return await asyncio.wait_for(
+        self._hosted_future,
+        timeout=timeout
+    )</code></pre>
+</details>
+</dd>
+<dt id="server.games.LadderGame.wait_launched"><code class="name flex">
+<span>async def <span class="ident">wait_launched</span></span>(<span>self, timeout: float)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def wait_launched(self, timeout: float):
+    return await asyncio.wait_for(
+        self._launch_future,
+        timeout=timeout
+    )</code></pre>
 </details>
 </dd>
 </dl>
@@ -3136,6 +3195,7 @@ class VisibilityState(Enum):
 <li><code><a title="server.games.Game.add_game_connection" href="#server.games.Game.add_game_connection">add_game_connection</a></code></li>
 <li><code><a title="server.games.Game.add_result" href="#server.games.Game.add_result">add_result</a></code></li>
 <li><code><a title="server.games.Game.armies" href="#server.games.Game.armies">armies</a></code></li>
+<li><code><a title="server.games.Game.check_game_finish" href="#server.games.Game.check_game_finish">check_game_finish</a></code></li>
 <li><code><a title="server.games.Game.check_sim_end" href="#server.games.Game.check_sim_end">check_sim_end</a></code></li>
 <li><code><a title="server.games.Game.clear_slot" href="#server.games.Game.clear_slot">clear_slot</a></code></li>
 <li><code><a title="server.games.Game.connections" href="#server.games.Game.connections">connections</a></code></li>
@@ -3159,7 +3219,7 @@ class VisibilityState(Enum):
 <li><code><a title="server.games.Game.map_folder_name" href="#server.games.Game.map_folder_name">map_folder_name</a></code></li>
 <li><code><a title="server.games.Game.mark_invalid" href="#server.games.Game.mark_invalid">mark_invalid</a></code></li>
 <li><code><a title="server.games.Game.name" href="#server.games.Game.name">name</a></code></li>
-<li><code><a title="server.games.Game.on_game_end" href="#server.games.Game.on_game_end">on_game_end</a></code></li>
+<li><code><a title="server.games.Game.on_game_finish" href="#server.games.Game.on_game_finish">on_game_finish</a></code></li>
 <li><code><a title="server.games.Game.on_game_launched" href="#server.games.Game.on_game_launched">on_game_launched</a></code></li>
 <li><code><a title="server.games.Game.persist_results" href="#server.games.Game.persist_results">persist_results</a></code></li>
 <li><code><a title="server.games.Game.players" href="#server.games.Game.players">players</a></code></li>
@@ -3178,8 +3238,6 @@ class VisibilityState(Enum):
 <li><code><a title="server.games.Game.update_game_stats" href="#server.games.Game.update_game_stats">update_game_stats</a></code></li>
 <li><code><a title="server.games.Game.validate_game_mode_settings" href="#server.games.Game.validate_game_mode_settings">validate_game_mode_settings</a></code></li>
 <li><code><a title="server.games.Game.validate_game_settings" href="#server.games.Game.validate_game_settings">validate_game_settings</a></code></li>
-<li><code><a title="server.games.Game.wait_hosted" href="#server.games.Game.wait_hosted">wait_hosted</a></code></li>
-<li><code><a title="server.games.Game.wait_launched" href="#server.games.Game.wait_launched">wait_launched</a></code></li>
 </ul>
 </li>
 <li>
@@ -3220,11 +3278,14 @@ class VisibilityState(Enum):
 </li>
 <li>
 <h4><code><a title="server.games.LadderGame" href="#server.games.LadderGame">LadderGame</a></code></h4>
-<ul class="">
+<ul class="two-column">
+<li><code><a title="server.games.LadderGame.check_game_finish" href="#server.games.LadderGame.check_game_finish">check_game_finish</a></code></li>
 <li><code><a title="server.games.LadderGame.game_type" href="#server.games.LadderGame.game_type">game_type</a></code></li>
 <li><code><a title="server.games.LadderGame.get_army_score" href="#server.games.LadderGame.get_army_score">get_army_score</a></code></li>
 <li><code><a title="server.games.LadderGame.init_mode" href="#server.games.LadderGame.init_mode">init_mode</a></code></li>
 <li><code><a title="server.games.LadderGame.is_winner" href="#server.games.LadderGame.is_winner">is_winner</a></code></li>
+<li><code><a title="server.games.LadderGame.wait_hosted" href="#server.games.LadderGame.wait_hosted">wait_hosted</a></code></li>
+<li><code><a title="server.games.LadderGame.wait_launched" href="#server.games.LadderGame.wait_launched">wait_launched</a></code></li>
 </ul>
 </li>
 <li>
