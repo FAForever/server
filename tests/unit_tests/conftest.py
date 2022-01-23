@@ -9,6 +9,7 @@ from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
 from server.ladder_service import LadderService
+from server.ladder_service.violation_service import ViolationService
 from server.protocol import QDataStreamProtocol
 
 
@@ -30,14 +31,21 @@ def ladder_and_game_service_context(
                         declare_exchange=mock.AsyncMock()
                     )
                 )
-                ladder_service = LadderService(database, game_service)
+                violation_service = ViolationService()
+                ladder_service = LadderService(
+                    database,
+                    game_service,
+                    violation_service
+                )
 
                 await game_service.initialize()
+                await violation_service.initialize()
                 await ladder_service.initialize()
 
                 yield ladder_service, game_service
 
                 await game_service.shutdown()
+                await violation_service.shutdown()
                 await ladder_service.shutdown()
 
     return make_ladder_and_game_service
@@ -47,15 +55,22 @@ def ladder_and_game_service_context(
 async def ladder_service(
     mocker,
     database,
-    game_service: GameService,
+    game_service,
+    violation_service,
 ):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
-    ladder_service = LadderService(database, game_service)
+    ladder_service = LadderService(database, game_service, violation_service)
     await ladder_service.initialize()
-
     yield ladder_service
-
     await ladder_service.shutdown()
+
+
+@pytest.fixture
+async def violation_service():
+    service = ViolationService()
+    await service.initialize()
+    yield service
+    await service.shutdown()
 
 
 @pytest.fixture

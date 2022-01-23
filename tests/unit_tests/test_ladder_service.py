@@ -5,7 +5,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from server import LadderService, LobbyConnection
+from server import LadderService
 from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
 from server.games import LadderGame
 from server.games.ladder_game import GameClosedError
@@ -22,15 +22,18 @@ from .strategies import st_players
 pytestmark = pytest.mark.asyncio
 
 
-async def test_queue_initialization(database, game_service):
-    ladder_service = LadderService(database, game_service)
+async def test_queue_initialization(database, game_service, violation_service):
+    ladder_service = LadderService(database, game_service, violation_service)
 
     def make_mock_queue(*args, **kwargs):
         queue = mock.create_autospec(MatchmakerQueue)
         queue.map_pools = {}
         return queue
 
-    with mock.patch("server.ladder_service.MatchmakerQueue", make_mock_queue):
+    with mock.patch(
+        "server.ladder_service.ladder_service.MatchmakerQueue",
+        make_mock_queue
+    ):
         for name in list(ladder_service.queues.keys()):
             ladder_service.queues[name] = make_mock_queue()
 

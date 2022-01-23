@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional
 
+from server.core import Service
 from server.decorators import with_logger
 from server.players import Player
 from server.timing import at_interval, datetime_now
@@ -41,7 +42,7 @@ class Violation():
 
 
 @with_logger
-class ViolationTracker():
+class ViolationService(Service):
     """
     Track who is banned from searching and for how long. Apply progressive
     discipline for repeated violations.
@@ -53,6 +54,7 @@ class ViolationTracker():
     def __init__(self):
         self.violations: dict[Player, Violation] = {}
 
+    async def initialize(self):
         self._cleanup_task = at_interval(5, func=self.clear_expired)
 
     def clear_expired(self):

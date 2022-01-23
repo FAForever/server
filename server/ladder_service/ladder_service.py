@@ -44,6 +44,7 @@ from server.players import Player, PlayerState
 from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
 
 from .game_name import game_name
+from .violation_service import ViolationService
 
 
 @with_logger
@@ -57,11 +58,13 @@ class LadderService(Service):
         self,
         database: FAFDatabase,
         game_service: GameService,
+        violation_service: ViolationService,
     ):
         self._db = database
         self._informed_players: set[Player] = set()
         self.game_service = game_service
         self.queues = {}
+        self.violation_service = violation_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
 
@@ -223,6 +226,22 @@ class LadderService(Service):
         queue_name: str,
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
+        timeouts = self.violation_service.get_violations(players)
+        self._logger.debug("timeouts: %s", timeouts)
+        if timeouts:
+            times = [
+                {
+                    "player": p.id,
+                    "expires_at": violation.get_ban_expiration().isoformat()
+                }
+                for p, violation in timeouts.items()
+            ]
+            for player in players:
+                player.write_message({
+                    "command": "search_timeout",
+                    "timeouts": times
+                })
+            return
         # Cancel any existing searches that players have for this queue
         for player in players:
             if queue_name in self._searches[player]:
@@ -503,16 +522,27 @@ class LadderService(Service):
             await game.wait_launched(60 + 10 * len(all_guests))
             self._logger.debug("Ladder game launched successfully %s", game)
         except Exception as e:
+            non_connected_players = []
+            abandoning_players = []
             if isinstance(e, asyncio.TimeoutError):
                 self._logger.info(
                     "Ladder game failed to start! %s setup timed out",
                     game
                 )
+                if game:
+                    connected_players = game.get_connected_players()
+                    non_connected_players.extend(
+                        player for player in all_players
+                        if player not in connected_players
+                    )
+                    abandoning_players = non_connected_players
             elif isinstance(e, GameClosedError):
                 self._logger.info(
-                    "Ladder game %s failed to start! Player %s closed their game instance",
+                    "Ladder game %s failed to start! "
+                    "Player %s closed their game instance",
                     game, e.player
                 )
+                abandoning_players = [e.player]
             else:
                 self._logger.exception("Ladder game failed to start %s", game)
 
@@ -525,6 +555,16 @@ class LadderService(Service):
                 if player.state == PlayerState.STARTING_AUTOMATCH:
                     player.state = PlayerState.IDLE
                 player.write_message(msg)
+
+            if non_connected_players:
+                self._logger.info(
+                    "Players failed to connect: %s",
+                    non_connected_players
+                )
+                self.violation_service.register_violations(abandoning_players)
+                for player in non_connected_players:
+                    if player.lobby_connection:
+                        player.lobby_connection.game_connection = None
 
     async def get_game_history(
         self,

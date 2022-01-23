@@ -2,16 +2,19 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from server.ladder_service.violation_tracker import Violation, ViolationTracker
+from server.ladder_service.violation_service import Violation, ViolationService
 
 NOW = datetime(2020, 1, 1, tzinfo=timezone.utc)
 IMPORT_PATH_NOW = "server.ladder_service.violation_service.datetime_now"
 
 
 @pytest.fixture
-async def tracker(mocker):
+async def violation_service(mocker):
     mocker.patch(IMPORT_PATH_NOW, return_value=NOW)
-    return ViolationTracker()
+    service = ViolationService()
+    await service.initialize()
+    yield service
+    await service.shutdown()
 
 
 def test_violation_class():
@@ -47,35 +50,46 @@ def test_violation_is_expired(mocker):
     assert violation.is_expired(NOW) is True
 
 
-def test_violation_clear_expired(tracker: ViolationTracker, player_factory):
+def test_violation_clear_expired(
+    violation_service: ViolationService,
+    player_factory
+):
     p1 = player_factory("Test1", player_id=1)
     p2 = player_factory("Test2", player_id=2)
 
     v1 = Violation(time=NOW - timedelta(hours=1))
     v2 = Violation(time=NOW)
 
-    tracker.violations[p1] = v1
-    tracker.violations[p2] = v2
+    violation_service.violations[p1] = v1
+    violation_service.violations[p2] = v2
 
-    tracker.clear_expired()
+    violation_service.clear_expired()
 
-    assert tracker.violations == {p2: v2}
+    assert violation_service.violations == {p2: v2}
 
 
-def test_register_violation(tracker: ViolationTracker, player_factory):
+def test_register_violation(
+    violation_service: ViolationService,
+    player_factory
+):
     p1 = player_factory("Test1", player_id=1)
     p2 = player_factory("Test2", player_id=2)
 
-    tracker.register_violations([p1])
-    assert tracker.get_violations([p1, p2]) == {}
+    violation_service.register_violations([p1])
+    assert violation_service.get_violations([p1, p2]) == {}
 
-    tracker.register_violations([p1])
-    assert tracker.get_violations([p1, p2]) == {p1: Violation(count=2, time=NOW)}
+    violation_service.register_violations([p1])
+    assert violation_service.get_violations([p1, p2]) == {
+        p1: Violation(count=2, time=NOW)
+    }
 
 
-def test_get_violations_clears_expired(tracker: ViolationTracker, player_factory):
+def test_get_violations_clears_expired(
+    violation_service: ViolationService,
+    player_factory
+):
     p1 = player_factory("Test3", player_id=1)
 
-    tracker.violations[p1] = Violation(time=NOW - timedelta(hours=1))
-    tracker.get_violations([p1])
-    assert tracker.violations == {}
+    violation_service.violations[p1] = Violation(time=NOW - timedelta(hours=1))
+    violation_service.get_violations([p1])
+    assert violation_service.violations == {}

@@ -21,7 +21,8 @@ from .test_game import (
     open_fa,
     queue_player_for_matchmaking,
     queue_players_for_matchmaking,
-    queue_temp_players_for_matchmaking
+    queue_temp_players_for_matchmaking,
+    start_search
 )
 
 pytestmark = pytest.mark.asyncio
@@ -540,3 +541,86 @@ async def test_search_info_messages(lobby_server):
 
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(proto, "search_info", timeout=5)
+
+
+@fast_forward(360)
+async def test_failed_start_ban_guest(lobby_server):
+    host, guest = await queue_players_for_matchmaking(lobby_server)
+
+    # The player that queued last will be the host
+    await read_until_command(host, "game_launch")
+    await open_fa(host)
+    await read_until_command(host, "game_info")
+
+    await read_until_command(guest, "game_launch")
+    await read_until_command(guest, "match_cancelled", timeout=120)
+    await read_until_command(host, "match_cancelled")
+    await host.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Ended"]
+    })
+
+    await start_search(host)
+    # Second time searching there is no ban
+    await start_search(guest)
+
+    await read_until_command(host, "game_launch")
+    await open_fa(host)
+    await read_until_command(host, "game_info")
+
+    await read_until_command(guest, "game_launch")
+    await read_until_command(guest, "match_cancelled", timeout=120)
+    await read_until_command(host, "match_cancelled")
+    await host.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Ended"]
+    })
+
+    # Third time searching there is a short ban
+    await guest.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "queue_name": "ladder1v1"
+    })
+
+    msg = await read_until_command(guest, "search_timeout")
+    assert msg == {
+        "command": "search_timeout",
+        "timeouts": [{
+            "player": guest_id,
+            "expires_at": ""
+        }]
+    }
+
+    await asyncio.sleep(5 * 60)
+
+    # Third successful search
+    await start_search(guest)
+    await start_search(host)
+
+    await read_until_command(host, "game_launch")
+    await open_fa(host)
+    await read_until_command(host, "game_info")
+
+    await read_until_command(guest, "game_launch")
+    await read_until_command(guest, "match_cancelled", timeout=120)
+    await read_until_command(host, "match_cancelled")
+    await host.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Ended"]
+    })
+
+    # Fourth time searching there is a long ban
+    await guest.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "queue_name": "ladder1v1"
+    })
+
+    msg = await read_until_command(guest, "search_timeout")
+    assert msg == {"command": "search_rejected", "timestamp": "foo..."}
+
+    await asyncio.sleep(30 * 60)

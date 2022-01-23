@@ -84,22 +84,26 @@ async def open_fa(proto):
     })
 
 
-async def queue_player_for_matchmaking(user, lobby_server, queue_name):
-    _, _, proto = await connect_and_sign_in(user, lobby_server)
-    await read_until_command(proto, "game_info")
+async def start_search(proto, queue_name="ladder1v1"):
     await proto.send_message({
         "command": "game_matchmaking",
         "state": "start",
         "faction": "uef",
         "queue_name": queue_name
     })
-    await read_until_command(
+    return await read_until_command(
         proto,
         "search_info",
         state="start",
         queue_name=queue_name,
         timeout=10
     )
+
+
+async def queue_player_for_matchmaking(user, lobby_server, queue_name="ladder1v1"):
+    _, _, proto = await connect_and_sign_in(user, lobby_server)
+    await read_until_command(proto, "game_info")
+    await start_search(proto, queue_name)
 
     return proto
 

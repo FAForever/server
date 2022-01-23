@@ -17,7 +17,8 @@ from server import (
     LadderService,
     OAuthService,
     PartyService,
-    ServerInstance
+    ServerInstance,
+    ViolationService
 )
 from server.config import config
 from server.control import ControlServer
@@ -33,12 +34,20 @@ def mock_games():
 
 
 @pytest.fixture
-async def ladder_service(mocker, database, game_service):
+async def ladder_service(mocker, database, game_service, violation_service):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
-    ladder_service = LadderService(database, game_service)
+    ladder_service = LadderService(database, game_service, violation_service)
     await ladder_service.initialize()
     yield ladder_service
     await ladder_service.shutdown()
+
+
+@pytest.fixture
+async def violation_service():
+    service = ViolationService()
+    await service.initialize()
+    yield service
+    await service.shutdown()
 
 
 @pytest.fixture
