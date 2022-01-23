@@ -26,6 +26,7 @@ def laddergame(database, game_service, game_stats_service):
 
 async def test_handle_game_closed_manually(laddergame, players):
     laddergame.state = GameState.LOBBY
+    laddergame.host = players.hosting
     await laddergame.check_game_finish(players.hosting)
     e1 = laddergame._hosted_future.exception()
     assert isinstance(e1, GameClosedError)
