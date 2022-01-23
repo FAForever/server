@@ -18,7 +18,6 @@ class GameClosedError(Exception):
     """
 
     def __init__(self, player: Player):
-        super().__init__()
         self.player = player
 
 
