@@ -550,7 +550,12 @@ class LadderService(Service):
                         ),
                         matchmaker_queue_game.c.matchmaker_queue_id == queue_id
                     )
-                ).order_by(game_stats.c.startTime.desc()).limit(limit)
+                ).order_by(
+                    game_stats.c.startTime.desc(),
+                    # Timestamps only have second resolution, so for this to
+                    # work correctly in the unit tests we also need id
+                    game_stats.c.id.desc()
+                ).limit(limit)
 
                 result.extend([
                     row.mapId for row in await conn.execute(query)

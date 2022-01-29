@@ -1,6 +1,7 @@
 import asyncio
 import math
 import re
+from collections import deque
 
 import pytest
 from sqlalchemy import select
@@ -348,52 +349,49 @@ async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
 @pytest.mark.flaky
 @fast_forward(200)
 async def test_anti_map_repetition(lobby_server):
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    played_maps: deque[str] = deque(maxlen=config.LADDER_ANTI_REPETITION_LIMIT)
 
-    # Play one game so that it exists in the players' history
-    msg1, _ = await asyncio.gather(
-        client_response(proto1),
-        client_response(proto2)
-    )
-    mapname = msg1["mapname"]
+    # Play a bunch of games and make sure we never get the same map in our
+    # recent history. Games end in a draw so that players keep matching.
+    for _ in range(20):
+        proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+        msg, _ = await asyncio.gather(
+            client_response(proto1),
+            client_response(proto2)
+        )
+        mapname = msg["mapname"]
+        assert mapname not in played_maps
+        played_maps.append(mapname)
 
-    for proto in (proto1, proto2):
-        await proto.send_message({
-            "command": "GameState",
-            "target": "game",
-            "args": ["Launching"]
-        })
-
-    for proto in (proto1, proto2):
-        for result in (
-            [1, "draw 0"],
-            [2, "draw 0"],
-        ):
+        for proto in (proto1, proto2):
             await proto.send_message({
-                "command": "GameResult",
+                "command": "GameState",
                 "target": "game",
-                "args": result
+                "args": ["Launching"]
             })
 
-    for proto in (proto1, proto2):
-        await proto.send_message({
-            "command": "GameEnded",
-            "target": "game",
-            "args": []
-        })
+        for proto in (proto1, proto2):
+            for result in (
+                [1, "draw 0"],
+                [2, "draw 0"],
+            ):
+                await proto.send_message({
+                    "command": "GameResult",
+                    "target": "game",
+                    "args": result
+                })
 
-    # Now match a whole bunch of times and make sure we never get the map that
-    # was played. We don't actually play the game out here, so the players
-    # game history should remain unchanged.
-    for _ in range(20):
+        for proto in (proto1, proto2):
+            await proto.send_message({
+                "command": "GameEnded",
+                "target": "game",
+                "args": []
+            })
+
         await asyncio.gather(
             proto1.close(),
             proto2.close()
         )
-
-        proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
-        msg = await read_until_command(proto1, "game_launch")
-        assert msg["mapname"] != mapname
 
 
 @fast_forward(10)
