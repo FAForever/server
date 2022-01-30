@@ -5,7 +5,7 @@ import pytest
 from server.ladder_service.violation_tracker import Violation, ViolationTracker
 
 NOW = datetime(2020, 1, 1, tzinfo=timezone.utc)
-IMPORT_PATH_NOW = "server.ladder_service.violation_tracker.datetime_now"
+IMPORT_PATH_NOW = "server.ladder_service.violation_service.datetime_now"
 
 
 @pytest.fixture
