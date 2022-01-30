@@ -9,6 +9,8 @@ import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
 from aio_pika.exceptions import ProbableAuthenticationError
 
+from server.metrics import MonitoredDict
+
 from .asyncio_extensions import synchronizedmethod
 from .config import TRACE, config
 from .core import Service
@@ -29,8 +31,8 @@ class MessageQueueService(Service):
     def __init__(self) -> None:
         self._connection = None
         self._channel = None
-        self._exchanges = {}
-        self._exchange_types = {}
+        self._exchanges = MonitoredDict("message_queue_service._exchanges")
+        self._exchange_types = MonitoredDict("message_queue_service._exchange_types")
         self._is_ready = False
 
         config.register_callback("MQ_USER", self.reconnect)

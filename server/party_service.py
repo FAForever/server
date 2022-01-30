@@ -2,6 +2,8 @@
 Manages interactions between players and parties
 """
 
+from server.metrics import MonitoredDict
+
 from .core import Service
 from .decorators import with_logger
 from .exceptions import ClientError
@@ -23,7 +25,9 @@ class PartyService(Service):
 
     def __init__(self, game_service: GameService):
         self.game_service = game_service
-        self.player_parties: dict[Player, PlayerParty] = {}
+        self.player_parties: dict[Player, PlayerParty] = MonitoredDict(
+            "party_service.player_parties"
+        )
         self._dirty_parties: set[PlayerParty] = set()
 
     async def initialize(self):

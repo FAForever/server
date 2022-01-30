@@ -12,6 +12,7 @@ from trueskill import Rating
 import server.metrics as metrics
 from server.db import FAFDatabase
 from server.decorators import with_logger
+from server.metrics import MonitoredDict
 from server.players import Player
 from server.rating import RatingType
 
@@ -37,10 +38,10 @@ from .db.models import (
 class PlayerService(Service):
     def __init__(self, database: FAFDatabase):
         self._db = database
-        self._players = dict()
+        self._players: dict[int, Player] = MonitoredDict("player_service._players")
 
         # Static-ish data fields.
-        self.uniqueid_exempt = {}
+        self.uniqueid_exempt = frozenset()
         self._dirty_players = set()
 
     async def initialize(self) -> None:

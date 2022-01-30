@@ -10,6 +10,7 @@ from typing import Callable, Iterable, Optional
 import humanize
 
 import server.metrics as metrics
+from server.metrics import MonitoredDict
 
 from .core import Service
 from .decorators import with_logger
@@ -36,7 +37,9 @@ class ServerContext:
         self._server = None
         self._connection_factory = connection_factory
         self._services = services
-        self.connections: dict[LobbyConnection, Protocol] = {}
+        self.connections: dict[LobbyConnection, Protocol] = MonitoredDict(
+            f"{repr(self)}.connections"
+        )
         self.protocol_class = protocol_class
 
     def __repr__(self):
