@@ -9,6 +9,7 @@ import aiocron
 from sqlalchemy import select
 
 from server.config import config
+from server.metrics import MonitoredDict
 
 from . import metrics
 from .core import Service
@@ -60,7 +61,7 @@ class GameService(Service):
         self.ranked_mods: set[str] = set()
 
         # The set of active games
-        self._games: dict[int, Game] = dict()
+        self._games: dict[int, Game] = MonitoredDict("game_service._games")
 
     async def initialize(self) -> None:
         await self.initialise_game_counter()

@@ -12,6 +12,8 @@ from typing import Optional
 import aiocron
 from sqlalchemy import and_, func, select, text, true
 
+from server.metrics import MonitoredDefaultDict, MonitoredDict, MonitoredSet
+
 from .config import config
 from .core import Service
 from .db import FAFDatabase
@@ -52,11 +54,16 @@ class LadderService(Service):
         game_service: GameService,
     ):
         self._db = database
-        self._informed_players: set[Player] = set()
+        self._informed_players: set[Player] = MonitoredSet(
+            "ladder_service._informed_players"
+        )
         self.game_service = game_service
-        self.queues = {}
+        self.queues = MonitoredDict("ladder_service.queues")
 
-        self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
+        self._searches = MonitoredDefaultDict(
+            "ladder_service._searches",
+            dict
+        )  # type: defaultdict[Player, dict[str, Search]]
 
     async def initialize(self) -> None:
         await self.update_data()
@@ -557,8 +564,7 @@ class LadderService(Service):
         player = conn.player
         self.cancel_search(player)
         del self._searches[player]
-        if player in self._informed_players:
-            self._informed_players.remove(player)
+        self._informed_players.discard(player)
 
     async def shutdown(self):
         for queue in self.queues.values():

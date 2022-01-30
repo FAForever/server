@@ -2,6 +2,10 @@
 Prometheus metric definitions
 """
 
+import sys
+from collections import defaultdict
+from typing import TypeVar
+
 from prometheus_client import Counter, Gauge, Histogram, Info
 
 info = Info("build", "Information collected on server start")
@@ -120,3 +124,144 @@ active_games = Gauge(
 rating_service_backlog = Gauge(
     "server_rating_service_backlog", "Number of games remaining to be rated",
 )
+
+
+# =======
+# General
+# =======
+server_data_len = Gauge(
+    "server_data_len", "Length of an object as returned by `len`",
+    ["name"],
+)
+server_data_sizeof = Gauge(
+    "server_data_sizeof", "Size of an object in bytes",
+    ["name"],
+)
+server_data_read = Counter(
+    "server_data_read",
+    "Calls to read operations such as `__getitem__` or `get` on a dict",
+    ["name"],
+)
+server_data_write = Counter(
+    "server_data_write",
+    "Calls to write operations such as `__setitem__` or `update` on a dict",
+    ["name"],
+)
+server_data_delete = Counter(
+    "server_data_delete",
+    "Calls to delete operations such as `__delitem__`, `pop`, or `popitem` on a dict",
+    ["name"],
+)
+
+K = TypeVar("K")
+V = TypeVar("V")
+
+class _MonitorMixin():
+    def _record_size(self) -> None:
+        server_data_len.labels(self.name).set(len(self))
+        server_data_sizeof.labels(self.name).set(sys.getsizeof(self))
+
+
+class MonitoredDict(dict[K, V], _MonitorMixin):
+    """A dict that reports metrics about itself to Prometheus"""
+
+    def __init__(self, name: str, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.name = name
+
+    def clear(self) -> None:
+        super().clear()
+        self._record_size()
+
+    def pop(self, *args) -> V:
+        server_data_delete.labels(self.name).inc()
+        ret = super().pop(*args)
+        self._record_size()
+        return ret
+
+    def popitem(self, /) -> tuple[K, V]:
+        server_data_delete.labels(self.name).inc()
+        ret = super().popitem()
+        self._record_size()
+        return ret
+
+    def get(self, key: K, default=None, /):
+        server_data_read.labels(self.name).inc()
+        return super().get(key, default)
+
+    def update(self, *args, **kwargs) -> None:
+        server_data_write.labels(self.name).inc()
+        super().update(*args, **kwargs)
+        self._record_size()
+
+    def __getitem__(self, k: K) -> V:
+        server_data_read.labels(self.name).inc()
+        return super().__getitem__(k)
+
+    def __setitem__(self, k: K, v: V, /) -> None:
+        server_data_write.labels(self.name).inc()
+        super().__setitem__(k, v)
+        self._record_size()
+
+    def __delitem__(self, k: K, /) -> None:
+        server_data_delete.labels(self.name).inc()
+        super().__delitem__(k)
+        self._record_size()
+
+
+class MonitoredDefaultDict(MonitoredDict, defaultdict[K, V]):
+    pass
+
+
+class MonitoredSet(set[V], _MonitorMixin):
+    """A set that reports metrics about itself to Prometheus"""
+
+    def __init__(self, name: str, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.name = name
+
+    def add(self, *args) -> None:
+        server_data_write.labels(self.name).inc()
+        super().add(*args)
+        self._record_size()
+
+    def clear(self) -> None:
+        super().clear()
+        self._record_size()
+
+    def difference_update(self, *args) -> None:
+        server_data_delete.labels(self.name).inc()
+        super().difference_update(*args)
+        self._record_size()
+
+    def discard(self, element: V) -> None:
+        server_data_delete.labels(self.name).inc()
+        super().discard(element)
+        self._record_size()
+
+    def intersection_update(self, *args) -> None:
+        server_data_delete.labels(self.name).inc()
+        super().intersection_update(*args)
+        self._record_size()
+
+    def pop(self, *args) -> V:
+        server_data_delete.labels(self.name).inc()
+        ret = super().pop(*args)
+        self._record_size()
+        return ret
+
+    def remove(self, *args) -> None:
+        server_data_delete.labels(self.name).inc()
+        super().remove(*args)
+        self._record_size()
+
+    def symmetric_difference_update(self, *args) -> None:
+        # Might cause deletes as well, but doesn't make sense to report that
+        server_data_write.labels(self.name).inc()
+        super().symmetric_difference_update(*args)
+        self._record_size()
+
+    def update(self, *args) -> None:
+        server_data_write.labels(self.name).inc()
+        super().update(*args)
+        self._record_size()

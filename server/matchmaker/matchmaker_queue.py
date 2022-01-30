@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Iterable, Optional
 
 import server.metrics as metrics
+from server.metrics import MonitoredSet
 
 from ..asyncio_extensions import SpinLock, synchronized
 from ..decorators import with_logger
@@ -61,7 +62,9 @@ class MatchmakerQueue:
         self.params = params or {}
         self.map_pools = {info[0].id: info for info in map_pools}
 
-        self._queue: dict[Search, None] = OrderedDict()
+        self._queue: set[Search] = MonitoredSet(
+            f"MatchmakerQueue({self.name})._queue"
+        )
         self.on_match_found = on_match_found
         self._is_running = True
 
@@ -93,7 +96,7 @@ class MatchmakerQueue:
 
     @property
     def num_players(self) -> int:
-        return sum(len(search.players) for search in self._queue.keys())
+        return sum(len(search.players) for search in self._queue)
 
     async def queue_pop_timer(self) -> None:
         """ Periodically tries to match all Searches in the queue. The amount
@@ -145,8 +148,7 @@ class MatchmakerQueue:
             # If the queue was cancelled, or some other error occurred,
             # make sure to clean up.
             self.game_service.mark_dirty(self)
-            if search in self._queue:
-                del self._queue[search]
+            self._queue.discard(search)
 
     @synchronized(SpinLock(sleep_duration=1))
     async def find_matches(self) -> None:
@@ -159,7 +161,7 @@ class MatchmakerQueue:
         """
         self._logger.info("Searching for matches: %s", self.name)
 
-        searches = list(self._queue.keys())
+        searches = list(self._queue)
 
         if self.num_players < 2 * self.team_size:
             self._register_unmatched_searches(searches)
@@ -215,8 +217,7 @@ class MatchmakerQueue:
 
     def push(self, search: Search):
         """ Push the given search object onto the queue """
-
-        self._queue[search] = None
+        self._queue.add(search)
         self.game_service.mark_dirty(self)
 
     def match(self, s1: Search, s2: Search) -> bool:
@@ -246,10 +247,8 @@ class MatchmakerQueue:
 
         s1.match(s2)
         s2.match(s1)
-        if s1 in self._queue:
-            del self._queue[s1]
-        if s2 in self._queue:
-            del self._queue[s2]
+        self._queue.discard(s1)
+        self._queue.discard(s2)
 
         return True
 
@@ -267,8 +266,8 @@ class MatchmakerQueue:
             ).isoformat(),
             "queue_pop_time_delta": self.timer.next_queue_pop - time.time(),
             "num_players": self.num_players,
-            "boundary_80s": [search.boundary_80 for search in self._queue.keys()],
-            "boundary_75s": [search.boundary_75 for search in self._queue.keys()],
+            "boundary_80s": [search.boundary_80 for search in self._queue],
+            "boundary_75s": [search.boundary_75 for search in self._queue],
             # TODO: Remove, the client should query the API for this
             "team_size": self.team_size,
         }
