@@ -181,6 +181,8 @@ class Game:
         """
         Get a collection of all players currently connected to the game.
         """
+        print(f"Connections: {self._connections}")
+        print(f"PlayerOptions: {self._player_options}")
         return [
             player for player in self._connections.keys()
             if player.id in self._player_options

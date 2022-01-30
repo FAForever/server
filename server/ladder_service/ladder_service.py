@@ -531,6 +531,7 @@ class LadderService(Service):
                 )
                 if game:
                     connected_players = game.get_connected_players()
+                    print(f"Connected players {connected_players}")
                     non_connected_players.extend(
                         player for player in all_players
                         if player not in connected_players
@@ -553,6 +554,7 @@ class LadderService(Service):
             msg = {"command": "match_cancelled", "game_id": game_id}
             for player in all_players:
                 if player.state == PlayerState.STARTING_AUTOMATCH:
+                    print(f"Setting player state to IDLE {player}")
                     player.state = PlayerState.IDLE
                 player.write_message(msg)
 
@@ -563,7 +565,8 @@ class LadderService(Service):
                 )
                 self.violation_service.register_violations(abandoning_players)
                 for player in non_connected_players:
-                    if player.lobby_connection:
+                    if player.lobby_connection and player.state == PlayerState.IDLE:
+                        print(f"Removing game_connection for {player}")
                         player.lobby_connection.game_connection = None
 
     async def get_game_history(
