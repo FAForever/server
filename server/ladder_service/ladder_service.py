@@ -1,13 +1,12 @@
 """
 Manages interactions between players and matchmakers
 """
-
 import asyncio
 import json
 import random
 import re
 from collections import defaultdict
-from typing import Optional
+from typing import Awaitable, Callable, Optional
 
 import aiocron
 from sqlalchemy import and_, func, select, text, true
@@ -34,6 +33,8 @@ from server.decorators import with_logger
 from server.game_service import GameService
 from server.games import InitMode, LadderGame
 from server.games.ladder_game import GameClosedError
+from server.ladder_service.game_name import game_name
+from server.ladder_service.violation_service import ViolationService
 from server.matchmaker import (
     MapPool,
     MatchmakerQueue,
@@ -42,9 +43,6 @@ from server.matchmaker import (
 )
 from server.players import Player, PlayerState
 from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
-
-from .game_name import game_name
-from .violation_service import ViolationService
 
 
 @with_logger
@@ -394,23 +392,31 @@ class LadderService(Service):
 
                 self._clear_search(player, queue.name)
 
-            asyncio.create_task(
-                self.start_game(s1.players, s2.players, queue)
-            )
+            asyncio.create_task(self.start_game(s1.players, s2.players, queue))
         except Exception:
             self._logger.exception(
                 "Error processing match between searches %s, and %s",
                 s1, s2
             )
 
-    async def start_game(
+    def start_game(
+        self,
+        team1: list[Player],
+        team2: list[Player],
+        queue: MatchmakerQueue
+    ) -> Awaitable[None]:
+        # We want assertion errors to trigger when the caller attempts to
+        # create the async function, not when the function starts executing.
+        assert len(team1) == len(team2)
+
+        return self._start_game(team1, team2, queue)
+
+    async def _start_game(
         self,
         team1: list[Player],
         team2: list[Player],
         queue: MatchmakerQueue
     ) -> None:
-        assert len(team1) == len(team2)
-
         self._logger.debug(
             "Starting %s game between %s and %s",
             queue.name,
@@ -450,8 +456,8 @@ class LadderService(Service):
             game.map_file_path = map_path
             game.set_name_unchecked(game_name(team1, team2))
 
-            def get_player_mean(player):
-                return player.ratings[queue.rating_type][0]
+            def get_player_mean(player: Player) -> float:
+                return player.ratings[queue.rating_type].mean
 
             team1 = sorted(team1, key=get_player_mean)
             team2 = sorted(team2, key=get_player_mean)
@@ -469,11 +475,13 @@ class LadderService(Service):
                 team = (i % 2) + 2
                 player.game = game
 
-                game.set_player_option(player.id, "Faction", player.faction.value)
-                game.set_player_option(player.id, "Team", team)
-                game.set_player_option(player.id, "StartSpot", slot)
-                game.set_player_option(player.id, "Army", slot)
-                game.set_player_option(player.id, "Color", slot)
+                # Set player options without triggering the logic for
+                # determining that players have actually connected to the game.
+                game._player_options[player.id]["Faction"] = player.faction.value
+                game._player_options[player.id]["Team"] = team
+                game._player_options[player.id]["StartSpot"] = slot
+                game._player_options[player.id]["Army"] = slot
+                game._player_options[player.id]["Color"] = slot
 
             game_options = queue.get_game_options()
             if game_options:
@@ -484,59 +492,27 @@ class LadderService(Service):
             # Really in the future, just send a better description
 
             self._logger.debug("Starting ladder game: %s", game)
-            # Options shared by all players
-            options = GameLaunchOptions(
-                mapname=mapname,
-                expected_players=len(all_players),
-                game_options=game_options
-            )
 
             def make_game_options(player: Player) -> GameLaunchOptions:
-                return options._replace(
+                return GameLaunchOptions(
+                    mapname=mapname,
+                    expected_players=len(all_players),
+                    game_options=game_options,
                     team=game.get_player_option(player.id, "Team"),
-                    faction=player.faction,
+                    faction=game.get_player_option(player.id, "Faction"),
                     map_position=game.get_player_option(player.id, "StartSpot")
                 )
 
-            try:
-                host.lobby_connection.write_launch_game(
-                    game,
-                    is_host=True,
-                    options=make_game_options(host)
-                )
-                await game.wait_hosted(60)
-            finally:
-                # TODO: Once the client supports `match_cancelled`, don't
-                # send `launch_game` to the client if the host timed out. Until
-                # then, failing to send `launch_game` will cause the client to
-                # think it is searching for ladder, even though the server has
-                # already removed it from the queue.
-
-                for guest in all_guests:
-                    if guest.lobby_connection is not None:
-                        guest.lobby_connection.write_launch_game(
-                            game,
-                            is_host=False,
-                            options=make_game_options(guest)
-                        )
-            await game.wait_launched(60 + 10 * len(all_guests))
+            await self.launch_match(game, host, all_guests, make_game_options)
             self._logger.debug("Ladder game launched successfully %s", game)
         except Exception as e:
-            non_connected_players = []
             abandoning_players = []
-            if isinstance(e, asyncio.TimeoutError):
+            if isinstance(e, NotConnectedError):
                 self._logger.info(
                     "Ladder game failed to start! %s setup timed out",
                     game
                 )
-                if game:
-                    connected_players = game.get_connected_players()
-                    print(f"Connected players {connected_players}")
-                    non_connected_players.extend(
-                        player for player in all_players
-                        if player not in connected_players
-                    )
-                    abandoning_players = non_connected_players
+                abandoning_players = e.players
             elif isinstance(e, GameClosedError):
                 self._logger.info(
                     "Ladder game %s failed to start! "
@@ -545,6 +521,9 @@ class LadderService(Service):
                 )
                 abandoning_players = [e.player]
             else:
+                # All timeout errors should be transformed by the match starter.
+                assert not isinstance(e, asyncio.TimeoutError)
+
                 self._logger.exception("Ladder game failed to start %s", game)
 
             if game:
@@ -554,20 +533,68 @@ class LadderService(Service):
             msg = {"command": "match_cancelled", "game_id": game_id}
             for player in all_players:
                 if player.state == PlayerState.STARTING_AUTOMATCH:
-                    print(f"Setting player state to IDLE {player}")
                     player.state = PlayerState.IDLE
                 player.write_message(msg)
 
-            if non_connected_players:
+            if abandoning_players:
                 self._logger.info(
                     "Players failed to connect: %s",
-                    non_connected_players
+                    abandoning_players
                 )
                 self.violation_service.register_violations(abandoning_players)
-                for player in non_connected_players:
-                    if player.lobby_connection and player.state == PlayerState.IDLE:
-                        print(f"Removing game_connection for {player}")
-                        player.lobby_connection.game_connection = None
+
+    async def launch_match(
+        self,
+        game: LadderGame,
+        host: Player,
+        guests: list[Player],
+        make_game_options: Callable[[Player], GameLaunchOptions]
+    ):
+        # Launch the host
+        if host.lobby_connection is None:
+            raise NotConnectedError([host])
+
+        host.lobby_connection.write_launch_game(
+            game,
+            is_host=True,
+            options=make_game_options(host)
+        )
+
+        try:
+            await game.wait_hosted(60)
+        except asyncio.TimeoutError:
+            raise NotConnectedError([host])
+        finally:
+            # TODO: Once the client supports `match_cancelled`, don't
+            # send `launch_game` to the client if the host timed out. Until
+            # then, failing to send `launch_game` will cause the client to
+            # think it is searching for ladder, even though the server has
+            # already removed it from the queue.
+
+            # Launch the guests
+            not_connected_guests = [
+                player for player in guests
+                if player.lobby_connection is None
+            ]
+            if not_connected_guests:
+                raise NotConnectedError(not_connected_guests)
+
+            for guest in guests:
+                assert guest.lobby_connection is not None
+
+                guest.lobby_connection.write_launch_game(
+                    game,
+                    is_host=False,
+                    options=make_game_options(guest)
+                )
+        try:
+            await game.wait_launched(60 + 10 * len(guests))
+        except asyncio.TimeoutError:
+            connected_players = game.get_connected_players()
+            raise NotConnectedError([
+                player for player in guests
+                if player not in connected_players
+            ])
 
     async def get_game_history(
         self,
@@ -618,3 +645,8 @@ class LadderService(Service):
     async def shutdown(self):
         for queue in self.queues.values():
             queue.shutdown()
+
+
+class NotConnectedError(asyncio.TimeoutError):
+    def __init__(self, players: list[Player]):
+        self.players = players

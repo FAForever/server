@@ -101,20 +101,20 @@ async def start_search(proto, queue_name="ladder1v1"):
 
 
 async def queue_player_for_matchmaking(user, lobby_server, queue_name="ladder1v1"):
-    _, _, proto = await connect_and_sign_in(user, lobby_server)
+    player_id, _, proto = await connect_and_sign_in(user, lobby_server)
     await read_until_command(proto, "game_info")
     await start_search(proto, queue_name)
 
-    return proto
+    return player_id, proto
 
 
 async def queue_players_for_matchmaking(lobby_server, queue_name: str = "ladder1v1"):
-    proto1 = await queue_player_for_matchmaking(
+    player1_id, proto1 = await queue_player_for_matchmaking(
         ("ladder1", "ladder1"),
         lobby_server,
         queue_name
     )
-    _, _, proto2 = await connect_and_sign_in(
+    player2_id, _, proto2 = await connect_and_sign_in(
         ("ladder2", "ladder2"),
         lobby_server
     )
@@ -133,7 +133,7 @@ async def queue_players_for_matchmaking(lobby_server, queue_name: str = "ladder1
     await read_until_command(proto1, "match_found", timeout=30)
     await read_until_command(proto2, "match_found")
 
-    return proto1, proto2
+    return player1_id, proto1, player2_id, proto2
 
 
 async def queue_temp_players_for_matchmaking(
@@ -158,7 +158,7 @@ async def queue_temp_players_for_matchmaking(
     # If the players did not match, this will fail due to a timeout error
     await asyncio.gather(*[
         read_until_command(proto, "match_found", timeout=30)
-        for proto in protos
+        for _, proto in protos
     ])
 
     return protos
@@ -610,7 +610,7 @@ async def test_ladder_game_draw_bug(lobby_server, database):
     their own ACU in order to kill the enemy ACU and be awarded a victory
     instead of a draw.
     """
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    player1_id, proto1, player2_id, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     msg1, msg2 = await asyncio.gather(*[
         client_response(proto) for proto in (proto1, proto2)
@@ -619,6 +619,14 @@ async def test_ladder_game_draw_bug(lobby_server, database):
     army1 = msg1["map_position"]
     army2 = msg2["map_position"]
 
+    for player_id, msg in ((player1_id, msg1), (player2_id, msg2)):
+        await send_player_options(
+            proto1,
+            (player_id, "StartSpot", msg["map_position"]),
+            (player_id, "Army", msg["map_position"]),
+            (player_id, "Faction", msg["faction"]),
+            (player_id, "Color", msg["map_position"]),
+        )
     for proto in (proto1, proto2):
         await proto.send_message({
             "target": "game",
@@ -694,7 +702,7 @@ async def test_ladder_game_not_joinable(lobby_server):
     _, _, test_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    _, proto1, _, _ = await queue_players_for_matchmaking(lobby_server)
     await read_until_command(test_proto, "game_info")
 
     msg = await read_until_command(proto1, "game_launch")

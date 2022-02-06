@@ -127,6 +127,7 @@ async def lobby_server(
     message_queue_service,
     party_service,
     oauth_service,
+    violation_service,
     policy_server,
     jwks_server
 ):
@@ -150,7 +151,8 @@ async def lobby_server(
                 "rating_service": rating_service,
                 "message_queue_service": message_queue_service,
                 "party_service": party_service,
-                "oauth_service": oauth_service
+                "oauth_service": oauth_service,
+                "violation_service": violation_service,
             })
         # Set up the back reference
         broadcast_service.server = instance
