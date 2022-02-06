@@ -9,6 +9,7 @@ from collections import defaultdict
 from typing import Awaitable, Callable, Optional
 
 import aiocron
+import humanize
 from sqlalchemy import and_, func, select, text, true
 
 from server.config import config
@@ -238,6 +239,32 @@ class LadderService(Service):
                 player.write_message({
                     "command": "search_timeout",
                     "timeouts": times
+                })
+                # TODO: Do we need this or is `search_timeout` enough?
+                player.write_message({
+                    "command": "search_info",
+                    "queue_name": queue_name,
+                    "state": "stop"
+                })
+                # For compatibility with clients that don't understand
+                # `search_timeout` only. This may be removed at any time.
+                if len(times) == 1:
+                    s = ""
+                    are = "is"
+                else:
+                    s = "s"
+                    are = "are"
+                names = ", ".join(p.login for p in timeouts)
+                max_time = humanize.naturaldelta(
+                    max(
+                        timeouts.values(),
+                        key=lambda v: v.get_ban_expiration()
+                    ).get_remaining()
+                )
+                player.write_message({
+                    "command": "notice",
+                    "style": "info",
+                    "text": f"Player{s} {names} {are} timed out for {max_time}"
                 })
             return
         # Cancel any existing searches that players have for this queue

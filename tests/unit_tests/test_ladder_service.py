@@ -206,10 +206,23 @@ async def test_start_game_timeout(
 
     LadderGame.timeout_game.assert_called_once()
     LadderGame.on_game_finish.assert_called()
-    p1.lobby_connection.write.assert_called_once_with({
-        "command": "match_cancelled",
-        "game_id": 41956
-    })
+    p1_calls = [
+        mock.call({
+            "command": "match_cancelled",
+            "game_id": 41956
+        }),
+        mock.call({
+            "command": "search_violation",
+            "count": 1,
+            "time": mock.ANY
+        }),
+        mock.call({
+            "command": "notice",
+            "style": "info",
+            "text": "You have received 1 violations."
+        })
+    ]
+    p1.lobby_connection.write.assert_has_calls(p1_calls)
     p2.lobby_connection.write.assert_called_once_with({
         "command": "match_cancelled",
         "game_id": 41956
@@ -248,10 +261,23 @@ async def test_start_game_timeout_on_send(
 
     LadderGame.timeout_game.assert_called_once()
     LadderGame.on_game_finish.assert_called()
-    p1.lobby_connection.write.assert_called_once_with({
-        "command": "match_cancelled",
-        "game_id": 41956
-    })
+    p1_calls = [
+        mock.call({
+            "command": "match_cancelled",
+            "game_id": 41956
+        }),
+        mock.call({
+            "command": "search_violation",
+            "count": 1,
+            "time": mock.ANY
+        }),
+        mock.call({
+            "command": "notice",
+            "style": "info",
+            "text": "You have received 1 violations."
+        })
+    ]
+    p1.lobby_connection.write.assert_has_calls(p1_calls)
     p2.lobby_connection.write.assert_called_once_with({
         "command": "match_cancelled",
         "game_id": 41956

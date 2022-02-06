@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional
 
+import humanize
+
 from server.core import Service
 from server.decorators import with_logger
 from server.players import Player
@@ -30,6 +32,9 @@ class Violation():
         else:
             return self.time + timedelta(minutes=30)
 
+    def get_remaining(self, now: Optional[datetime] = None) -> timedelta:
+        return self.get_ban_expiration() - (now or datetime_now())
+
     def is_expired(self, now: Optional[datetime] = None) -> bool:
         """
         Whether the violation history should be reset. This is different from
@@ -39,6 +44,12 @@ class Violation():
         now = now or datetime_now()
         # TODO: Config?
         return self.time + timedelta(hours=1) <= now
+
+    def to_dict(self) -> dict:
+        return {
+            "count": self.count,
+            "time": self.time.isoformat()
+        }
 
 
 @with_logger
@@ -68,9 +79,29 @@ class ViolationService(Service):
         for player in players:
             violation = self.violations.get(player)
             if violation is None or violation.is_expired(now):
-                self.violations[player] = Violation()
+                violation = Violation(time=now)
+                self.violations[player] = violation
             else:
                 violation.register()
+
+            player.write_message({
+                "command": "search_violation",
+                **violation.to_dict()
+            })
+            extra_text = ""
+            if violation.count > 1:
+                delta_text = humanize.naturaldelta(
+                    violation.get_ban_expiration() - now
+                )
+                extra_text = f" You can queue again in {delta_text}"
+            player.write_message({
+                "command": "notice",
+                "style": "info",
+                "text": (
+                    f"You have received {violation.count} violations." +
+                    extra_text
+                )
+            })
 
     def get_violations(self, players: list[Player]) -> dict[Player, Violation]:
         now = datetime_now()

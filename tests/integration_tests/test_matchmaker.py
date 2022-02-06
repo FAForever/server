@@ -663,3 +663,10 @@ async def test_failed_start_ban_guest(mocker, lobby_server):
             "expires_at": "2022-02-05T01:10:00+00:00"
         }]
     }
+
+    msg = await read_until_command(guest, "notice")
+    assert msg == {
+        "command": "notice",
+        "style": "info",
+        "text": "Player ladder2 is timed out for 30 minutes"
+    }
