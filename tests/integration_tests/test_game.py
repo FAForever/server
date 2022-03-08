@@ -837,8 +837,9 @@ async def test_gamestate_ended_modifies_player_list(lobby_server):
     )
 
     teams = {"1": ["test", "Rhiza"]}
-    await read_until_command(test_proto, "game_info", teams=teams)
-    await read_until_command(rhiza_proto, "game_info", teams=teams)
+    teams_ids = [{"team_id":1, "player_ids":[test_id, rhiza_id]}]
+    await read_until_command(test_proto, "game_info", teams=teams, teams_ids=teams_ids)
+    await read_until_command(rhiza_proto, "game_info", teams=teams, teams_ids=teams_ids)
 
     # Launch game, trggers another game_info message
     await test_proto.send_message({
@@ -850,7 +851,7 @@ async def test_gamestate_ended_modifies_player_list(lobby_server):
     msg1 = await read_until_command(test_proto, "game_info")
     msg2 = await read_until_command(rhiza_proto, "game_info")
     assert msg1["teams"] == msg2["teams"] == {"1": ["test", "Rhiza"]}
-    assert msg1["teams_ids"] == msg2["teams_ids"] ==[{"team_id":1, "player_ids"[test_id, rhiza_id]}]
+    assert msg1["teams_ids"] == msg2["teams_ids"] == [{"team_id":1, "player_ids":[test_id, rhiza_id]}]
 
     # One player leaves
     await test_proto.send_message({
@@ -863,7 +864,7 @@ async def test_gamestate_ended_modifies_player_list(lobby_server):
     msg1 = await read_until_command(test_proto, "game_info")
     msg2 = await read_until_command(rhiza_proto, "game_info")
     assert msg1["teams"] == msg2["teams"] == {"1": ["Rhiza"]}
-    assert msg1["teams_ids"] == msg2["teams_ids"] ==[{"team_id":1, "player_ids"[rhiza_id]}]
+    assert msg1["teams_ids"] == msg2["teams_ids"] ==[{"team_id":1, "player_ids":[rhiza_id]}]
 
 
 @pytest.mark.rabbitmq

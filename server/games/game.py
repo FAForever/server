@@ -907,7 +907,7 @@ class Game:
             "teams_ids": [
                 {
                     "team_id": team,
-                    players: [
+                    "player_ids": [
                         player.id for player in self.connected_players()
                         if self.get_player_option(player.id, "Team") == team
                         ]
