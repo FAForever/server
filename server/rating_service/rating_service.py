@@ -1,9 +1,9 @@
 import asyncio
-from typing import Dict, List, Optional
+from typing import Optional
 
 import aiocron
 import pymysql
-from sqlalchemy import and_, bindparam, func, or_, select
+from sqlalchemy import and_, bindparam, func, select
 
 from server.config import config
 from server.core import Service
@@ -50,8 +50,8 @@ class RatingService(Service):
         self._accept_input = False
         self._queue = asyncio.Queue()
         self._task = None
-        self._rating_type_ids: Optional[Dict[str, int]] = None
-        self.leaderboards: Dict[str, Leaderboard] = {}
+        self._rating_type_ids: Optional[dict[str, int]] = None
+        self.leaderboards: dict[str, Leaderboard] = {}
         self._message_queue_service = message_queue_service
 
     async def initialize(self) -> None:
@@ -62,7 +62,6 @@ class RatingService(Service):
         await self.update_data()
         self._update_cron = aiocron.crontab("*/10 * * * *", func=self.update_data)
         self._accept_input = True
-        self._logger.debug("RatingService starting...")
         self._task = asyncio.create_task(self._handle_rating_queue())
 
     async def update_data(self):
@@ -79,7 +78,7 @@ class RatingService(Service):
                 )
             )
             result = await conn.execute(sql)
-            rows = await result.fetchall()
+            rows = result.fetchall()
 
             self.leaderboards.clear()
             self._rating_type_ids = {}
@@ -97,7 +96,7 @@ class RatingService(Service):
                 if init:
                     current.initializer = init
 
-    async def enqueue(self, game_info: Dict) -> None:
+    async def enqueue(self, game_info: dict[str]) -> None:
         if not self._accept_input:
             self._logger.warning("Dropped rating request %s", game_info)
             raise ServiceNotReadyError(
@@ -117,15 +116,17 @@ class RatingService(Service):
                 self._logger.debug("Now rating request %s", summary)
 
                 try:
-                    await self._rate(summary)
+                    # Make sure we finish writing rating changes even if the
+                    # server is shutting down
+                    await asyncio.shield(self._rate(summary))
                 except GameRatingError:
                     self._logger.warning("Error rating game %s", summary)
                 except Exception:  # pragma: no cover
                     self._logger.exception("Failed rating request %s", summary)
                 else:
                     self._logger.debug("Done rating request.")
-
-                self._queue.task_done()
+                finally:
+                    self._queue.task_done()
                 rating_service_backlog.set(self._queue.qsize())
         except asyncio.CancelledError:
             pass
@@ -197,7 +198,7 @@ class RatingService(Service):
         conn,
         game_id: int,
         rating_type: str,
-        player_ratings: Dict[PlayerID, PlayerRatings],
+        player_ratings: dict[PlayerID, PlayerRatings],
         rater: GameRater,
         update_game_player_stats: bool = True
     ) -> Optional[GameRatingResult]:
@@ -281,18 +282,16 @@ class RatingService(Service):
             )
 
     async def _get_all_player_ratings(
-        self, conn, player_ids: List[PlayerID]
-    ) -> Dict[PlayerID, PlayerRatings]:
+        self, conn, player_ids: list[PlayerID]
+    ) -> dict[PlayerID, PlayerRatings]:
         sql = select([
             leaderboard_rating.c.login_id,
             leaderboard.c.technical_name,
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation
-        ]).join(leaderboard).where(or_(*[
-            leaderboard_rating.c.login_id == player_id
-            for player_id in player_ids
-        ]))
-        # TODO: Use leaderboard_rating.c.login_id.in_(player_ids) instead
+        ]).join(leaderboard).where(
+            leaderboard_rating.c.login_id.in_(player_ids)
+        )
         result = await conn.execute(sql)
 
         player_ratings = {
@@ -300,7 +299,7 @@ class RatingService(Service):
             for player_id in player_ids
         }
 
-        async for row in result:
+        for row in result:
             player_id, rating_type = row.login_id, row.technical_name
             player_ratings[player_id][rating_type] = (row.mean, row.deviation)
 
@@ -313,7 +312,7 @@ class RatingService(Service):
         rating_type: str,
         old_ratings: RatingDict,
         new_ratings: RatingDict,
-        outcomes: Dict[PlayerID, GameOutcome],
+        outcomes: dict[PlayerID, GameOutcome],
         update_game_player_stats: bool = True
     ) -> None:
         """
@@ -328,7 +327,7 @@ class RatingService(Service):
             for player_id in new_ratings.keys()
         ]
 
-        for player_id, new_rating, old_rating in ratings:
+        for player_id, old_rating, new_rating in ratings:
             self._logger.debug(
                 "New %s rating for player with id %s: %s -> %s",
                 rating_type,
@@ -460,7 +459,7 @@ class RatingService(Service):
         rating_type: str,
         old_ratings: RatingDict,
         new_ratings: RatingDict,
-        outcomes: Dict[PlayerID, GameOutcome],
+        outcomes: dict[PlayerID, GameOutcome],
     ):
         for player_id, new_rating in new_ratings.items():
             if player_id not in outcomes:

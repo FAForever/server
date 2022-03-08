@@ -5,7 +5,7 @@ Player type definitions
 from collections import defaultdict
 from contextlib import suppress
 from enum import Enum, unique
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 from .factions import Faction
 from .protocol import DisconnectedError
@@ -40,7 +40,7 @@ class Player:
         login: str = None,
         session: int = 0,
         player_id: int = 0,
-        leaderboards: Dict[str, Leaderboard] = {},
+        leaderboards: dict[str, Leaderboard] = {},
         ratings=None,
         clan=None,
         game_count=None,

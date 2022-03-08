@@ -1,6 +1,7 @@
 from enum import Enum, unique
-from typing import Any, Dict, List, NamedTuple, Optional, Set
+from typing import Any, NamedTuple, Optional
 
+from server.db.typedefs import Victory
 from server.games.game_results import ArmyResult, GameOutcome
 from server.players import Player
 
@@ -25,14 +26,6 @@ class GameConnectionState(Enum):
 class InitMode(Enum):
     NORMAL_LOBBY = 0
     AUTO_LOBBY = 1
-
-
-@unique
-class Victory(Enum):
-    DEMORALIZATION = 0
-    DOMINATION = 1
-    ERADICATION = 2
-    SANDBOX = 3
 
 
 @unique
@@ -106,14 +99,14 @@ class BasicGameInfo(NamedTuple):
     rating_type: Optional[str]
     map_id: int
     game_mode: str
-    mods: List[int]
-    teams: List[Set[Player]]
+    mods: list[int]
+    teams: list[set[Player]]
 
 
 class TeamRatingSummary(NamedTuple):
     outcome: GameOutcome
-    player_ids: Set[int]
-    army_results: List[ArmyResult]
+    player_ids: set[int]
+    army_results: list[ArmyResult]
 
 
 class EndedGameInfo(NamedTuple):
@@ -133,19 +126,19 @@ class EndedGameInfo(NamedTuple):
     rating_type: Optional[str]
     map_id: int
     game_mode: str
-    mods: List[int]
-    commander_kills: Dict[str, int]
+    mods: list[int]
+    commander_kills: dict[str, int]
     validity: ValidityState
-    team_summaries: List[TeamRatingSummary]
+    team_summaries: list[TeamRatingSummary]
 
     @classmethod
     def from_basic(
         cls,
         basic_info: BasicGameInfo,
         validity: ValidityState,
-        team_outcomes: List[GameOutcome],
-        commander_kills: Dict[str, int],
-        team_army_results: List[List[ArmyResult]],
+        team_outcomes: list[GameOutcome],
+        commander_kills: dict[str, int],
+        team_army_results: list[list[ArmyResult]],
     ) -> "EndedGameInfo":
         if len(basic_info.teams) != len(team_outcomes):
             raise ValueError(
@@ -215,3 +208,19 @@ class FA(object):
 
     ENABLED = _FAEnabled()
     DISABLED = _FADisabled()
+
+
+__all__ = (
+    "BasicGameInfo",
+    "EndedGameInfo",
+    "FA",
+    "FeaturedModType",
+    "GameConnectionState",
+    "GameState",
+    "GameType",
+    "InitMode",
+    "TeamRatingSummary",
+    "ValidityState",
+    "Victory",
+    "VisibilityState",
+)

@@ -22,17 +22,17 @@ class Unit(Enum):
     GALACTIC_COLOSSUS = "ual0401"
     TEMPEST = "uas0401"
     SALVATION = "xab2307"
-    #UEF
+    # UEF
     MAVOR = "ueb2401"
     FATBOY = "uel0401"
     NOVAX_CENTER = "xeb2402"
     ATLANTIS = "ues0401"
-    #Cybran
+    # Cybran
     SOUL_RIPPER = "ura0401"
     SCATHIS = "url0401"
     MONKEYLORD = "url0402"
     MEGALITH = "xrl0403"
-    #Sera
+    # Sera
     YOLONA_OSS = "xsb2401"
     AHWASSA = "xsa0402"
     YTHOTHA = "xsl0401"

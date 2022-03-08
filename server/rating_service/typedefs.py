@@ -1,11 +1,11 @@
-from typing import Dict, List, NamedTuple
+from typing import NamedTuple
 
 from server.games.game_results import GameOutcome
 from server.games.typedefs import TeamRatingSummary
 from server.rating import Rating
 
 PlayerID = int
-RatingDict = Dict[PlayerID, Rating]
+RatingDict = dict[PlayerID, Rating]
 
 
 class GameRatingSummary(NamedTuple):
@@ -19,10 +19,10 @@ class GameRatingSummary(NamedTuple):
 
     game_id: int
     rating_type: str
-    teams: List[TeamRatingSummary]
+    teams: list[TeamRatingSummary]
 
     @classmethod
-    def from_game_info_dict(cls, game_info: Dict) -> "GameRatingSummary":
+    def from_game_info_dict(cls, game_info: dict[str]) -> "GameRatingSummary":
         if len(game_info["teams"]) != 2:
             raise ValueError("Detected other than two teams.")
 
@@ -44,7 +44,7 @@ class GameRatingResult(NamedTuple):
     rating_type: str
     old_ratings: RatingDict
     new_ratings: RatingDict
-    outcome_map: Dict[PlayerID, GameOutcome]
+    outcome_map: dict[PlayerID, GameOutcome]
 
 
 class RatingServiceError(Exception):

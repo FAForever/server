@@ -87,7 +87,8 @@ Distributed under GPLv3, see license.txt
 
 import asyncio
 import logging
-from typing import Dict, Optional, Set, Tuple, Type
+import time
+from typing import Optional
 
 from prometheus_client import start_http_server
 
@@ -164,7 +165,7 @@ class ServerInstance(object):
         twilio_nts: Optional[TwilioNTS],
         loop: asyncio.BaseEventLoop,
         # For testing
-        _override_services: Optional[Dict[str, Service]] = None
+        _override_services: Optional[dict[str, Service]] = None
     ):
         self.name = name
         self._logger = logging.getLogger(self.name)
@@ -175,7 +176,7 @@ class ServerInstance(object):
 
         self.started = False
 
-        self.contexts: Set[ServerContext] = set()
+        self.contexts: set[ServerContext] = set()
 
         self.services = _override_services or create_services({
             "server": self,
@@ -217,26 +218,40 @@ class ServerInstance(object):
                 )
 
     @synchronizedmethod
-    async def _start_services(self) -> None:
+    async def start_services(self) -> None:
         if self.started:
             return
 
+        num_services = len(self.services)
+        self._logger.debug("Initializing %s services", num_services)
+
+        async def initialize(service):
+            start = time.perf_counter()
+            await service.initialize()
+            service._logger.debug(
+                "%s initialized in %0.2f seconds",
+                service.__class__.__name__,
+                time.perf_counter() - start
+            )
+
         await asyncio.gather(*[
-            service.initialize() for service in self.services.values()
+            initialize(service) for service in self.services.values()
         ])
+
+        self._logger.debug("Initialized %s services", num_services)
 
         self.started = True
 
     async def listen(
         self,
-        address: Tuple[str, int],
-        protocol_class: Type[Protocol] = QDataStreamProtocol
+        address: tuple[str, int],
+        protocol_class: type[Protocol] = QDataStreamProtocol
     ) -> ServerContext:
         """
         Start listening on a new address.
         """
         if not self.started:
-            await self._start_services()
+            await self.start_services()
 
         ctx = ServerContext(
             f"{self.name}[{protocol_class.__name__}]",
@@ -251,21 +266,38 @@ class ServerInstance(object):
         return ctx
 
     async def shutdown(self):
-        for ctx in self.contexts:
-            ctx.close()
-
-        for ctx in self.contexts:
-            try:
-                await ctx.wait_closed()
-            except Exception:
+        results = await asyncio.gather(
+            *(ctx.stop() for ctx in self.contexts),
+            return_exceptions=True
+        )
+        for result, ctx in zip(results, self.contexts):
+            if isinstance(result, BaseException):
                 self._logger.error(
-                    "Encountered unexpected error when trying to shut down "
-                    "context %s",
+                    "Unexpected error when stopping context %s",
                     ctx
                 )
 
-        await asyncio.gather(*[
-            service.shutdown() for service in self.services.values()
-        ])
+        results = await asyncio.gather(
+            *(service.shutdown() for service in self.services.values()),
+            return_exceptions=True
+        )
+        for result, service in zip(results, self.services.values()):
+            if isinstance(result, BaseException):
+                self._logger.error(
+                    "Unexpected error when shutting down service %s",
+                    service
+                )
 
+        results = await asyncio.gather(
+            *(ctx.shutdown() for ctx in self.contexts),
+            return_exceptions=True
+        )
+        for result, ctx in zip(results, self.contexts):
+            if isinstance(result, BaseException):
+                self._logger.error(
+                    "Unexpected error when shutting down context %s",
+                    ctx
+                )
+
+        self.contexts.clear()
         self.started = False

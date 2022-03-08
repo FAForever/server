@@ -3,7 +3,7 @@ import itertools
 import math
 import statistics
 import time
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, Optional
 
 import trueskill
 
@@ -13,7 +13,7 @@ from ..config import config
 from ..decorators import with_logger
 from ..players import Player
 
-Match = Tuple["Search", "Search"]
+Match = tuple["Search", "Search"]
 OnMatchedCallback = Callable[["Search", "Search"], Any]
 
 
@@ -29,7 +29,7 @@ class Search:
 
     def __init__(
         self,
-        players: List[Player],
+        players: list[Player],
         start_time: Optional[float] = None,
         rating_type: str = RatingType.LADDER_1V1,
         on_matched: OnMatchedCallback = lambda _1, _2: None
@@ -83,7 +83,7 @@ class Search:
         return max_rating >= config.TOP_PLAYER_MIN_RATING
 
     @property
-    def ratings(self) -> List[Rating]:
+    def ratings(self) -> list[Rating]:
         ratings = []
         for player, rating in zip(self.players, self.raw_ratings):
             # New players (less than config.NEWBIE_MIN_GAMES games) match against less skilled opponents
@@ -101,18 +101,18 @@ class Search:
         return statistics.mean(self.displayed_ratings)
 
     @property
-    def raw_ratings(self) -> List[Rating]:
+    def raw_ratings(self) -> list[Rating]:
         return [player.ratings[self.rating_type] for player in self.players]
 
     @property
-    def displayed_ratings(self) -> List[float]:
+    def displayed_ratings(self) -> list[float]:
         """
         The client always displays mean - 3 * dev as a player's rating.
         So generally this is perceived as a player's true rating.
         """
         return [rating.displayed() for rating in self.raw_ratings]
 
-    def _nearby_rating_range(self, delta: int) -> Tuple[int, int]:
+    def _nearby_rating_range(self, delta: int) -> tuple[int, int]:
         """
         Returns 'boundary' mu values for player matching. Adjust delta for
         different game qualities.
@@ -122,12 +122,12 @@ class Search:
         return rounded_mu - delta, rounded_mu + delta
 
     @property
-    def boundary_80(self) -> Tuple[int, int]:
+    def boundary_80(self) -> tuple[int, int]:
         """ Achieves roughly 80% quality. """
         return self._nearby_rating_range(200)
 
     @property
-    def boundary_75(self) -> Tuple[int, int]:
+    def boundary_75(self) -> tuple[int, int]:
         """ Achieves roughly 75% quality. FIXME - why is it MORE restrictive??? """
         return self._nearby_rating_range(100)
 
@@ -275,7 +275,7 @@ class Search:
             f"{', has_newbie)' if self.has_newbie() else ')'}"
         )
 
-    def get_original_searches(self) -> List["Search"]:
+    def get_original_searches(self) -> list["Search"]:
         """
         Returns the searches of which this Search is comprised,
         as if it were a CombinedSearch of one
@@ -293,11 +293,11 @@ class CombinedSearch(Search):
         self.searches = searches
 
     @property
-    def players(self) -> List[Player]:
+    def players(self) -> list[Player]:
         return list(itertools.chain(*[s.players for s in self.searches]))
 
     @property
-    def ratings(self) -> List[Rating]:
+    def ratings(self) -> list[Rating]:
         return list(itertools.chain(*[s.ratings for s in self.searches]))
 
     @property
@@ -309,11 +309,11 @@ class CombinedSearch(Search):
         return get_average_rating(self.searches)
 
     @property
-    def raw_ratings(self) -> List[Rating]:
+    def raw_ratings(self) -> list[Rating]:
         return list(itertools.chain(*[s.raw_ratings for s in self.searches]))
 
     @property
-    def displayed_ratings(self) -> List[float]:
+    def displayed_ratings(self) -> list[float]:
         return list(itertools.chain(*[s.displayed_ratings for s in self.searches]))
 
     @property
@@ -367,7 +367,7 @@ class CombinedSearch(Search):
     def __str__(self):
         return f"CombinedSearch({','.join(str(s) for s in self.searches)})"
 
-    def get_original_searches(self) -> List[Search]:
+    def get_original_searches(self) -> list[Search]:
         """
         Returns the searches of which this CombinedSearch is comprised
         """

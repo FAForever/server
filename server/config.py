@@ -5,7 +5,7 @@ Server config variables
 import asyncio
 import logging
 import os
-from typing import Callable, Dict
+from typing import Callable
 
 import trueskill
 import yaml
@@ -120,7 +120,7 @@ class ConfigurationStore:
         # The number of possible matches we would like to have when the queue
         # pops. The queue pop time will be adjusted based on the current rate of
         # players queuing to try and hit this number.
-        self.QUEUE_POP_DESIRED_MATCHES = 4
+        self.QUEUE_POP_DESIRED_MATCHES = 2.5
         # How many previous queue sizes to consider
         self.QUEUE_POP_TIME_MOVING_AVG_SIZE = 5
 
@@ -128,7 +128,7 @@ class ConfigurationStore:
             key: value for key, value in vars(self).items() if key.isupper()
         }
 
-        self._callbacks: Dict[str, Callable] = {}
+        self._callbacks: dict[str, Callable] = {}
         self.refresh()
 
     def refresh(self) -> None:

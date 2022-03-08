@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Iterable, List, Set, Tuple
+from typing import Iterable
 
 from ...decorators import with_logger
 from ..search import Match, Search
@@ -12,15 +12,15 @@ class Matchmaker(ABC):
         self,
         searches: Iterable[Search],
         team_size: int
-    ) -> Tuple[List[Match], List[Search]]:
+    ) -> tuple[list[Match], list[Search]]:
         pass
 
 
 @with_logger
 class MatchmakingPolicy1v1(object):
     def __init__(self):
-        self.matches: Dict[Search, Search] = {}
-        self.searches_remaining_unmatched: Set[Search] = set()
+        self.matches: dict[Search, Search] = {}
+        self.searches_remaining_unmatched: set[Search] = set()
 
     def _match(self, s1: Search, s2: Search):
         self._logger.debug(

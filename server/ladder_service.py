@@ -3,10 +3,11 @@ Manages interactions between players and matchmakers
 """
 
 import asyncio
+import json
 import random
 import re
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Optional
 
 import aiocron
 from sqlalchemy import and_, func, select, text, true
@@ -32,6 +33,7 @@ from .db.models import (
 from .decorators import with_logger
 from .game_service import GameService
 from .games import InitMode, LadderGame
+from .games.ladder_game import GameClosedError
 from .matchmaker import MapPool, MatchmakerQueue, OnMatchedCallback, Search
 from .players import Player, PlayerState
 from .types import GameLaunchOptions, Map, NeroxisGeneratedMap
@@ -43,17 +45,18 @@ class LadderService(Service):
     Service responsible for managing the 1v1 ladder. Does matchmaking, updates
     statistics, and launches the games.
     """
+
     def __init__(
         self,
         database: FAFDatabase,
         game_service: GameService,
     ):
         self._db = database
-        self._informed_players: Set[Player] = set()
+        self._informed_players: set[Player] = set()
         self.game_service = game_service
         self.queues = {}
 
-        self._searches: Dict[Player, Dict[str, Search]] = defaultdict(dict)
+        self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
 
     async def initialize(self) -> None:
         await self.update_data()
@@ -104,7 +107,7 @@ class LadderService(Service):
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
 
-    async def fetch_map_pools(self, conn) -> Dict[int, Tuple[str, List[Map]]]:
+    async def fetch_map_pools(self, conn) -> dict[int, tuple[str, list[Map]]]:
         result = await conn.execute(
             select([
                 map_pool.c.id,
@@ -121,7 +124,7 @@ class LadderService(Service):
             )
         )
         map_pool_maps = {}
-        async for row in result:
+        for row in result:
             id_ = row.id
             name = row.name
             if id_ not in map_pool_maps:
@@ -133,7 +136,7 @@ class LadderService(Service):
                 )
             elif row.map_params is not None:
                 try:
-                    params = row.map_params
+                    params = json.loads(row.map_params)
                     map_type = params["type"]
                     if map_type == "neroxis":
                         map_list.append(
@@ -148,8 +151,8 @@ class LadderService(Service):
 
                 except Exception:
                     self._logger.warning(
-                        "Failed to load map in map pool %d "
-                        "parameters specified as %s",
+                        "Failed to load map in map pool %d. "
+                        "Parameters are '%s'",
                         row.id,
                         row.map_params,
                         exc_info=True
@@ -181,7 +184,7 @@ class LadderService(Service):
         # map pools
         errored = set()
         matchmaker_queues = defaultdict(lambda: defaultdict(list))
-        async for row in result:
+        for row in result:
             name = row.technical_name
             if name in errored:
                 continue
@@ -191,7 +194,7 @@ class LadderService(Service):
                 info["mod"] = row.gamemod
                 info["rating_type"] = row.rating_type
                 info["team_size"] = row.team_size
-                info["params"] = row.params
+                info["params"] = json.loads(row.params) if row.params else None
                 info["map_pools"].append((
                     row.map_pool_id,
                     row.min_rating,
@@ -209,7 +212,7 @@ class LadderService(Service):
 
     def start_search(
         self,
-        players: List[Player],
+        players: list[Player],
         queue_name: str,
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
@@ -376,8 +379,8 @@ class LadderService(Service):
 
     async def start_game(
         self,
-        team1: List[Player],
-        team2: List[Player],
+        team1: list[Player],
+        team2: list[Player],
         queue: MatchmakerQueue
     ) -> None:
         assert len(team1) == len(team2)
@@ -462,17 +465,19 @@ class LadderService(Service):
                 game_options=game_options
             )
 
-            def game_options(player: Player) -> GameLaunchOptions:
+            def make_game_options(player: Player) -> GameLaunchOptions:
                 return options._replace(
                     team=game.get_player_option(player.id, "Team"),
                     faction=player.faction,
                     map_position=game.get_player_option(player.id, "StartSpot")
                 )
 
-            await host.lobby_connection.launch_game(
-                game, is_host=True, options=game_options(host)
-            )
             try:
+                host.lobby_connection.write_launch_game(
+                    game,
+                    is_host=True,
+                    options=make_game_options(host)
+                )
                 await game.wait_hosted(60)
             finally:
                 # TODO: Once the client supports `match_cancelled`, don't
@@ -481,13 +486,13 @@ class LadderService(Service):
                 # think it is searching for ladder, even though the server has
                 # already removed it from the queue.
 
-                await asyncio.gather(*[
-                    guest.lobby_connection.launch_game(
-                        game, is_host=False, options=game_options(guest)
-                    )
-                    for guest in all_guests
-                    if guest.lobby_connection is not None
-                ])
+                for guest in all_guests:
+                    if guest.lobby_connection is not None:
+                        guest.lobby_connection.write_launch_game(
+                            game,
+                            is_host=False,
+                            options=make_game_options(guest)
+                        )
             await game.wait_launched(60 + 10 * len(all_guests))
             self._logger.debug("Ladder game launched successfully %s", game)
         except Exception as e:
@@ -496,13 +501,19 @@ class LadderService(Service):
                     "Ladder game failed to start! %s setup timed out",
                     game
                 )
+            elif isinstance(e, GameClosedError):
+                self._logger.info(
+                    "Ladder game %s failed to start! Player %s closed their game instance",
+                    game, e.player
+                )
             else:
                 self._logger.exception("Ladder game failed to start %s", game)
 
             if game:
-                await game.on_game_end()
+                await game.on_game_finish()
 
-            msg = {"command": "match_cancelled"}
+            game_id = game.id if game else None
+            msg = {"command": "match_cancelled", "game_id": game_id}
             for player in all_players:
                 if player.state == PlayerState.STARTING_AUTOMATCH:
                     player.state = PlayerState.IDLE
@@ -510,10 +521,10 @@ class LadderService(Service):
 
     async def get_game_history(
         self,
-        players: List[Player],
+        players: list[Player],
         queue_id: int,
         limit: int = 3
-    ) -> List[int]:
+    ) -> list[int]:
         async with self._db.acquire() as conn:
             result = []
             for player in players:
@@ -535,7 +546,7 @@ class LadderService(Service):
                 ).order_by(game_stats.c.startTime.desc()).limit(limit)
 
                 result.extend([
-                    row.mapId async for row in await conn.execute(query)
+                    row.mapId for row in await conn.execute(query)
                 ])
         return result
 
@@ -554,7 +565,7 @@ class LadderService(Service):
             queue.shutdown()
 
 
-def game_name(*teams: List[Player]) -> str:
+def game_name(*teams: list[Player]) -> str:
     """
     Generate a game name based on the players.
     """
@@ -562,7 +573,7 @@ def game_name(*teams: List[Player]) -> str:
     return " Vs ".join(_team_name(team) for team in teams)
 
 
-def _team_name(team: List[Player]) -> str:
+def _team_name(team: list[Player]) -> str:
     """
     Generate a team name based on the players. If all players are in the
     same clan, use their clan tag, otherwise use the name of the first

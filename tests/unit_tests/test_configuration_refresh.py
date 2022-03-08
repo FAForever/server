@@ -2,7 +2,6 @@ import asyncio
 from unittest import mock
 
 import pytest
-from asynctest import CoroutineMock
 
 from server import config
 from server.configuration_service import ConfigurationService
@@ -67,7 +66,7 @@ async def test_configuration_refresh(config_service, monkeypatch):
 @fast_forward(20)
 async def test_config_callback_on_change(config_service, monkeypatch):
     callback = mock.Mock()
-    callback_coroutine = CoroutineMock()
+    callback_coroutine = mock.AsyncMock()
     config.register_callback("DB_PASSWORD", callback)
     config.register_callback("CONTROL_SERVER_PORT", callback_coroutine)
     assert config.DB_PASSWORD == "banana"

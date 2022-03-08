@@ -12,7 +12,12 @@ from server.db.models import (
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
-from .test_game import client_response, get_player_ratings, send_player_options
+from .test_game import (
+    client_response,
+    get_player_ratings,
+    idle_response,
+    send_player_options
+)
 
 pytestmark = pytest.mark.asyncio
 
@@ -323,6 +328,7 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
         for proto in protos
     ])
     await read_until_command(protos[1], "search_info", state="start")
+    # tmm2v2 matches so ladder1v1 search is cancelled
     msg = await read_until_command(
         protos[0],
         "search_info",
@@ -330,7 +336,10 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
     )
     assert msg["state"] == "stop"
 
-    # Don't send any GPGNet messages so the match times out
+    await client_response(protos[0])
+    await idle_response(protos[1])
+
+    # We don't send the `GameState: Lobby` command so the game should time out
     await read_until_command(protos[0], "match_cancelled", timeout=120)
 
     # Player's state is reset once they leave the game
@@ -360,6 +369,20 @@ async def test_game_matchmaking_multiqueue_timeout(lobby_server):
     })
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(protos[1], "search_info", state="start", timeout=5)
+
+    # Player never opened FA so they can queue again
+    await protos[2].send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    await read_until_command(
+        protos[2],
+        "search_info",
+        state="start",
+        queue_name="ladder1v1",
+        timeout=5
+    )
 
 
 @fast_forward(60)
@@ -430,6 +453,9 @@ async def test_game_matchmaking_multiqueue_multimatch(lobby_server):
 async def test_game_matchmaking_timeout(lobby_server):
     protos, _ = await queue_players_for_matchmaking(lobby_server)
 
+    await client_response(protos[0])
+    await idle_response(protos[1])
+
     # We don't send the `GameState: Lobby` command so the game should time out
     await asyncio.gather(*[
         read_until_command(proto, "match_cancelled", timeout=120)
@@ -463,6 +489,20 @@ async def test_game_matchmaking_timeout(lobby_server):
     })
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(protos[1], "search_info", state="start", timeout=5)
+
+    # Player never opened FA so they can queue again
+    await protos[2].send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+    await read_until_command(
+        protos[2],
+        "search_info",
+        state="start",
+        queue_name="ladder1v1",
+        timeout=5
+    )
 
 
 @fast_forward(120)
@@ -676,7 +716,7 @@ async def test_ratings_initialized_based_on_global_persisted(
     )
 
     async with database.acquire() as conn:
-        res = await conn.execute(
+        result = await conn.execute(
             select([leaderboard_rating]).select_from(
                 leaderboard.join(leaderboard_rating)
             ).where(and_(
@@ -684,10 +724,10 @@ async def test_ratings_initialized_based_on_global_persisted(
                 leaderboard_rating.c.login_id == test_id
             ))
         )
-        row = await res.fetchone()
+        row = result.fetchone()
         assert row.mean > 2000
 
-        res = await conn.execute(
+        result = await conn.execute(
             select([leaderboard_rating_journal]).select_from(
                 leaderboard
                 .join(leaderboard_rating_journal)
@@ -697,7 +737,7 @@ async def test_ratings_initialized_based_on_global_persisted(
                 game_player_stats.c.playerId == test_id
             ))
         )
-        rows = await res.fetchall()
+        rows = result.fetchall()
         assert len(rows) == 1
         assert rows[0].rating_mean_before == 2000
         assert rows[0].rating_deviation_before == 250

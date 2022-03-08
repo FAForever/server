@@ -2,7 +2,6 @@ import base64
 import json
 import struct
 from asyncio import IncompleteReadError
-from typing import Tuple
 
 from server.decorators import with_logger
 
@@ -16,7 +15,7 @@ class QDataStreamProtocol(Protocol):
     """
 
     @staticmethod
-    def read_qstring(buffer: bytes, pos: int = 0) -> Tuple[int, str]:
+    def read_qstring(buffer: bytes, pos: int = 0) -> tuple[int, str]:
         """
         Parse a serialized QString from buffer (A bytes like object) at given
         position.

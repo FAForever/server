@@ -3,14 +3,14 @@ Type definitions for player ratings
 """
 
 from dataclasses import dataclass
-from typing import Dict, NamedTuple, Optional, Set, Tuple, Union
+from typing import NamedTuple, Optional, Union
 
 import trueskill
 
 from server.config import config
 from server.weakattr import WeakAttribute
 
-AnyRating = Union["Rating", trueskill.Rating, Tuple[float, float]]
+AnyRating = Union["Rating", trueskill.Rating, tuple[float, float]]
 
 
 class Rating(NamedTuple):
@@ -73,13 +73,13 @@ class RatingType():
     LADDER_1V1 = "ladder_1v1"
 
 
-class PlayerRatings(Dict[str, Rating]):
-    def __init__(self, leaderboards: Dict[str, Leaderboard], init: bool = True):
+class PlayerRatings(dict[str, Rating]):
+    def __init__(self, leaderboards: dict[str, Leaderboard], init: bool = True):
         self.leaderboards = leaderboards
         # Rating types which are present but should be recomputed.
-        self.transient: Set[str] = set()
+        self.transient: set[str] = set()
         # Rating types which have been computed since the last rating update
-        self.clean: Set[str] = set()
+        self.clean: set[str] = set()
 
         # DEPRECATED: Initialize known rating types so the client can display them
         if init:
@@ -98,7 +98,7 @@ class PlayerRatings(Dict[str, Rating]):
     def __getitem__(
         self,
         rating_type: str,
-        history: Optional[Set[str]] = None,
+        history: Optional[set[str]] = None,
     ) -> Rating:
         history = history or set()
         entry = self.get(rating_type)
@@ -123,7 +123,7 @@ class PlayerRatings(Dict[str, Rating]):
     def _get_initial_rating(
         self,
         rating_type: str,
-        history: Set[str],
+        history: set[str],
     ) -> Rating:
         """Create an initial rating when no rating exists yet."""
         leaderboard = self.leaderboards.get(rating_type)
@@ -139,7 +139,7 @@ class PlayerRatings(Dict[str, Rating]):
 
         return Rating(rating.mean, min(rating.dev + 150, 250))
 
-    def update(self, other: Dict[str, Rating]):
+    def update(self, other: dict[str, Rating]):
         self.transient -= set(other)
         self.clean.clear()
         if isinstance(other, PlayerRatings):
@@ -164,6 +164,7 @@ class InclusiveRange():
     assert -1 not in InclusiveRange(0, 10)
     assert 11 not in InclusiveRange(0, 10)
     """
+
     def __init__(self, lo: Optional[float] = None, hi: Optional[float] = None):
         self.lo = lo
         self.hi = hi

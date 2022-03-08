@@ -1,6 +1,6 @@
 [scripts]
 devserver = "python server.py --configuration-file dev-config.yml"
-tests = "py.test --doctest-modules --doctest-continue-on-failure --cov-report term-missing --cov=server --mysql_database=faf -o testpaths=tests -m 'not rabbitmq'"
+tests = "py.test --doctest-modules --doctest-continue-on-failure --cov-report=term-missing --cov-branch --cov=server --mysql_database=faf -o testpaths=tests -m 'not rabbitmq'"
 integration = "py.test -o testpaths=integration_tests"
 vulture = "vulture server.py server/ --sort-by-size"
 doc = "pdoc3 --html --force server"
@@ -33,12 +33,10 @@ uvloop = "*"
 pytest = "*"
 pytest-mock = "*"
 pytest-cov = "*"
-pytest-asyncio = "==0.12.0"
-mock = "*"
+pytest-asyncio = "*"
 vulture = "*"
-asynctest = "*"
 hypothesis = "*"
 pdoc3 = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.9"

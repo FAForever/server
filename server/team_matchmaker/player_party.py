@@ -1,5 +1,5 @@
 import time
-from typing import FrozenSet, List, NamedTuple, Optional
+from typing import NamedTuple, Optional
 
 from server.factions import Faction
 from server.matchmaker import Search
@@ -32,11 +32,11 @@ class PlayerParty():
         return iter(self._members.values())
 
     @property
-    def members(self) -> FrozenSet[PartyMember]:
+    def members(self) -> frozenset[PartyMember]:
         return frozenset(self._members.values())
 
     @property
-    def players(self) -> List[Player]:
+    def players(self) -> list[Player]:
         return list(member.player for member in self._members.values())
 
     def is_disbanded(self) -> bool:
@@ -66,7 +66,7 @@ class PlayerParty():
 
         del self.invited_players[player]
 
-    def set_factions(self, player: Player, factions: List[Faction]) -> None:
+    def set_factions(self, player: Player, factions: list[Faction]) -> None:
         self._members[player].factions = factions
 
     def on_matched(self, search1: Search, search2: Search) -> None:

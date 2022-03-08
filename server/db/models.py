@@ -1,5 +1,4 @@
 from sqlalchemy import (
-    JSON,
     TIME,
     TIMESTAMP,
     Boolean,
@@ -15,8 +14,7 @@ from sqlalchemy import (
     Text
 )
 
-from ..games.game_results import GameOutcome
-from ..games.typedefs import Victory
+from .typedefs import GameOutcome, Victory
 
 metadata = MetaData()
 
@@ -125,7 +123,7 @@ game_player_stats = Table(
     Column("color",         Integer, nullable=False),
     Column("team",          Integer, nullable=False),
     Column("place",         Integer, nullable=False),
-    # DEPRECATED: Use leaderboard_rating_journal instead. These columns should 
+    # DEPRECATED: Use leaderboard_rating_journal instead. These columns should
     # be dropped at some point.
     Column("mean",          Float,   nullable=False),
     Column("deviation",     Float,   nullable=False),
@@ -265,7 +263,7 @@ map_pool_map_version = Table(
     Column("map_pool_id",    Integer,       ForeignKey("map_pool.id"),      nullable=False),
     Column("map_version_id", Integer,       ForeignKey("map_version.id")),
     Column("weight",         Integer,       nullable=False),
-    Column("map_params",     JSON),
+    Column("map_params",     Text),
     Column("create_time",    TIMESTAMP,     nullable=False),
     Column("update_time",    TIMESTAMP,     nullable=False)
 )
@@ -294,7 +292,7 @@ matchmaker_queue = Table(
     Column("leaderboard_id",    Integer,        ForeignKey("leaderboard.id"),       nullable=False),
     Column("name_key",          String(255),    nullable=False),
     Column("team_size",         Integer,        nullable=False),
-    Column("params",            JSON),
+    Column("params",            Text),
     Column("enabled",           Boolean,        nullable=False),
     Column("create_time",   TIMESTAMP,      nullable=False),
     Column("update_time",   TIMESTAMP,      nullable=False)

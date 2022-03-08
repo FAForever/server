@@ -2,7 +2,6 @@ import asyncio
 from unittest import mock
 
 import pytest
-from asynctest import CoroutineMock
 
 from server.config import config
 from server.profiler import Profiler
@@ -30,7 +29,7 @@ async def test_profiler_scheduling():
 async def test_profiler_cancel():
     mock_player_service = []
     profiler = Profiler(mock_player_service, interval=0.1, max_count=1000, outfile=None)
-    profiler._run = CoroutineMock()
+    profiler._run = mock.AsyncMock()
 
     profiler._start()
     await asyncio.sleep(1)
@@ -45,7 +44,7 @@ async def test_profiler_cancel():
 async def test_profiler_immediately_cancelled():
     mock_player_service = []
     profiler = Profiler(mock_player_service, interval=1, max_count=10, outfile=None)
-    profiler._run = CoroutineMock()
+    profiler._run = mock.AsyncMock()
 
     profiler._start()
     await asyncio.sleep(0)

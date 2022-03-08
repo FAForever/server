@@ -1,5 +1,3 @@
-import asyncio
-
 from .game import Game
 from .typedefs import FA, GameType, InitMode, ValidityState, Victory
 

@@ -1,4 +1,5 @@
-import mock
+from unittest import mock
+
 import pytest
 
 from server.weakattr import WeakAttribute

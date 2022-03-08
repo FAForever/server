@@ -3,11 +3,9 @@ import logging
 from datetime import datetime
 from unittest import mock
 
-import asynctest
-import pymysql
 import pytest
-from asynctest import CoroutineMock, exhaust_callbacks
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from server import GameConnection
 from server.db.models import coop_leaderboard, game_stats
@@ -21,6 +19,7 @@ from server.games import (
 )
 from server.players import PlayerState
 from server.protocol import DisconnectedError
+from tests.utils import exhaust_callbacks
 
 pytestmark = pytest.mark.asyncio
 
@@ -64,12 +63,12 @@ async def test_disconnect_all_peers(
         return "OK"
 
     # Set up a peer that will disconnect without error
-    ok_disconnect = asynctest.create_autospec(GameConnection)
+    ok_disconnect = mock.create_autospec(GameConnection)
     ok_disconnect.state = GameConnectionState.CONNECTED_TO_HOST
     ok_disconnect.send_DisconnectFromPeer = fake_send_dc
 
     # Set up a peer that will throw an exception
-    fail_disconnect = asynctest.create_autospec(GameConnection)
+    fail_disconnect = mock.create_autospec(GameConnection)
     fail_disconnect.send_DisconnectFromPeer.return_value = Exception("Test exception")
     fail_disconnect.state = GameConnectionState.CONNECTED_TO_HOST
 
@@ -83,7 +82,7 @@ async def test_disconnect_all_peers(
 
 
 async def test_connect_to_peer(game_connection):
-    peer = asynctest.create_autospec(GameConnection)
+    peer = mock.create_autospec(GameConnection)
 
     await game_connection.connect_to_peer(peer)
 
@@ -94,7 +93,7 @@ async def test_connect_to_peer_disconnected(game_connection):
     # Weak reference has dissapeared
     await game_connection.connect_to_peer(None)
 
-    peer = asynctest.create_autospec(GameConnection)
+    peer = mock.create_autospec(GameConnection)
     peer.send_ConnectToPeer.side_effect = DisconnectedError("Test error")
 
     # The client disconnects right as we send the message
@@ -115,18 +114,25 @@ async def test_handle_action_GameState_idle_adds_connection(
     game.add_game_connection.assert_called_with(game_connection)
 
 
-async def test_handle_action_GameState_idle_non_searching_player_aborts(
+async def test_handle_action_GameState_idle_sets_player_state(
     game_connection: GameConnection,
     players
 ):
     game_connection.player = players.hosting
     game_connection.lobby = mock.Mock()
-    game_connection.abort = CoroutineMock()
+    game_connection.abort = mock.AsyncMock()
     players.hosting.state = PlayerState.IDLE
 
     await game_connection.handle_action("GameState", ["Idle"])
 
-    game_connection.abort.assert_any_call()
+    assert players.hosting.state == PlayerState.HOSTING
+
+    game_connection.player = players.joining
+    players.joining.state = PlayerState.IDLE
+
+    await game_connection.handle_action("GameState", ["Idle"])
+
+    assert players.joining.state == PlayerState.JOINING
 
 
 async def test_handle_action_GameState_lobby_sends_HostGame(
@@ -151,8 +157,8 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(
     event_loop,
     players
 ):
-    game_connection.send = CoroutineMock()
-    game_connection.connect_to_host = CoroutineMock()
+    game_connection.send = mock.AsyncMock()
+    game_connection.connect_to_host = mock.AsyncMock()
     game_connection.player = players.joining
     players.joining.game = game
     game.host = players.hosting
@@ -171,9 +177,9 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     event_loop,
     players
 ):
-    game_connection.send = CoroutineMock()
-    game_connection.connect_to_host = CoroutineMock()
-    game_connection.connect_to_peer = CoroutineMock()
+    game_connection.send = mock.AsyncMock()
+    game_connection.connect_to_host = mock.AsyncMock()
+    game_connection.connect_to_peer = mock.AsyncMock()
     game_connection.player = players.joining
 
     players.joining.game = game
@@ -197,8 +203,8 @@ async def test_handle_lobby_state_handles_GameError(
     event_loop,
     players
 ):
-    game_connection.abort = CoroutineMock()
-    game_connection.connect_to_host = CoroutineMock()
+    game_connection.abort = mock.AsyncMock()
+    game_connection.connect_to_host = mock.AsyncMock()
     game_connection.player = players.joining
     game_connection.game = real_game
 
@@ -219,8 +225,8 @@ async def test_handle_action_GameState_lobby_calls_abort(
     event_loop,
     players
 ):
-    game_connection.send = CoroutineMock()
-    game_connection.abort = CoroutineMock()
+    game_connection.send = mock.AsyncMock()
+    game_connection.abort = mock.AsyncMock()
     game_connection.player = players.joining
     players.joining.game = game
     game.host = players.hosting
@@ -241,7 +247,7 @@ async def test_handle_action_GameState_launching_calls_launch(
 ):
     game_connection.player = players.hosting
     game_connection.game = game
-    game.launch = CoroutineMock()
+    game.launch = mock.AsyncMock()
     game.state = GameState.LOBBY
 
     await game_connection.handle_action("GameState", ["Launching"])
@@ -256,7 +262,7 @@ async def test_handle_action_GameState_launching_when_ended(
 ):
     game_connection.player = players.hosting
     game_connection.game = game
-    game.launch = CoroutineMock()
+    game.launch = mock.AsyncMock()
     game.state = GameState.ENDED
 
     await game_connection.handle_action("GameState", ["Launching"])
@@ -267,7 +273,7 @@ async def test_handle_action_GameState_launching_when_ended(
 async def test_handle_action_GameState_ended_calls_on_connection_lost(
     game_connection: GameConnection
 ):
-    game_connection.on_connection_lost = CoroutineMock()
+    game_connection.on_connection_lost = mock.AsyncMock()
     await game_connection.handle_action("GameState", ["Ended"])
     game_connection.on_connection_lost.assert_called_once_with()
 
@@ -321,17 +327,20 @@ async def test_handle_action_GameMods_post_launch_updates_played_cache(
     game_connection: GameConnection,
     database
 ):
-    game.launch = CoroutineMock()
+    game.launch = mock.AsyncMock()
     game.state = GameState.LOBBY
-    game.remove_game_connection = CoroutineMock()
+    game.remove_game_connection = mock.AsyncMock()
 
     await game_connection.handle_action("GameMods", ["uids", "foo bar EA040F8E-857A-4566-9879-0D37420A5B9D"])
     await game_connection.handle_action("GameState", ["Launching"])
 
     async with database.acquire() as conn:
-        result = await conn.execute("select `played` from table_mod where uid=%s", ("EA040F8E-857A-4566-9879-0D37420A5B9D", ))
-        row = await result.fetchone()
-        assert 2 == row[0]
+        result = await conn.execute(
+            "select `played` from table_mod where uid=:uid",
+            {"uid": "EA040F8E-857A-4566-9879-0D37420A5B9D"}
+        )
+        row = result.fetchone()
+        assert row.played == 2
 
 
 async def test_handle_action_AIOption(
@@ -376,7 +385,7 @@ async def test_handle_action_GameResult_calls_add_result(
     game: Game,
     game_connection: GameConnection
 ):
-    game_connection.connect_to_host = CoroutineMock()
+    game_connection.connect_to_host = mock.AsyncMock()
 
     await game_connection.handle_action("GameResult", [0, "score -5"])
     game.add_result.assert_called_once_with(game_connection.player.id, 0, "score", -5, frozenset())
@@ -387,7 +396,7 @@ async def test_cannot_parse_game_results(
     game_connection: GameConnection,
     caplog
 ):
-    game_connection.connect_to_host = CoroutineMock()
+    game_connection.connect_to_host = mock.AsyncMock()
 
     with caplog.at_level(logging.WARNING):
         await game_connection.handle_action("GameResult", [0, ""])
@@ -455,13 +464,16 @@ async def test_handle_action_TeamkillReport(
     game_connection: GameConnection,
     database
 ):
-    game.launch = CoroutineMock()
+    game.launch = mock.AsyncMock()
     await game_connection.handle_action("TeamkillReport", ["200", "2", "Dostya", "3", "Rhiza"])
 
     async with database.acquire() as conn:
-        result = await conn.execute("select game_id,id from moderation_report where reporter_id=2 and game_id=%s and game_incident_timecode=200",
-                                    game.id)
-        report = await result.fetchone()
+        result = await conn.execute(
+            "select game_id,id from moderation_report where reporter_id=2 and "
+            "game_id=:id and game_incident_timecode=200",
+            {"id": game.id}
+        )
+        report = result.fetchone()
         assert report is None
 
 
@@ -469,14 +481,17 @@ async def test_handle_action_TeamkillHappened(
     game: Game,
     game_connection: GameConnection, database
 ):
-    game.launch = CoroutineMock()
+    game.launch = mock.AsyncMock()
     await game_connection.handle_action("TeamkillHappened", ["200", "2", "Dostya", "3", "Rhiza"])
 
     async with database.acquire() as conn:
-        result = await conn.execute("select game_id from teamkills where victim=2 and teamkiller=3 and game_id=%s and gametime=200",
-                                    game.id)
-        row = await result.fetchone()
-        assert game.id == row[0]
+        result = await conn.execute(
+            "select game_id from teamkills where victim=2 and teamkiller=3 and "
+            "game_id=:id and gametime=200",
+            {"id": game.id}
+        )
+        row = result.fetchone()
+        assert game.id == row.game_id
 
 
 async def test_handle_action_TeamkillHappened_AI(
@@ -485,7 +500,7 @@ async def test_handle_action_TeamkillHappened_AI(
     database
 ):
     # Should fail with a sql constraint error if this isn't handled correctly
-    game_connection.abort = CoroutineMock()
+    game_connection.abort = mock.AsyncMock()
     await game_connection.handle_action("TeamkillHappened", ["200", 0, "Dostya", "0", "Rhiza"])
     game_connection.abort.assert_not_called()
 
@@ -494,24 +509,10 @@ async def test_handle_action_GameEnded_ends_sim(
     game: Game,
     game_connection: GameConnection
 ):
-    game.ended = False
     await game_connection.handle_action("GameEnded", [])
 
     assert game_connection.finished_sim
-    game.check_sim_end.assert_called_once()
-    game.on_game_end.assert_not_called()
-
-
-async def test_handle_action_GameEnded_ends_game(
-    game: Game,
-    game_connection: GameConnection
-):
-    game.ended = True
-    await game_connection.handle_action("GameEnded", [])
-
-    assert game_connection.finished_sim
-    game.check_sim_end.assert_called_once()
-    game.on_game_end.assert_called_once()
+    game.check_game_finish.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -541,8 +542,8 @@ async def test_handle_action_OperationComplete(
             ).where(coop_leaderboard.c.gameuid == coop_game.id),
         )
 
-        row = await result.fetchone()
-        assert (row[0], row[1]) == (1, coop_game.id)
+        row = result.fetchone()
+        assert (row.secondary, row.gameuid) == (1, coop_game.id)
 
 
 @pytest.mark.parametrize("primary", [0, False, "False", "false"])
@@ -564,7 +565,7 @@ async def test_handle_action_OperationComplete_primary_incomplete(
             ).where(coop_leaderboard.c.gameuid == coop_game.id),
         )
 
-        row = await result.fetchone()
+        row = result.fetchone()
         assert row is None
 
 
@@ -586,7 +587,7 @@ async def test_handle_action_OperationComplete_non_coop_game(
             ).where(coop_leaderboard.c.gameuid == ugame.id),
         )
 
-        row = await result.fetchone()
+        row = result.fetchone()
         assert row is None
 
 
@@ -609,7 +610,7 @@ async def test_handle_action_OperationComplete_invalid(
             ).where(coop_leaderboard.c.gameuid == coop_game.id),
         )
 
-        row = await result.fetchone()
+        row = result.fetchone()
         assert row is None
 
 
@@ -628,8 +629,8 @@ async def test_handle_action_OperationComplete_duplicate(
             game_stats.insert().values(
                 id=coop_game.id,
                 startTime=datetime.utcnow(),
-                gameName='Another test game',
-                gameType='0',
+                gameName="Another test game",
+                gameType="0",
                 gameMod=6,
                 host=1,
                 mapId=1,
@@ -648,7 +649,7 @@ async def test_handle_action_OperationComplete_duplicate(
 
         assert not any(
             record.exc_info
-            and isinstance(record.exc_info[1], pymysql.err.IntegrityError)
+            and isinstance(record.exc_info[1], IntegrityError)
             for record in caplog.records
         )
 
@@ -659,7 +660,7 @@ async def test_handle_action_IceMsg(
     player_factory
 ):
     peer = player_factory(player_id=2)
-    peer.game_connection = asynctest.create_autospec(GameConnection)
+    peer.game_connection = mock.create_autospec(GameConnection)
     player_service[peer.id] = peer
     await game_connection.handle_action("IceMsg", [2, "the message"])
 
@@ -702,7 +703,7 @@ async def test_handle_action_ignored(game_connection: GameConnection, action):
 
 
 async def test_handle_action_invalid(game_connection: GameConnection):
-    game_connection.abort = CoroutineMock()
+    game_connection.abort = mock.AsyncMock()
 
     await game_connection.handle_action("ThisDoesntExist", [1, 2, 3])
 

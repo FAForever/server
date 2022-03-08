@@ -2,8 +2,12 @@ import contextlib
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from enum import Enum
-from typing import Dict, FrozenSet, Iterator, List, NamedTuple, Optional, Set
+from typing import Iterator, NamedTuple, Optional
 
+from sqlalchemy import select
+
+from server.db.models import game_player_stats
+from server.db.typedefs import GameOutcome
 from server.decorators import with_logger
 
 
@@ -46,14 +50,7 @@ class ArmyResult(NamedTuple):
     player_id: int
     army: Optional[int]
     army_outcome: str
-    metadata: List[str]
-
-
-class GameOutcome(Enum):
-    VICTORY = "VICTORY"
-    DEFEAT = "DEFEAT"
-    DRAW = "DRAW"
-    UNKNOWN = "UNKNOWN"
+    metadata: list[str]
 
 
 class GameResultReport(NamedTuple):
@@ -67,7 +64,7 @@ class GameResultReport(NamedTuple):
     army: int
     outcome: ArmyReportedOutcome
     score: int
-    metadata: FrozenSet[str] = frozenset()
+    metadata: frozenset[str] = frozenset()
 
 
 @with_logger
@@ -81,12 +78,12 @@ class GameResultReports(Mapping):
     def __init__(self, game_id: int):
         Mapping.__init__(self)
         self._game_id = game_id  # Just for logging
-        self._back: Dict[int, List[GameResultReport]] = {}
+        self._back: dict[int, list[GameResultReport]] = {}
         # Outcome caching
-        self._outcomes: Dict[int, ArmyOutcome] = {}
-        self._dirty_armies: Set[int] = set()
+        self._outcomes: dict[int, ArmyOutcome] = {}
+        self._dirty_armies: set[int] = set()
 
-    def __getitem__(self, key: int) -> List[GameResultReport]:
+    def __getitem__(self, key: int) -> list[GameResultReport]:
         return self._back[key]
 
     def __iter__(self) -> Iterator[int]:
@@ -160,7 +157,7 @@ class GameResultReports(Mapping):
         )
         return decision
 
-    def metadata(self, army: int) -> List[str]:
+    def metadata(self, army: int) -> list[str]:
         """
         If any users have sent metadata tags in their messages about this army
         this function will compare those tags across all messages trying to find
@@ -227,20 +224,20 @@ class GameResultReports(Mapping):
     async def from_db(cls, database, game_id):
         results = cls(game_id)
         async with database.acquire() as conn:
-            rows = await conn.execute(
-                "SELECT `place`, `score`, `result` "
-                "FROM `game_player_stats` "
-                "WHERE `gameId`=%s",
-                (game_id,),
+            result = await conn.execute(
+                select([
+                    game_player_stats.c.place,
+                    game_player_stats.c.score,
+                    game_player_stats.c.result
+                ]).where(game_player_stats.c.gameId == game_id)
             )
 
-            async for row in rows:
-                startspot, score = row[0], row[1]
+            for row in result:
                 # FIXME: Assertion about startspot == army
                 with contextlib.suppress(ValueError):
-                    outcome = ArmyReportedOutcome(row[2])
-                    result = GameResultReport(0, startspot, outcome, score)
-                    results.add(result)
+                    outcome = ArmyReportedOutcome(row.result.value)
+                    report = GameResultReport(0, row.place, outcome, row.score)
+                    results.add(report)
         return results
 
 
@@ -248,7 +245,7 @@ class GameResolutionError(Exception):
     pass
 
 
-def resolve_game(team_outcomes: List[Set[ArmyOutcome]]) -> List[GameOutcome]:
+def resolve_game(team_outcomes: list[set[ArmyOutcome]]) -> list[GameOutcome]:
     """
     Takes a list of length two containing sets of ArmyOutcome
     for individual players on a team
@@ -313,3 +310,15 @@ def resolve_game(team_outcomes: List[Set[ArmyOutcome]]) -> List[GameOutcome]:
 
     # Otherwise everyone is DEFEAT, we return a draw
     return [GameOutcome.DRAW, GameOutcome.DRAW]
+
+
+__all__ = (
+    "ArmyOutcome",
+    "ArmyReportedOutcome",
+    "ArmyResult",
+    "GameOutcome",
+    "GameResolutionError",
+    "GameResultReport",
+    "GameResultReports",
+    "resolve_game"
+)

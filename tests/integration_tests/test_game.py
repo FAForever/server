@@ -53,9 +53,19 @@ async def join_game(proto: Protocol, uid: int):
     await asyncio.sleep(0.5)
 
 
-async def client_response(proto):
-    msg = await read_until_command(proto, "game_launch", timeout=10)
+async def client_response(proto, timeout=10):
+    msg = await read_until_command(proto, "game_launch", timeout=timeout)
     await open_fa(proto)
+    return msg
+
+
+async def idle_response(proto, timeout=10):
+    msg = await read_until_command(proto, "game_launch", timeout=timeout)
+    await proto.send_message({
+        "command": "GameState",
+        "target": "game",
+        "args": ["Idle"]
+    })
     return msg
 
 
@@ -165,17 +175,26 @@ async def get_player_ratings(proto, *names, rating_type="global"):
     return ratings
 
 
-async def get_player_ratings_all(proto, *names):
+async def get_player_ratings_all(proto, *names, old_ratings={}):
     """
     Like `get_player_ratings` but find all rating types instead of just one and
-    return a nested dictionary containing all those ratings
+    return a nested dictionary containing all those ratings.
+
+    If old_ratings is passed, wait for ratings to be different from old_ratings.
     """
+    def _nested_keys(nested_dict):
+        return set(k + r for k, v in nested_dict.items() for r in v.keys())
+
     ratings = defaultdict(dict)
-    while set(ratings.keys()) != set(names):
+    target_keys = _nested_keys(old_ratings)
+    while _nested_keys(ratings) != target_keys:
         msg = await read_until_command(proto, "player_info")
         for player_info in msg["players"]:
             for rating_type, rating in player_info["ratings"].items():
-                ratings[player_info["login"]][rating_type] = rating["rating"]
+                login = player_info["login"]
+                player_rating = tuple(rating["rating"])
+                if player_rating != old_ratings.get(login, {}).get(rating_type):
+                    ratings[login][rating_type] = player_rating
 
     return dict(ratings)
 
@@ -400,6 +419,55 @@ async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
         await asyncio.wait_for(mq_proto_all.read_message(), timeout=10)
 
 
+@fast_forward(30)
+async def test_double_host_message(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    await proto.send_message({
+        "command": "game_host",
+        "mod": "faf",
+        "visibility": "public",
+    })
+    await read_until_command(proto, "game_launch", timeout=10)
+
+    await proto.send_message({
+        "command": "game_host",
+        "mod": "faf",
+        "visibility": "public",
+    })
+    await read_until_command(proto, "game_launch", timeout=10)
+
+
+@fast_forward(30)
+async def test_double_join_message(lobby_server):
+    _, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    _, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await host_proto.send_message({
+        "command": "game_host",
+        "mod": "faf",
+        "visibility": "public",
+    })
+    msg = await client_response(host_proto)
+    game_id = msg["uid"]
+
+    await guest_proto.send_message({
+        "command": "game_join",
+        "uid": game_id
+    })
+    await read_until_command(guest_proto, "game_launch", timeout=10)
+
+    await guest_proto.send_message({
+        "command": "game_join",
+        "uid": game_id
+    })
+    await read_until_command(guest_proto, "game_launch", timeout=10)
+
+
 @fast_forward(100)
 async def test_game_with_foed_player(lobby_server):
     _, _, host_proto = await connect_and_sign_in(
@@ -531,7 +599,7 @@ async def test_partial_game_ended_rates_game(lobby_server, tmp_user):
         await read_until_command(host_proto, "player_info", timeout=10)
 
 
-@fast_forward(15)
+@fast_forward(100)
 async def test_ladder_game_draw_bug(lobby_server, database):
     """
     This simulates the infamous "draw bug" where a player could self destruct
@@ -578,7 +646,21 @@ async def test_ladder_game_draw_bug(lobby_server, database):
             "args": []
         })
 
-    ratings = await get_player_ratings_all(proto1, "ladder1", "ladder2")
+    ratings = await get_player_ratings_all(
+        proto1,
+        "ladder1",
+        "ladder2",
+        old_ratings={
+            "ladder1": {
+                "global": (1500, 500),
+                "ladder_1v1": (1500, 500),
+            },
+            "ladder2": {
+                "global": (1500, 500),
+                "ladder_1v1": (1500, 500),
+            },
+        }
+    )
 
     # Both start at (1500, 500).
     # When rated as a draw the means should barely change.
@@ -595,7 +677,7 @@ async def test_ladder_game_draw_bug(lobby_server, database):
                 game_player_stats.c.gameId == game_id
             )
         )
-        async for row in result:
+        for row in result:
             assert row.result == GameOutcome.DEFEAT
             assert row.score == 0
 
@@ -629,6 +711,7 @@ async def test_ladder_game_not_joinable(lobby_server):
     }
 
 
+@pytest.mark.flaky
 @fast_forward(60)
 async def test_gamestate_ended_clears_references(
     lobby_server,

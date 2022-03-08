@@ -16,6 +16,7 @@ from tests.utils import fast_forward
 from .conftest import connect_and_sign_in, read_until, read_until_command
 from .test_game import (
     client_response,
+    idle_response,
     open_fa,
     queue_player_for_matchmaking,
     queue_players_for_matchmaking,
@@ -133,7 +134,7 @@ async def test_game_matchmaking_start(lobby_server, database):
             game_player_stats.c.team,
             game_player_stats.c.place,
         ]).where(game_player_stats.c.gameId == msg["uid"]))
-        rows = await result.fetchall()
+        rows = result.fetchall()
         assert len(rows) == 2
         for row in rows:
             assert row["faction"] == 1
@@ -146,8 +147,8 @@ async def test_game_matchmaking_start(lobby_server, database):
         ]).select_from(
             matchmaker_queue_game.outerjoin(matchmaker_queue)
         ).where(matchmaker_queue_game.c.game_stats_id == msg["uid"]))
-        row = await result.fetchone()
-        assert row["technical_name"] == "ladder1v1"
+        row = result.fetchone()
+        assert row.technical_name == "ladder1v1"
 
 
 @fast_forward(15)
@@ -169,8 +170,8 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     msg1, msg2 = await asyncio.gather(
-        read_until_command(proto1, "game_launch", timeout=120),
-        read_until_command(proto2, "game_launch", timeout=120)
+        idle_response(proto1, timeout=120),
+        idle_response(proto2, timeout=120)
     )
     # LEGACY BEHAVIOUR: The host does not respond with the appropriate GameState
     # so the match is cancelled. However, the client does not know how to
@@ -303,7 +304,7 @@ async def test_game_matchmaking_disconnect(lobby_server):
 
     msg = await read_until_command(proto2, "match_cancelled", timeout=120)
 
-    assert msg == {"command": "match_cancelled"}
+    assert msg == {"command": "match_cancelled", "game_id": 41956}
 
 
 @fast_forward(130)
@@ -344,6 +345,7 @@ async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
     await read_until_command(proto1, "match_found", timeout=5)
 
 
+@pytest.mark.flaky
 @fast_forward(200)
 async def test_anti_map_repetition(lobby_server):
     proto1, proto2 = await queue_players_for_matchmaking(lobby_server)

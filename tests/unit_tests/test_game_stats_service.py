@@ -1,9 +1,7 @@
 import json
-from unittest.mock import Mock
+from unittest import mock
 
-import asynctest
 import pytest
-from asynctest import CoroutineMock
 
 from server.factions import Faction
 from server.games import Game
@@ -22,15 +20,15 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.fixture()
 def event_service():
-    m = Mock(spec=ev.EventService)
-    m.execute_batch_update = CoroutineMock()
+    m = mock.Mock(spec=ev.EventService)
+    m.execute_batch_update = mock.AsyncMock()
     return m
 
 
 @pytest.fixture()
 def achievement_service():
-    m = Mock(spec=ach.AchievementService)
-    m.execute_batch_update = CoroutineMock()
+    m = mock.Mock(spec=ach.AchievementService)
+    m.execute_batch_update = mock.AsyncMock()
     return m
 
 
@@ -46,7 +44,7 @@ def player(player_factory):
 
 @pytest.fixture()
 def game(database, game_stats_service, player):
-    game = Game(1, database, Mock(), game_stats_service)
+    game = Game(1, database, mock.Mock(), game_stats_service)
     game._player_options[player.id] = {"Army": 1}
     game._results = GameResultReports(1)
     game._results.add(GameResultReport(1, 1, ArmyReportedOutcome.VICTORY, 0))
@@ -120,7 +118,7 @@ async def test_process_game_stats(
     with open("tests/data/game_stats_full_example.json", "r") as stats_file:
         stats = json.loads(stats_file.read())["stats"]
 
-    mock_lconn = asynctest.create_autospec(LobbyConnection)
+    mock_lconn = mock.create_autospec(LobbyConnection)
     player.lobby_connection = mock_lconn
 
     await game_stats_service.process_game_stats(player, game, stats)

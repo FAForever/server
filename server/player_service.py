@@ -2,8 +2,8 @@
 Manages connected and authenticated players
 """
 
-import asyncio
-from typing import Optional, Set, ValuesView
+import contextlib
+from typing import Optional, ValuesView
 
 import aiocron
 from sqlalchemy import and_, select
@@ -69,7 +69,7 @@ class PlayerService(Service):
     def mark_dirty(self, player: Player):
         self._dirty_players.add(player)
 
-    def pop_dirty_players(self) -> Set[Player]:
+    def pop_dirty_players(self) -> set[Player]:
         dirty_players = self._dirty_players
         self._dirty_players = set()
 
@@ -82,7 +82,7 @@ class PlayerService(Service):
                 .select_from(user_group_assignment.join(user_group))
                 .where(user_group_assignment.c.user_id == player.id)
             )
-            player.user_groups = {row.technical_name async for row in result}
+            player.user_groups = {row.technical_name for row in result}
 
             sql = select([
                 avatars_list.c.url,
@@ -103,15 +103,20 @@ class PlayerService(Service):
             ).where(login.c.id == player.id)  # yapf: disable
 
             result = await conn.execute(sql)
-            row = await result.fetchone()
+            row = result.fetchone()
             if not row:
-                self._logger.warning("Did not find data for player with id %i", player.id)
+                self._logger.warning(
+                    "Did not find data for player with id %i",
+                    player.id
+                )
                 return
 
+            row = row._mapping
             player.clan = row.get(clan.c.tag)
 
             url, tooltip = (
-                row.get(avatars_list.c.url), row.get(avatars_list.c.tooltip)
+                row.get(avatars_list.c.url),
+                row.get(avatars_list.c.tooltip)
             )
             if url and tooltip:
                 player.avatar = {"url": url, "tooltip": tooltip}
@@ -130,13 +135,13 @@ class PlayerService(Service):
             leaderboard_rating.c.login_id == player.id
         )
         result = await conn.execute(sql)
-        rows = await result.fetchall()
 
         retrieved_ratings = {
-            row["technical_name"]: (
-                (row["mean"], row["deviation"]), row["total_games"]
+            row.technical_name: (
+                (row.mean, row.deviation),
+                row.total_games
             )
-            for row in rows
+            for row in result
         }
         for rating_type, (rating, total_games) in retrieved_ratings.items():
             player.ratings[rating_type] = rating
@@ -167,11 +172,13 @@ class PlayerService(Service):
             login.c.id == player.id
         )
         result = await conn.execute(sql)
-        row = await result.fetchone()
+        row = result.fetchone()
 
         if row is None:
             self._logger.info("Found no ratings for Player with id %i", player.id)
             return
+
+        row = row._mapping
 
         table_map = {
             RatingType.GLOBAL: "global_rating_{}",
@@ -190,7 +197,8 @@ class PlayerService(Service):
                 continue
 
             player.ratings[rating_type] = (
-                row[table.format("mean")], row[table.format("deviation")]
+                row[table.format("mean")],
+                row[table.format("deviation")]
             )
             player.game_count[rating_type] = row[table.format("numGames")]
 
@@ -218,7 +226,7 @@ class PlayerService(Service):
                     )
                 )
             )
-            row = await result.fetchone()
+            row = result.fetchone()
             return row is not None
 
     def is_uniqueid_exempt(self, user_id: int) -> bool:
@@ -255,29 +263,18 @@ class PlayerService(Service):
             result = await conn.execute(
                 "SELECT `user_id` FROM uniqueid_exempt"
             )
-            rows = await result.fetchall()
-            self.uniqueid_exempt = frozenset(map(lambda x: x[0], rows))
+            self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
     async def shutdown(self):
-        tasks = []
         for player in self:
             if player.lobby_connection is not None:
-                tasks.append(
-                    player.lobby_connection.send_warning(
+                with contextlib.suppress(Exception):
+                    player.lobby_connection.write_warning(
                         "The server has been shut down for maintenance, "
                         "but should be back online soon. If you experience any "
                         "problems, please restart your client. <br/><br/>"
                         "We apologize for this interruption."
                     )
-                )
-
-        for fut in asyncio.as_completed(tasks):
-            try:
-                await fut
-            except Exception as ex:
-                self._logger.debug(
-                    "Could not send shutdown message to %s: %s", player, ex
-                )
 
     def on_connection_lost(self, conn: "LobbyConnection") -> None:
         if not conn.player:

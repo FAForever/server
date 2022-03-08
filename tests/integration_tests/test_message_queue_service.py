@@ -1,7 +1,7 @@
 import asyncio
+from unittest import mock
 
 import aio_pika
-import mock
 import pytest
 
 from server.config import config
@@ -20,13 +20,13 @@ class Consumer:
         self.connection = await aio_pika.connect(
             f"amqp://{config.MQ_USER}:{config.MQ_PASSWORD}@localhost/{config.MQ_VHOST}"
         )
-        channel = await self.connection.channel()
-        exchange = await channel.declare_exchange(
+        self.channel = await self.connection.channel()
+        self.exchange = await self.channel.declare_exchange(
             "test_exchange", aio_pika.ExchangeType.TOPIC, durable=True
         )
-        self.queue = await channel.declare_queue("test_queue", exclusive=True)
+        self.queue = await self.channel.declare_queue("test_queue", exclusive=True)
 
-        await self.queue.bind(exchange, routing_key="#")
+        await self.queue.bind(self.exchange, routing_key="#")
         self.consumer_tag = await self.queue.consume(self.callback)
 
     def callback(self, message):
@@ -45,11 +45,15 @@ class Consumer:
 async def mq_service():
     service = MessageQueueService()
     await service.initialize()
-
     await service.declare_exchange("test_exchange")
-
     yield service
+    await service.shutdown()
 
+
+@pytest.fixture
+async def mq_uninit_service():
+    service = MessageQueueService()
+    yield service
     await service.shutdown()
 
 
@@ -146,8 +150,8 @@ async def test_incorrect_vhost(mocker, caplog):
     assert any("Incorrect vhost?" in rec.message for rec in caplog.records)
 
 
-async def test_initialize_declare_exchange_race_condition():
-    service = MessageQueueService()
+async def test_initialize_declare_exchange_race_condition(mq_uninit_service):
+    service = mq_uninit_service
 
     async def keep_declaring_exchanges():
         i = 0
@@ -159,8 +163,8 @@ async def test_initialize_declare_exchange_race_condition():
     await asyncio.gather(keep_declaring_exchanges(), service.initialize())
 
 
-async def test_declaring_exchange_without_initialization():
-    service = MessageQueueService()
+async def test_declaring_exchange_without_initialization(mq_uninit_service):
+    service = mq_uninit_service
     exchange_name = "test_exchange"
 
     assert service._is_ready is False

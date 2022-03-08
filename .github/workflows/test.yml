@@ -24,7 +24,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Install dependencies
         run: pip install isort
@@ -78,7 +78,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.7
+          python-version: 3.9
 
       - name: Run flyway db migrations
         env:
@@ -99,10 +99,11 @@ jobs:
         run: |
           pip install pipenv
           pipenv sync --dev
+          pipenv run pip install pytest-github-actions-annotate-failures
 
       - name: Run tests
         if: ${{ github.event_name != 'schedule' }}
-        run: pipenv run tests --cov-report=xml -m ""
+        run: pipenv run tests --cov-report=xml --color=yes -m ""
 
       - name: Run hypothesis tests with many examples
         if: ${{ github.event_name == 'schedule' }}

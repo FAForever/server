@@ -1,15 +1,24 @@
+import asyncio
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from server.config import config
 from server.players import Player
-from server.rating import RatingType
 
 from .game import Game
 from .game_results import ArmyOutcome, GameOutcome
-from .typedefs import FeaturedModType, GameType, InitMode
+from .typedefs import GameState, GameType, InitMode
 
 logger = logging.getLogger(__name__)
+
+
+class GameClosedError(Exception):
+    """
+    The game has been closed during the setup phase
+    """
+
+    def __init__(self, player: Player):
+        self.player = player
 
 
 class LadderGame(Game):
@@ -19,13 +28,38 @@ class LadderGame(Game):
     game_type = GameType.MATCHMAKER
 
     def __init__(self, id_, *args, **kwargs):
-        new_kwargs = {
-            "game_mode": FeaturedModType.LADDER_1V1,
-            "rating_type": RatingType.LADDER_1V1,
-            "max_players": 2,
-        }
-        new_kwargs.update(kwargs)
-        super().__init__(id_, *args, **new_kwargs)
+        super().__init__(id_, *args, **kwargs)
+        self._launch_future = asyncio.Future()
+
+    async def wait_hosted(self, timeout: float):
+        return await asyncio.wait_for(
+            self._hosted_future,
+            timeout=timeout
+        )
+
+    async def wait_launched(self, timeout: float):
+        return await asyncio.wait_for(
+            self._launch_future,
+            timeout=timeout
+        )
+
+    async def launch(self):
+        await super().launch()
+        self._launch_future.set_result(None)
+
+    async def check_game_finish(self, player):
+        if not self._hosted_future.done() and (
+            self.state in (GameState.INITIALIZING, GameState.LOBBY)
+        ):
+            assert self.host == player
+            self._hosted_future.set_exception(GameClosedError(player))
+
+        if not self._launch_future.done() and (
+            self.state in (GameState.INITIALIZING, GameState.LOBBY)
+        ):
+            self._launch_future.set_exception(GameClosedError(player))
+
+        await super().check_game_finish(player)
 
     def is_winner(self, player: Player) -> bool:
         return self.get_player_outcome(player) is ArmyOutcome.VICTORY
@@ -37,7 +71,7 @@ class LadderGame(Game):
         """
         return self._results.victory_only_score(army)
 
-    def _outcome_override_hook(self) -> Optional[List[GameOutcome]]:
+    def _outcome_override_hook(self) -> Optional[list[GameOutcome]]:
         if not config.LADDER_1V1_OUTCOME_OVERRIDE or len(self.players) > 2:
             return None
         team_sets = self.get_team_sets()

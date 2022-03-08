@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Tuple
+from typing import Iterable
 
 from ..search import Match, Search
 from .matchmaker import MatchmakingPolicy1v1
@@ -7,11 +7,11 @@ from .matchmaker import MatchmakingPolicy1v1
 class RandomlyMatchNewbies(MatchmakingPolicy1v1):
     def find(
         self, searches: Iterable[Search]
-    ) -> Tuple[Dict[Search, Search], List[Match]]:
+    ) -> tuple[dict[Search, Search], list[Match]]:
         self.matches.clear()
         searches_remaining_unmatched = set(searches)
 
-        unmatched_newbies: List[Search] = []
+        unmatched_newbies: list[Search] = []
         first_opponent = None
         for search in searches:
             if search.has_high_rated_player():

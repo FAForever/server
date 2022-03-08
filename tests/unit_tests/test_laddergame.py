@@ -3,9 +3,10 @@ import time
 import pytest
 from sqlalchemy import and_, select
 
-from server.db.models import leaderboard_rating
+from server.db.models import game_player_stats, leaderboard_rating
 from server.games import GameState, LadderGame, ValidityState
 from server.games.game_results import GameOutcome
+from server.games.ladder_game import GameClosedError
 from server.rating import RatingType
 from tests.unit_tests.test_game import add_connected_players
 
@@ -18,8 +19,28 @@ def laddergame(database, game_service, game_stats_service):
         id_=465312,
         database=database,
         game_service=game_service,
-        game_stats_service=game_stats_service
+        game_stats_service=game_stats_service,
+        rating_type=RatingType.LADDER_1V1
     )
+
+
+async def test_handle_game_closed_manually(laddergame, players):
+    laddergame.state = GameState.LOBBY
+    laddergame.host = players.hosting
+    await laddergame.check_game_finish(players.hosting)
+    e1 = laddergame._hosted_future.exception()
+    assert isinstance(e1, GameClosedError)
+    assert e1.player == players.hosting
+    e2 = laddergame._launch_future.exception()
+    assert isinstance(e2, GameClosedError)
+    assert e2.player == players.hosting
+
+
+async def test_do_not_cancel_live_games(laddergame, players):
+    laddergame.state = GameState.LIVE
+    await laddergame.check_game_finish(players.hosting)
+    assert not laddergame._hosted_future.done()
+    assert not laddergame._launch_future.done()
 
 
 async def test_results_ranked_by_victory(laddergame, players):
@@ -105,7 +126,7 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
     laddergame.launched_at = time.time() - 60*20
     await laddergame.add_result(0, 0, "victory", 5)
     await laddergame.add_result(0, 1, "defeat", -5)
-    await laddergame.on_game_end()
+    await laddergame.on_game_finish()
 
     await laddergame.game_service._rating_service._join_rating_queue()
 
@@ -114,8 +135,11 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
     assert players[1].ratings[RatingType.LADDER_1V1][0] < player_2_old_mean
 
     async with database.acquire() as conn:
-        result = await conn.execute("SELECT mean, deviation, after_mean, after_deviation FROM game_player_stats WHERE gameid = %s", laddergame.id)
-        rows = list(await result.fetchall())
+        result = await conn.execute(
+            select([game_player_stats])
+            .where(game_player_stats.c.gameId == laddergame.id)
+        )
+        rows = list(result.fetchall())
 
     assert rows[0]["mean"] == before_mean[players[0].id]
     assert rows[0]["deviation"] == before_deviation[players[0].id]
@@ -147,22 +171,20 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
 
     compiled = rating_sql.compile(compile_kwargs={"literal_binds": True})
     async with database.acquire() as conn:
-        result = await conn.execute(str(compiled))
-        result_before = await result.fetchall()
+        result_before = list(await conn.execute(str(compiled)))
 
     await laddergame.launch()
     laddergame.launched_at = time.time() - 60*20
     await laddergame.add_result(0, 0, "victory", 5)
     await laddergame.add_result(0, 1, "defeat", -5)
-    await laddergame.on_game_end()
+    await laddergame.on_game_finish()
 
     await laddergame.game_service._rating_service._join_rating_queue()
 
     assert laddergame.validity is ValidityState.VALID
 
     async with database.acquire() as conn:
-        result = await conn.execute(str(compiled))
-        result_after = await result.fetchall()
+        result_after = list(await conn.execute(str(compiled)))
 
     assert result_after[0]["total_games"] == result_before[0]["total_games"] + 1
     assert result_after[1]["total_games"] == result_before[1]["total_games"] + 1

@@ -10,7 +10,6 @@ import base64
 import hmac
 import time
 from hashlib import sha1
-from typing import Dict, List
 
 from server.config import config
 
@@ -20,7 +19,7 @@ class CoturnHMAC:
         self.coturn_hosts = coturn_hosts
         self.coturn_keys = coturn_keys
 
-    def server_tokens(self, username="faf-user", ttl=None) -> List[Dict]:
+    def server_tokens(self, username="faf-user", ttl=None) -> list[dict[str]]:
         if ttl is None:
             ttl = config.TWILIO_TTL  # pragma: no cover
 

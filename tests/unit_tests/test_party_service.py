@@ -1,7 +1,6 @@
-from unittest.mock import Mock
+from unittest import mock
 
 import pytest
-from asynctest import CoroutineMock
 
 from server.exceptions import ClientError
 from server.factions import Faction
@@ -27,8 +26,8 @@ def player_factory(player_factory):
         passed_kwargs = dict(lobby_connection_spec=None)
         passed_kwargs.update(kwargs)
         player = player_factory(*args, **passed_kwargs)
-        player.send_message = CoroutineMock()
-        player.write_message = Mock()
+        player.send_message = mock.AsyncMock()
+        player.write_message = mock.Mock()
         return player
 
     return make
