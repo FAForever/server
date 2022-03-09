@@ -626,6 +626,7 @@ async def test_to_dict(game, player_factory):
         "num_players": len(game.players),
         "max_players": game.max_players,
         "launched_at": game.launched_at,
+        "hosted_at": game.hosted_at,
         "rating_type": game.rating_type,
         "rating_min": game.displayed_rating_range.lo,
         "rating_max": game.displayed_rating_range.hi,
