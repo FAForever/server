@@ -910,10 +910,10 @@ class Game:
                     "player_ids": [
                         player.id for player in connected_players
                         if self.get_player_option(player.id, "Team") == team
-                        ]
+                    ]
                 }
-                    for team in self.teams if team is not None
-                ],
+                for team in self.teams if team is not None
+            ],
             "teams": {
                 team: [
                     player.login for player in connected_players
