@@ -638,7 +638,7 @@ async def test_to_dict(game, player_factory):
                     if game.get_player_option(player.id, "Team") == team
                     ]
             }
-                for team in self.teams if team is not None
+                for team in game.teams if team is not None
             ],
         "teams": {
             team: [
