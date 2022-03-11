@@ -84,24 +84,6 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_configure(config):
-    config.addinivalue_line(
-        "addopts", "--strict-markers"
-    )
-    config.addinivalue_line(
-        "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
-    )
-    config.addinivalue_line(
-        "markers", "performance: marks tests as performance tests (deselect with '-m \"not performance\"')"
-    )
-    config.addinivalue_line(
-        "markers", "rabbitmq: marks tests as requiring a running instance of RabbitMQ"
-    )
-    config.addinivalue_line(
-        "markers", "flaky: marks tests as known to be flaky"
-    )
-
-
 @pytest.fixture
 def event_loop(request):
     """
