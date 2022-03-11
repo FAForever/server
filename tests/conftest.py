@@ -43,6 +43,7 @@ from server.stats.game_stats_service import GameStatsService
 from tests.utils import MockDatabase
 
 logging.getLogger().setLevel(TRACE)
+logging.getLogger("aiormq").setLevel(logging.INFO)
 hypothesis.settings.register_profile(
     "nightly",
     max_examples=10_000,
