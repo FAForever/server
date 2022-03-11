@@ -17,9 +17,6 @@ from .conftest import (
     read_until_command
 )
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
-
 
 async def host_game(
     proto: Protocol,

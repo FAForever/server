@@ -27,8 +27,6 @@ from .test_game import (
     start_search
 )
 
-pytestmark = pytest.mark.asyncio
-
 
 @fast_forward(70)
 async def test_game_launch_message(lobby_server):

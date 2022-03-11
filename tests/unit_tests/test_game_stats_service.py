@@ -15,8 +15,6 @@ from server.stats import achievement_service as ach
 from server.stats import event_service as ev
 from server.stats.game_stats_service import GameStatsService
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture()
 def event_service():

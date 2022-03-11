@@ -8,9 +8,6 @@ from server.party_service import PartyService
 from server.players import PlayerState
 from server.team_matchmaker import PlayerParty
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture
 async def party_service(game_service):

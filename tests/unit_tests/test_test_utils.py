@@ -41,27 +41,23 @@ def test_autocontext_sync_with_normal(thing, normal_fixture):
     assert normal_fixture == 100
 
 
-@pytest.mark.asyncio
 @autocontext("async_context_fixture")
 async def test_autocontext_async(thing):
     assert thing == "bar"
 
 
-@pytest.mark.asyncio
 @autocontext("async_context_fixture")
 async def test_autocontext_async_with_normal(thing, normal_fixture):
     assert thing == "bar"
     assert normal_fixture == 100
 
 
-@pytest.mark.asyncio
 @autocontext("context_fixture", "async_context_fixture")
 async def test_autocontext_both(thing1, thing2):
     assert thing1 == "foo"
     assert thing2 == "bar"
 
 
-@pytest.mark.asyncio
 @autocontext("context_fixture", "async_context_fixture")
 async def test_autocontext_all(thing1, thing2, normal_fixture):
     assert thing1 == "foo"

@@ -17,7 +17,6 @@ from .conftest import (
 )
 from .test_game import host_game, join_game, open_fa, send_player_options
 
-pytestmark = pytest.mark.asyncio
 TEST_ADDRESS = ("127.0.0.1", None)
 
 

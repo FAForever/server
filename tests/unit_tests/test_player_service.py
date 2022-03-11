@@ -1,12 +1,8 @@
 from unittest import mock
 
-import pytest
-
 from server.lobbyconnection import LobbyConnection
 from server.protocol import DisconnectedError
 from server.rating import RatingType
-
-pytestmark = pytest.mark.asyncio
 
 
 async def test_fetch_player_data(player_factory, player_service):

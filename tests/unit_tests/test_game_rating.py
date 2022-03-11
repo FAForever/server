@@ -20,8 +20,6 @@ from server.rating_service.rating_service import RatingService
 from server.rating_service.typedefs import GameRatingSummary
 from tests.unit_tests.conftest import add_connected_players
 
-pytestmark = pytest.mark.asyncio
-
 FFA_TEAM = 1
 
 

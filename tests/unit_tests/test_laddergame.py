@@ -10,8 +10,6 @@ from server.games.ladder_game import GameClosedError
 from server.rating import RatingType
 from tests.unit_tests.test_game import add_connected_players
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture()
 def laddergame(database, game_service, game_stats_service):

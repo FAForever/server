@@ -19,8 +19,6 @@ from tests.utils import autocontext, exhaust_callbacks, fast_forward
 
 from .strategies import st_players
 
-pytestmark = pytest.mark.asyncio
-
 
 async def test_queue_initialization(database, game_service, violation_service):
     ladder_service = LadderService(database, game_service, violation_service)

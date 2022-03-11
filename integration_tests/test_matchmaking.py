@@ -1,12 +1,7 @@
 import asyncio
 import random
 
-import pytest
-
 from .test_game import simulate_result_reports
-
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
 
 
 async def test_ladder_1v1_match(client_factory):
