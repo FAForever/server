@@ -1031,6 +1031,13 @@ class LobbyConnection:
         is_host: bool = False,
         options: GameLaunchOptions = GameLaunchOptions(),
     ) -> None:
+        if self.game_connection is not None:
+            self._logger.warning(
+                "%s launched a new game while old GameConnection was active",
+                self.player
+            )
+            self.game_connection = None
+
         self.write(self._prepare_launch_game(
             game,
             is_host=is_host,
