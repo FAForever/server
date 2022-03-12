@@ -1275,6 +1275,16 @@ class CustomGame(Game):
             &#34;rating_min&#34;: self.displayed_rating_range.lo,
             &#34;rating_max&#34;: self.displayed_rating_range.hi,
             &#34;enforce_rating_range&#34;: self.enforce_rating_range,
+            &#34;teams_ids&#34;: [
+                {
+                    &#34;team_id&#34;: team,
+                    &#34;player_ids&#34;: [
+                        player.id for player in connected_players
+                        if self.get_player_option(player.id, &#34;Team&#34;) == team
+                    ]
+                }
+                for team in self.teams if team is not None
+            ],
             &#34;teams&#34;: {
                 team: [
                     player.login for player in connected_players
@@ -2317,6 +2327,16 @@ game.</p></div>
         &#34;rating_min&#34;: self.displayed_rating_range.lo,
         &#34;rating_max&#34;: self.displayed_rating_range.hi,
         &#34;enforce_rating_range&#34;: self.enforce_rating_range,
+        &#34;teams_ids&#34;: [
+            {
+                &#34;team_id&#34;: team,
+                &#34;player_ids&#34;: [
+                    player.id for player in connected_players
+                    if self.get_player_option(player.id, &#34;Team&#34;) == team
+                ]
+            }
+            for team in self.teams if team is not None
+        ],
         &#34;teams&#34;: {
             team: [
                 player.login for player in connected_players
