@@ -226,8 +226,8 @@ class LadderService(Service):
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
         timeouts = self.violation_service.get_violations(players)
-        self._logger.debug("timeouts: %s", timeouts)
         if timeouts:
+            self._logger.debug("timeouts: %s", timeouts)
             times = [
                 {
                     "player": p.id,

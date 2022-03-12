@@ -11,7 +11,7 @@ from server.timing import at_interval, datetime_now
 
 
 @dataclass
-class Violation():
+class Violation:
     count: int
     time: datetime
 
@@ -98,7 +98,8 @@ class ViolationService(Service):
                 "command": "notice",
                 "style": "info",
                 "text": (
-                    f"You have received {violation.count} violations." +
+                    f"You have received {violation.count} violations "
+                    "for failing to connect to matchmaker games." +
                     extra_text
                 )
             })

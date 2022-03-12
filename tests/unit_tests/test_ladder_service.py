@@ -219,7 +219,8 @@ async def test_start_game_timeout(
         mock.call({
             "command": "notice",
             "style": "info",
-            "text": "You have received 1 violations."
+            "text": "You have received 1 violations for failing to connect "
+            "to matchmaker games."
         })
     ]
     p1.lobby_connection.write.assert_has_calls(p1_calls)
@@ -274,7 +275,8 @@ async def test_start_game_timeout_on_send(
         mock.call({
             "command": "notice",
             "style": "info",
-            "text": "You have received 1 violations."
+            "text": "You have received 1 violations for failing to connect "
+            "to matchmaker games."
         })
     ]
     p1.lobby_connection.write.assert_has_calls(p1_calls)
