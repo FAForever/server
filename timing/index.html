@@ -31,9 +31,21 @@
 Helpers for executing async functions on a timer
 &#34;&#34;&#34;
 
+from datetime import datetime, timezone
+
 from .timer import LazyIntervalTimer, Timer, at_interval
 
-__all__ = (&#34;LazyIntervalTimer&#34;, &#34;Timer&#34;, &#34;at_interval&#34;)</code></pre>
+
+def datetime_now() -&gt; datetime:
+    return datetime.now(timezone.utc)
+
+
+__all__ = (
+    &#34;LazyIntervalTimer&#34;,
+    &#34;Timer&#34;,
+    &#34;at_interval&#34;,
+    &#34;datetime_now&#34;,
+)</code></pre>
 </details>
 </section>
 <section>
@@ -61,6 +73,19 @@ __all__ = (&#34;LazyIntervalTimer&#34;, &#34;Timer&#34;, &#34;at_interval&#34;)<
 </summary>
 <pre><code class="python">def at_interval(interval, func=None, args=(), start=True, loop=None):
     return Timer(interval, func=func, args=args, start=start, loop=loop)</code></pre>
+</details>
+</dd>
+<dt id="server.timing.datetime_now"><code class="name flex">
+<span>def <span class="ident">datetime_now</span></span>(<span>) ‑> datetime.datetime</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def datetime_now() -&gt; datetime:
+    return datetime.now(timezone.utc)</code></pre>
 </details>
 </dd>
 </dl>
@@ -334,6 +359,7 @@ Else raise if needed.</p></div>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="server.timing.at_interval" href="#server.timing.at_interval">at_interval</a></code></li>
+<li><code><a title="server.timing.datetime_now" href="#server.timing.datetime_now">datetime_now</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>

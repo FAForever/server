@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>server.ladder_service API documentation</title>
+<title>server.ladder_service.ladder_service API documentation</title>
 <meta name="description" content="Manages interactions between players and matchmakers" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -19,7 +19,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>server.ladder_service</code></h1>
+<h1 class="title">Module <code>server.ladder_service.ladder_service</code></h1>
 </header>
 <section id="section-intro">
 <p>Manages interactions between players and matchmakers</p>
@@ -30,28 +30,28 @@
 <pre><code class="python">&#34;&#34;&#34;
 Manages interactions between players and matchmakers
 &#34;&#34;&#34;
-
 import asyncio
 import json
 import random
 import re
 from collections import defaultdict
-from typing import Optional
+from typing import Awaitable, Callable, Optional
 
 import aiocron
+import humanize
 from sqlalchemy import and_, func, select, text, true
 
-from .config import config
-from .core import Service
-from .db import FAFDatabase
-from .db.models import (
+from server.config import config
+from server.core import Service
+from server.db import FAFDatabase
+from server.db.models import (
     game_featuredMods,
     game_player_stats,
     game_stats,
     leaderboard
 )
-from .db.models import map as t_map
-from .db.models import (
+from server.db.models import map as t_map
+from server.db.models import (
     map_pool,
     map_pool_map_version,
     map_version,
@@ -59,13 +59,20 @@ from .db.models import (
     matchmaker_queue_game,
     matchmaker_queue_map_pool
 )
-from .decorators import with_logger
-from .game_service import GameService
-from .games import InitMode, LadderGame
-from .games.ladder_game import GameClosedError
-from .matchmaker import MapPool, MatchmakerQueue, OnMatchedCallback, Search
-from .players import Player, PlayerState
-from .types import GameLaunchOptions, Map, NeroxisGeneratedMap
+from server.decorators import with_logger
+from server.game_service import GameService
+from server.games import InitMode, LadderGame
+from server.games.ladder_game import GameClosedError
+from server.ladder_service.game_name import game_name
+from server.ladder_service.violation_service import ViolationService
+from server.matchmaker import (
+    MapPool,
+    MatchmakerQueue,
+    OnMatchedCallback,
+    Search
+)
+from server.players import Player, PlayerState
+from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
 
 
 @with_logger
@@ -79,11 +86,13 @@ class LadderService(Service):
         self,
         database: FAFDatabase,
         game_service: GameService,
+        violation_service: ViolationService,
     ):
         self._db = database
         self._informed_players: set[Player] = set()
         self.game_service = game_service
         self.queues = {}
+        self.violation_service = violation_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
 
@@ -245,6 +254,48 @@ class LadderService(Service):
         queue_name: str,
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
+        timeouts = self.violation_service.get_violations(players)
+        if timeouts:
+            self._logger.debug(&#34;timeouts: %s&#34;, timeouts)
+            times = [
+                {
+                    &#34;player&#34;: p.id,
+                    &#34;expires_at&#34;: violation.get_ban_expiration().isoformat()
+                }
+                for p, violation in timeouts.items()
+            ]
+            for player in players:
+                player.write_message({
+                    &#34;command&#34;: &#34;search_timeout&#34;,
+                    &#34;timeouts&#34;: times
+                })
+                # TODO: Do we need this or is `search_timeout` enough?
+                player.write_message({
+                    &#34;command&#34;: &#34;search_info&#34;,
+                    &#34;queue_name&#34;: queue_name,
+                    &#34;state&#34;: &#34;stop&#34;
+                })
+                # For compatibility with clients that don&#39;t understand
+                # `search_timeout` only. This may be removed at any time.
+                if len(times) == 1:
+                    s = &#34;&#34;
+                    are = &#34;is&#34;
+                else:
+                    s = &#34;s&#34;
+                    are = &#34;are&#34;
+                names = &#34;, &#34;.join(p.login for p in timeouts)
+                max_time = humanize.naturaldelta(
+                    max(
+                        timeouts.values(),
+                        key=lambda v: v.get_ban_expiration()
+                    ).get_remaining()
+                )
+                player.write_message({
+                    &#34;command&#34;: &#34;notice&#34;,
+                    &#34;style&#34;: &#34;info&#34;,
+                    &#34;text&#34;: f&#34;Player{s} {names} {are} timed out for {max_time}&#34;
+                })
+            return
         # Cancel any existing searches that players have for this queue
         for player in players:
             if queue_name in self._searches[player]:
@@ -397,23 +448,31 @@ class LadderService(Service):
 
                 self._clear_search(player, queue.name)
 
-            asyncio.create_task(
-                self.start_game(s1.players, s2.players, queue)
-            )
+            asyncio.create_task(self.start_game(s1.players, s2.players, queue))
         except Exception:
             self._logger.exception(
                 &#34;Error processing match between searches %s, and %s&#34;,
                 s1, s2
             )
 
-    async def start_game(
+    def start_game(
+        self,
+        team1: list[Player],
+        team2: list[Player],
+        queue: MatchmakerQueue
+    ) -&gt; Awaitable[None]:
+        # We want assertion errors to trigger when the caller attempts to
+        # create the async function, not when the function starts executing.
+        assert len(team1) == len(team2)
+
+        return self._start_game(team1, team2, queue)
+
+    async def _start_game(
         self,
         team1: list[Player],
         team2: list[Player],
         queue: MatchmakerQueue
     ) -&gt; None:
-        assert len(team1) == len(team2)
-
         self._logger.debug(
             &#34;Starting %s game between %s and %s&#34;,
             queue.name,
@@ -453,8 +512,8 @@ class LadderService(Service):
             game.map_file_path = map_path
             game.set_name_unchecked(game_name(team1, team2))
 
-            def get_player_mean(player):
-                return player.ratings[queue.rating_type][0]
+            def get_player_mean(player: Player) -&gt; float:
+                return player.ratings[queue.rating_type].mean
 
             team1 = sorted(team1, key=get_player_mean)
             team2 = sorted(team2, key=get_player_mean)
@@ -472,11 +531,13 @@ class LadderService(Service):
                 team = (i % 2) + 2
                 player.game = game
 
-                game.set_player_option(player.id, &#34;Faction&#34;, player.faction.value)
-                game.set_player_option(player.id, &#34;Team&#34;, team)
-                game.set_player_option(player.id, &#34;StartSpot&#34;, slot)
-                game.set_player_option(player.id, &#34;Army&#34;, slot)
-                game.set_player_option(player.id, &#34;Color&#34;, slot)
+                # Set player options without triggering the logic for
+                # determining that players have actually connected to the game.
+                game._player_options[player.id][&#34;Faction&#34;] = player.faction.value
+                game._player_options[player.id][&#34;Team&#34;] = team
+                game._player_options[player.id][&#34;StartSpot&#34;] = slot
+                game._player_options[player.id][&#34;Army&#34;] = slot
+                game._player_options[player.id][&#34;Color&#34;] = slot
 
             game_options = queue.get_game_options()
             if game_options:
@@ -487,55 +548,38 @@ class LadderService(Service):
             # Really in the future, just send a better description
 
             self._logger.debug(&#34;Starting ladder game: %s&#34;, game)
-            # Options shared by all players
-            options = GameLaunchOptions(
-                mapname=mapname,
-                expected_players=len(all_players),
-                game_options=game_options
-            )
 
             def make_game_options(player: Player) -&gt; GameLaunchOptions:
-                return options._replace(
+                return GameLaunchOptions(
+                    mapname=mapname,
+                    expected_players=len(all_players),
+                    game_options=game_options,
                     team=game.get_player_option(player.id, &#34;Team&#34;),
-                    faction=player.faction,
+                    faction=game.get_player_option(player.id, &#34;Faction&#34;),
                     map_position=game.get_player_option(player.id, &#34;StartSpot&#34;)
                 )
 
-            try:
-                host.lobby_connection.write_launch_game(
-                    game,
-                    is_host=True,
-                    options=make_game_options(host)
-                )
-                await game.wait_hosted(60)
-            finally:
-                # TODO: Once the client supports `match_cancelled`, don&#39;t
-                # send `launch_game` to the client if the host timed out. Until
-                # then, failing to send `launch_game` will cause the client to
-                # think it is searching for ladder, even though the server has
-                # already removed it from the queue.
-
-                for guest in all_guests:
-                    if guest.lobby_connection is not None:
-                        guest.lobby_connection.write_launch_game(
-                            game,
-                            is_host=False,
-                            options=make_game_options(guest)
-                        )
-            await game.wait_launched(60 + 10 * len(all_guests))
+            await self.launch_match(game, host, all_guests, make_game_options)
             self._logger.debug(&#34;Ladder game launched successfully %s&#34;, game)
         except Exception as e:
-            if isinstance(e, asyncio.TimeoutError):
+            abandoning_players = []
+            if isinstance(e, NotConnectedError):
                 self._logger.info(
                     &#34;Ladder game failed to start! %s setup timed out&#34;,
                     game
                 )
+                abandoning_players = e.players
             elif isinstance(e, GameClosedError):
                 self._logger.info(
-                    &#34;Ladder game %s failed to start! Player %s closed their game instance&#34;,
+                    &#34;Ladder game %s failed to start! &#34;
+                    &#34;Player %s closed their game instance&#34;,
                     game, e.player
                 )
+                abandoning_players = [e.player]
             else:
+                # All timeout errors should be transformed by the match starter.
+                assert not isinstance(e, asyncio.TimeoutError)
+
                 self._logger.exception(&#34;Ladder game failed to start %s&#34;, game)
 
             if game:
@@ -547,6 +591,66 @@ class LadderService(Service):
                 if player.state == PlayerState.STARTING_AUTOMATCH:
                     player.state = PlayerState.IDLE
                 player.write_message(msg)
+
+            if abandoning_players:
+                self._logger.info(
+                    &#34;Players failed to connect: %s&#34;,
+                    abandoning_players
+                )
+                self.violation_service.register_violations(abandoning_players)
+
+    async def launch_match(
+        self,
+        game: LadderGame,
+        host: Player,
+        guests: list[Player],
+        make_game_options: Callable[[Player], GameLaunchOptions]
+    ):
+        # Launch the host
+        if host.lobby_connection is None:
+            raise NotConnectedError([host])
+
+        host.lobby_connection.write_launch_game(
+            game,
+            is_host=True,
+            options=make_game_options(host)
+        )
+
+        try:
+            await game.wait_hosted(60)
+        except asyncio.TimeoutError:
+            raise NotConnectedError([host])
+        finally:
+            # TODO: Once the client supports `match_cancelled`, don&#39;t
+            # send `launch_game` to the client if the host timed out. Until
+            # then, failing to send `launch_game` will cause the client to
+            # think it is searching for ladder, even though the server has
+            # already removed it from the queue.
+
+            # Launch the guests
+            not_connected_guests = [
+                player for player in guests
+                if player.lobby_connection is None
+            ]
+            if not_connected_guests:
+                raise NotConnectedError(not_connected_guests)
+
+            for guest in guests:
+                assert guest.lobby_connection is not None
+
+                guest.lobby_connection.write_launch_game(
+                    game,
+                    is_host=False,
+                    options=make_game_options(guest)
+                )
+        try:
+            await game.wait_launched(60 + 10 * len(guests))
+        except asyncio.TimeoutError:
+            connected_players = game.get_connected_players()
+            raise NotConnectedError([
+                player for player in guests
+                if player not in connected_players
+            ])
 
     async def get_game_history(
         self,
@@ -572,7 +676,12 @@ class LadderService(Service):
                         ),
                         matchmaker_queue_game.c.matchmaker_queue_id == queue_id
                     )
-                ).order_by(game_stats.c.startTime.desc()).limit(limit)
+                ).order_by(
+                    game_stats.c.startTime.desc(),
+                    # Timestamps only have second resolution, so for this to
+                    # work correctly in the unit tests we also need id
+                    game_stats.c.id.desc()
+                ).limit(limit)
 
                 result.extend([
                     row.mapId for row in await conn.execute(query)
@@ -594,35 +703,9 @@ class LadderService(Service):
             queue.shutdown()
 
 
-def game_name(*teams: list[Player]) -&gt; str:
-    &#34;&#34;&#34;
-    Generate a game name based on the players.
-    &#34;&#34;&#34;
-
-    return &#34; Vs &#34;.join(_team_name(team) for team in teams)
-
-
-def _team_name(team: list[Player]) -&gt; str:
-    &#34;&#34;&#34;
-    Generate a team name based on the players. If all players are in the
-    same clan, use their clan tag, otherwise use the name of the first
-    player.
-    &#34;&#34;&#34;
-    assert team
-
-    player_1_name = team[0].login
-
-    if len(team) == 1:
-        return player_1_name
-
-    clans = {player.clan for player in team}
-
-    if len(clans) == 1:
-        name = clans.pop() or player_1_name
-    else:
-        name = player_1_name
-
-    return f&#34;Team {name}&#34;</code></pre>
+class NotConnectedError(asyncio.TimeoutError):
+    def __init__(self, players: list[Player]):
+        self.players = players</code></pre>
 </details>
 </section>
 <section>
@@ -630,33 +713,13 @@ def _team_name(team: list[Player]) -&gt; str:
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-functions">Functions</h2>
-<dl>
-<dt id="server.ladder_service.game_name"><code class="name flex">
-<span>def <span class="ident">game_name</span></span>(<span>*teams: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]) ‑> str</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Generate a game name based on the players.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def game_name(*teams: list[Player]) -&gt; str:
-    &#34;&#34;&#34;
-    Generate a game name based on the players.
-    &#34;&#34;&#34;
-
-    return &#34; Vs &#34;.join(_team_name(team) for team in teams)</code></pre>
-</details>
-</dd>
-</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="server.ladder_service.LadderService"><code class="flex name class">
+<dt id="server.ladder_service.ladder_service.LadderService"><code class="flex name class">
 <span>class <span class="ident">LadderService</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="../db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game_service: <a title="server.game_service.GameService" href="../game_service.html#server.game_service.GameService">GameService</a>, violation_service: <a title="server.ladder_service.violation_service.ViolationService" href="violation_service.html#server.ladder_service.violation_service.ViolationService">ViolationService</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Service responsible for managing the 1v1 ladder. Does matchmaking, updates
@@ -676,11 +739,13 @@ class LadderService(Service):
         self,
         database: FAFDatabase,
         game_service: GameService,
+        violation_service: ViolationService,
     ):
         self._db = database
         self._informed_players: set[Player] = set()
         self.game_service = game_service
         self.queues = {}
+        self.violation_service = violation_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
 
@@ -842,6 +907,48 @@ class LadderService(Service):
         queue_name: str,
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
+        timeouts = self.violation_service.get_violations(players)
+        if timeouts:
+            self._logger.debug(&#34;timeouts: %s&#34;, timeouts)
+            times = [
+                {
+                    &#34;player&#34;: p.id,
+                    &#34;expires_at&#34;: violation.get_ban_expiration().isoformat()
+                }
+                for p, violation in timeouts.items()
+            ]
+            for player in players:
+                player.write_message({
+                    &#34;command&#34;: &#34;search_timeout&#34;,
+                    &#34;timeouts&#34;: times
+                })
+                # TODO: Do we need this or is `search_timeout` enough?
+                player.write_message({
+                    &#34;command&#34;: &#34;search_info&#34;,
+                    &#34;queue_name&#34;: queue_name,
+                    &#34;state&#34;: &#34;stop&#34;
+                })
+                # For compatibility with clients that don&#39;t understand
+                # `search_timeout` only. This may be removed at any time.
+                if len(times) == 1:
+                    s = &#34;&#34;
+                    are = &#34;is&#34;
+                else:
+                    s = &#34;s&#34;
+                    are = &#34;are&#34;
+                names = &#34;, &#34;.join(p.login for p in timeouts)
+                max_time = humanize.naturaldelta(
+                    max(
+                        timeouts.values(),
+                        key=lambda v: v.get_ban_expiration()
+                    ).get_remaining()
+                )
+                player.write_message({
+                    &#34;command&#34;: &#34;notice&#34;,
+                    &#34;style&#34;: &#34;info&#34;,
+                    &#34;text&#34;: f&#34;Player{s} {names} {are} timed out for {max_time}&#34;
+                })
+            return
         # Cancel any existing searches that players have for this queue
         for player in players:
             if queue_name in self._searches[player]:
@@ -994,23 +1101,31 @@ class LadderService(Service):
 
                 self._clear_search(player, queue.name)
 
-            asyncio.create_task(
-                self.start_game(s1.players, s2.players, queue)
-            )
+            asyncio.create_task(self.start_game(s1.players, s2.players, queue))
         except Exception:
             self._logger.exception(
                 &#34;Error processing match between searches %s, and %s&#34;,
                 s1, s2
             )
 
-    async def start_game(
+    def start_game(
+        self,
+        team1: list[Player],
+        team2: list[Player],
+        queue: MatchmakerQueue
+    ) -&gt; Awaitable[None]:
+        # We want assertion errors to trigger when the caller attempts to
+        # create the async function, not when the function starts executing.
+        assert len(team1) == len(team2)
+
+        return self._start_game(team1, team2, queue)
+
+    async def _start_game(
         self,
         team1: list[Player],
         team2: list[Player],
         queue: MatchmakerQueue
     ) -&gt; None:
-        assert len(team1) == len(team2)
-
         self._logger.debug(
             &#34;Starting %s game between %s and %s&#34;,
             queue.name,
@@ -1050,8 +1165,8 @@ class LadderService(Service):
             game.map_file_path = map_path
             game.set_name_unchecked(game_name(team1, team2))
 
-            def get_player_mean(player):
-                return player.ratings[queue.rating_type][0]
+            def get_player_mean(player: Player) -&gt; float:
+                return player.ratings[queue.rating_type].mean
 
             team1 = sorted(team1, key=get_player_mean)
             team2 = sorted(team2, key=get_player_mean)
@@ -1069,11 +1184,13 @@ class LadderService(Service):
                 team = (i % 2) + 2
                 player.game = game
 
-                game.set_player_option(player.id, &#34;Faction&#34;, player.faction.value)
-                game.set_player_option(player.id, &#34;Team&#34;, team)
-                game.set_player_option(player.id, &#34;StartSpot&#34;, slot)
-                game.set_player_option(player.id, &#34;Army&#34;, slot)
-                game.set_player_option(player.id, &#34;Color&#34;, slot)
+                # Set player options without triggering the logic for
+                # determining that players have actually connected to the game.
+                game._player_options[player.id][&#34;Faction&#34;] = player.faction.value
+                game._player_options[player.id][&#34;Team&#34;] = team
+                game._player_options[player.id][&#34;StartSpot&#34;] = slot
+                game._player_options[player.id][&#34;Army&#34;] = slot
+                game._player_options[player.id][&#34;Color&#34;] = slot
 
             game_options = queue.get_game_options()
             if game_options:
@@ -1084,55 +1201,38 @@ class LadderService(Service):
             # Really in the future, just send a better description
 
             self._logger.debug(&#34;Starting ladder game: %s&#34;, game)
-            # Options shared by all players
-            options = GameLaunchOptions(
-                mapname=mapname,
-                expected_players=len(all_players),
-                game_options=game_options
-            )
 
             def make_game_options(player: Player) -&gt; GameLaunchOptions:
-                return options._replace(
+                return GameLaunchOptions(
+                    mapname=mapname,
+                    expected_players=len(all_players),
+                    game_options=game_options,
                     team=game.get_player_option(player.id, &#34;Team&#34;),
-                    faction=player.faction,
+                    faction=game.get_player_option(player.id, &#34;Faction&#34;),
                     map_position=game.get_player_option(player.id, &#34;StartSpot&#34;)
                 )
 
-            try:
-                host.lobby_connection.write_launch_game(
-                    game,
-                    is_host=True,
-                    options=make_game_options(host)
-                )
-                await game.wait_hosted(60)
-            finally:
-                # TODO: Once the client supports `match_cancelled`, don&#39;t
-                # send `launch_game` to the client if the host timed out. Until
-                # then, failing to send `launch_game` will cause the client to
-                # think it is searching for ladder, even though the server has
-                # already removed it from the queue.
-
-                for guest in all_guests:
-                    if guest.lobby_connection is not None:
-                        guest.lobby_connection.write_launch_game(
-                            game,
-                            is_host=False,
-                            options=make_game_options(guest)
-                        )
-            await game.wait_launched(60 + 10 * len(all_guests))
+            await self.launch_match(game, host, all_guests, make_game_options)
             self._logger.debug(&#34;Ladder game launched successfully %s&#34;, game)
         except Exception as e:
-            if isinstance(e, asyncio.TimeoutError):
+            abandoning_players = []
+            if isinstance(e, NotConnectedError):
                 self._logger.info(
                     &#34;Ladder game failed to start! %s setup timed out&#34;,
                     game
                 )
+                abandoning_players = e.players
             elif isinstance(e, GameClosedError):
                 self._logger.info(
-                    &#34;Ladder game %s failed to start! Player %s closed their game instance&#34;,
+                    &#34;Ladder game %s failed to start! &#34;
+                    &#34;Player %s closed their game instance&#34;,
                     game, e.player
                 )
+                abandoning_players = [e.player]
             else:
+                # All timeout errors should be transformed by the match starter.
+                assert not isinstance(e, asyncio.TimeoutError)
+
                 self._logger.exception(&#34;Ladder game failed to start %s&#34;, game)
 
             if game:
@@ -1144,6 +1244,66 @@ class LadderService(Service):
                 if player.state == PlayerState.STARTING_AUTOMATCH:
                     player.state = PlayerState.IDLE
                 player.write_message(msg)
+
+            if abandoning_players:
+                self._logger.info(
+                    &#34;Players failed to connect: %s&#34;,
+                    abandoning_players
+                )
+                self.violation_service.register_violations(abandoning_players)
+
+    async def launch_match(
+        self,
+        game: LadderGame,
+        host: Player,
+        guests: list[Player],
+        make_game_options: Callable[[Player], GameLaunchOptions]
+    ):
+        # Launch the host
+        if host.lobby_connection is None:
+            raise NotConnectedError([host])
+
+        host.lobby_connection.write_launch_game(
+            game,
+            is_host=True,
+            options=make_game_options(host)
+        )
+
+        try:
+            await game.wait_hosted(60)
+        except asyncio.TimeoutError:
+            raise NotConnectedError([host])
+        finally:
+            # TODO: Once the client supports `match_cancelled`, don&#39;t
+            # send `launch_game` to the client if the host timed out. Until
+            # then, failing to send `launch_game` will cause the client to
+            # think it is searching for ladder, even though the server has
+            # already removed it from the queue.
+
+            # Launch the guests
+            not_connected_guests = [
+                player for player in guests
+                if player.lobby_connection is None
+            ]
+            if not_connected_guests:
+                raise NotConnectedError(not_connected_guests)
+
+            for guest in guests:
+                assert guest.lobby_connection is not None
+
+                guest.lobby_connection.write_launch_game(
+                    game,
+                    is_host=False,
+                    options=make_game_options(guest)
+                )
+        try:
+            await game.wait_launched(60 + 10 * len(guests))
+        except asyncio.TimeoutError:
+            connected_players = game.get_connected_players()
+            raise NotConnectedError([
+                player for player in guests
+                if player not in connected_players
+            ])
 
     async def get_game_history(
         self,
@@ -1169,7 +1329,12 @@ class LadderService(Service):
                         ),
                         matchmaker_queue_game.c.matchmaker_queue_id == queue_id
                     )
-                ).order_by(game_stats.c.startTime.desc()).limit(limit)
+                ).order_by(
+                    game_stats.c.startTime.desc(),
+                    # Timestamps only have second resolution, so for this to
+                    # work correctly in the unit tests we also need id
+                    game_stats.c.id.desc()
+                ).limit(limit)
 
                 result.extend([
                     row.mapId for row in await conn.execute(query)
@@ -1192,12 +1357,12 @@ class LadderService(Service):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
-<li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
+<li><a title="server.core.service.Service" href="../core/service.html#server.core.service.Service">Service</a></li>
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="server.ladder_service.LadderService.cancel_search"><code class="name flex">
-<span>def <span class="ident">cancel_search</span></span>(<span>self, initiator: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, queue_name: Optional[str] = None) ‑> None</span>
+<dt id="server.ladder_service.ladder_service.LadderService.cancel_search"><code class="name flex">
+<span>def <span class="ident">cancel_search</span></span>(<span>self, initiator: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, queue_name: Optional[str] = None) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1219,8 +1384,8 @@ class LadderService(Service):
         self._cancel_search(initiator, queue_name)</code></pre>
 </details>
 </dd>
-<dt id="server.ladder_service.LadderService.fetch_map_pools"><code class="name flex">
-<span>async def <span class="ident">fetch_map_pools</span></span>(<span>self, conn) ‑> dict[int, tuple[str, list[<a title="server.types.Map" href="types.html#server.types.Map">Map</a>]]]</span>
+<dt id="server.ladder_service.ladder_service.LadderService.fetch_map_pools"><code class="name flex">
+<span>async def <span class="ident">fetch_map_pools</span></span>(<span>self, conn) ‑> dict[int, tuple[str, list[<a title="server.types.Map" href="../types.html#server.types.Map">Map</a>]]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1282,7 +1447,7 @@ class LadderService(Service):
     return map_pool_maps</code></pre>
 </details>
 </dd>
-<dt id="server.ladder_service.LadderService.fetch_matchmaker_queues"><code class="name flex">
+<dt id="server.ladder_service.ladder_service.LadderService.fetch_matchmaker_queues"><code class="name flex">
 <span>async def <span class="ident">fetch_matchmaker_queues</span></span>(<span>self, conn)</span>
 </code></dt>
 <dd>
@@ -1342,8 +1507,8 @@ class LadderService(Service):
     return matchmaker_queues</code></pre>
 </details>
 </dd>
-<dt id="server.ladder_service.LadderService.get_game_history"><code class="name flex">
-<span>async def <span class="ident">get_game_history</span></span>(<span>self, players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue_id: int, limit: int = 3) ‑> list[int]</span>
+<dt id="server.ladder_service.ladder_service.LadderService.get_game_history"><code class="name flex">
+<span>async def <span class="ident">get_game_history</span></span>(<span>self, players: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], queue_id: int, limit: int = 3) ‑> list[int]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1375,7 +1540,12 @@ class LadderService(Service):
                     ),
                     matchmaker_queue_game.c.matchmaker_queue_id == queue_id
                 )
-            ).order_by(game_stats.c.startTime.desc()).limit(limit)
+            ).order_by(
+                game_stats.c.startTime.desc(),
+                # Timestamps only have second resolution, so for this to
+                # work correctly in the unit tests we also need id
+                game_stats.c.id.desc()
+            ).limit(limit)
 
             result.extend([
                 row.mapId for row in await conn.execute(query)
@@ -1383,8 +1553,71 @@ class LadderService(Service):
     return result</code></pre>
 </details>
 </dd>
-<dt id="server.ladder_service.LadderService.on_match_found"><code class="name flex">
-<span>def <span class="ident">on_match_found</span></span>(<span>self, s1: <a title="server.matchmaker.search.Search" href="matchmaker/search.html#server.matchmaker.search.Search">Search</a>, s2: <a title="server.matchmaker.search.Search" href="matchmaker/search.html#server.matchmaker.search.Search">Search</a>, queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> None</span>
+<dt id="server.ladder_service.ladder_service.LadderService.launch_match"><code class="name flex">
+<span>async def <span class="ident">launch_match</span></span>(<span>self, game: <a title="server.games.ladder_game.LadderGame" href="../games/ladder_game.html#server.games.ladder_game.LadderGame">LadderGame</a>, host: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, guests: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], make_game_options: Callable[[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], <a title="server.types.GameLaunchOptions" href="../types.html#server.types.GameLaunchOptions">GameLaunchOptions</a>])</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def launch_match(
+    self,
+    game: LadderGame,
+    host: Player,
+    guests: list[Player],
+    make_game_options: Callable[[Player], GameLaunchOptions]
+):
+    # Launch the host
+    if host.lobby_connection is None:
+        raise NotConnectedError([host])
+
+    host.lobby_connection.write_launch_game(
+        game,
+        is_host=True,
+        options=make_game_options(host)
+    )
+
+    try:
+        await game.wait_hosted(60)
+    except asyncio.TimeoutError:
+        raise NotConnectedError([host])
+    finally:
+        # TODO: Once the client supports `match_cancelled`, don&#39;t
+        # send `launch_game` to the client if the host timed out. Until
+        # then, failing to send `launch_game` will cause the client to
+        # think it is searching for ladder, even though the server has
+        # already removed it from the queue.
+
+        # Launch the guests
+        not_connected_guests = [
+            player for player in guests
+            if player.lobby_connection is None
+        ]
+        if not_connected_guests:
+            raise NotConnectedError(not_connected_guests)
+
+        for guest in guests:
+            assert guest.lobby_connection is not None
+
+            guest.lobby_connection.write_launch_game(
+                game,
+                is_host=False,
+                options=make_game_options(guest)
+            )
+    try:
+        await game.wait_launched(60 + 10 * len(guests))
+    except asyncio.TimeoutError:
+        connected_players = game.get_connected_players()
+        raise NotConnectedError([
+            player for player in guests
+            if player not in connected_players
+        ])</code></pre>
+</details>
+</dd>
+<dt id="server.ladder_service.ladder_service.LadderService.on_match_found"><code class="name flex">
+<span>def <span class="ident">on_match_found</span></span>(<span>self, s1: <a title="server.matchmaker.search.Search" href="../matchmaker/search.html#server.matchmaker.search.Search">Search</a>, s2: <a title="server.matchmaker.search.Search" href="../matchmaker/search.html#server.matchmaker.search.Search">Search</a>, queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="../matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Callback for when a match is generated by a matchmaker queue.</p>
@@ -1423,9 +1656,7 @@ so it should only perform fast operations.</p></div>
 
             self._clear_search(player, queue.name)
 
-        asyncio.create_task(
-            self.start_game(s1.players, s2.players, queue)
-        )
+        asyncio.create_task(self.start_game(s1.players, s2.players, queue))
     except Exception:
         self._logger.exception(
             &#34;Error processing match between searches %s, and %s&#34;,
@@ -1433,8 +1664,8 @@ so it should only perform fast operations.</p></div>
         )</code></pre>
 </details>
 </dd>
-<dt id="server.ladder_service.LadderService.start_game"><code class="name flex">
-<span>async def <span class="ident">start_game</span></span>(<span>self, team1: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], team2: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> None</span>
+<dt id="server.ladder_service.ladder_service.LadderService.start_game"><code class="name flex">
+<span>def <span class="ident">start_game</span></span>(<span>self, team1: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], team2: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="../matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> Awaitable[None]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1442,151 +1673,21 @@ so it should only perform fast operations.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def start_game(
+<pre><code class="python">def start_game(
     self,
     team1: list[Player],
     team2: list[Player],
     queue: MatchmakerQueue
-) -&gt; None:
+) -&gt; Awaitable[None]:
+    # We want assertion errors to trigger when the caller attempts to
+    # create the async function, not when the function starts executing.
     assert len(team1) == len(team2)
 
-    self._logger.debug(
-        &#34;Starting %s game between %s and %s&#34;,
-        queue.name,
-        [p.login for p in team1],
-        [p.login for p in team2]
-    )
-    game = None
-    try:
-        host = team1[0]
-        all_players = team1 + team2
-        all_guests = all_players[1:]
-
-        played_map_ids = await self.get_game_history(
-            all_players,
-            queue.id,
-            limit=config.LADDER_ANTI_REPETITION_LIMIT
-        )
-        rating = min(
-            player.ratings[queue.rating_type].displayed()
-            for player in all_players
-        )
-        pool = queue.get_map_pool_for_rating(rating)
-        if not pool:
-            raise RuntimeError(f&#34;No map pool available for rating {rating}!&#34;)
-        _, _, map_path, _ = pool.choose_map(played_map_ids)
-
-        game = self.game_service.create_game(
-            game_class=LadderGame,
-            game_mode=queue.featured_mod,
-            host=host,
-            name=&#34;Matchmaker Game&#34;,
-            matchmaker_queue_id=queue.id,
-            rating_type=queue.rating_type,
-            max_players=len(all_players)
-        )
-        game.init_mode = InitMode.AUTO_LOBBY
-        game.map_file_path = map_path
-        game.set_name_unchecked(game_name(team1, team2))
-
-        def get_player_mean(player):
-            return player.ratings[queue.rating_type][0]
-
-        team1 = sorted(team1, key=get_player_mean)
-        team2 = sorted(team2, key=get_player_mean)
-
-        # Shuffle the teams such that direct opponents remain the same
-        zipped_teams = list(zip(team1, team2))
-        random.shuffle(zipped_teams)
-
-        for i, player in enumerate(
-            player for pair in zipped_teams for player in pair
-        ):
-            # FA uses lua and lua arrays are 1-indexed
-            slot = i + 1
-            # 2 if even, 3 if odd
-            team = (i % 2) + 2
-            player.game = game
-
-            game.set_player_option(player.id, &#34;Faction&#34;, player.faction.value)
-            game.set_player_option(player.id, &#34;Team&#34;, team)
-            game.set_player_option(player.id, &#34;StartSpot&#34;, slot)
-            game.set_player_option(player.id, &#34;Army&#34;, slot)
-            game.set_player_option(player.id, &#34;Color&#34;, slot)
-
-        game_options = queue.get_game_options()
-        if game_options:
-            game.gameOptions.update(game_options)
-
-        mapname = re.match(&#34;maps/(.+).zip&#34;, map_path).group(1)
-        # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
-        # Really in the future, just send a better description
-
-        self._logger.debug(&#34;Starting ladder game: %s&#34;, game)
-        # Options shared by all players
-        options = GameLaunchOptions(
-            mapname=mapname,
-            expected_players=len(all_players),
-            game_options=game_options
-        )
-
-        def make_game_options(player: Player) -&gt; GameLaunchOptions:
-            return options._replace(
-                team=game.get_player_option(player.id, &#34;Team&#34;),
-                faction=player.faction,
-                map_position=game.get_player_option(player.id, &#34;StartSpot&#34;)
-            )
-
-        try:
-            host.lobby_connection.write_launch_game(
-                game,
-                is_host=True,
-                options=make_game_options(host)
-            )
-            await game.wait_hosted(60)
-        finally:
-            # TODO: Once the client supports `match_cancelled`, don&#39;t
-            # send `launch_game` to the client if the host timed out. Until
-            # then, failing to send `launch_game` will cause the client to
-            # think it is searching for ladder, even though the server has
-            # already removed it from the queue.
-
-            for guest in all_guests:
-                if guest.lobby_connection is not None:
-                    guest.lobby_connection.write_launch_game(
-                        game,
-                        is_host=False,
-                        options=make_game_options(guest)
-                    )
-        await game.wait_launched(60 + 10 * len(all_guests))
-        self._logger.debug(&#34;Ladder game launched successfully %s&#34;, game)
-    except Exception as e:
-        if isinstance(e, asyncio.TimeoutError):
-            self._logger.info(
-                &#34;Ladder game failed to start! %s setup timed out&#34;,
-                game
-            )
-        elif isinstance(e, GameClosedError):
-            self._logger.info(
-                &#34;Ladder game %s failed to start! Player %s closed their game instance&#34;,
-                game, e.player
-            )
-        else:
-            self._logger.exception(&#34;Ladder game failed to start %s&#34;, game)
-
-        if game:
-            await game.on_game_finish()
-
-        game_id = game.id if game else None
-        msg = {&#34;command&#34;: &#34;match_cancelled&#34;, &#34;game_id&#34;: game_id}
-        for player in all_players:
-            if player.state == PlayerState.STARTING_AUTOMATCH:
-                player.state = PlayerState.IDLE
-            player.write_message(msg)</code></pre>
+    return self._start_game(team1, team2, queue)</code></pre>
 </details>
 </dd>
-<dt id="server.ladder_service.LadderService.start_search"><code class="name flex">
-<span>def <span class="ident">start_search</span></span>(<span>self, players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue_name: str, on_matched: Callable[[ForwardRef('Search'), ForwardRef('Search')], Any] = &lt;function LadderService.&lt;lambda&gt;&gt;)</span>
+<dt id="server.ladder_service.ladder_service.LadderService.start_search"><code class="name flex">
+<span>def <span class="ident">start_search</span></span>(<span>self, players: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], queue_name: str, on_matched: Callable[[ForwardRef('Search'), ForwardRef('Search')], Any] = &lt;function LadderService.&lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1600,6 +1701,48 @@ so it should only perform fast operations.</p></div>
     queue_name: str,
     on_matched: OnMatchedCallback = lambda _1, _2: None
 ):
+    timeouts = self.violation_service.get_violations(players)
+    if timeouts:
+        self._logger.debug(&#34;timeouts: %s&#34;, timeouts)
+        times = [
+            {
+                &#34;player&#34;: p.id,
+                &#34;expires_at&#34;: violation.get_ban_expiration().isoformat()
+            }
+            for p, violation in timeouts.items()
+        ]
+        for player in players:
+            player.write_message({
+                &#34;command&#34;: &#34;search_timeout&#34;,
+                &#34;timeouts&#34;: times
+            })
+            # TODO: Do we need this or is `search_timeout` enough?
+            player.write_message({
+                &#34;command&#34;: &#34;search_info&#34;,
+                &#34;queue_name&#34;: queue_name,
+                &#34;state&#34;: &#34;stop&#34;
+            })
+            # For compatibility with clients that don&#39;t understand
+            # `search_timeout` only. This may be removed at any time.
+            if len(times) == 1:
+                s = &#34;&#34;
+                are = &#34;is&#34;
+            else:
+                s = &#34;s&#34;
+                are = &#34;are&#34;
+            names = &#34;, &#34;.join(p.login for p in timeouts)
+            max_time = humanize.naturaldelta(
+                max(
+                    timeouts.values(),
+                    key=lambda v: v.get_ban_expiration()
+                ).get_remaining()
+            )
+            player.write_message({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;info&#34;,
+                &#34;text&#34;: f&#34;Player{s} {names} {are} timed out for {max_time}&#34;
+            })
+        return
     # Cancel any existing searches that players have for this queue
     for player in players:
         if queue_name in self._searches[player]:
@@ -1630,7 +1773,7 @@ so it should only perform fast operations.</p></div>
     asyncio.create_task(queue.search(search))</code></pre>
 </details>
 </dd>
-<dt id="server.ladder_service.LadderService.update_data"><code class="name flex">
+<dt id="server.ladder_service.ladder_service.LadderService.update_data"><code class="name flex">
 <span>async def <span class="ident">update_data</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
@@ -1685,8 +1828,8 @@ so it should only perform fast operations.</p></div>
             del self.queues[queue_name]</code></pre>
 </details>
 </dd>
-<dt id="server.ladder_service.LadderService.write_rating_progress"><code class="name flex">
-<span>def <span class="ident">write_rating_progress</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, rating_type: str) ‑> None</span>
+<dt id="server.ladder_service.ladder_service.LadderService.write_rating_progress"><code class="name flex">
+<span>def <span class="ident">write_rating_progress</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, rating_type: str) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1731,13 +1874,34 @@ so it should only perform fast operations.</p></div>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
-<li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
+<li><code><b><a title="server.core.service.Service" href="../core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
-<li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
-<li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
-<li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
+<li><code><a title="server.core.service.Service.initialize" href="../core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
+<li><code><a title="server.core.service.Service.on_connection_lost" href="../core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
+<li><code><a title="server.core.service.Service.shutdown" href="../core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
 </ul>
 </li>
+</ul>
+</dd>
+<dt id="server.ladder_service.ladder_service.NotConnectedError"><code class="flex name class">
+<span>class <span class="ident">NotConnectedError</span></span>
+<span>(</span><span>players: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>The operation exceeded the given deadline.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class NotConnectedError(asyncio.TimeoutError):
+    def __init__(self, players: list[Player]):
+        self.players = players</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>asyncio.exceptions.TimeoutError</li>
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
 </ul>
 </dd>
 </dl>
@@ -1751,29 +1915,28 @@ so it should only perform fast operations.</p></div>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="server" href="index.html">server</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="server.ladder_service.game_name" href="#server.ladder_service.game_name">game_name</a></code></li>
+<li><code><a title="server.ladder_service" href="index.html">server.ladder_service</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="server.ladder_service.LadderService" href="#server.ladder_service.LadderService">LadderService</a></code></h4>
+<h4><code><a title="server.ladder_service.ladder_service.LadderService" href="#server.ladder_service.ladder_service.LadderService">LadderService</a></code></h4>
 <ul class="">
-<li><code><a title="server.ladder_service.LadderService.cancel_search" href="#server.ladder_service.LadderService.cancel_search">cancel_search</a></code></li>
-<li><code><a title="server.ladder_service.LadderService.fetch_map_pools" href="#server.ladder_service.LadderService.fetch_map_pools">fetch_map_pools</a></code></li>
-<li><code><a title="server.ladder_service.LadderService.fetch_matchmaker_queues" href="#server.ladder_service.LadderService.fetch_matchmaker_queues">fetch_matchmaker_queues</a></code></li>
-<li><code><a title="server.ladder_service.LadderService.get_game_history" href="#server.ladder_service.LadderService.get_game_history">get_game_history</a></code></li>
-<li><code><a title="server.ladder_service.LadderService.on_match_found" href="#server.ladder_service.LadderService.on_match_found">on_match_found</a></code></li>
-<li><code><a title="server.ladder_service.LadderService.start_game" href="#server.ladder_service.LadderService.start_game">start_game</a></code></li>
-<li><code><a title="server.ladder_service.LadderService.start_search" href="#server.ladder_service.LadderService.start_search">start_search</a></code></li>
-<li><code><a title="server.ladder_service.LadderService.update_data" href="#server.ladder_service.LadderService.update_data">update_data</a></code></li>
-<li><code><a title="server.ladder_service.LadderService.write_rating_progress" href="#server.ladder_service.LadderService.write_rating_progress">write_rating_progress</a></code></li>
+<li><code><a title="server.ladder_service.ladder_service.LadderService.cancel_search" href="#server.ladder_service.ladder_service.LadderService.cancel_search">cancel_search</a></code></li>
+<li><code><a title="server.ladder_service.ladder_service.LadderService.fetch_map_pools" href="#server.ladder_service.ladder_service.LadderService.fetch_map_pools">fetch_map_pools</a></code></li>
+<li><code><a title="server.ladder_service.ladder_service.LadderService.fetch_matchmaker_queues" href="#server.ladder_service.ladder_service.LadderService.fetch_matchmaker_queues">fetch_matchmaker_queues</a></code></li>
+<li><code><a title="server.ladder_service.ladder_service.LadderService.get_game_history" href="#server.ladder_service.ladder_service.LadderService.get_game_history">get_game_history</a></code></li>
+<li><code><a title="server.ladder_service.ladder_service.LadderService.launch_match" href="#server.ladder_service.ladder_service.LadderService.launch_match">launch_match</a></code></li>
+<li><code><a title="server.ladder_service.ladder_service.LadderService.on_match_found" href="#server.ladder_service.ladder_service.LadderService.on_match_found">on_match_found</a></code></li>
+<li><code><a title="server.ladder_service.ladder_service.LadderService.start_game" href="#server.ladder_service.ladder_service.LadderService.start_game">start_game</a></code></li>
+<li><code><a title="server.ladder_service.ladder_service.LadderService.start_search" href="#server.ladder_service.ladder_service.LadderService.start_search">start_search</a></code></li>
+<li><code><a title="server.ladder_service.ladder_service.LadderService.update_data" href="#server.ladder_service.ladder_service.LadderService.update_data">update_data</a></code></li>
+<li><code><a title="server.ladder_service.ladder_service.LadderService.write_rating_progress" href="#server.ladder_service.ladder_service.LadderService.write_rating_progress">write_rating_progress</a></code></li>
 </ul>
+</li>
+<li>
+<h4><code><a title="server.ladder_service.ladder_service.NotConnectedError" href="#server.ladder_service.ladder_service.NotConnectedError">NotConnectedError</a></code></h4>
 </li>
 </ul>
 </li>

@@ -546,6 +546,13 @@ class GameConnection(GpgNetServerProtocol):
         &#34;&#34;&#34;
         pass
 
+    async def handle_launch_status(self, status: str):
+        &#34;&#34;&#34;
+        Currently is sent with status `Rejected` if a matchmaker game failed
+        to start due to players using differing game settings.
+        &#34;&#34;&#34;
+        pass
+
     async def handle_bottleneck(self, *args: list[Any]):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
@@ -641,27 +648,28 @@ class GameConnection(GpgNetServerProtocol):
 
 
 COMMAND_HANDLERS = {
-    &#34;Desync&#34;:               GameConnection.handle_desync,
-    &#34;GameState&#34;:            GameConnection.handle_game_state,
-    &#34;GameOption&#34;:           GameConnection.handle_game_option,
-    &#34;GameMods&#34;:             GameConnection.handle_game_mods,
-    &#34;PlayerOption&#34;:         GameConnection.handle_player_option,
     &#34;AIOption&#34;:             GameConnection.handle_ai_option,
-    &#34;ClearSlot&#34;:            GameConnection.handle_clear_slot,
-    &#34;GameResult&#34;:           GameConnection.handle_game_result,
-    &#34;OperationComplete&#34;:    GameConnection.handle_operation_complete,
-    &#34;JsonStats&#34;:            GameConnection.handle_json_stats,
-    &#34;EnforceRating&#34;:        GameConnection.handle_enforce_rating,
-    &#34;TeamkillReport&#34;:       GameConnection.handle_teamkill_report,
-    &#34;TeamkillHappened&#34;:     GameConnection.handle_teamkill_happened,
-    &#34;GameEnded&#34;:            GameConnection.handle_game_ended,
-    &#34;Rehost&#34;:               GameConnection.handle_rehost,
     &#34;Bottleneck&#34;:           GameConnection.handle_bottleneck,
     &#34;BottleneckCleared&#34;:    GameConnection.handle_bottleneck_cleared,
-    &#34;Disconnected&#34;:         GameConnection.handle_disconnected,
-    &#34;IceMsg&#34;:               GameConnection.handle_ice_message,
     &#34;Chat&#34;:                 GameConnection.handle_chat,
-    &#34;GameFull&#34;:             GameConnection.handle_game_full
+    &#34;ClearSlot&#34;:            GameConnection.handle_clear_slot,
+    &#34;Desync&#34;:               GameConnection.handle_desync,
+    &#34;Disconnected&#34;:         GameConnection.handle_disconnected,
+    &#34;EnforceRating&#34;:        GameConnection.handle_enforce_rating,
+    &#34;GameEnded&#34;:            GameConnection.handle_game_ended,
+    &#34;GameFull&#34;:             GameConnection.handle_game_full,
+    &#34;GameMods&#34;:             GameConnection.handle_game_mods,
+    &#34;GameOption&#34;:           GameConnection.handle_game_option,
+    &#34;GameResult&#34;:           GameConnection.handle_game_result,
+    &#34;GameState&#34;:            GameConnection.handle_game_state,
+    &#34;IceMsg&#34;:               GameConnection.handle_ice_message,
+    &#34;JsonStats&#34;:            GameConnection.handle_json_stats,
+    &#34;LaunchStatus&#34;:         GameConnection.handle_launch_status,
+    &#34;OperationComplete&#34;:    GameConnection.handle_operation_complete,
+    &#34;PlayerOption&#34;:         GameConnection.handle_player_option,
+    &#34;Rehost&#34;:               GameConnection.handle_rehost,
+    &#34;TeamkillHappened&#34;:     GameConnection.handle_teamkill_happened,
+    &#34;TeamkillReport&#34;:       GameConnection.handle_teamkill_report,
 }</code></pre>
 </details>
 </section>
@@ -1169,6 +1177,13 @@ class GameConnection(GpgNetServerProtocol):
         &#34;&#34;&#34;
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
+        &#34;&#34;&#34;
+        pass
+
+    async def handle_launch_status(self, status: str):
+        &#34;&#34;&#34;
+        Currently is sent with status `Rejected` if a matchmaker game failed
+        to start due to players using differing game settings.
         &#34;&#34;&#34;
         pass
 
@@ -1837,6 +1852,24 @@ included for documentation purposes.</p></div>
         )</code></pre>
 </details>
 </dd>
+<dt id="server.gameconnection.GameConnection.handle_launch_status"><code class="name flex">
+<span>async def <span class="ident">handle_launch_status</span></span>(<span>self, status: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Currently is sent with status <code>Rejected</code> if a matchmaker game failed
+to start due to players using differing game settings.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_launch_status(self, status: str):
+    &#34;&#34;&#34;
+    Currently is sent with status `Rejected` if a matchmaker game failed
+    to start due to players using differing game settings.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
 <dt id="server.gameconnection.GameConnection.handle_operation_complete"><code class="name flex">
 <span>async def <span class="ident">handle_operation_complete</span></span>(<span>self, primary: Any, secondary: Any, delta: str)</span>
 </code></dt>
@@ -2157,6 +2190,7 @@ cause the caller to be disconnected as well.</p></div>
 <li><code><a title="server.gameconnection.GameConnection.handle_game_state" href="#server.gameconnection.GameConnection.handle_game_state">handle_game_state</a></code></li>
 <li><code><a title="server.gameconnection.GameConnection.handle_ice_message" href="#server.gameconnection.GameConnection.handle_ice_message">handle_ice_message</a></code></li>
 <li><code><a title="server.gameconnection.GameConnection.handle_json_stats" href="#server.gameconnection.GameConnection.handle_json_stats">handle_json_stats</a></code></li>
+<li><code><a title="server.gameconnection.GameConnection.handle_launch_status" href="#server.gameconnection.GameConnection.handle_launch_status">handle_launch_status</a></code></li>
 <li><code><a title="server.gameconnection.GameConnection.handle_operation_complete" href="#server.gameconnection.GameConnection.handle_operation_complete">handle_operation_complete</a></code></li>
 <li><code><a title="server.gameconnection.GameConnection.handle_player_option" href="#server.gameconnection.GameConnection.handle_player_option">handle_player_option</a></code></li>
 <li><code><a title="server.gameconnection.GameConnection.handle_rehost" href="#server.gameconnection.GameConnection.handle_rehost">handle_rehost</a></code></li>

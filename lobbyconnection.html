@@ -1060,6 +1060,13 @@ class LobbyConnection:
         is_host: bool = False,
         options: GameLaunchOptions = GameLaunchOptions(),
     ) -&gt; None:
+        if self.game_connection is not None:
+            self._logger.warning(
+                &#34;%s launched a new game while old GameConnection was active&#34;,
+                self.player
+            )
+            self.game_connection = None
+
         self.write(self._prepare_launch_game(
             game,
             is_host=is_host,
@@ -1337,7 +1344,7 @@ class LobbyConnection:
 <dl>
 <dt id="server.lobbyconnection.LobbyConnection"><code class="flex name class">
 <span>class <span class="ident">LobbyConnection</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>, players: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, nts_client: Optional[<a title="server.ice_servers.nts.TwilioNTS" href="ice_servers/nts.html#server.ice_servers.nts.TwilioNTS">TwilioNTS</a>], geoip: <a title="server.geoip_service.GeoIpService" href="geoip_service.html#server.geoip_service.GeoIpService">GeoIpService</a>, ladder_service: <a title="server.ladder_service.LadderService" href="ladder_service.html#server.ladder_service.LadderService">LadderService</a>, party_service: <a title="server.party_service.PartyService" href="party_service.html#server.party_service.PartyService">PartyService</a>, rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>, oauth_service: <a title="server.oauth_service.OAuthService" href="oauth_service.html#server.oauth_service.OAuthService">OAuthService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>, players: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, nts_client: Optional[<a title="server.ice_servers.nts.TwilioNTS" href="ice_servers/nts.html#server.ice_servers.nts.TwilioNTS">TwilioNTS</a>], geoip: <a title="server.geoip_service.GeoIpService" href="geoip_service.html#server.geoip_service.GeoIpService">GeoIpService</a>, ladder_service: <a title="server.ladder_service.ladder_service.LadderService" href="ladder_service/ladder_service.html#server.ladder_service.ladder_service.LadderService">LadderService</a>, party_service: <a title="server.party_service.PartyService" href="party_service.html#server.party_service.PartyService">PartyService</a>, rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>, oauth_service: <a title="server.oauth_service.OAuthService" href="oauth_service.html#server.oauth_service.OAuthService">OAuthService</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -2315,6 +2322,13 @@ class LobbyConnection:
         is_host: bool = False,
         options: GameLaunchOptions = GameLaunchOptions(),
     ) -&gt; None:
+        if self.game_connection is not None:
+            self._logger.warning(
+                &#34;%s launched a new game while old GameConnection was active&#34;,
+                self.player
+            )
+            self.game_connection = None
+
         self.write(self._prepare_launch_game(
             game,
             is_host=is_host,
@@ -4160,6 +4174,13 @@ a fatal warning it should disconnect and not attempt to reconnect.</li>
     is_host: bool = False,
     options: GameLaunchOptions = GameLaunchOptions(),
 ) -&gt; None:
+    if self.game_connection is not None:
+        self._logger.warning(
+            &#34;%s launched a new game while old GameConnection was active&#34;,
+            self.player
+        )
+        self.game_connection = None
+
     self.write(self._prepare_launch_game(
         game,
         is_host=is_host,

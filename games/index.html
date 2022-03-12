@@ -474,6 +474,7 @@ class CustomGame(Game):
         self.matchmaker_queue_id = matchmaker_queue_id
         self.state = GameState.INITIALIZING
         self._connections = {}
+        self._configured_player_ids: set[int] = set()
         self.enforce_rating = False
         self.gameOptions = {
             &#34;FogOfWar&#34;: &#34;explored&#34;,
@@ -554,7 +555,7 @@ class CustomGame(Game):
         &#34;&#34;&#34;
         return [
             player for player in self._connections.keys()
-            if player.id in self._player_options
+            if player.id in self._configured_player_ids
         ]
 
     def _is_observer(self, player: Player) -&gt; bool:
@@ -744,6 +745,7 @@ class CustomGame(Game):
         player = game_connection.player
         del self._connections[player]
         del player.game
+        self._configured_player_ids.discard(player.id)
 
         if self.state is GameState.LOBBY and player.id in self._player_options:
             del self._player_options[player.id]
@@ -943,6 +945,7 @@ class CustomGame(Game):
         &#34;&#34;&#34;
         Set game-associative options for given player, by id
         &#34;&#34;&#34;
+        self._configured_player_ids.add(player_id)
         self._player_options[player_id][key] = value
 
     def get_player_option(self, player_id: int, key: str) -&gt; Optional[Any]:
@@ -1780,7 +1783,7 @@ assigned an army or team, and deletes any AI's.</p></div>
     &#34;&#34;&#34;
     return [
         player for player in self._connections.keys()
-        if player.id in self._player_options
+        if player.id in self._configured_player_ids
     ]</code></pre>
 </details>
 </dd>
@@ -2128,6 +2131,7 @@ game.</p></div>
     player = game_connection.player
     del self._connections[player]
     del player.game
+    self._configured_player_ids.discard(player.id)
 
     if self.state is GameState.LOBBY and player.id in self._player_options:
         del self._player_options[player.id]
@@ -2271,6 +2275,7 @@ game.</p></div>
     &#34;&#34;&#34;
     Set game-associative options for given player, by id
     &#34;&#34;&#34;
+    self._configured_player_ids.add(player_id)
     self._player_options[player_id][key] = value</code></pre>
 </details>
 </dd>
