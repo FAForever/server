@@ -17,9 +17,6 @@ from .conftest import (
     read_until_command
 )
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
-
 
 async def host_game(
     proto: Protocol,
@@ -51,6 +48,19 @@ async def join_game(proto: Protocol, uid: int):
     await open_fa(proto)
     # HACK: Yield long enough for the server to process our message
     await asyncio.sleep(0.5)
+
+
+async def read_until_launched(proto: Protocol, uid=None, timeout=60):
+    def predecate(cmd) -> bool:
+        if cmd["command"] != "game_info":
+            return False
+
+        if uid is not None and cmd["uid"] != uid:
+            return False
+
+        return cmd["launched_at"] is not None
+
+    await read_until(proto, predecate, timeout=timeout)
 
 
 async def client_response(proto, timeout=10):
@@ -248,10 +258,7 @@ async def test_game_ended_rates_game(lobby_server):
         "args": ["Launching"]
     })
 
-    await read_until(
-        host_proto,
-        lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
-    )
+    await read_until_launched(host_proto, game_id)
     await host_proto.send_message({
         "target": "game",
         "command": "EnforceRating",

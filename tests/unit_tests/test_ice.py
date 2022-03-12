@@ -58,7 +58,6 @@ def test_coturn_tokens(coturn_hmac, coturn_hosts, coturn_credentials):
         assert server["username"] == "124456:faf-test"
 
 
-@pytest.mark.asyncio
 async def test_twilio_nts(twilio):
     servers = await twilio.server_tokens(ttl=123456)
     twilio.client.tokens.create.assert_called_once()

@@ -15,8 +15,6 @@ from server.stats import achievement_service as ach
 from server.stats import event_service as ev
 from server.stats.game_stats_service import GameStatsService
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture()
 def event_service():
@@ -43,7 +41,7 @@ def player(player_factory):
 
 
 @pytest.fixture()
-def game(database, game_stats_service, player):
+async def game(database, game_stats_service, player):
     game = Game(1, database, mock.Mock(), game_stats_service)
     game._player_options[player.id] = {"Army": 1}
     game._results = GameResultReports(1)

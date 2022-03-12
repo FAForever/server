@@ -106,7 +106,6 @@ def test_serialize():
     }
 
 
-@pytest.mark.asyncio
 async def test_send_message():
     p = Player("Test")
 

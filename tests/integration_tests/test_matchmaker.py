@@ -23,11 +23,10 @@ from .test_game import (
     queue_player_for_matchmaking,
     queue_players_for_matchmaking,
     queue_temp_players_for_matchmaking,
+    read_until_launched,
     send_player_options,
     start_search
 )
-
-pytestmark = pytest.mark.asyncio
 
 
 @fast_forward(70)
@@ -108,6 +107,7 @@ async def test_game_matchmaking_start(lobby_server, database):
 
     # The player that queued last will be the host
     msg = await read_until_command(host, "game_launch")
+    game_id = msg["uid"]
     await open_fa(host)
     await read_until_command(host, "game_info")
     await send_player_options(
@@ -139,12 +139,8 @@ async def test_game_matchmaking_start(lobby_server, database):
     })
 
     # Wait for db to be updated
-    await read_until(
-        host, lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
-    )
-    await read_until(
-        guest, lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
-    )
+    await read_until_launched(host, game_id)
+    await read_until_launched(guest, game_id)
 
     async with database.acquire() as conn:
         result = await conn.execute(select([
@@ -152,7 +148,7 @@ async def test_game_matchmaking_start(lobby_server, database):
             game_player_stats.c.color,
             game_player_stats.c.team,
             game_player_stats.c.place,
-        ]).where(game_player_stats.c.gameId == msg["uid"]))
+        ]).where(game_player_stats.c.gameId == game_id))
         rows = result.fetchall()
         assert len(rows) == 2
         for row in rows:
@@ -165,7 +161,7 @@ async def test_game_matchmaking_start(lobby_server, database):
             matchmaker_queue.c.technical_name,
         ]).select_from(
             matchmaker_queue_game.outerjoin(matchmaker_queue)
-        ).where(matchmaker_queue_game.c.game_stats_id == msg["uid"]))
+        ).where(matchmaker_queue_game.c.game_stats_id == game_id))
         row = result.fetchone()
         assert row.technical_name == "ladder1v1"
 
@@ -379,6 +375,7 @@ async def test_anti_map_repetition(lobby_server):
             client_response(proto2)
         )
         mapname = msg1["mapname"]
+        game_id = msg1["uid"]
         assert mapname not in played_maps
         played_maps.append(mapname)
 
@@ -397,6 +394,9 @@ async def test_anti_map_repetition(lobby_server):
                 "target": "game",
                 "args": ["Launching"]
             })
+
+        for proto in (proto1, proto2):
+            await read_until_launched(proto, game_id)
 
         for proto in (proto1, proto2):
             for result in (
@@ -420,6 +420,16 @@ async def test_anti_map_repetition(lobby_server):
             proto1.close(),
             proto2.close()
         )
+        # TODO: The real problem here is that sometimes it takes a while for the
+        # on_connection_lost logic to be triggered for all services. In the mean
+        # time the player logs in with a second connection, but inherits the
+        # old party object (because of the __hash__, and __eq__ implementation)
+        # which references the old Player object that's still in the PLAYING
+        # state which prevents the new player from queuing.
+
+        # Really, the old party object should be ignored and a new party should
+        # be created.
+        await asyncio.sleep(3)
 
 
 @fast_forward(10)

@@ -43,6 +43,7 @@ from server.stats.game_stats_service import GameStatsService
 from tests.utils import MockDatabase
 
 logging.getLogger().setLevel(TRACE)
+logging.getLogger("aiormq").setLevel(logging.INFO)
 hypothesis.settings.register_profile(
     "nightly",
     max_examples=10_000,
@@ -81,24 +82,6 @@ def pytest_addoption(parser):
         action="store",
         default=int(config.DB_PORT),
         help="mysql port to use for tests",
-    )
-
-
-def pytest_configure(config):
-    config.addinivalue_line(
-        "addopts", "--strict-markers"
-    )
-    config.addinivalue_line(
-        "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
-    )
-    config.addinivalue_line(
-        "markers", "performance: marks tests as performance tests (deselect with '-m \"not performance\"')"
-    )
-    config.addinivalue_line(
-        "markers", "rabbitmq: marks tests as requiring a running instance of RabbitMQ"
-    )
-    config.addinivalue_line(
-        "markers", "flaky: marks tests as known to be flaky"
     )
 
 

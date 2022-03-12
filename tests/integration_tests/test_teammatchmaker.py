@@ -19,8 +19,6 @@ from .test_game import (
     send_player_options
 )
 
-pytestmark = pytest.mark.asyncio
-
 
 async def connect_players(lobby_server):
     res = await asyncio.gather(*[

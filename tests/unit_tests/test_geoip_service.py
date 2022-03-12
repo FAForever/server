@@ -16,8 +16,6 @@ from aiohttp import web
 import server.config
 from server.geoip_service import GeoIpService
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture
 def fake_geoip_path(tmp_path: Path) -> Path:

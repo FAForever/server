@@ -8,7 +8,7 @@ from server.config import config
 from server.decorators import with_logger
 from server.message_queue_service import MessageQueueService
 
-pytestmark = [pytest.mark.asyncio, pytest.mark.rabbitmq]
+pytestmark = pytest.mark.rabbitmq
 
 
 @with_logger

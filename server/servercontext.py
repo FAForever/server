@@ -139,12 +139,12 @@ class ServerContext:
             # Do not wait for buffers to empty here. This could stop the process
             # from exiting if the client isn't reading data.
             protocol.abort()
-            with self.suppress_and_log(connection.on_connection_lost, Exception):
-                await connection.on_connection_lost()
-
             for service in self._services:
                 with self.suppress_and_log(service.on_connection_lost, Exception):
                     service.on_connection_lost(connection)
+
+            with self.suppress_and_log(connection.on_connection_lost, Exception):
+                await connection.on_connection_lost()
 
             self._logger.debug("%s: Client disconnected", self.name)
             metrics.user_connections.labels(

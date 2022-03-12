@@ -10,7 +10,6 @@ def oauth_service():
     return OAuthService()
 
 
-@pytest.mark.asyncio
 async def test_get_public_keys(oauth_service):
     def set_public_keys():
         oauth_service.public_keys = {"any": "value"}
@@ -25,7 +24,6 @@ async def test_get_public_keys(oauth_service):
     oauth_service.retrieve_public_keys.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_get_public_keys_cached(oauth_service):
     oauth_service.public_keys = {"any": "value"}
     oauth_service.retrieve_public_keys = mock.AsyncMock()

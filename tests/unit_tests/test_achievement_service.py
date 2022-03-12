@@ -5,8 +5,6 @@ import pytest
 from server.api.api_accessor import ApiAccessor, SessionManager
 from server.stats.achievement_service import AchievementService
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture()
 def api_accessor():
