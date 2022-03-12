@@ -5009,7 +5009,7 @@ class MessageQueueService(Service):
 <h3>Methods</h3>
 <dl>
 <dt id="server.MessageQueueService.declare_exchange"><code class="name flex">
-<span>async def <span class="ident">declare_exchange</span></span>(<span>self, exchange_name: str, exchange_type: aio_pika.exchange.ExchangeType = ExchangeType.TOPIC, durable: bool = True) ‑> None</span>
+<span>async def <span class="ident">declare_exchange</span></span>(<span>self, exchange_name: str, exchange_type: aio_pika.abc.ExchangeType = ExchangeType.TOPIC, durable: bool = True) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -5031,7 +5031,7 @@ class MessageQueueService(Service):
 </details>
 </dd>
 <dt id="server.MessageQueueService.publish"><code class="name flex">
-<span>async def <span class="ident">publish</span></span>(<span>self, exchange_name: str, routing: str, payload: dict, mandatory: bool = False, delivery_mode: aio_pika.message.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
+<span>async def <span class="ident">publish</span></span>(<span>self, exchange_name: str, routing: str, payload: dict, mandatory: bool = False, delivery_mode: aio_pika.abc.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
