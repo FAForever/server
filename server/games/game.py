@@ -70,6 +70,7 @@ class Game:
         enforce_rating_range: bool = False,
         max_players: int = 12,
         setup_timeout: int = 60,
+        hosted_at: float = time.time()
     ):
         self._db = database
         self._results = GameResultReports(id_)
@@ -79,6 +80,7 @@ class Game:
         self.game_service = game_service
         self._player_options: dict[int, dict[str, Any]] = defaultdict(dict)
         self.launched_at = None
+        self.hosted_at = hosted_at
         self.finished = False
         self._logger = logging.getLogger(
             f"{self.__class__.__qualname__}.{id_}"
@@ -900,6 +902,7 @@ class Game:
             "num_players": len(connected_players),
             "max_players": self.max_players,
             "launched_at": self.launched_at,
+            "hosted_at": self.hosted_at,
             "rating_type": self.rating_type,
             "rating_min": self.displayed_rating_range.lo,
             "rating_max": self.displayed_rating_range.hi,
