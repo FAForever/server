@@ -120,7 +120,7 @@ def get_published_results_by_player_id(mock_service):
 
 
 @pytest.fixture
-def game(event_loop, database, game_service, game_stats_service):
+async def game(event_loop, database, game_service, game_stats_service):
     return Game(
         42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL
     )

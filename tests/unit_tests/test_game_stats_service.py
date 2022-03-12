@@ -41,7 +41,7 @@ def player(player_factory):
 
 
 @pytest.fixture()
-def game(database, game_stats_service, player):
+async def game(database, game_stats_service, player):
     game = Game(1, database, mock.Mock(), game_stats_service)
     game._player_options[player.id] = {"Army": 1}
     game._results = GameResultReports(1)

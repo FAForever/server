@@ -30,7 +30,7 @@ from tests.utils import fast_forward
 
 
 @pytest.fixture
-def game(database, game_service, game_stats_service):
+async def game(database, game_service, game_stats_service):
     return Game(42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL)
 
 
