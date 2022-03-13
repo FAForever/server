@@ -34,7 +34,7 @@ class MatchmakerSearchTimer:
         else:
             status = "errored"
 
-        metric = metrics.matchmaker_searches.labels(self.queue_name, status)
+        metric = metrics.matchmaker_search_duration.labels(self.queue_name, status)
         metric.observe(total_time)
 
 
@@ -184,12 +184,17 @@ class MatchmakerQueue:
 
         self._register_unmatched_searches(unmatched_searches)
 
-        number_of_matches = len(matches)
-        metrics.matches.labels(self.name).set(number_of_matches)
-
         for search1, search2 in matches:
-            # TODO: Move this into algorithm, then don't need to recalculate
-            # quality_with? Probably not a major bottleneck though.
+            self._report_party_sizes(search1)
+            self._report_party_sizes(search2)
+
+            rating_imbalance = abs(search1.cumulative_rating - search2.cumulative_rating)
+            metrics.match_rating_imbalance.labels(self.name).set(rating_imbalance)
+
+            ratings = search1.displayed_ratings + search2.displayed_ratings
+            rating_variety = max(ratings) - min(ratings)
+            metrics.match_rating_variety.labels(self.name).set(rating_variety)
+
             metrics.match_quality.labels(self.name).observe(
                 search1.quality_with(search2)
             )
@@ -197,6 +202,12 @@ class MatchmakerQueue:
                 self.on_match_found(search1, search2, self)
             except Exception:
                 self._logger.exception("Match callback raised an exception!")
+
+    def _report_party_sizes(self, team):
+        for search in team.get_original_searches():
+            metrics.matched_matchmaker_searches.labels(
+                self.name, len(search.players)
+            ).inc()
 
     def _register_unmatched_searches(
         self,

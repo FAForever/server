@@ -12,6 +12,7 @@ import aiocron
 import humanize
 from sqlalchemy import and_, func, select, text, true
 
+from server import metrics
 from server.config import config
 from server.core import Service
 from server.db import FAFDatabase
@@ -42,6 +43,7 @@ from server.matchmaker import (
     OnMatchedCallback,
     Search
 )
+from server.metrics import MatchLaunch
 from server.players import Player, PlayerState
 from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
 
@@ -49,7 +51,7 @@ from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
 @with_logger
 class LadderService(Service):
     """
-    Service responsible for managing the 1v1 ladder. Does matchmaking, updates
+    Service responsible for managing the automatches. Does matchmaking, updates
     statistics, and launches the games.
     """
 
@@ -532,6 +534,7 @@ class LadderService(Service):
 
             await self.launch_match(game, host, all_guests, make_game_options)
             self._logger.debug("Ladder game launched successfully %s", game)
+            metrics.matches.labels(queue.name, MatchLaunch.SUCCESSFUL).inc()
         except Exception as e:
             abandoning_players = []
             if isinstance(e, NotConnectedError):
@@ -539,6 +542,7 @@ class LadderService(Service):
                     "Ladder game failed to start! %s setup timed out",
                     game
                 )
+                metrics.matches.labels(queue.name, MatchLaunch.TIMED_OUT).inc()
                 abandoning_players = e.players
             elif isinstance(e, GameClosedError):
                 self._logger.info(
@@ -546,12 +550,14 @@ class LadderService(Service):
                     "Player %s closed their game instance",
                     game, e.player
                 )
+                metrics.matches.labels(queue.name, MatchLaunch.ABORTED_BY_PLAYER).inc()
                 abandoning_players = [e.player]
             else:
                 # All timeout errors should be transformed by the match starter.
                 assert not isinstance(e, asyncio.TimeoutError)
 
                 self._logger.exception("Ladder game failed to start %s", game)
+                metrics.matches.labels(queue.name, MatchLaunch.ERRORED).inc()
 
             if game:
                 await game.on_game_finish()
