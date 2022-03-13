@@ -33,18 +33,48 @@ Prometheus metric definitions
 
 from prometheus_client import Counter, Gauge, Histogram, Info
 
+
+class MatchLaunch:
+    SUCCESSFUL = &#34;successful&#34;
+    TIMED_OUT = &#34;timed out&#34;
+    ABORTED_BY_PLAYER = &#34;aborted by player&#34;
+    ERRORED = &#34;errored&#34;
+
+
 info = Info(&#34;build&#34;, &#34;Information collected on server start&#34;)
 
 # ==========
 # Matchmaker
 # ==========
-matches = Gauge(&#34;server_matchmaker_queue_matches&#34;, &#34;Number of matches made&#34;, [&#34;queue&#34;])
+matches = Counter(
+    &#34;server_matchmaker_queue_matches_total&#34;,
+    &#34;Number of matches made&#34;,
+    [&#34;queue&#34;, &#34;status&#34;]
+)
+
+matched_matchmaker_searches = Counter(
+    &#34;server_matchmaker_queue_searches_matched_total&#34;,
+    &#34;Search parties that got matched&#34;,
+    [&#34;queue&#34;, &#34;player_size&#34;]
+)
 
 match_quality = Histogram(
     &#34;server_matchmaker_queue_quality&#34;,
     &#34;Quality of matches made&#34;,
     [&#34;queue&#34;],
-    buckets=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95],
+    buckets=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0],
+)
+
+match_rating_imbalance = Gauge(
+    &#34;server_matchmaker_matches_imbalance&#34;,
+    &#34;Rating difference between the two teams&#34;,
+    [&#34;queue&#34;],
+)
+
+match_rating_variety = Gauge(
+    &#34;server_matchmaker_matches_rating_variety&#34;,
+    &#34;Maximum rating difference between two players in the game&#34;,
+    [&#34;queue&#34;],
 )
 
 unmatched_searches = Gauge(
@@ -53,11 +83,11 @@ unmatched_searches = Gauge(
     [&#34;queue&#34;],
 )
 
-matchmaker_searches = Histogram(
+matchmaker_search_duration = Histogram(
     &#34;server_matchmaker_queue_search_duration_seconds&#34;,
     &#34;Time spent searching for matches per search in seconds&#34;,
     [&#34;queue&#34;, &#34;status&#34;],
-    buckets=[30, 60, 120, 180, 240, 300, 600, 1800, 3600],
+    buckets=[30, 60, 120, 180, 240, 300, 420, 600, 900, 1800, 3600],
 )
 
 matchmaker_players = Gauge(
@@ -142,6 +172,12 @@ active_games = Gauge(
     [&#34;game_mode&#34;, &#34;game_state&#34;],
 )
 
+rated_games = Counter(
+    &#34;server_game_rated_games_total&#34;,
+    &#34;Number of rated games&#34;,
+    [&#34;leaderboard&#34;]
+)
+
 
 # ==============
 # Rating Service
@@ -158,6 +194,44 @@ rating_service_backlog = Gauge(
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="server.metrics.MatchLaunch"><code class="flex name class">
+<span>class <span class="ident">MatchLaunch</span></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchLaunch:
+    SUCCESSFUL = &#34;successful&#34;
+    TIMED_OUT = &#34;timed out&#34;
+    ABORTED_BY_PLAYER = &#34;aborted by player&#34;
+    ERRORED = &#34;errored&#34;</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.metrics.MatchLaunch.ABORTED_BY_PLAYER"><code class="name">var <span class="ident">ABORTED_BY_PLAYER</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.metrics.MatchLaunch.ERRORED"><code class="name">var <span class="ident">ERRORED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.metrics.MatchLaunch.SUCCESSFUL"><code class="name">var <span class="ident">SUCCESSFUL</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="server.metrics.MatchLaunch.TIMED_OUT"><code class="name">var <span class="ident">TIMED_OUT</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -169,6 +243,19 @@ rating_service_backlog = Gauge(
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="server" href="index.html">server</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="server.metrics.MatchLaunch" href="#server.metrics.MatchLaunch">MatchLaunch</a></code></h4>
+<ul class="">
+<li><code><a title="server.metrics.MatchLaunch.ABORTED_BY_PLAYER" href="#server.metrics.MatchLaunch.ABORTED_BY_PLAYER">ABORTED_BY_PLAYER</a></code></li>
+<li><code><a title="server.metrics.MatchLaunch.ERRORED" href="#server.metrics.MatchLaunch.ERRORED">ERRORED</a></code></li>
+<li><code><a title="server.metrics.MatchLaunch.SUCCESSFUL" href="#server.metrics.MatchLaunch.SUCCESSFUL">SUCCESSFUL</a></code></li>
+<li><code><a title="server.metrics.MatchLaunch.TIMED_OUT" href="#server.metrics.MatchLaunch.TIMED_OUT">TIMED_OUT</a></code></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
