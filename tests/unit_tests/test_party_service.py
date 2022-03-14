@@ -34,7 +34,7 @@ def get_members(party: PlayerParty):
     return set(member.player for member in party)
 
 
-async def test_get_party(party_service, player_factory):
+def test_get_party(party_service, player_factory):
     player = player_factory(player_id=1)
     party = party_service.get_party(player)
 
@@ -43,7 +43,19 @@ async def test_get_party(party_service, player_factory):
     assert party.owner is player
 
 
-async def test_invite_player_to_party(party_service, player_factory):
+def test_get_party_same_id(party_service, player_factory):
+    player1 = player_factory(player_id=1, state=PlayerState.IDLE)
+    player2 = player_factory(player_id=1, state=PlayerState.HOSTING)
+    party1 = party_service.get_party(player1)
+    party2 = party_service.get_party(player2)
+
+    assert party1.players[0] == player1
+    assert party1.players[0].state == PlayerState.IDLE
+    assert party2.players[0] == player2
+    assert party2.players[0].state == PlayerState.HOSTING
+
+
+def test_invite_player_to_party(party_service, player_factory):
     sender = player_factory(player_id=1)
     receiver = player_factory(player_id=2)
 
@@ -231,7 +243,7 @@ async def test_leave_party_then_join_another(party_service, player_factory):
     party_service.invite_player_to_party(player1, player3)
 
 
-async def test_set_factions(party_service, player_factory):
+def test_set_factions(party_service, player_factory):
     sender = player_factory(player_id=1)
     receiver = player_factory(player_id=2)
 
@@ -244,7 +256,7 @@ async def test_set_factions(party_service, player_factory):
     assert party_member.factions == [Faction.uef, Faction.seraphim]
 
 
-async def test_set_factions_creates_party(party_service, player_factory):
+def test_set_factions_creates_party(party_service, player_factory):
     # TODO: Is this really the behavior we want?
     player = player_factory(player_id=1)
 
@@ -252,7 +264,7 @@ async def test_set_factions_creates_party(party_service, player_factory):
     assert player in party_service.player_parties
 
 
-async def test_player_disconnected(party_service, player_factory):
+def test_player_disconnected(party_service, player_factory):
     sender = player_factory(player_id=1, lobby_connection_spec="auto")
     receiver = player_factory(player_id=2)
 

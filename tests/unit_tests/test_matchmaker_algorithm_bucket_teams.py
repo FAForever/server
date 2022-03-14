@@ -24,6 +24,7 @@ def player_factory(player_factory):
         deviation: int = 500,
         ladder_games: int = config.NEWBIE_MIN_GAMES + 1,
         name=None,
+        **kwargs
     ):
         """Make a player with the given ratings"""
         player = player_factory(
@@ -31,6 +32,7 @@ def player_factory(player_factory):
             ladder_games=ladder_games,
             login=name,
             lobby_connection_spec=None,
+            **kwargs
         )
         return player
 
@@ -203,7 +205,10 @@ def do_test_make_teams(teams, team_size, total_unmatched, unmatched_sizes):
 
 
 def test_distribute_pairs_1(player_factory):
-    players = [player_factory(1500, 500, name=f"p{i+1}") for i in range(4)]
+    players = [
+        player_factory(1500, 500, name=f"p{i+1}", player_id=i+1)
+        for i in range(4)
+    ]
     searches = [(Search([player]), 0) for player in players]
     p1, p2, p3, p4 = players
 
@@ -214,18 +219,24 @@ def test_distribute_pairs_1(player_factory):
 
 
 def test_distribute_pairs_2(player_factory):
-    players = [player_factory(1500, 500, name=f"p{i+1}") for i in range(8)]
+    players = [
+        player_factory(1500, 500, name=f"p{i+1}", player_id=i+1)
+        for i in range(8)
+    ]
     searches = [(Search([player]), 0) for player in players]
     p1, p2, p3, p4, p5, p6, p7, p8 = players
 
     grouped = [
         search.players for search in algorithm.bucket_teams._distribute(searches, 2)
     ]
-    assert grouped == [[p1, p4], [p2, p3], [p5, p8], [p6, p7]]
+    assert grouped == [[p1, p7], [p2, p8], [p3, p5], [p4, p6]]
 
 
 def test_distribute_triples(player_factory):
-    players = [player_factory(1500, 500, name=f"p{i+1}") for i in range(6)]
+    players = [
+        player_factory(1500, 500, name=f"p{i+1}", player_id=i+1)
+        for i in range(6)
+    ]
     searches = [(Search([player]), 0) for player in players]
     p1, p2, p3, p4, p5, p6 = players
 
@@ -233,7 +244,7 @@ def test_distribute_triples(player_factory):
         search.players for search in algorithm.bucket_teams._distribute(searches, 3)
     ]
 
-    assert grouped == [[p1, p3, p6], [p2, p4, p5]]
+    assert grouped == [[p1, p3, p6], [p2, p5, p4]]
 
 
 def test_BucketTeamMatchmaker_1v1(player_factory):

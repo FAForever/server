@@ -45,11 +45,12 @@ def test_faction():
     assert p.faction == Faction.aeon
 
 
-def test_equality_by_id():
-    p = Player("Sheeo", 42)
-    p2 = Player("RandomSheeo", 42)
-    assert p == p2
-    assert p.__hash__() == p2.__hash__()
+def test_object_equality():
+    p1 = Player("Arthur", 42)
+    p2 = Player("Arthur", 42)
+    assert p1 == p1
+    assert p1 != p2
+    assert hash(p1) == hash(p1)
 
 
 def test_weak_references():
