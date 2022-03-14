@@ -15,7 +15,7 @@ from server.db.models import (
 )
 from tests.utils import fast_forward
 
-from .conftest import connect_and_sign_in, read_until, read_until_command
+from .conftest import connect_and_sign_in, read_until_command
 from .test_game import (
     client_response,
     idle_response,
