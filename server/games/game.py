@@ -105,6 +105,7 @@ class Game:
         self.matchmaker_queue_id = matchmaker_queue_id
         self.state = GameState.INITIALIZING
         self._connections = {}
+        self._configured_player_ids: set[int] = set()
         self.enforce_rating = False
         self.gameOptions = {
             "FogOfWar": "explored",
@@ -185,7 +186,7 @@ class Game:
         """
         return [
             player for player in self._connections.keys()
-            if player.id in self._player_options
+            if player.id in self._configured_player_ids
         ]
 
     def _is_observer(self, player: Player) -> bool:
@@ -375,6 +376,7 @@ class Game:
         player = game_connection.player
         del self._connections[player]
         del player.game
+        self._configured_player_ids.discard(player.id)
 
         if self.state is GameState.LOBBY and player.id in self._player_options:
             del self._player_options[player.id]
@@ -574,6 +576,7 @@ class Game:
         """
         Set game-associative options for given player, by id
         """
+        self._configured_player_ids.add(player_id)
         self._player_options[player_id][key] = value
 
     def get_player_option(self, player_id: int, key: str) -> Optional[Any]:
@@ -907,6 +910,16 @@ class Game:
             "rating_min": self.displayed_rating_range.lo,
             "rating_max": self.displayed_rating_range.hi,
             "enforce_rating_range": self.enforce_rating_range,
+            "teams_ids": [
+                {
+                    "team_id": team,
+                    "player_ids": [
+                        player.id for player in connected_players
+                        if self.get_player_option(player.id, "Team") == team
+                    ]
+                }
+                for team in self.teams if team is not None
+            ],
             "teams": {
                 team: [
                     player.login for player in connected_players

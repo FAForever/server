@@ -11,8 +11,6 @@ from server.lobbyconnection import LobbyConnection
 from server.protocol import DisconnectedError, QDataStreamProtocol
 from tests.utils import exhaust_callbacks
 
-pytestmark = pytest.mark.asyncio
-
 
 class MockConnection:
     def __init__(self):

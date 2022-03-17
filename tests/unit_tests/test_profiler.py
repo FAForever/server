@@ -1,13 +1,9 @@
 import asyncio
 from unittest import mock
 
-import pytest
-
 from server.config import config
 from server.profiler import Profiler
 from tests.utils import fast_forward
-
-pytestmark = pytest.mark.asyncio
 
 
 @fast_forward(10)

@@ -2,9 +2,6 @@ import asyncio
 
 import pytest
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
-
 
 async def simulate_game(host, *guests, results=[]):
     await simulate_game_launch(host, *guests)

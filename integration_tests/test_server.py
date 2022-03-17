@@ -1,8 +1,3 @@
-import pytest
-
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
-
 
 async def test_ping(client_factory):
     client = await client_factory.add_client()

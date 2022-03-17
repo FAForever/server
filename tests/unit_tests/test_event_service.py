@@ -5,8 +5,6 @@ import pytest
 from server.api.api_accessor import ApiAccessor
 from server.stats.event_service import EventService
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture()
 def api_accessor():

@@ -173,7 +173,7 @@ class Player:
                 f"clan={self.clan}, game_count={dict(self.game_count)})")
 
     def __hash__(self) -> int:
-        return self.id
+        return hash(self.id)
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, type(self)) and self.id == other.id

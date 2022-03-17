@@ -211,7 +211,6 @@ def test_search_expansion_for_top_players(matchmaker_players):
     assert e1 == config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX
 
 
-@pytest.mark.asyncio
 async def test_search_await(matchmaker_players):
     p1, p2, _, _, _, _ = matchmaker_players
     s1, s2 = Search([p1]), Search([p2])
@@ -358,7 +357,6 @@ def test_queue_multiple_map_pools(
         assert queue.get_map_pool_for_rating(rating) is None
 
 
-@pytest.mark.asyncio
 async def test_queue_many(matchmaker_queue, player_factory):
     p1, p2, p3 = player_factory("Dostya", ladder_rating=(2200, 150)), \
         player_factory("Brackman", ladder_rating=(1500, 150)), \
@@ -381,7 +379,6 @@ async def test_queue_many(matchmaker_queue, player_factory):
     )
 
 
-@pytest.mark.asyncio
 async def test_queue_race(matchmaker_queue, player_factory):
     p1, p2, p3 = player_factory("Dostya", ladder_rating=(2300, 150)), \
         player_factory("Brackman", ladder_rating=(2200, 150)), \
@@ -404,7 +401,6 @@ async def test_queue_race(matchmaker_queue, player_factory):
     assert len(matchmaker_queue._queue) == 0
 
 
-@pytest.mark.asyncio
 async def test_queue_cancel(matchmaker_queue, matchmaker_players):
     s1, s2 = Search([matchmaker_players[1]]), Search([matchmaker_players[2]])
     matchmaker_queue.push(s1)
@@ -419,7 +415,6 @@ async def test_queue_cancel(matchmaker_queue, matchmaker_players):
     matchmaker_queue.on_match_found.assert_not_called()
 
 
-@pytest.mark.asyncio
 async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     _, p1, p2, p3, _ = matchmaker_players_all_match
     (s1, s2, s3) = (Search([p1]),
@@ -450,7 +445,6 @@ async def test_queue_mid_cancel(matchmaker_queue, matchmaker_players_all_match):
     )
 
 
-@pytest.mark.asyncio
 async def test_queue_cancel_while_being_matched_registers_failed_attempt(
     matchmaker_queue, matchmaker_players_all_match
 ):
@@ -471,7 +465,6 @@ async def test_queue_cancel_while_being_matched_registers_failed_attempt(
     matchmaker_queue.on_match_found.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_find_matches_synchronized(queue_factory):
     is_matching = False
 
@@ -502,7 +495,6 @@ async def test_find_matches_synchronized(queue_factory):
     ])
 
 
-@pytest.mark.asyncio
 async def test_queue_pop_communicates_failed_attempts(matchmaker_queue, player_factory):
     s1 = Search([player_factory("Player1", player_id=1, ladder_rating=(3000, 50))])
     s2 = Search([player_factory("Player2", player_id=2, ladder_rating=(1000, 50))])

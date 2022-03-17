@@ -19,8 +19,6 @@ from .test_game import (
     send_player_options
 )
 
-pytestmark = pytest.mark.asyncio
-
 
 async def connect_players(lobby_server):
     res = await asyncio.gather(*[
@@ -642,18 +640,18 @@ async def test_ratings_initialized_based_on_global_persisted(
     database
 ):
     # 2 ladder and global noobs
-    _, _, proto1 = await connect_and_sign_in(
+    player1_id, _, proto1 = await connect_and_sign_in(
         ("ladder1", "ladder1"), lobby_server
     )
-    _, _, proto2 = await connect_and_sign_in(
+    player2_id, _, proto2 = await connect_and_sign_in(
         ("ladder2", "ladder2"), lobby_server
     )
     # One global pro with no tmm games
-    test_id, _, proto3 = await connect_and_sign_in(
+    player3_id, _, proto3 = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
     # One tmm pro to balance the match
-    _, _, proto4 = await connect_and_sign_in(
+    player4_id, _, proto4 = await connect_and_sign_in(
         ("tmm2", "tmm2"), lobby_server
     )
     protos = [proto1, proto2, proto3, proto4]
@@ -674,7 +672,20 @@ async def test_ratings_initialized_based_on_global_persisted(
     msg1, msg2, msg3, msg4 = await asyncio.gather(*[
         matchmaking_client_response(proto) for proto in protos
     ])
-    # So it doesn't matter who is host
+    # Set up the game
+    for player_id, msg in (
+        (player1_id, msg1),
+        (player2_id, msg2),
+        (player3_id, msg3),
+        (player4_id, msg4)
+    ):
+        await send_player_options(
+            proto1,
+            (player_id, "StartSpot", msg["map_position"]),
+            (player_id, "Army", msg["map_position"]),
+            (player_id, "Faction", msg["faction"]),
+            (player_id, "Color", msg["map_position"]),
+        )
     await asyncio.gather(*[
         proto.send_message({
             "command": "GameState",
@@ -685,14 +696,14 @@ async def test_ratings_initialized_based_on_global_persisted(
 
     army1 = msg1["map_position"]
     army2 = msg2["map_position"]
-    test_army = msg3["map_position"]
+    army3 = msg3["map_position"]
     army4 = msg4["map_position"]
 
     for result in (
         [army1, "defeat -10"],
         [army2, "defeat -10"],
+        [army3, "victory 10"],
         [army4, "defeat -10"],
-        [test_army, "victory 10"],
     ):
         for proto in protos:
             await proto.send_message({
@@ -711,7 +722,7 @@ async def test_ratings_initialized_based_on_global_persisted(
     await read_until(
         proto3,
         lambda msg: msg["command"] == "player_info"
-        and any(player["id"] == test_id for player in msg["players"]),
+        and any(player["id"] == player3_id for player in msg["players"]),
         timeout=15
     )
 
@@ -721,7 +732,7 @@ async def test_ratings_initialized_based_on_global_persisted(
                 leaderboard.join(leaderboard_rating)
             ).where(and_(
                 leaderboard.c.technical_name == "tmm_2v2",
-                leaderboard_rating.c.login_id == test_id
+                leaderboard_rating.c.login_id == player3_id
             ))
         )
         row = result.fetchone()
@@ -734,7 +745,7 @@ async def test_ratings_initialized_based_on_global_persisted(
                 .join(game_player_stats)
             ).where(and_(
                 leaderboard.c.technical_name == "tmm_2v2",
-                game_player_stats.c.playerId == test_id
+                game_player_stats.c.playerId == player3_id
             ))
         )
         rows = result.fetchall()

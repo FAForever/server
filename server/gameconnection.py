@@ -517,6 +517,13 @@ class GameConnection(GpgNetServerProtocol):
         """
         pass
 
+    async def handle_launch_status(self, status: str):
+        """
+        Currently is sent with status `Rejected` if a matchmaker game failed
+        to start due to players using differing game settings.
+        """
+        pass
+
     async def handle_bottleneck(self, *args: list[Any]):
         """
         Not sure what this command means. This is currently unused but
@@ -612,25 +619,26 @@ class GameConnection(GpgNetServerProtocol):
 
 
 COMMAND_HANDLERS = {
-    "Desync":               GameConnection.handle_desync,
-    "GameState":            GameConnection.handle_game_state,
-    "GameOption":           GameConnection.handle_game_option,
-    "GameMods":             GameConnection.handle_game_mods,
-    "PlayerOption":         GameConnection.handle_player_option,
     "AIOption":             GameConnection.handle_ai_option,
-    "ClearSlot":            GameConnection.handle_clear_slot,
-    "GameResult":           GameConnection.handle_game_result,
-    "OperationComplete":    GameConnection.handle_operation_complete,
-    "JsonStats":            GameConnection.handle_json_stats,
-    "EnforceRating":        GameConnection.handle_enforce_rating,
-    "TeamkillReport":       GameConnection.handle_teamkill_report,
-    "TeamkillHappened":     GameConnection.handle_teamkill_happened,
-    "GameEnded":            GameConnection.handle_game_ended,
-    "Rehost":               GameConnection.handle_rehost,
     "Bottleneck":           GameConnection.handle_bottleneck,
     "BottleneckCleared":    GameConnection.handle_bottleneck_cleared,
-    "Disconnected":         GameConnection.handle_disconnected,
-    "IceMsg":               GameConnection.handle_ice_message,
     "Chat":                 GameConnection.handle_chat,
-    "GameFull":             GameConnection.handle_game_full
+    "ClearSlot":            GameConnection.handle_clear_slot,
+    "Desync":               GameConnection.handle_desync,
+    "Disconnected":         GameConnection.handle_disconnected,
+    "EnforceRating":        GameConnection.handle_enforce_rating,
+    "GameEnded":            GameConnection.handle_game_ended,
+    "GameFull":             GameConnection.handle_game_full,
+    "GameMods":             GameConnection.handle_game_mods,
+    "GameOption":           GameConnection.handle_game_option,
+    "GameResult":           GameConnection.handle_game_result,
+    "GameState":            GameConnection.handle_game_state,
+    "IceMsg":               GameConnection.handle_ice_message,
+    "JsonStats":            GameConnection.handle_json_stats,
+    "LaunchStatus":         GameConnection.handle_launch_status,
+    "OperationComplete":    GameConnection.handle_operation_complete,
+    "PlayerOption":         GameConnection.handle_player_option,
+    "Rehost":               GameConnection.handle_rehost,
+    "TeamkillHappened":     GameConnection.handle_teamkill_happened,
+    "TeamkillReport":       GameConnection.handle_teamkill_report,
 }

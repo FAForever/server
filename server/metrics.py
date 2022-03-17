@@ -4,18 +4,48 @@ Prometheus metric definitions
 
 from prometheus_client import Counter, Gauge, Histogram, Info
 
+
+class MatchLaunch:
+    SUCCESSFUL = "successful"
+    TIMED_OUT = "timed out"
+    ABORTED_BY_PLAYER = "aborted by player"
+    ERRORED = "errored"
+
+
 info = Info("build", "Information collected on server start")
 
 # ==========
 # Matchmaker
 # ==========
-matches = Gauge("server_matchmaker_queue_matches", "Number of matches made", ["queue"])
+matches = Counter(
+    "server_matchmaker_queue_matches_total",
+    "Number of matches made",
+    ["queue", "status"]
+)
+
+matched_matchmaker_searches = Counter(
+    "server_matchmaker_queue_searches_matched_total",
+    "Search parties that got matched",
+    ["queue", "player_size"]
+)
 
 match_quality = Histogram(
     "server_matchmaker_queue_quality",
     "Quality of matches made",
     ["queue"],
-    buckets=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95],
+    buckets=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0],
+)
+
+match_rating_imbalance = Gauge(
+    "server_matchmaker_matches_imbalance",
+    "Rating difference between the two teams",
+    ["queue"],
+)
+
+match_rating_variety = Gauge(
+    "server_matchmaker_matches_rating_variety",
+    "Maximum rating difference between two players in the game",
+    ["queue"],
 )
 
 unmatched_searches = Gauge(
@@ -24,11 +54,11 @@ unmatched_searches = Gauge(
     ["queue"],
 )
 
-matchmaker_searches = Histogram(
+matchmaker_search_duration = Histogram(
     "server_matchmaker_queue_search_duration_seconds",
     "Time spent searching for matches per search in seconds",
     ["queue", "status"],
-    buckets=[30, 60, 120, 180, 240, 300, 600, 1800, 3600],
+    buckets=[30, 60, 120, 180, 240, 300, 420, 600, 900, 1800, 3600],
 )
 
 matchmaker_players = Gauge(
@@ -111,6 +141,12 @@ active_games = Gauge(
     "Includes games in lobby, games currently running, and games that ended "
     "but are still in the game_service.",
     ["game_mode", "game_state"],
+)
+
+rated_games = Counter(
+    "server_game_rated_games_total",
+    "Number of rated games",
+    ["leaderboard"]
 )
 
 

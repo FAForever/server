@@ -8,7 +8,6 @@ from server.db import AsyncConnection
 from tests.utils import fast_forward
 
 
-@pytest.mark.asyncio
 @fast_forward(10)
 async def test_deadlock_retry_execute():
     mock_conn = mock.Mock()
@@ -24,7 +23,6 @@ async def test_deadlock_retry_execute():
     assert mock_conn._execute.call_count == 3
 
 
-@pytest.mark.asyncio
 @fast_forward(10)
 async def test_deadlock_retry_execute_success():
     call_count = 0

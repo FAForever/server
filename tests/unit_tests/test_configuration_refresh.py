@@ -7,8 +7,6 @@ from server import config
 from server.configuration_service import ConfigurationService
 from tests.utils import fast_forward
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture
 async def config_service(monkeypatch):

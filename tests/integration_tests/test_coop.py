@@ -9,9 +9,6 @@ from tests.utils import fast_forward
 from .conftest import connect_and_sign_in, read_until, read_until_command
 from .test_game import host_game, send_player_options
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
-
 
 @fast_forward(5)
 async def test_host_coop_game(lobby_server):

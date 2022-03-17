@@ -16,7 +16,6 @@ def oauth_session():
     )
 
 
-@pytest.mark.asyncio
 async def test_error_conditions(oauth_session):
     with pytest.raises(InsecureTransportError):
         await oauth_session.fetch_token()

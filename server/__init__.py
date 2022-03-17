@@ -107,6 +107,7 @@ from .gameconnection import GameConnection
 from .geoip_service import GeoIpService
 from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
+from .ladder_service.violation_service import ViolationService
 from .lobbyconnection import LobbyConnection
 from .message_queue_service import MessageQueueService
 from .oauth_service import OAuthService
@@ -137,6 +138,7 @@ __all__ = (
     "RatingService",
     "RatingService",
     "ServerInstance",
+    "ViolationService",
     "control",
     "game_service",
     "protocol",

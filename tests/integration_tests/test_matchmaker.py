@@ -1,6 +1,8 @@
 import asyncio
 import math
 import re
+from collections import deque
+from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy import select
@@ -20,15 +22,16 @@ from .test_game import (
     open_fa,
     queue_player_for_matchmaking,
     queue_players_for_matchmaking,
-    queue_temp_players_for_matchmaking
+    queue_temp_players_for_matchmaking,
+    read_until_launched,
+    send_player_options,
+    start_search
 )
-
-pytestmark = pytest.mark.asyncio
 
 
 @fast_forward(70)
 async def test_game_launch_message(lobby_server):
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     msg1 = await read_until_command(proto1, "game_launch")
     await open_fa(proto1)
@@ -62,7 +65,7 @@ async def test_game_launch_message(lobby_server):
 
 @fast_forward(70)
 async def test_game_launch_message_map_generator(lobby_server):
-    proto1, proto2 = await queue_players_for_matchmaking(
+    _, proto1, _, proto2 = await queue_players_for_matchmaking(
         lobby_server,
         queue_name="neroxis1v1"
     )
@@ -88,7 +91,7 @@ async def test_game_launch_message_game_options(lobby_server, tmp_user):
     )
 
     msgs = await asyncio.gather(*[
-        client_response(proto) for proto in protos
+        client_response(proto) for _, proto in protos
     ])
 
     for msg in msgs:
@@ -100,17 +103,33 @@ async def test_game_launch_message_game_options(lobby_server, tmp_user):
 
 @fast_forward(15)
 async def test_game_matchmaking_start(lobby_server, database):
-    host, guest = await queue_players_for_matchmaking(lobby_server)
+    host_id, host, guest_id, guest = await queue_players_for_matchmaking(lobby_server)
 
     # The player that queued last will be the host
     msg = await read_until_command(host, "game_launch")
+    game_id = msg["uid"]
     await open_fa(host)
+    await read_until_command(host, "game_info")
+    await send_player_options(
+        host,
+        (host_id, "StartSpot", msg["map_position"]),
+        (host_id, "Army", msg["map_position"]),
+        (host_id, "Faction", msg["faction"]),
+        (host_id, "Color", msg["map_position"]),
+    )
     await read_until_command(host, "game_info")
 
     await read_until_command(guest, "game_launch")
     await open_fa(guest)
     await read_until_command(host, "game_info")
     await read_until_command(guest, "game_info")
+    await send_player_options(
+        host,
+        (guest_id, "StartSpot", msg["map_position"]),
+        (guest_id, "Army", msg["map_position"]),
+        (guest_id, "Faction", msg["faction"]),
+        (guest_id, "Color", msg["map_position"]),
+    )
     await asyncio.sleep(0.5)
 
     await host.send_message({
@@ -120,12 +139,8 @@ async def test_game_matchmaking_start(lobby_server, database):
     })
 
     # Wait for db to be updated
-    await read_until(
-        host, lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
-    )
-    await read_until(
-        guest, lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
-    )
+    await read_until_launched(host, game_id)
+    await read_until_launched(guest, game_id)
 
     async with database.acquire() as conn:
         result = await conn.execute(select([
@@ -133,7 +148,7 @@ async def test_game_matchmaking_start(lobby_server, database):
             game_player_stats.c.color,
             game_player_stats.c.team,
             game_player_stats.c.place,
-        ]).where(game_player_stats.c.gameId == msg["uid"]))
+        ]).where(game_player_stats.c.gameId == game_id))
         rows = result.fetchall()
         assert len(rows) == 2
         for row in rows:
@@ -146,14 +161,14 @@ async def test_game_matchmaking_start(lobby_server, database):
             matchmaker_queue.c.technical_name,
         ]).select_from(
             matchmaker_queue_game.outerjoin(matchmaker_queue)
-        ).where(matchmaker_queue_game.c.game_stats_id == msg["uid"]))
+        ).where(matchmaker_queue_game.c.game_stats_id == game_id))
         row = result.fetchone()
         assert row.technical_name == "ladder1v1"
 
 
 @fast_forward(15)
 async def test_game_matchmaking_start_while_matched(lobby_server):
-    proto1, _ = await queue_players_for_matchmaking(lobby_server)
+    _, proto1, _, _ = await queue_players_for_matchmaking(lobby_server)
 
     # Trying to queue again after match was found should generate an error
     await proto1.send_message({
@@ -167,7 +182,7 @@ async def test_game_matchmaking_start_while_matched(lobby_server):
 
 @fast_forward(120)
 async def test_game_matchmaking_timeout(lobby_server, game_service):
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     msg1, msg2 = await asyncio.gather(
         idle_response(proto1, timeout=120),
@@ -218,7 +233,7 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
 
 @fast_forward(120)
 async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     msg1, msg2 = await asyncio.gather(
         client_response(proto1),
@@ -266,7 +281,7 @@ async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
 
 @fast_forward(15)
 async def test_game_matchmaking_cancel(lobby_server):
-    proto = await queue_player_for_matchmaking(
+    _, proto = await queue_player_for_matchmaking(
         ("ladder1", "ladder1"),
         lobby_server,
         queue_name="ladder1v1"
@@ -298,7 +313,7 @@ async def test_game_matchmaking_cancel(lobby_server):
 
 @fast_forward(50)
 async def test_game_matchmaking_disconnect(lobby_server):
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
     # One player disconnects before the game has launched
     await proto1.close()
 
@@ -309,7 +324,7 @@ async def test_game_matchmaking_disconnect(lobby_server):
 
 @fast_forward(130)
 async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     _, _ = await asyncio.gather(
         client_response(proto1),
@@ -348,52 +363,73 @@ async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
 @pytest.mark.flaky
 @fast_forward(200)
 async def test_anti_map_repetition(lobby_server):
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    played_maps: deque[str] = deque(maxlen=config.LADDER_ANTI_REPETITION_LIMIT)
 
-    # Play one game so that it exists in the players' history
-    msg1, _ = await asyncio.gather(
-        client_response(proto1),
-        client_response(proto2)
-    )
-    mapname = msg1["mapname"]
+    # Play a bunch of games and make sure we never get the same map in our
+    # recent history. Games end in a draw so that players keep matching.
+    for _ in range(20):
+        ret = await queue_players_for_matchmaking(lobby_server)
+        player1_id, proto1, player2_id, proto2 = ret
+        msg1, msg2 = await asyncio.gather(
+            client_response(proto1),
+            client_response(proto2)
+        )
+        mapname = msg1["mapname"]
+        game_id = msg1["uid"]
+        assert mapname not in played_maps
+        played_maps.append(mapname)
 
-    for proto in (proto1, proto2):
-        await proto.send_message({
-            "command": "GameState",
-            "target": "game",
-            "args": ["Launching"]
-        })
+        for player_id, msg in ((player1_id, msg1), (player2_id, msg2)):
+            await send_player_options(
+                proto1,
+                (player_id, "StartSpot", msg["map_position"]),
+                (player_id, "Army", msg["map_position"]),
+                (player_id, "Faction", msg["faction"]),
+                (player_id, "Color", msg["map_position"]),
+            )
 
-    for proto in (proto1, proto2):
-        for result in (
-            [1, "draw 0"],
-            [2, "draw 0"],
-        ):
+        for proto in (proto1, proto2):
             await proto.send_message({
-                "command": "GameResult",
+                "command": "GameState",
                 "target": "game",
-                "args": result
+                "args": ["Launching"]
             })
 
-    for proto in (proto1, proto2):
-        await proto.send_message({
-            "command": "GameEnded",
-            "target": "game",
-            "args": []
-        })
+        for proto in (proto1, proto2):
+            await read_until_launched(proto, game_id)
 
-    # Now match a whole bunch of times and make sure we never get the map that
-    # was played. We don't actually play the game out here, so the players
-    # game history should remain unchanged.
-    for _ in range(20):
+        for proto in (proto1, proto2):
+            for result in (
+                [1, "draw 0"],
+                [2, "draw 0"],
+            ):
+                await proto.send_message({
+                    "command": "GameResult",
+                    "target": "game",
+                    "args": result
+                })
+
+        for proto in (proto1, proto2):
+            await proto.send_message({
+                "command": "GameEnded",
+                "target": "game",
+                "args": []
+            })
+
         await asyncio.gather(
             proto1.close(),
             proto2.close()
         )
+        # TODO: The real problem here is that sometimes it takes a while for the
+        # on_connection_lost logic to be triggered for all services. In the mean
+        # time the player logs in with a second connection, but inherits the
+        # old party object (because of the __hash__, and __eq__ implementation)
+        # which references the old Player object that's still in the PLAYING
+        # state which prevents the new player from queuing.
 
-        proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
-        msg = await read_until_command(proto1, "game_launch")
-        assert msg["mapname"] != mapname
+        # Really, the old party object should be ignored and a new party should
+        # be created.
+        await asyncio.sleep(3)
 
 
 @fast_forward(10)
@@ -542,3 +578,105 @@ async def test_search_info_messages(lobby_server):
 
     with pytest.raises(asyncio.TimeoutError):
         await read_until_command(proto, "search_info", timeout=5)
+
+
+@fast_forward(360)
+async def test_failed_start_ban_guest(mocker, lobby_server):
+    mock_now = mocker.patch(
+        "server.ladder_service.violation_service.datetime_now",
+        return_value=datetime(2022, 2, 5, tzinfo=timezone.utc)
+    )
+    _, host, guest_id, guest = await queue_players_for_matchmaking(lobby_server)
+
+    # The player that queued last will be the host
+    async def launch_game_and_timeout_guest():
+        await read_until_command(host, "game_launch")
+        await open_fa(host)
+        await read_until_command(host, "game_info")
+
+        await read_until_command(guest, "game_launch")
+        await read_until_command(guest, "match_cancelled", timeout=120)
+        await read_until_command(host, "match_cancelled")
+        await host.send_message({
+            "command": "GameState",
+            "target": "game",
+            "args": ["Ended"]
+        })
+
+    await launch_game_and_timeout_guest()
+
+    # Second time searching there is no ban
+    await start_search(host)
+    await start_search(guest)
+    await launch_game_and_timeout_guest()
+
+    # Third time searching there is a short ban
+    await guest.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "queue_name": "ladder1v1"
+    })
+
+    msg = await read_until_command(guest, "search_timeout")
+    assert msg == {
+        "command": "search_timeout",
+        "timeouts": [{
+            "player": guest_id,
+            "expires_at": "2022-02-05T00:10:00+00:00"
+        }]
+    }
+
+    mock_now.return_value = datetime(2022, 2, 5, 0, 10, tzinfo=timezone.utc)
+    await asyncio.sleep(1)
+
+    # Third successful search
+    await start_search(host)
+    await start_search(guest)
+    await launch_game_and_timeout_guest()
+
+    # Fourth time searching there is a long ban
+    await guest.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "queue_name": "ladder1v1"
+    })
+
+    msg = await read_until_command(guest, "search_timeout")
+    assert msg == {
+        "command": "search_timeout",
+        "timeouts": [{
+            "player": guest_id,
+            "expires_at": "2022-02-05T00:40:00+00:00"
+        }]
+    }
+
+    mock_now.return_value = datetime(2022, 2, 5, 0, 40, tzinfo=timezone.utc)
+    await asyncio.sleep(1)
+
+    # Fourth successful search
+    await start_search(host)
+    await start_search(guest)
+    await launch_game_and_timeout_guest()
+
+    # Fifth time searching there is a long ban
+    await guest.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "queue_name": "ladder1v1"
+    })
+
+    msg = await read_until_command(guest, "search_timeout")
+    assert msg == {
+        "command": "search_timeout",
+        "timeouts": [{
+            "player": guest_id,
+            "expires_at": "2022-02-05T01:10:00+00:00"
+        }]
+    }
+
+    msg = await read_until_command(guest, "notice")
+    assert msg == {
+        "command": "notice",
+        "style": "info",
+        "text": "Player ladder2 is timed out for 30 minutes"
+    }

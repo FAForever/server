@@ -1,12 +1,8 @@
 import aiohttp
-import pytest
 
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
-
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
 
 
 def listify(obj: dict):
