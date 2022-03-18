@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import json
 import logging
 import time
@@ -901,7 +902,7 @@ class Game:
             "num_players": len(connected_players),
             "max_players": self.max_players,
             "launched_at": self.launched_at,
-            "hosted_at": self.hosted_at,
+            "hosted_at": datetime.fromtimestamp(self.hosted_at).isoformat(),
             "rating_type": self.rating_type,
             "rating_min": self.displayed_rating_range.lo,
             "rating_max": self.displayed_rating_range.hi,
