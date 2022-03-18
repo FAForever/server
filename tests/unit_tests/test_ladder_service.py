@@ -5,7 +5,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from server import LadderService, LobbyConnection
+from server import LadderService
 from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
 from server.games import LadderGame
 from server.games.ladder_game import GameClosedError
@@ -19,18 +19,19 @@ from tests.utils import autocontext, exhaust_callbacks, fast_forward
 
 from .strategies import st_players
 
-pytestmark = pytest.mark.asyncio
 
-
-async def test_queue_initialization(database, game_service):
-    ladder_service = LadderService(database, game_service)
+async def test_queue_initialization(database, game_service, violation_service):
+    ladder_service = LadderService(database, game_service, violation_service)
 
     def make_mock_queue(*args, **kwargs):
         queue = mock.create_autospec(MatchmakerQueue)
         queue.map_pools = {}
         return queue
 
-    with mock.patch("server.ladder_service.MatchmakerQueue", make_mock_queue):
+    with mock.patch(
+        "server.ladder_service.ladder_service.MatchmakerQueue",
+        make_mock_queue
+    ):
         for name in list(ladder_service.queues.keys()):
             ladder_service.queues[name] = make_mock_queue()
 
@@ -203,10 +204,24 @@ async def test_start_game_timeout(
 
     LadderGame.timeout_game.assert_called_once()
     LadderGame.on_game_finish.assert_called()
-    p1.lobby_connection.write.assert_called_once_with({
-        "command": "match_cancelled",
-        "game_id": 41956
-    })
+    p1_calls = [
+        mock.call({
+            "command": "match_cancelled",
+            "game_id": 41956
+        }),
+        mock.call({
+            "command": "search_violation",
+            "count": 1,
+            "time": mock.ANY
+        }),
+        mock.call({
+            "command": "notice",
+            "style": "info",
+            "text": "You have received 1 violations for failing to connect "
+            "to matchmaker games."
+        })
+    ]
+    p1.lobby_connection.write.assert_has_calls(p1_calls)
     p2.lobby_connection.write.assert_called_once_with({
         "command": "match_cancelled",
         "game_id": 41956
@@ -245,10 +260,24 @@ async def test_start_game_timeout_on_send(
 
     LadderGame.timeout_game.assert_called_once()
     LadderGame.on_game_finish.assert_called()
-    p1.lobby_connection.write.assert_called_once_with({
-        "command": "match_cancelled",
-        "game_id": 41956
-    })
+    p1_calls = [
+        mock.call({
+            "command": "match_cancelled",
+            "game_id": 41956
+        }),
+        mock.call({
+            "command": "search_violation",
+            "count": 1,
+            "time": mock.ANY
+        }),
+        mock.call({
+            "command": "notice",
+            "style": "info",
+            "text": "You have received 1 violations for failing to connect "
+            "to matchmaker games."
+        })
+    ]
+    p1.lobby_connection.write.assert_has_calls(p1_calls)
     p2.lobby_connection.write.assert_called_once_with({
         "command": "match_cancelled",
         "game_id": 41956

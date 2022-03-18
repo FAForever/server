@@ -21,8 +21,6 @@ from server.players import PlayerState
 from server.protocol import DisconnectedError
 from tests.utils import exhaust_callbacks
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture
 def real_game(event_loop, database, game_service, game_stats_service):

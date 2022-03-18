@@ -11,8 +11,6 @@ from server.asyncio_extensions import (
 )
 from tests.utils import fast_forward
 
-pytestmark = pytest.mark.asyncio
-
 
 class CustomError(Exception):
     pass

@@ -14,8 +14,6 @@ from server.protocol import (
     SimpleJsonProtocol
 )
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture(scope="session")
 def qstream_protocol_context():

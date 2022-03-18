@@ -240,9 +240,10 @@ class GameService(Service):
             result_dict,
         )
 
-        # TODO: Remove when rating service starts listening to message queue
         if (
             game_results.validity is ValidityState.VALID
             and game_results.rating_type is not None
         ):
+            metrics.rated_games.labels(game_results.rating_type).inc()
+            # TODO: Remove when rating service starts listening to message queue
             await self._rating_service.enqueue(result_dict)

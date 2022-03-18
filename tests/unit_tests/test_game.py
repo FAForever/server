@@ -28,11 +28,9 @@ from tests.unit_tests.conftest import (
 )
 from tests.utils import fast_forward
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture
-def game(database, game_service, game_stats_service):
+async def game(database, game_service, game_stats_service):
     return Game(42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL)
 
 
@@ -631,6 +629,16 @@ async def test_to_dict(game, player_factory):
         "rating_min": game.displayed_rating_range.lo,
         "rating_max": game.displayed_rating_range.hi,
         "enforce_rating_range": game.enforce_rating_range,
+        "teams_ids": [
+            {
+                "team_id": team,
+                "player_ids": [
+                    player.id for player in game.players
+                    if game.get_player_option(player.id, "Team") == team
+                ]
+            }
+            for team in game.teams if team is not None
+        ],
         "teams": {
             team: [
                 player.login for player in game.players

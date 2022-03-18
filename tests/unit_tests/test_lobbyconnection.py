@@ -26,8 +26,6 @@ from server.rating import InclusiveRange, RatingType
 from server.team_matchmaker import PlayerParty
 from server.types import Address
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture()
 def test_game_info():

@@ -23,8 +23,6 @@ from server.rating_service.rating_service import (
 )
 from server.rating_service.typedefs import GameRatingSummary
 
-pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture
 async def rating_service(database, player_service, message_queue_service):

@@ -3,6 +3,7 @@ import contextlib
 import inspect
 import itertools
 
+import pytest
 from hypothesis.internal.reflection import (
     define_function_signature,
     impersonate
@@ -21,6 +22,7 @@ def autocontext(*auto_args):
         argspec = new_argspec(original_argspec, auto_args)
 
         if asyncio.iscoroutinefunction(test):
+            @pytest.mark.asyncio
             @impersonate(test)
             @define_function_signature(test.__name__, test.__doc__, argspec)
             async def wrapped_test(*args, **kwargs):

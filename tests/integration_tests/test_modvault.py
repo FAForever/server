@@ -1,8 +1,4 @@
-import pytest
-
 from .conftest import connect_and_sign_in, read_until_command
-
-pytestmark = pytest.mark.asyncio
 
 
 async def test_modvault_start(lobby_server):

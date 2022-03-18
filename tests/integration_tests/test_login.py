@@ -10,9 +10,6 @@ from .conftest import (
     read_until_command
 )
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
-
 
 async def test_server_invalid_login(lobby_server):
     proto = await connect_client(lobby_server)

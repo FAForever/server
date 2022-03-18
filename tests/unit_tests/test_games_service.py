@@ -1,9 +1,5 @@
-import pytest
-
 from server.games import CustomGame, Game, LadderGame, VisibilityState
 from server.players import PlayerState
-
-pytestmark = pytest.mark.asyncio
 
 
 async def test_initialization(game_service):

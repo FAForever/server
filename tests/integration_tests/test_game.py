@@ -17,9 +17,6 @@ from .conftest import (
     read_until_command
 )
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
-
 
 async def host_game(
     proto: Protocol,
@@ -53,6 +50,19 @@ async def join_game(proto: Protocol, uid: int):
     await asyncio.sleep(0.5)
 
 
+async def read_until_launched(proto: Protocol, uid=None, timeout=60):
+    def predecate(cmd) -> bool:
+        if cmd["command"] != "game_info":
+            return False
+
+        if uid is not None and cmd["uid"] != uid:
+            return False
+
+        return cmd["launched_at"] is not None
+
+    await read_until(proto, predecate, timeout=timeout)
+
+
 async def client_response(proto, timeout=10):
     msg = await read_until_command(proto, "game_launch", timeout=timeout)
     await open_fa(proto)
@@ -84,16 +94,14 @@ async def open_fa(proto):
     })
 
 
-async def queue_player_for_matchmaking(user, lobby_server, queue_name):
-    _, _, proto = await connect_and_sign_in(user, lobby_server)
-    await read_until_command(proto, "game_info")
+async def start_search(proto, queue_name="ladder1v1"):
     await proto.send_message({
         "command": "game_matchmaking",
         "state": "start",
         "faction": "uef",
         "queue_name": queue_name
     })
-    await read_until_command(
+    return await read_until_command(
         proto,
         "search_info",
         state="start",
@@ -101,16 +109,22 @@ async def queue_player_for_matchmaking(user, lobby_server, queue_name):
         timeout=10
     )
 
-    return proto
+
+async def queue_player_for_matchmaking(user, lobby_server, queue_name="ladder1v1"):
+    player_id, _, proto = await connect_and_sign_in(user, lobby_server)
+    await read_until_command(proto, "game_info")
+    await start_search(proto, queue_name)
+
+    return player_id, proto
 
 
 async def queue_players_for_matchmaking(lobby_server, queue_name: str = "ladder1v1"):
-    proto1 = await queue_player_for_matchmaking(
+    player1_id, proto1 = await queue_player_for_matchmaking(
         ("ladder1", "ladder1"),
         lobby_server,
         queue_name
     )
-    _, _, proto2 = await connect_and_sign_in(
+    player2_id, _, proto2 = await connect_and_sign_in(
         ("ladder2", "ladder2"),
         lobby_server
     )
@@ -129,7 +143,7 @@ async def queue_players_for_matchmaking(lobby_server, queue_name: str = "ladder1
     await read_until_command(proto1, "match_found", timeout=30)
     await read_until_command(proto2, "match_found")
 
-    return proto1, proto2
+    return player1_id, proto1, player2_id, proto2
 
 
 async def queue_temp_players_for_matchmaking(
@@ -154,7 +168,7 @@ async def queue_temp_players_for_matchmaking(
     # If the players did not match, this will fail due to a timeout error
     await asyncio.gather(*[
         read_until_command(proto, "match_found", timeout=30)
-        for proto in protos
+        for _, proto in protos
     ])
 
     return protos
@@ -244,10 +258,7 @@ async def test_game_ended_rates_game(lobby_server):
         "args": ["Launching"]
     })
 
-    await read_until(
-        host_proto,
-        lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
-    )
+    await read_until_launched(host_proto, game_id)
     await host_proto.send_message({
         "target": "game",
         "command": "EnforceRating",
@@ -606,7 +617,7 @@ async def test_ladder_game_draw_bug(lobby_server, database):
     their own ACU in order to kill the enemy ACU and be awarded a victory
     instead of a draw.
     """
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    player1_id, proto1, player2_id, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     msg1, msg2 = await asyncio.gather(*[
         client_response(proto) for proto in (proto1, proto2)
@@ -615,6 +626,14 @@ async def test_ladder_game_draw_bug(lobby_server, database):
     army1 = msg1["map_position"]
     army2 = msg2["map_position"]
 
+    for player_id, msg in ((player1_id, msg1), (player2_id, msg2)):
+        await send_player_options(
+            proto1,
+            (player_id, "StartSpot", msg["map_position"]),
+            (player_id, "Army", msg["map_position"]),
+            (player_id, "Faction", msg["faction"]),
+            (player_id, "Color", msg["map_position"]),
+        )
     for proto in (proto1, proto2):
         await proto.send_message({
             "target": "game",
@@ -690,7 +709,7 @@ async def test_ladder_game_not_joinable(lobby_server):
     _, _, test_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
-    proto1, proto2 = await queue_players_for_matchmaking(lobby_server)
+    _, proto1, _, _ = await queue_players_for_matchmaking(lobby_server)
     await read_until_command(test_proto, "game_info")
 
     msg = await read_until_command(proto1, "game_launch")
@@ -837,8 +856,9 @@ async def test_gamestate_ended_modifies_player_list(lobby_server):
     )
 
     teams = {"1": ["test", "Rhiza"]}
-    await read_until_command(test_proto, "game_info", teams=teams)
-    await read_until_command(rhiza_proto, "game_info", teams=teams)
+    teams_ids = [{"team_id": 1, "player_ids": [test_id, rhiza_id]}]
+    await read_until_command(test_proto, "game_info", teams=teams, teams_ids=teams_ids)
+    await read_until_command(rhiza_proto, "game_info", teams=teams, teams_ids=teams_ids)
 
     # Launch game, trggers another game_info message
     await test_proto.send_message({
@@ -850,6 +870,7 @@ async def test_gamestate_ended_modifies_player_list(lobby_server):
     msg1 = await read_until_command(test_proto, "game_info")
     msg2 = await read_until_command(rhiza_proto, "game_info")
     assert msg1["teams"] == msg2["teams"] == {"1": ["test", "Rhiza"]}
+    assert msg1["teams_ids"] == msg2["teams_ids"] == [{"team_id": 1, "player_ids": [test_id, rhiza_id]}]
 
     # One player leaves
     await test_proto.send_message({
@@ -862,6 +883,7 @@ async def test_gamestate_ended_modifies_player_list(lobby_server):
     msg1 = await read_until_command(test_proto, "game_info")
     msg2 = await read_until_command(rhiza_proto, "game_info")
     assert msg1["teams"] == msg2["teams"] == {"1": ["Rhiza"]}
+    assert msg1["teams_ids"] == msg2["teams_ids"] == [{"team_id": 1, "player_ids": [rhiza_id]}]
 
 
 @pytest.mark.rabbitmq

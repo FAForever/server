@@ -1,5 +1,3 @@
-import pytest
-
 from server import ServerInstance
 from server.config import config
 from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
@@ -20,7 +18,6 @@ def has_player(msg, name):
     return False
 
 
-@pytest.mark.asyncio
 @fast_forward(100)
 async def test_multiple_contexts(
     database,
