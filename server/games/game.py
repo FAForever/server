@@ -10,6 +10,7 @@ from sqlalchemy import and_, bindparam
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.sql.functions import now as sql_now
 
+from server.timing import datetime_now
 from server.config import FFA_TEAM
 from server.db.models import (
     game_player_stats,
@@ -71,7 +72,7 @@ class Game:
         enforce_rating_range: bool = False,
         max_players: int = 12,
         setup_timeout: int = 60,
-        hosted_at: float = time.time()
+        hosted_at: datetime = datetime_now
     ):
         self._db = database
         self._results = GameResultReports(id_)
@@ -906,7 +907,7 @@ class Game:
             "num_players": len(connected_players),
             "max_players": self.max_players,
             "launched_at": self.launched_at,
-            "hosted_at": datetime.fromtimestamp(self.hosted_at).isoformat(),
+            "hosted_at": self.hosted_at,
             "rating_type": self.rating_type,
             "rating_min": self.displayed_rating_range.lo,
             "rating_max": self.displayed_rating_range.hi,
