@@ -10,7 +10,6 @@ from sqlalchemy import and_, bindparam
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.sql.functions import now as sql_now
 
-from server.timing import datetime_now
 from server.config import FFA_TEAM
 from server.db.models import (
     game_player_stats,
@@ -28,6 +27,7 @@ from server.games.game_results import (
     resolve_game
 )
 from server.rating import InclusiveRange, RatingType
+from server.timing import datetime_now
 
 from ..players import Player, PlayerState
 from .typedefs import (
