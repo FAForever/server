@@ -72,7 +72,7 @@ class Game:
         enforce_rating_range: bool = False,
         max_players: int = 12,
         setup_timeout: int = 60,
-        hosted_at: datetime = datetime_now
+        hosted_at: datetime = datetime_now()
     ):
         self._db = database
         self._results = GameResultReports(id_)
