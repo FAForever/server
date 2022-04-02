@@ -7,10 +7,10 @@ project to build on Windows using the WSL.*
 
 ## System dependencies
 You will need the following software installed on your system:
-- [Docker](https://docs.docker.com/engine/)
-- [Docker Compose](https://github.com/docker/compose)
-- [Python 3.9](https://www.python.org/downloads/)
-- [Pipenv](https://github.com/pypa/pipenv/)
+-   [Docker](https://docs.docker.com/engine/)
+-   [Docker Compose](https://github.com/docker/compose)
+-   [Python 3.9](https://www.python.org/downloads/)
+-   [Pipenv](https://github.com/pypa/pipenv/)
 
 Once you have Docker installed, make sure to add yourself to the `docker` group
 so that you can run docker commands without `sudo`. You will need to relogin
@@ -198,7 +198,6 @@ $ docker run --link faf-db:db -p 8001:8001 -e CONFIGURATION_FILE=<path> faf-serv
 
 You can find an example configuration file under
 [tests/data/test_conf.yaml](https://github.com/FAForever/server/blob/develop/tests/data/test_conf.yaml).
-
 
 ## Administrator/root privileges
 
