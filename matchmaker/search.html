@@ -393,7 +393,10 @@ class CombinedSearch(Search):
             s.cancel()
 
     def __str__(self):
-        return f&#34;CombinedSearch({&#39;,&#39;.join(str(s) for s in self.searches)})&#34;
+        return f&#34;CombinedSearch({&#39;, &#39;.join(str(s) for s in self.searches)})&#34;
+
+    def __repr__(self):
+        return f&#34;CombinedSearch({&#39;, &#39;.join(str(s) for s in self.searches)})&#34;
 
     def get_original_searches(self) -&gt; list[Search]:
         &#34;&#34;&#34;
@@ -519,7 +522,10 @@ class CombinedSearch(Search):
             s.cancel()
 
     def __str__(self):
-        return f&#34;CombinedSearch({&#39;,&#39;.join(str(s) for s in self.searches)})&#34;
+        return f&#34;CombinedSearch({&#39;, &#39;.join(str(s) for s in self.searches)})&#34;
+
+    def __repr__(self):
+        return f&#34;CombinedSearch({&#39;, &#39;.join(str(s) for s in self.searches)})&#34;
 
     def get_original_searches(self) -&gt; list[Search]:
         &#34;&#34;&#34;

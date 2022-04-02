@@ -199,13 +199,7 @@ class Player:
     def __repr__(self) -&gt; str:
         return (f&#34;Player(login={self.login}, session={self.session}, &#34;
                 f&#34;id={self.id}, ratings={dict(self.ratings)}, &#34;
-                f&#34;clan={self.clan}, game_count={dict(self.game_count)})&#34;)
-
-    def __hash__(self) -&gt; int:
-        return hash(self.id)
-
-    def __eq__(self, other: object) -&gt; bool:
-        return isinstance(other, type(self)) and self.id == other.id</code></pre>
+                f&#34;clan={self.clan}, game_count={dict(self.game_count)})&#34;)</code></pre>
 </details>
 </section>
 <section>
@@ -376,13 +370,7 @@ information about players.</p></div>
     def __repr__(self) -&gt; str:
         return (f&#34;Player(login={self.login}, session={self.session}, &#34;
                 f&#34;id={self.id}, ratings={dict(self.ratings)}, &#34;
-                f&#34;clan={self.clan}, game_count={dict(self.game_count)})&#34;)
-
-    def __hash__(self) -&gt; int:
-        return hash(self.id)
-
-    def __eq__(self, other: object) -&gt; bool:
-        return isinstance(other, type(self)) and self.id == other.id</code></pre>
+                f&#34;clan={self.clan}, game_count={dict(self.game_count)})&#34;)</code></pre>
 </details>
 <h3>Instance variables</h3>
 <dl>
