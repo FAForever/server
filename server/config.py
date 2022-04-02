@@ -158,7 +158,7 @@ class ConfigurationStore:
             old_value = getattr(self, key, None)
             if new_value != old_value:
                 self._logger.info(
-                    "New value for %s: %s -> %s", key, old_value, new_value
+                    "New value for %s: %r -> %r", key, old_value, new_value
                 )
             setattr(self, key, new_value)
 
