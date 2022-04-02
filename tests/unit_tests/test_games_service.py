@@ -1,3 +1,4 @@
+from server.db.models import game_stats
 from server.games import CustomGame, Game, LadderGame, VisibilityState
 from server.players import PlayerState
 
@@ -5,6 +6,16 @@ from server.players import PlayerState
 async def test_initialization(game_service):
     assert len(game_service._dirty_games) == 0
     assert game_service.pop_dirty_games() == set()
+
+
+async def test_initialize_game_counter_empty(game_service, database):
+    async with database.acquire() as conn:
+        await conn.execute("SET FOREIGN_KEY_CHECKS=0")
+        await conn.execute(game_stats.delete())
+
+    await game_service.initialise_game_counter()
+
+    assert game_service.game_id_counter == 0
 
 
 async def test_create_game(players, game_service):
