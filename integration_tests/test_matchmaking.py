@@ -97,6 +97,7 @@ async def test_ladder_1v1_game(client_factory):
         nonlocal is_host
         msg = await client.read_until_command("game_launch", timeout=30)
         await client.open_fa()
+        await client.configure_joining_player(client.player_id, 1)
 
         player_positions[client.player_name] = msg["map_position"]
         if is_host:
