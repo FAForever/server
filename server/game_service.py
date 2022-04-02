@@ -82,7 +82,8 @@ class GameService(Service):
             # doing LAST_UPDATE_ID to get the id number, and then doing an UPDATE when the actual
             # data to go into the row becomes available: we now only do a single insert for each
             # game, and don't end up with 800,000 junk rows in the database.
-            self.game_id_counter = await conn.scalar("SELECT COALESCE(MAX(id),0) FROM game_stats")
+            sql = "SELECT MAX(id) FROM game_stats"
+            self.game_id_counter = await conn.scalar(sql) or 0
 
     async def update_data(self):
         """
