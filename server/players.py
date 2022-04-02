@@ -171,9 +171,3 @@ class Player:
         return (f"Player(login={self.login}, session={self.session}, "
                 f"id={self.id}, ratings={dict(self.ratings)}, "
                 f"clan={self.clan}, game_count={dict(self.game_count)})")
-
-    def __hash__(self) -> int:
-        return hash(self.id)
-
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, type(self)) and self.id == other.id

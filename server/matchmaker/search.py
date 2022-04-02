@@ -365,7 +365,10 @@ class CombinedSearch(Search):
             s.cancel()
 
     def __str__(self):
-        return f"CombinedSearch({','.join(str(s) for s in self.searches)})"
+        return f"CombinedSearch({', '.join(str(s) for s in self.searches)})"
+
+    def __repr__(self):
+        return f"CombinedSearch({', '.join(str(s) for s in self.searches)})"
 
     def get_original_searches(self) -> list[Search]:
         """

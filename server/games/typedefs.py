@@ -176,7 +176,13 @@ class EndedGameInfo(NamedTuple):
                 {
                     "outcome": team_summary.outcome.name,
                     "player_ids": list(team_summary.player_ids),
-                    "army_results": [result._asdict() for result in team_summary.army_results],
+                    "army_results": [
+                        result._asdict()
+                        for result in sorted(
+                            team_summary.army_results,
+                            key=lambda x: x.player_id
+                        )
+                    ],
                 }
                 for team_summary in self.team_summaries
             ],

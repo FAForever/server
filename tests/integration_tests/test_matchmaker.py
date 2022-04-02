@@ -15,7 +15,7 @@ from server.db.models import (
 )
 from tests.utils import fast_forward
 
-from .conftest import connect_and_sign_in, read_until, read_until_command
+from .conftest import connect_and_sign_in, read_until_command
 from .test_game import (
     client_response,
     idle_response,
@@ -420,16 +420,6 @@ async def test_anti_map_repetition(lobby_server):
             proto1.close(),
             proto2.close()
         )
-        # TODO: The real problem here is that sometimes it takes a while for the
-        # on_connection_lost logic to be triggered for all services. In the mean
-        # time the player logs in with a second connection, but inherits the
-        # old party object (because of the __hash__, and __eq__ implementation)
-        # which references the old Player object that's still in the PLAYING
-        # state which prevents the new player from queuing.
-
-        # Really, the old party object should be ignored and a new party should
-        # be created.
-        await asyncio.sleep(3)
 
 
 @fast_forward(10)
