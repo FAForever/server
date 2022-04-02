@@ -1,12 +1,31 @@
 # FA Forever - Server
 ![Build Status](https://github.com/FAForever/server/actions/workflows/test.yml/badge.svg?branch=develop)
 [![codecov](https://codecov.io/gh/FAForever/server/branch/develop/graph/badge.svg?token=55ndgNQdUv)](https://codecov.io/gh/FAForever/server)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/ada42f6e09a341a88f3dae262a43e86e)](https://www.codacy.com/gh/FAForever/server/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=FAForever/server&amp;utm_campaign=Badge_Grade)
 [![docs](https://img.shields.io/badge/docs-latest-purple)](https://faforever.github.io/server/)
 [![license](https://img.shields.io/badge/license-GPLv3-blue)](license.txt)
 ![python](https://img.shields.io/badge/python-3.9-3776AB)
 
 This is the source code for the
 [Forged Alliance Forever](https://www.faforever.com/) lobby server.
+
+## Overview
+The lobby server is the piece of software sitting at the very core of FAF,
+enabling players to discover and play games with each other. It is a stateful
+TCP server written in `asyncio` and implements a custom TCP protocol for
+communicating with [clients](https://github.com/FAForever/downlords-faf-client).
+The main responsibilities of the lobby server are:
+-   To manage the lifecycle of joining games
+
+    *(Note that Forged Alliance uses a distributed peer-to-peer networking model,
+    so the simulation happens entirely on the player's machines, and **NOT** on
+    any server)*
+
+-   To facilitate initial connection establishment when players join a game
+
+-   To maintain a list of online players
+
+-   To perform rating calculations and updates
 
 ## Support development
 
@@ -21,146 +40,36 @@ Before opening a pull request, please take a moment to look over the
 [contributing guidelines](CONTRIBUTING.md).
 
 ## Setting up for development
+For detailed instructions see the [development guide](DEVELOPMENT.md).
 
-First, follow the instructions on the [faf-db repo](https://github.com/FAForever/db)
-to setup an instance of the database. Then install the pinned versions of the
-dependencies (and dev dependencies) to a virtual environment using pipenv by
-running:
+### Quickstart
+*This section assumes you have the necessary system dependencies installed. For
+a list of what those are see the [development guide](DEVELOPMENT.md).*
 
-    $ pipenv sync --dev
+1.  Start up an instance of the FAF database. This is required to run the unit tests
+and development server.
+```
+$ git clone https://github.com/FAForever/faf-stack.git
+$ cd faf-stack
+$ ./scripts/init-db.sh
+```
 
-You can then start the server in development mode with:
+2.  Install the project dependencies with pipenv
+```
+$ pipenv sync --dev
+```
 
-    $ pipenv run devserver
-
-You will probably see a number of errors and warnings show up in the log which
-is completely normal for a development setup. If you see any of the following,
-they can be safely ignored:
-
-    WARNING  Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers.
-    WARNING  GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!
-    WARNING  Unable to connect to RabbitMQ. Is it running?
-    ConnectionError: [Errno 111] Connect call failed ('127.0.0.1', 5672)
-    WARNING  Not connected to RabbitMQ, unable to declare exchange.
-    ERROR    Failure updating NickServ password for test
-
-**Note:** *The pipenv scripts are NOT meant for production deployment. For
-deployment use `faf-stack`.*
-
-### Administrator/root privileges
-
-On Linux, root privileges are generally not needed. If you find that a command
-will not work unless run as root, it probably means that you have a file
-permission issue that you should fix. For instance if you ran the server as a
-docker container, it may have created certain files (like the GeoIP database) as
-root, and you should `chown` them or delete them before running the unit tests
-or the devserver.
-
-On Windows you may also find that some issues go away when running as
-administrator. This may be because you have set up your tools to install for the
-whole system instead of just the current user. For example if you have issues
-with pipenv you can try installing it with the `--user` option:
-
-    $ pip install --user pipenv
-
-## Running the tests
-
-The unit tests are written using [pytest](https://docs.pytest.org/en/latest) and
-can be run through the pipenv shortcut:
-
-    $ pipenv run tests
-
-Any arguments passed to the shortcut will be forwarded to pytest, so the usual
-pytest options can be used for test selection. For instance, to run all unit
-tests containing the keyword "ladder":
-
-    $ pipenv run tests tests/unit_tests -k ladder
-
-If you are running `pytest` by some other means (e.g. with PyCharm) you may need
-to provide the database configuration as command line arguments:
-
-    --mysql_host=MYSQL_HOST
-                          mysql host to use for test database
-    --mysql_username=MYSQL_USERNAME
-                          mysql username to use for test database
-    --mysql_password=MYSQL_PASSWORD
-                          mysql password to use for test database
-    --mysql_database=MYSQL_DATABASE
-                          mysql database to use for tests
-    --mysql_port=MYSQL_PORT
-                          mysql port to use for tests
-
-For further information on available command line arguments run `pytest --help`
-or see the official
-[pytest documentation](https://docs.pytest.org/en/latest/usage.html).
-
-There are also some integration tests which simulate real traffic to the test
-server.
-
-    $ pipenv run integration
-
-Some of them may fail depending on the configuration deployed on the test
-server.
-
-## Other tools
-
-There are some pre-commit hooks that can fix basic formatting issues for you
-to make the review process go smoother. You can install them by running:
-
-    $ python3 -m pip install pre-commit
-    $ pre-commit install
-
-(optional) Run against all the files (usually `pre-commit` will only run on the
-changed files during git hooks):
-
-    $ pre-commit run --all-files
-
-You can check for possible unused code with `vulture` by running:
-
-    $ pipenv run vulture
-
-It tends to produce a lot of false positives, but it can provide a good place
-to start.
-
-## Building with Docker
-
-The recommended way to deploy the server is with
-[faf-stack](https://github.com/FAForever/faf-stack). However, you can also
-build the docker image manually.
-
-Follow the steps to get [faf-db](https://github.com/FAForever/db) setup, the
-following assumes the db container is called `faf-db` and the database is called
-`faf` and the root password is `banana`.
-
-Then use Docker to build and run the server as follows
-
-    $ docker build -t faf-server .
-    $ docker run --link faf-db:db -p 8001:8001 -d faf-server
-
-Check if the container is running with
-
-    $ docker ps
-
-If you cannot find `faf-server` in the list, run `docker run` without `-d` to
-see what happens.
-
-### Configuration
-
-If you have for example a different root password or database name than the default
-`DB_PASSWORD` and `DB_NAME` entries in
-[config.py](https://github.com/FAForever/server/blob/develop/server/config.py),
-you should provide a custom configuration file.
-This file will be used for all variables that it defines
-while the default values of `config.py` still apply for those it doesn't.
-To use your custom configuration file, pass its location as an environment
-variable to docker:
-
-    $ docker run --link faf-db:db -p 8001:8001 -e CONFIGURATION_FILE=<path> faf-server
-
-You can find an example configuration file under
-[tests/data/test_conf.yaml](https://github.com/FAForever/server/blob/develop/tests/data/test_conf.yaml).
+3.  Run the unit tests or development server
+```
+$ pipenv run tests
+$ pipenv run devserver
+```
 
 # Network Protocol
+**NOTE: This section of the README is outdated. The QString based message
+format has been deprectaed and will be replaced by a UTF-8 json + newline
+format in version 2. Many commands are missing from here. For a more complete
+list see [https://faforever.github.io/server/](https://faforever.github.io/server/).**
 
 The protocol is mainly JSON-encoded maps, containing at minimum a `command` key,
 representing the command to dispatch.
@@ -168,48 +77,49 @@ representing the command to dispatch.
 The wire format uses [QDataStream](http://doc.qt.io/qt-5/qdatastream.html) (UTF-16, BigEndian).
 
 For the lobbyconnection, each message is of the form:
-
-    ACTION: QString
-
+```
+ACTION: QString
+```
 With most carrying a footer containing:
-
-    LOGIN: QString
-    SESSION: QString
+```
+LOGIN: QString
+SESSION: QString
+```
 
 ## Incoming Packages
 
 ##### Mod Vault
 
-* `{command: modvault, type: start}`: show the last 100 mods
-* `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
-* `{command: modvault, type: download, uid: <uid>}`: notify server about a download (for download counter), does not start the download
+-   (deprecated) `{command: modvault, type: start}`: show the last 100 mods
+-   (deprecated) `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
+-   (deprecated) `{command: modvault, type: download, uid: <uid>}`: notify server about a download (for download counter), does not start the download
 
 ##### Social
-* `{command: social_add, friend|foe: <player_id>}`: Add a friend or foe
-* `{command: social_remove, friend|foe: <player_id>}`: Remove a friend or foe
+-   `{command: social_add, friend|foe: <player_id>}`: Add a friend or foe
+-   `{command: social_remove, friend|foe: <player_id>}`: Remove a friend or foe
 
 ##### Avatar
-* `{command: avatar, action: list_avatar}`: Send a list of available avatars
-* `{command: avatar, action: select, avatar: <avatar_url>}`: Select a valid avatar for the player
+-   `{command: avatar, action: list_avatar}`: Send a list of available avatars
+-   `{command: avatar, action: select, avatar: <avatar_url>}`: Select a valid avatar for the player
 
 ##### ICE Servers
 
-* `{command: ice_servers}`: Send ICE TURN/STUN servers - Returns: `{command: ice_servers, : <ice servers>, date_created: <date token was created in ISO 8601 format>, ttl: <ttl in seconds>}`
+-   `{command: ice_servers}`: Send ICE TURN/STUN servers - Returns: `{command: ice_servers, : <ice servers>, date_created: <date token was created in ISO 8601 format>, ttl: <ttl in seconds>}`
 
 #### Parties
-* `{command: invite_to_party, recipient_id: <...>}`: Invite this player to a party
-* `{command: accept_party_invite, sender_id: <...>}`: Accept the party invite from the given player
-* `{command: kick_player_from_party, kicked_player_id: <...>}`: Kick a player from a party you own
-* `{command: leave_party}`: Leave the party you are currently in
+-   `{command: invite_to_party, recipient_id: <...>}`: Invite this player to a party
+-   `{command: accept_party_invite, sender_id: <...>}`: Accept the party invite from the given player
+-   `{command: kick_player_from_party, kicked_player_id: <...>}`: Kick a player from a party you own
+-   `{command: leave_party}`: Leave the party you are currently in
 
 ##### Misc
 
-* [deprecated] `{command: ask_session}`: response with a welcome command and a valid session (can be delayed)
-* `{command: hello, version: <...>, login: <...>, password: <...>, unique_id: <...>, (session: <...>)}`: Log in to the server
+-   (deprecated) `{command: ask_session}`: response with a welcome command and a valid session (can be delayed)
+-   `{command: hello, version: <...>, login: <...>, password: <...>, unique_id: <...>, (session: <...>)}`: Log in to the server
 
 ##  Stream (Deprecated)
 
 The stream API is deprecated, but currently the following message types are supported:
 
-* `PING`: response with a `PONG`
-* `PONG`: internal state changed to ponged
+-   `PING`: response with a `PONG`
+-   `PONG`: internal state changed to ponged
