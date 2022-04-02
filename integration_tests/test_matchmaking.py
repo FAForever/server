@@ -50,7 +50,7 @@ async def test_ladder_1v1_match(client_factory):
         "password_protected": False,
         "state": "closed",
         "game_type": "matchmaker",
-        "featured_mod": "ladder1v1",
+        "featured_mod": "faf",
         "sim_mods": {},
         "num_players": 0,
         "max_players": 2,
@@ -59,7 +59,8 @@ async def test_ladder_1v1_match(client_factory):
         "rating_min": None,
         "rating_max": None,
         "enforce_rating_range": False,
-        "teams": {}
+        "teams": {},
+        "teams_ids": []
     }
 
 
@@ -96,6 +97,7 @@ async def test_ladder_1v1_game(client_factory):
         nonlocal is_host
         msg = await client.read_until_command("game_launch", timeout=30)
         await client.open_fa()
+        await client.configure_joining_player(client.player_id, 1)
 
         player_positions[client.player_name] = msg["map_position"]
         if is_host:
