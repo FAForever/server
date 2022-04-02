@@ -50,9 +50,14 @@ class ConfigurationService(Service):
 
     async def _worker_loop(self) -&gt; None:
         while True:
-            self._logger.debug(&#34;Refreshing configuration variables&#34;)
-            self._store.refresh()
-            await asyncio.sleep(self._store.CONFIGURATION_REFRESH_TIME)
+            try:
+                self._logger.debug(&#34;Refreshing configuration variables&#34;)
+                self._store.refresh()
+                await asyncio.sleep(self._store.CONFIGURATION_REFRESH_TIME)
+            except Exception:
+                self._logger.exception(&#34;Error while refreshing config&#34;)
+                # To prevent a busy loop
+                await asyncio.sleep(60)
 
     async def shutdown(self) -&gt; None:
         if self._task is not None:
@@ -92,9 +97,14 @@ class ConfigurationService(Service):
 
     async def _worker_loop(self) -&gt; None:
         while True:
-            self._logger.debug(&#34;Refreshing configuration variables&#34;)
-            self._store.refresh()
-            await asyncio.sleep(self._store.CONFIGURATION_REFRESH_TIME)
+            try:
+                self._logger.debug(&#34;Refreshing configuration variables&#34;)
+                self._store.refresh()
+                await asyncio.sleep(self._store.CONFIGURATION_REFRESH_TIME)
+            except Exception:
+                self._logger.exception(&#34;Error while refreshing config&#34;)
+                # To prevent a busy loop
+                await asyncio.sleep(60)
 
     async def shutdown(self) -&gt; None:
         if self._task is not None:

@@ -46,6 +46,7 @@ TRACE = 5
 logging.addLevelName(TRACE, &#34;TRACE&#34;)
 logging.getLogger(&#34;aiomeasures&#34;).setLevel(logging.INFO)
 logging.getLogger(&#34;aio_pika&#34;).setLevel(logging.INFO)
+logging.getLogger(&#34;aiormq&#34;).setLevel(logging.INFO)
 
 # Constants
 FFA_TEAM = 1
@@ -187,7 +188,7 @@ class ConfigurationStore:
             old_value = getattr(self, key, None)
             if new_value != old_value:
                 self._logger.info(
-                    &#34;New value for %s: %s -&gt; %s&#34;, key, old_value, new_value
+                    &#34;New value for %s: %r -&gt; %r&#34;, key, old_value, new_value
                 )
             setattr(self, key, new_value)
 
@@ -380,7 +381,7 @@ class ConfigurationStore:
             old_value = getattr(self, key, None)
             if new_value != old_value:
                 self._logger.info(
-                    &#34;New value for %s: %s -&gt; %s&#34;, key, old_value, new_value
+                    &#34;New value for %s: %r -&gt; %r&#34;, key, old_value, new_value
                 )
             setattr(self, key, new_value)
 
@@ -435,7 +436,7 @@ class ConfigurationStore:
         old_value = getattr(self, key, None)
         if new_value != old_value:
             self._logger.info(
-                &#34;New value for %s: %s -&gt; %s&#34;, key, old_value, new_value
+                &#34;New value for %s: %r -&gt; %r&#34;, key, old_value, new_value
             )
         setattr(self, key, new_value)
 
