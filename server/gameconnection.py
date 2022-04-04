@@ -312,7 +312,9 @@ class GameConnection(GpgNetServerProtocol):
             )
             return
 
-        if self.game.validity != ValidityState.COOP_NOT_RANKED:
+        validity = self.game.get_validity()
+        if validity is not ValidityState.COOP_NOT_RANKED:
+            self._logger.info("Game was not valid: %s", validity)
             return
 
         secondary, delta = secondary, str(delta)

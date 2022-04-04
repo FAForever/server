@@ -226,7 +226,7 @@ async def ugame(database, players):
 async def coop_game(database, players):
     global COOP_GAME_UID
     game = make_game(database, COOP_GAME_UID, players, game_type=CoopGame)
-    game.validity = ValidityState.COOP_NOT_RANKED
+    game.get_validity.return_value = ValidityState.COOP_NOT_RANKED
     game.leaderboard_saved = False
     COOP_GAME_UID += 1
     return game

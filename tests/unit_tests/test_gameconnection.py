@@ -402,35 +402,20 @@ async def test_cannot_parse_game_results(
         assert "Invalid result" in caplog.messages[0]
 
 
-async def test_handle_action_GameOption(
-    game: Game,
-    game_connection: GameConnection
-):
-    game.game_options = {"AIReplacement": "Off"}
+# TODO: Convert this to test for game.set_game_option
+async def test_handle_action_GameOption(game, game_connection: GameConnection):
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
-    assert game.game_options["Victory"] == Victory.SANDBOX
-    await game_connection.handle_action("GameOption", ["AIReplacement", "On"])
-    assert game.game_options["AIReplacement"] == "On"
-    await game_connection.handle_action("GameOption", ["Slots", "7"])
-    assert game.max_players == 7
-    # I don't know what these paths actually look like
-    await game_connection.handle_action("GameOption", ["ScenarioFile", "C:\\Maps\\Some_Map"])
-    assert game.map_file_path == "maps/some_map.zip"
-    await game_connection.handle_action("GameOption", ["Title", "All welcome"])
-    assert game.name == "All welcome"
-    await game_connection.handle_action("GameOption", ["ArbitraryKey", "ArbitraryValue"])
-    assert game.game_options["ArbitraryKey"] == "ArbitraryValue"
+    game.set_game_option.assert_called_once_with("Victory", "sandbox")
 
 
 async def test_handle_action_GameOption_not_host(
-    game: Game,
+    game,
     game_connection: GameConnection,
     players
 ):
     game_connection.player = players.joining
-    game.game_options = {"Victory": "asdf"}
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
-    assert game.game_options == {"Victory": "asdf"}
+    game.set_game_option.assert_not_called()
 
 
 async def test_json_stats(
@@ -596,7 +581,7 @@ async def test_handle_action_OperationComplete_invalid(
     coop_game: CoopGame, game_connection: GameConnection, database
 ):
     coop_game.map_file_path = "maps/prothyon16.v0005.zip"
-    coop_game.validity = ValidityState.OTHER_UNRANK
+    coop_game.get_validity.return_value = ValidityState.OTHER_UNRANK
     game_connection.game = coop_game
     time_taken = "09:08:07.654321"
 

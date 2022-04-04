@@ -128,7 +128,7 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
 
     await laddergame.game_service._rating_service._join_rating_queue()
 
-    assert laddergame.validity is ValidityState.VALID
+    assert laddergame.get_validity() is ValidityState.VALID
     assert players[0].ratings[RatingType.LADDER_1V1][0] > player_1_old_mean
     assert players[1].ratings[RatingType.LADDER_1V1][0] < player_2_old_mean
 
@@ -179,7 +179,7 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
 
     await laddergame.game_service._rating_service._join_rating_queue()
 
-    assert laddergame.validity is ValidityState.VALID
+    assert laddergame.get_validity() is ValidityState.VALID
 
     async with database.acquire() as conn:
         result_after = list(await conn.execute(str(compiled)))

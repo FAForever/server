@@ -15,6 +15,7 @@ aio_pika = "~=8.2"
 aiocron = "*"
 aiohttp = "*"
 aiomysql = {git = "https://github.com/aio-libs/aiomysql"}
+cachetools = "*"
 docopt = "*"
 humanize = ">=2.6.0"
 maxminddb = "*"

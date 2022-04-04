@@ -7,6 +7,7 @@ from collections import Counter
 from typing import Optional, Union, ValuesView
 
 import aiocron
+from cachetools import LRUCache
 from sqlalchemy import select
 
 from server.config import config
@@ -30,6 +31,7 @@ from .matchmaker import MatchmakerQueue
 from .message_queue_service import MessageQueueService
 from .players import Player
 from .rating_service import RatingService
+from .types import MapInfo
 
 
 @with_logger
@@ -57,11 +59,14 @@ class GameService(Service):
         self._allow_new_games = False
         self._drain_event = None
 
-        # Populated below in really_update_static_ish_data.
+        # Populated below in update_data.
         self.featured_mods = dict()
 
         # A set of mod ids that are allowed in ranked games
         self.ranked_mods: set[str] = set()
+
+        # A cache of map_version info needed by Game
+        self.map_info_cache = LRUCache(maxsize=128)
 
         # The set of active games
         self._games: dict[int, Game] = dict()
@@ -119,6 +124,30 @@ class GameService(Service):
 
             # Turn resultset into a list of uids
             self.ranked_mods = {row.uid for row in result}
+
+    async def get_map_info(self, filename: str) -> Optional[MapInfo]:
+        filename = filename.lower()
+        map_info = self.map_info_cache.get(filename)
+        if map_info is not None:
+            return map_info
+
+        async with self._db.acquire() as conn:
+            result = await conn.execute(
+                "SELECT id, filename, ranked FROM map_version "
+                "WHERE lower(filename) = lower(:filename)",
+                filename=filename
+            )
+            row = result.fetchone()
+            if not row:
+                return None
+
+            map_info = MapInfo(
+                id=row.id,
+                filename=row.filename,
+                ranked=row.ranked
+            )
+            self.map_info_cache[filename] = map_info
+            return map_info
 
     def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
         if isinstance(obj, Game):

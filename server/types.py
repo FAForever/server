@@ -30,6 +30,14 @@ class GameLaunchOptions(NamedTuple):
     game_options: Optional[dict[str, Any]] = None
 
 
+class MapInfo(NamedTuple):
+    # map_version.id
+    id: int
+    filename: str
+    ranked: bool
+
+
+# The below classes are used for choosing maps from a map pool
 class MapPoolMap(Protocol):
     id: int
     weight: int
@@ -38,6 +46,7 @@ class MapPoolMap(Protocol):
 
 
 class Map(NamedTuple):
+    # map_version.id
     id: int
     name: str
     path: str
