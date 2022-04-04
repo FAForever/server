@@ -463,10 +463,6 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         elif state == "Lobby":
-            # TODO: Do we still need to schedule with `ensure_future`?
-            #
-            # We do not yield from the task, since we
-            # need to keep processing other commands while it runs
             await self._handle_lobby_state()
 
         elif state == "Launching":

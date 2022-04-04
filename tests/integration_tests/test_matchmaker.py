@@ -101,7 +101,7 @@ async def test_game_launch_message_game_options(lobby_server, tmp_user):
 
 
 @pytest.mark.flaky
-@fast_forward(15)
+@fast_forward(60)
 async def test_game_matchmaking_start(lobby_server, database):
     host_id, host, guest_id, guest = await queue_players_for_matchmaking(lobby_server)
 
@@ -121,8 +121,6 @@ async def test_game_matchmaking_start(lobby_server, database):
 
     await read_until_command(guest, "game_launch")
     await open_fa(guest)
-    await read_until_command(host, "game_info")
-    await read_until_command(guest, "game_info")
     await send_player_options(
         host,
         (guest_id, "StartSpot", msg["map_position"]),
@@ -166,7 +164,7 @@ async def test_game_matchmaking_start(lobby_server, database):
         assert row.technical_name == "ladder1v1"
 
 
-@fast_forward(15)
+@fast_forward(60)
 async def test_game_matchmaking_start_while_matched(lobby_server):
     _, proto1, _, _ = await queue_players_for_matchmaking(lobby_server)
 
@@ -279,7 +277,7 @@ async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
         await read_until_command(proto2, "search_info", state="start", timeout=5)
 
 
-@fast_forward(15)
+@fast_forward(60)
 async def test_game_matchmaking_cancel(lobby_server):
     _, proto = await queue_player_for_matchmaking(
         ("ladder1", "ladder1"),
@@ -423,7 +421,7 @@ async def test_anti_map_repetition(lobby_server):
         )
 
 
-@fast_forward(10)
+@fast_forward(60)
 async def test_matchmaker_info_message(lobby_server, mocker):
     mocker.patch("server.matchmaker.pop_timer.time", return_value=1_562_000_000)
     mocker.patch(
@@ -454,7 +452,7 @@ async def test_matchmaker_info_message(lobby_server, mocker):
         assert queue["boundary_75s"] == []
 
 
-@fast_forward(10)
+@fast_forward(60)
 async def test_command_matchmaker_info(lobby_server, mocker):
     mocker.patch("server.matchmaker.pop_timer.time", return_value=1_562_000_000)
     mocker.patch(
@@ -488,7 +486,7 @@ async def test_command_matchmaker_info(lobby_server, mocker):
         assert queue["boundary_75s"] == []
 
 
-@fast_forward(10)
+@fast_forward(60)
 async def test_matchmaker_info_message_on_cancel(lobby_server):
     _, _, proto = await connect_and_sign_in(
         ("ladder1", "ladder1"),
@@ -533,7 +531,7 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
     assert len(queue_message["boundary_80s"]) == 0
 
 
-@fast_forward(10)
+@fast_forward(60)
 async def test_search_info_messages(lobby_server):
     _, _, proto = await connect_and_sign_in(
         ("ladder1", "ladder1"),

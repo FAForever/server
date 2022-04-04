@@ -3,7 +3,6 @@ import contextlib
 import json
 import logging
 import pathlib
-import re
 import time
 from collections import defaultdict
 from typing import Any, Awaitable, Callable, Iterable, Optional
