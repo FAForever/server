@@ -172,7 +172,7 @@ class GameService(Service):
 
         return self.game_id_counter
 
-    def create_game(
+    async def create_game(
         self,
         game_mode: str,
         game_class: type[Game] = CustomGame,
@@ -204,6 +204,7 @@ class GameService(Service):
         }
         game_args.update(kwargs)
         game = game_class(**game_args)
+        game.set_map_info(await self.get_map_info(game.map_file_path))
 
         self._games[game_id] = game
 

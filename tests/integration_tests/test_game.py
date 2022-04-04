@@ -264,6 +264,57 @@ async def send_player_options(proto, *options):
         })
 
 
+@fast_forward(20)
+async def test_game_validity_states(lobby_server):
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    # Set up the game
+    game_id = await host_game(host_proto)
+    msg = await read_until_command(host_proto, "game_info", uid=game_id, timeout=5)
+    assert msg["validity"] == ["single_player"]
+
+    # The host configures themselves, causing them to show up as connected
+    await send_player_options(host_proto, [host_id, "Team", 1])
+    msg = await read_until_command(host_proto, "game_info", uid=game_id, timeout=5)
+    assert msg["validity"] == ["uneven_teams_not_ranked", "single_player"]
+
+    # Change the map to an unranked map
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameOption",
+        "args": [
+            "ScenarioFile",
+            "/maps/neroxis_map_generator_sneaky_map/sneaky_map_scenario.lua"
+        ]
+    })
+    msg = await read_until_command(host_proto, "game_info", uid=game_id, timeout=5)
+    assert msg["validity"] == [
+        "bad_map",
+        "uneven_teams_not_ranked",
+        "single_player"
+    ]
+
+    # Another player joins
+    await join_game(guest_proto, game_id)
+    await send_player_options(host_proto, [guest_id, "Team", 1])
+    msg = await read_until_command(host_proto, "game_info", uid=game_id, timeout=5)
+    assert msg["validity"] == ["bad_map"]
+
+    # Change the map to a ranked map
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameOption",
+        "args": ["ScenarioFile", "/maps/scmp_001/scmp_001_scenario.lua"]
+    })
+
+    msg = await read_until_command(host_proto, "game_info", uid=game_id, timeout=5)
+    assert msg["validity"] == ["valid"]
+
+
 @fast_forward(60)
 async def test_game_info_messages(lobby_server):
     host_id, _, host_proto = await connect_and_sign_in(

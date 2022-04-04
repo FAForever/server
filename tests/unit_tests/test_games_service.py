@@ -35,14 +35,14 @@ async def test_graceful_shutdown(game_service):
     await game_service.graceful_shutdown()
 
     with pytest.raises(DisabledError):
-        game_service.create_game(
+        await game_service.create_game(
             game_mode="faf",
         )
 
 
 @fast_forward(2)
 async def test_drain_games(game_service):
-    game = game_service.create_game(
+    game = await game_service.create_game(
         game_mode="faf",
         name="TestGame"
     )
@@ -61,7 +61,7 @@ async def test_drain_games(game_service):
 
 async def test_create_game(players, game_service):
     players.hosting.state = PlayerState.IDLE
-    game = game_service.create_game(
+    game = await game_service.create_game(
         visibility=VisibilityState.PUBLIC,
         game_mode="faf",
         host=players.hosting,
@@ -78,7 +78,7 @@ async def test_create_game(players, game_service):
 
 
 async def test_all_games(players, game_service):
-    game = game_service.create_game(
+    game = await game_service.create_game(
         visibility=VisibilityState.PUBLIC,
         game_mode="faf",
         host=players.hosting,
@@ -92,7 +92,7 @@ async def test_all_games(players, game_service):
 
 
 async def test_create_game_ladder1v1(players, game_service):
-    game = game_service.create_game(
+    game = await game_service.create_game(
         game_mode="ladder1v1",
         game_class=LadderGame,
         host=players.hosting,
@@ -105,7 +105,7 @@ async def test_create_game_ladder1v1(players, game_service):
 
 
 async def test_create_game_other_gamemode(players, game_service):
-    game = game_service.create_game(
+    game = await game_service.create_game(
         visibility=VisibilityState.PUBLIC,
         game_mode="labwars",
         host=players.hosting,
@@ -120,7 +120,7 @@ async def test_create_game_other_gamemode(players, game_service):
 
 
 async def test_close_lobby_games(players, game_service):
-    game = game_service.create_game(
+    game = await game_service.create_game(
         visibility=VisibilityState.PUBLIC,
         game_mode="faf",
         host=players.hosting,

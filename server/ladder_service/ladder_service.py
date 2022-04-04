@@ -519,7 +519,7 @@ class LadderService(Service):
                 raise RuntimeError(f"No map pool available for rating {rating}!")
             _, _, map_path, _ = pool.choose_map(played_map_ids)
 
-            game = self.game_service.create_game(
+            game = await self.game_service.create_game(
                 game_class=LadderGame,
                 game_mode=queue.featured_mod,
                 host=host,

@@ -318,6 +318,7 @@ class Game:
         else:
             self.map_id = None
             self.map_ranked = False
+        self.mark_dirty()
 
     async def add_result(
         self,
@@ -502,7 +503,7 @@ class Game:
         finally:
             self.state = GameState.ENDED
 
-            self.game_service.mark_dirty(self)
+            self.mark_dirty()
 
     async def process_game_results(self):
         if not self._results:
@@ -655,6 +656,7 @@ class Game:
         elif key == "Title":
             with contextlib.suppress(ValueError):
                 self.name = value
+                self.mark_dirty()
 
     def get_player_option(self, player_id: int, key: str) -> Optional[Any]:
         """
@@ -838,6 +840,9 @@ class Game:
     def report_army_stats(self, stats_json):
         self._army_stats_list = json.loads(stats_json)["stats"]
         self._process_pending_army_stats()
+
+    def mark_dirty(self):
+        self.game_service.mark_dirty(self)
 
     def is_visible_to_player(self, player: Player) -> bool:
         """

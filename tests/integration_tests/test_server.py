@@ -565,10 +565,11 @@ async def test_game_info_broadcast_to_players_in_lobby(lobby_server):
 
     game_id = msg["uid"]
     await join_game(proto2, game_id)
-
-    await read_until_command(proto1, "game_info", teams={"1": ["friends"]})
-    await read_until_command(proto2, "game_info", teams={"1": ["friends"]})
-    await send_player_options(proto1, [test_id, "Army", 1], [test_id, "Team", 1])
+    await send_player_options(
+        proto1,
+        [test_id, "Army", 1],
+        [test_id, "Team", 1]
+    )
     await read_until_command(proto1, "game_info", teams={"1": ["friends", "test"]})
     await read_until_command(proto2, "game_info", teams={"1": ["friends", "test"]})
 

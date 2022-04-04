@@ -228,7 +228,7 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         self.game.set_game_option(key, value)
-        self._mark_dirty()
+        # Game object handles marking as dirty
 
     async def handle_game_mods(self, mode: Any, args: list[Any]):
         if not self.is_host():
@@ -453,10 +453,6 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         elif state == "Lobby":
-            # TODO: Do we still need to schedule with `ensure_future`?
-            #
-            # We do not yield from the task, since we
-            # need to keep processing other commands while it runs
             await self._handle_lobby_state()
 
         elif state == "Launching":
