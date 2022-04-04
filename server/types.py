@@ -39,6 +39,7 @@ class MapPoolMap(Protocol):
 
 
 class Map(NamedTuple):
+    # map_version.id
     id: Optional[int]
     folder_name: str
     ranked: bool = False

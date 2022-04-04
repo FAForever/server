@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import pathlib
 import time
 from typing import Any
 from unittest import mock
@@ -33,7 +34,18 @@ from tests.utils import fast_forward
 
 @pytest.fixture
 async def game(database, game_service, game_stats_service):
-    return Game(42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL)
+    game = Game(
+        42,
+        database,
+        game_service,
+        game_stats_service,
+        rating_type=RatingType.GLOBAL
+    )
+    await game.on_scenario_file_changed(
+        pathlib.PurePath(f"/maps/{game.map.folder_name}/scenario.lua"),
+    )
+
+    return game
 
 
 @pytest.fixture
@@ -68,7 +80,7 @@ async def test_instance_logging(database, game_stats_service):
     logger.debug.assert_called_with("%s created", game)
 
 
-async def test_validate_game_settings(game: Game, game_add_players):
+async def test_get_validity(game: Game, game_add_players):
     settings = [
         ("Victory", Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
         ("FogOfWar", "none", ValidityState.NO_FOG_OF_WAR),
@@ -97,18 +109,15 @@ async def test_validate_game_settings(game: Game, game_add_players):
 
         await check_game_settings(game, settings)
 
-        game.validity = ValidityState.VALID
-        await game.validate_game_settings()
-        assert game.validity is ValidityState.VALID
+        assert game.get_validity() is ValidityState.VALID
 
         for player in game.players:
             game.set_player_option(player.id, "Team", 2)
 
-        await game.validate_game_settings()
-        assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
+        assert game.get_validity() is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 
-async def test_validate_game_settings_coop(coop_game: Game):
+async def test_get_validity_coop(coop_game: Game):
     settings = [
         (
             "Victory", Victory.DEMORALIZATION,
@@ -122,9 +131,7 @@ async def test_validate_game_settings_coop(coop_game: Game):
 
     await check_game_settings(coop_game, settings)
 
-    coop_game.validity = ValidityState.VALID
-    await coop_game.validate_game_settings()
-    assert coop_game.validity is ValidityState.VALID
+    assert coop_game.get_validity() is ValidityState.COOP_NOT_RANKED
 
 
 async def test_missing_teams_marked_invalid(game: Game, game_add_players):
@@ -133,9 +140,7 @@ async def test_missing_teams_marked_invalid(game: Game, game_add_players):
     game_add_players(game, player_id, team=2)
     del game._player_options[player_id]["Team"]
 
-    await game.validate_game_settings()
-
-    assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
+    assert game.get_validity() is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 
 async def check_game_settings(
@@ -144,8 +149,7 @@ async def check_game_settings(
     for key, value, expected in settings:
         old = game.game_options.get(key)
         game.game_options[key] = value
-        await game.validate_game_settings()
-        assert game.validity is expected
+        assert game.get_validity() is expected
         game.game_options[key] = old
 
 
@@ -164,7 +168,7 @@ async def test_ffa_not_rated(game, game_add_players):
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity is ValidityState.FFA_NOT_RANKED
+    assert game.get_validity() is ValidityState.FFA_NOT_RANKED
 
 
 async def test_generated_map_is_rated(game, game_add_players):
@@ -179,7 +183,7 @@ async def test_generated_map_is_rated(game, game_add_players):
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity is ValidityState.VALID
+    assert game.get_validity() is ValidityState.VALID
 
 
 async def test_unranked_generated_map_not_rated(game, game_add_players):
@@ -190,7 +194,7 @@ async def test_unranked_generated_map_not_rated(game, game_add_players):
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity is ValidityState.BAD_MAP
+    assert game.get_validity() is ValidityState.BAD_MAP
 
 
 async def test_unranked_mod_not_rated(game, game_add_players):
@@ -201,7 +205,7 @@ async def test_unranked_mod_not_rated(game, game_add_players):
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity is ValidityState.BAD_MOD
+    assert game.get_validity() is ValidityState.BAD_MOD
 
 
 async def test_two_player_ffa_is_rated(game, game_add_players):
@@ -211,7 +215,7 @@ async def test_two_player_ffa_is_rated(game, game_add_players):
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity is ValidityState.VALID
+    assert game.get_validity() is ValidityState.VALID
 
 
 async def test_multi_team_not_rated(game, game_add_players):
@@ -223,7 +227,7 @@ async def test_multi_team_not_rated(game, game_add_players):
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity is ValidityState.MULTI_TEAM
+    assert game.get_validity() is ValidityState.MULTI_TEAM
 
 
 async def test_has_ai_players_not_rated(game, game_add_players):
@@ -245,7 +249,7 @@ async def test_has_ai_players_not_rated(game, game_add_players):
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity is ValidityState.HAS_AI_PLAYERS
+    assert game.get_validity() is ValidityState.HAS_AI_PLAYERS
 
 
 async def test_uneven_teams_not_rated(game, game_add_players):
@@ -256,7 +260,7 @@ async def test_uneven_teams_not_rated(game, game_add_players):
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
+    assert game.get_validity() is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 
 async def test_single_team_not_rated(game, game_add_players):
@@ -268,7 +272,7 @@ async def test_single_team_not_rated(game, game_add_players):
     for i in range(n_players):
         await game.add_result(0, i, "victory", 5)
     await game.on_game_finish()
-    assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
+    assert game.get_validity() is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 
 async def test_single_player_not_rated(game, game_add_players):
@@ -278,7 +282,7 @@ async def test_single_player_not_rated(game, game_add_players):
     game.launched_at = time.time() - 60 * 20
     await game.add_result(0, 0, "victory", 5)
     await game.on_game_finish()
-    assert game.validity is ValidityState.SINGLE_PLAYER
+    assert game.get_validity() is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 
 async def test_game_visible_to_host(game: Game, players):
@@ -348,6 +352,35 @@ async def test_set_player_option(game, players, mock_game_connection):
 
 async def test_invalid_get_player_option_key(game: Game, players):
     assert game.get_player_option(players.hosting.id, -1) is None
+
+
+async def test_set_game_option(game: Game):
+    await game.game_options.set_option("Victory", "sandbox")
+    assert game.game_options["Victory"] == Victory.SANDBOX
+
+    await game.game_options.set_option("AIReplacement", "On")
+    assert game.game_options["AIReplacement"] == "On"
+
+    await game.game_options.set_option("Slots", "7")
+    assert game.max_players == 7
+
+    await game.game_options.set_option("Title", "All welcome")
+    assert game.name == "All welcome"
+
+    await game.game_options.set_option("ArbitraryKey", "ArbitraryValue")
+    assert game.game_options["ArbitraryKey"] == "ArbitraryValue"
+
+
+async def test_set_game_option_scenario_file(game: Game):
+    # Valid example from a replay
+    await game.game_options.set_option("ScenarioFile", "/maps/scmp_009/scmp_009_scenario.lua")
+    assert game.map.file_path == "maps/scmp_009.zip"
+
+    # Examples that document behavior but might not make sense or be necessary
+    await game.game_options.set_option("ScenarioFile", "C:\\Maps\\Some_Map")
+    assert game.map.file_path == "maps/some_map.zip"
+    await game.game_options.set_option("ScenarioFile", "/maps/'some map'/scenario.lua")
+    assert game.map.file_path == "maps/'some map'.zip"
 
 
 async def test_add_game_connection(game: Game, players, mock_game_connection):
@@ -564,7 +597,7 @@ async def test_game_ends_in_mutually_agreed_draw(game: Game, game_add_players):
     await game.add_result(players[1].id, 1, "mutual_draw", 0)
     await game.on_game_finish()
 
-    assert game.validity is ValidityState.VALID
+    assert game.get_validity() is ValidityState.VALID
 
 
 async def test_game_not_ends_in_unilatery_agreed_draw(
@@ -580,7 +613,7 @@ async def test_game_not_ends_in_unilatery_agreed_draw(
     await game.add_result(players.joining.id, 1, "victory", 10)
     await game.on_game_finish()
 
-    assert game.validity is not ValidityState.MUTUAL_DRAW
+    assert game.get_validity() is not ValidityState.MUTUAL_DRAW
 
 
 async def test_game_is_invalid_due_to_desyncs(game: Game, players):
@@ -592,7 +625,7 @@ async def test_game_is_invalid_due_to_desyncs(game: Game, players):
     game.desyncs = 30
     await game.on_game_finish()
 
-    assert game.validity is ValidityState.TOO_MANY_DESYNCS
+    assert game.get_validity() is ValidityState.TOO_MANY_DESYNCS
 
 
 async def test_game_get_player_outcome_ignores_unknown_results(
@@ -615,7 +648,7 @@ async def test_on_game_end_single_player_gives_unknown_result(game):
 
     await game.on_game_finish()
     assert game.state is GameState.ENDED
-    assert game.validity is ValidityState.UNKNOWN_RESULT
+    assert game.get_validity() is ValidityState.UNKNOWN_RESULT
 
 
 async def test_on_game_end_two_players_is_valid(
@@ -632,7 +665,7 @@ async def test_on_game_end_two_players_is_valid(
 
     await game.on_game_finish()
     assert game.state is GameState.ENDED
-    assert game.validity is ValidityState.VALID
+    assert game.get_validity() is ValidityState.VALID
 
 
 async def test_name_sanitization(game, players):
@@ -658,39 +691,41 @@ async def test_to_dict(game, player_factory):
     players = [
         (player_factory(f"{i}", player_id=i, global_rating=rating), result, team)
         for i, (rating, result, team) in enumerate([
-            (Rating(1500, 250), 0, 1),
-            (Rating(1700, 120), 0, 1),
-            (Rating(1200, 72), 0, 2),
-            (Rating(1200, 72), 0, 2),
-        ], 1)]
+            (Rating(1500, 250), 0, 2),
+            (Rating(1700, 120), 0, 2),
+            (Rating(1200, 72), 0, 3),
+            (Rating(1200, 72), 0, 3),
+        ], 1)
+    ]
     add_connected_players(game, [player for player, _, _ in players])
     for player, _, team in players:
         game.set_player_option(player.id, "Team", team)
-        game.set_player_option(player.id, "Army", player.id - 1)
+        game.set_player_option(player.id, "Army", player.id)
     game.host = players[0][0]
     await game.launch()
     data = game.to_dict()
     expected = {
         "command": "game_info",
-        "visibility": game.visibility.value,
-        "password_protected": game.password is not None,
-        "uid": game.id,
-        "title": game.name,
+        "visibility": "public",
+        "password_protected": False,
+        "uid": 42,
+        "title": "New Game",
         "game_type": "custom",
         "state": "playing",
-        "featured_mod": game.game_mode,
-        "sim_mods": game.mods,
-        "mapname": game.map.folder_name,
-        "map_file_path": game.map.file_path,
-        "host": game.host.login,
-        "num_players": len(game.players),
-        "max_players": game.max_players,
+        "featured_mod": "faf",
+        "validity": ["valid"],
+        "sim_mods": {},
+        "mapname": "scmp_007",
+        "map_file_path": "maps/scmp_007.zip",
+        "host": "1",
+        "num_players": 4,
+        "max_players": 12,
         "hosted_at": None,
         "launched_at": game.launched_at,
-        "rating_type": game.rating_type,
-        "rating_min": game.displayed_rating_range.lo,
-        "rating_max": game.displayed_rating_range.hi,
-        "enforce_rating_range": game.enforce_rating_range,
+        "rating_type": "global",
+        "rating_min": None,
+        "rating_max": None,
+        "enforce_rating_range": False,
         "teams_ids": [
             {
                 "team_id": team,
@@ -744,7 +779,7 @@ async def test_persist_results_not_called_with_no_results(
 
     assert len(game.players) == 4
     assert len(game._results) == 0
-    assert game.validity is ValidityState.UNKNOWN_RESULT
+    assert game.get_validity() is ValidityState.UNKNOWN_RESULT
     game.persist_results.assert_not_called()
 
 
@@ -772,8 +807,10 @@ async def test_persist_results_called_for_unranked(game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 2)
     await game.launch()
-    game.validity = ValidityState.BAD_UNIT_RESTRICTIONS
+    game.game_options["RestrictedCategories"] = 1
+    assert game.get_validity() is ValidityState.BAD_UNIT_RESTRICTIONS
     assert len(game.players) == 2
+
     await game.add_result(0, 1, "victory", 5)
     await game.on_game_finish()
 
@@ -886,7 +923,7 @@ async def test_partial_stats_not_affecting_rating_persistence(
     # await game being rated
     await rating_service._join_rating_queue()
 
-    assert game.validity is ValidityState.VALID
+    assert game.get_validity() is ValidityState.VALID
     assert players[0].ratings[RatingType.GLOBAL][0] > old_mean
 
 
@@ -1105,8 +1142,10 @@ async def test_army_results_present_for_invalid_games(game: Game, game_add_playe
     game.state = GameState.LOBBY
     players = (*game_add_players(game, 2, 2), *game_add_players(game, 2, 3))
 
+    game.game_options["CheatsEnabled"] = "On"
+    assert game.get_validity() is ValidityState.CHEATS_ENABLED
+
     await game.launch()
-    game.validity = ValidityState.CHEATS_ENABLED
 
     for i, player in enumerate(players):
         for _ in players:

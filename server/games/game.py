@@ -3,6 +3,7 @@ import contextlib
 import json
 import logging
 import pathlib
+import re
 import time
 from collections import defaultdict
 from typing import Any, Awaitable, Callable, Iterable, Optional
@@ -27,13 +28,13 @@ from server.games.game_results import (
     GameResultReports,
     resolve_game
 )
+from server.games.validator import COMMON_RULES, NON_COOP_RULES, Validator
 from server.rating import InclusiveRange, RatingType
 from server.timing import datetime_now
 from server.types import MAP_DEFAULT, Map
 
 from ..players import Player, PlayerState
 from .typedefs import (
-    FA,
     BasicGameInfo,
     EndedGameInfo,
     FeaturedModType,
@@ -57,6 +58,11 @@ class Game:
     """
     init_mode = InitMode.NORMAL_LOBBY
     game_type = GameType.CUSTOM
+    default_validity = ValidityState.VALID
+    validator = Validator([
+        *COMMON_RULES,
+        *NON_COOP_RULES,
+    ])
 
     def __init__(
         self,
@@ -84,7 +90,7 @@ class Game:
         self.game_service = game_service
         self._player_options: dict[int, dict[str, Any]] = defaultdict(dict)
         self.hosted_at = None
-        self.launched_at = None
+        self.launched_at: Optional[float] = None
         self.finished = False
         self._logger = logging.getLogger(
             f"{self.__class__.__qualname__}.{id}"
@@ -97,7 +103,6 @@ class Game:
         self._players_at_launch: list[Player] = []
         self.AIs = {}
         self.desyncs = 0
-        self.validity = ValidityState.VALID
         self.game_mode = game_mode
         self.rating_type = rating_type or RatingType.GLOBAL
         self.displayed_rating_range = displayed_rating_range or InclusiveRange()
@@ -132,6 +137,8 @@ class Game:
         self.game_options.add_callback("Title", self.on_title_changed)
 
         self.mods = {}
+        self._override_validity: Optional[ValidityState] = None
+        self._persisted_validity: Optional[ValidityState] = None
         self._hosted_future = asyncio.Future()
         self._finish_lock = asyncio.Lock()
 
@@ -273,6 +280,12 @@ class Game:
 
         team_sizes = set(len(team) for team in teams)
         return len(team_sizes) == 1
+
+    def get_validity(self) -> ValidityState:
+        if self._override_validity is not None:
+            return self._override_validity
+
+        return self.validator.get_one(self) or self.default_validity
 
     def get_team_sets(self) -> list[set[Player]]:
         """
@@ -463,11 +476,25 @@ class Game:
             elif self.state is GameState.LIVE:
                 self._logger.info("Game finished normally")
 
-                if self.desyncs > 20:
-                    await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
-                    return
-
+                # Needed by some validity checks
+                self.state = GameState.ENDED
                 await self.process_game_results()
+
+                validity = self.get_validity()
+                if validity is not self._persisted_validity:
+                    assert validity is not self.default_validity
+
+                    self._logger.info("Updating validity to: %s", validity)
+                    async with self._db.acquire() as conn:
+                        await conn.execute(
+                            game_stats.update().where(
+                                game_stats.c.id == self.id
+                            ).values(
+                                validity=validity.value
+                            )
+                        )
+                    self._persisted_validity = validity
+                    return
 
                 self._process_pending_army_stats()
         except Exception:    # pragma: no cover
@@ -477,12 +504,8 @@ class Game:
 
             self.game_service.mark_dirty(self)
 
-    async def _run_pre_rate_validity_checks(self):
-        pass
-
     async def process_game_results(self):
         if not self._results:
-            await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
             return
 
         await self.persist_results()
@@ -493,8 +516,6 @@ class Game:
     async def resolve_game_results(self) -> EndedGameInfo:
         if self.state not in (GameState.LIVE, GameState.ENDED):
             raise GameError("Cannot rate game that has not been launched.")
-
-        await self._run_pre_rate_validity_checks()
 
         basic_info = self.get_basic_info()
 
@@ -509,6 +530,7 @@ class Game:
             for team in basic_info.teams
         ]
 
+        validity = self.get_validity()
         try:
             # TODO: Remove override once game result messages are reliable
             team_outcomes = (
@@ -516,8 +538,9 @@ class Game:
                 or resolve_game(team_player_partial_outcomes)
             )
         except GameResolutionError:
-            if self.validity is ValidityState.VALID:
-                await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
+            if validity is ValidityState.VALID:
+                self._override_validity = ValidityState.UNKNOWN_RESULT
+                validity = ValidityState.UNKNOWN_RESULT
 
         try:
             commander_kills = {
@@ -529,7 +552,7 @@ class Game:
 
         return EndedGameInfo.from_basic(
             basic_info,
-            self.validity,
+            validity,
             team_outcomes,
             commander_kills,
             team_army_results,
@@ -644,71 +667,6 @@ class Game:
         for item in to_remove:
             del self.AIs[item]
 
-    async def validate_game_settings(self):
-        """
-        Mark the game invalid if it has non-compliant options
-        """
-
-        # Only allow ranked mods
-        for mod_id in self.mods.keys():
-            if mod_id not in self.game_service.ranked_mods:
-                await self.mark_invalid(ValidityState.BAD_MOD)
-                return
-
-        if self.has_ai:
-            await self.mark_invalid(ValidityState.HAS_AI_PLAYERS)
-            return
-        if self.is_multi_team:
-            await self.mark_invalid(ValidityState.MULTI_TEAM)
-            return
-        valid_options = {
-            "AIReplacement": (FA.DISABLED, ValidityState.HAS_AI_PLAYERS),
-            "FogOfWar": ("explored", ValidityState.NO_FOG_OF_WAR),
-            "CheatsEnabled": (FA.DISABLED, ValidityState.CHEATS_ENABLED),
-            "PrebuiltUnits": (FA.DISABLED, ValidityState.PREBUILT_ENABLED),
-            "NoRushOption": (FA.DISABLED, ValidityState.NORUSH_ENABLED),
-            "RestrictedCategories": (0, ValidityState.BAD_UNIT_RESTRICTIONS),
-            "TeamLock": ("locked", ValidityState.UNLOCKED_TEAMS),
-            "Unranked": (FA.DISABLED, ValidityState.HOST_SET_UNRANKED)
-        }
-        if await self._validate_game_options(valid_options) is False:
-            return
-
-        await self.validate_game_mode_settings()
-
-    async def validate_game_mode_settings(self):
-        """
-        A subset of checks that need to be overridden in coop games.
-        """
-        if self.is_ffa:
-            await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
-            return
-
-        if len(self.players) < 2:
-            await self.mark_invalid(ValidityState.SINGLE_PLAYER)
-            return
-
-        if None in self.teams or not self.is_even:
-            await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
-            return
-
-        valid_options = {
-            "Victory": (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
-        }
-        await self._validate_game_options(valid_options)
-
-    async def _validate_game_options(
-        self,
-        valid_options: dict[str, tuple[Any, ValidityState]]
-    ) -> bool:
-        for key, value in self.game_options.items():
-            if key in valid_options:
-                valid_value, validity_state = valid_options[key]
-                if value != valid_value:
-                    await self.mark_invalid(validity_state)
-                    return False
-        return True
-
     async def launch(self):
         """
         Mark the game as live.
@@ -728,7 +686,6 @@ class Game:
         self.state = GameState.LIVE
 
         await self.on_game_launched()
-        await self.validate_game_settings()
 
         self._logger.info("Game launched")
 
@@ -740,16 +697,13 @@ class Game:
 
     async def update_game_stats(self):
         """
-        Runs at game-start to populate the game_stats table (games that start are ones we actually
-        care about recording stats for, after all).
+        Runs at game-start to populate the game_stats table (games that start
+        are ones we actually care about recording stats for, after all).
         """
         assert self.host is not None
 
         # Ensure map data is up to date
         self.map = await self.game_service.get_map(self.map.folder_name)
-
-        if self.validity is ValidityState.VALID and not self.map.ranked:
-            await self.mark_invalid(ValidityState.BAD_MAP)
 
         modId = self.game_service.featured_mods[self.game_mode].id
 
@@ -760,6 +714,10 @@ class Game:
         game_type = str(self.game_options.get("Victory").value)
 
         async with self._db.acquire() as conn:
+            validity = self.get_validity()
+            if validity is not self.default_validity:
+                self._logger.info("Game is invalid at launch: %s", validity)
+
             await conn.execute(
                 game_stats.insert().values(
                     id=self.id,
@@ -768,9 +726,10 @@ class Game:
                     host=self.host.id,
                     mapId=self.map.id,
                     gameName=self.name,
-                    validity=self.validity.value,
+                    validity=validity.value,
                 )
             )
+            self._persisted_validity = validity
 
             if self.matchmaker_queue_id is not None:
                 await conn.execute(
@@ -827,28 +786,6 @@ class Game:
                 "Failed to update game_player_stats. Query args %s:", query_args
             )
             raise
-
-    async def mark_invalid(self, new_validity_state: ValidityState):
-        self._logger.info(
-            "Marked as invalid because: %s", repr(new_validity_state)
-        )
-        self.validity = new_validity_state
-
-        # If we haven't started yet, the invalidity will be persisted to the database when we start.
-        # Otherwise, we have to do a special update query to write this information out.
-        if self.state is not GameState.LIVE:
-            return
-
-        # Currently, we can only end up here if a game desynced or was a custom game that terminated
-        # too quickly.
-        async with self._db.acquire() as conn:
-            await conn.execute(
-                game_stats.update().where(
-                    game_stats.c.id == self.id
-                ).values(
-                    validity=new_validity_state.value
-                )
-            )
 
     def get_army_score(self, army):
         return self._results.score(army)
@@ -915,6 +852,10 @@ class Game:
             "state": client_state,
             "game_type": self.game_type.value,
             "featured_mod": self.game_mode,
+            "validity": [
+                validity.name.lower()
+                for validity in self.validator.get_all(self)
+            ] or [self.default_validity.name.lower()],
             "sim_mods": self.mods,
             "mapname": self.map.folder_name,
             # DEPRECATED: Use `mapname` instead

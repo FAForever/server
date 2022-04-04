@@ -41,9 +41,10 @@ class VisibilityState(Enum):
     FRIENDS = "friends"
 
 
-# Identifiers must be kept in sync with the contents of the invalid_game_reasons table.
-# New reasons added should have a description added to that table. Identifiers should never be
-# reused, and values should never be deleted from invalid_game_reasons.
+# Identifiers must be kept in sync with the contents of the invalid_game_reasons
+# table. New reasons added should have a description added to that table.
+# Identifiers should never be reused, and values should never be deleted from
+# invalid_game_reasons.
 @unique
 class ValidityState(Enum):
     VALID = 0
