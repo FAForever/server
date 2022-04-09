@@ -39,19 +39,32 @@ async def game(database, game_service, game_stats_service):
         game_stats_service,
         rating_type=RatingType.GLOBAL
     )
-    await game.update_map_info()
-
+    await game.initialize()
     return game
 
 
 @pytest.fixture
 async def coop_game(database, game_service, game_stats_service):
-    return CoopGame(42, database, game_service, game_stats_service)
+    game = CoopGame(
+        42,
+        database,
+        game_service,
+        game_stats_service
+    )
+    await game.initialize()
+    return game
 
 
 @pytest.fixture
 async def custom_game(database, game_service, game_stats_service):
-    return CustomGame(42, database, game_service, game_stats_service)
+    game = CustomGame(
+        42,
+        database,
+        game_service,
+        game_stats_service
+    )
+    await game.initialize()
+    return game
 
 
 async def game_player_scores(database, game):

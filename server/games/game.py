@@ -113,6 +113,7 @@ class Game:
         self.enforce_rating_range = enforce_rating_range
         self.matchmaker_queue_id = matchmaker_queue_id
         self.state = GameState.INITIALIZING
+        self.setup_timeout = setup_timeout
         self._connections = {}
         self._configured_player_ids: set[int] = set()
         self.enforce_rating = False
@@ -132,11 +133,16 @@ class Game:
         self.mods = {}
         self._override_validity: Optional[ValidityState] = None
         self._persisted_validity: Optional[ValidityState] = None
-        self._hosted_future = asyncio.Future()
+        self._hosted_future: Optional[asyncio.Future] = None
         self._finish_lock = asyncio.Lock()
 
         self._logger.debug("%s created", self)
-        asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
+
+    async def initialize(self):
+        # So we can perform async operations at game creation time
+        self._hosted_future = asyncio.Future()
+        asyncio.create_task(self.timeout_game(self.setup_timeout))
+        await self.update_map_info()
 
     async def timeout_game(self, timeout: int = 60):
         await asyncio.sleep(timeout)
@@ -302,6 +308,7 @@ class Game:
         return list(teams.values()) + ffa_players
 
     def set_hosted(self):
+        assert self._hosted_future is not None
         self._hosted_future.set_result(None)
         self.hosted_at = datetime_now()
 

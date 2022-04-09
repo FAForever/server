@@ -13,13 +13,15 @@ from tests.unit_tests.test_game import add_connected_players
 
 @pytest.fixture()
 async def laddergame(database, game_service, game_stats_service):
-    return LadderGame(
+    game = LadderGame(
         id_=465312,
         database=database,
         game_service=game_service,
         game_stats_service=game_stats_service,
         rating_type=RatingType.LADDER_1V1
     )
+    await game.initialize()
+    return game
 
 
 async def test_handle_game_closed_manually(laddergame, players):

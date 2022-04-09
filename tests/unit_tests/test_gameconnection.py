@@ -23,8 +23,15 @@ from tests.utils import exhaust_callbacks
 
 
 @pytest.fixture
-async def real_game(event_loop, database, game_service, game_stats_service):
-    return Game(42, database, game_service, game_stats_service)
+async def real_game(database, game_service, game_stats_service):
+    game = Game(
+        42,
+        database,
+        game_service,
+        game_stats_service
+    )
+    await game.initialize()
+    return game
 
 
 def assert_message_sent(game_connection: GameConnection, command, args):

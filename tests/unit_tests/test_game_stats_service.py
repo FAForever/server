@@ -4,6 +4,7 @@ from unittest import mock
 import pytest
 
 from server.factions import Faction
+from server.game_service import GameService
 from server.games import Game
 from server.games.game_results import (
     ArmyReportedOutcome,
@@ -41,10 +42,16 @@ def player(player_factory):
 
 @pytest.fixture()
 async def game(database, game_stats_service, player):
-    game = Game(1, database, mock.Mock(), game_stats_service)
+    game = Game(
+        1,
+        database,
+        mock.create_autospec(GameService),
+        game_stats_service
+    )
     game._player_options[player.id] = {"Army": 1}
     game._results = GameResultReports(1)
     game._results.add(GameResultReport(1, 1, ArmyReportedOutcome.VICTORY, 0))
+    await game.initialize()
     return game
 
 

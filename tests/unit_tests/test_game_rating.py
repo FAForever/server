@@ -121,19 +121,40 @@ def get_published_results_by_player_id(mock_service):
 
 @pytest.fixture
 async def game(event_loop, database, game_service, game_stats_service):
-    return Game(
-        42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL
+    game = Game(
+        42,
+        database,
+        game_service,
+        game_stats_service,
+        rating_type=RatingType.GLOBAL
     )
+    await game.initialize()
+    return game
 
 
 @pytest.fixture
-async def custom_game(event_loop, database, game_service, game_stats_service):
-    return CustomGame(42, database, game_service, game_stats_service)
+async def custom_game(database, game_service, game_stats_service):
+    game = CustomGame(
+        42,
+        database,
+        game_service,
+        game_stats_service
+    )
+    await game.initialize()
+    return game
 
 
 @pytest.fixture
-async def ladder_game(event_loop, database, game_service, game_stats_service):
-    return LadderGame(42, database, game_service, game_stats_service, rating_type=RatingType.LADDER_1V1)
+async def ladder_game(database, game_service, game_stats_service):
+    game = LadderGame(
+        42,
+        database,
+        game_service,
+        game_stats_service,
+        rating_type=RatingType.LADDER_1V1
+    )
+    await game.initialize()
+    return game
 
 
 def add_players_with_rating(player_factory, game, ratings, teams):

@@ -204,7 +204,7 @@ class GameService(Service):
         }
         game_args.update(kwargs)
         game = game_class(**game_args)
-        game.set_map_info(await self.get_map_info(game.map_file_path))
+        await game.initialize()
 
         self._games[game_id] = game
 
