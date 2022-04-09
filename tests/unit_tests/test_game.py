@@ -76,12 +76,12 @@ async def game_player_scores(database, game):
         return set(tuple(f) for f in result.fetchall())
 
 
-async def test_initialization(game: Game):
+def test_initialization(game: Game):
     assert game.state is GameState.INITIALIZING
     assert game.enforce_rating is False
 
 
-async def test_instance_logging(database, game_stats_service):
+def test_instance_logging(database, game_stats_service):
     logger = logging.getLogger(f"{Game.__qualname__}.5")
     logger.debug = mock.Mock()
     mock_parent = mock.Mock()
@@ -785,12 +785,12 @@ async def test_get_army_score_conflicting_results_tied(game, game_add_players):
     assert game.get_army_score(1) == 123
 
 
-async def test_equality(game):
+def test_equality(game):
     assert game == game
     assert game != Game(5, mock.Mock(), mock.Mock(), mock.Mock())
 
 
-async def test_hashing(game):
+def test_hashing(game):
     assert {
         game: 1,
         Game(game.id, mock.Mock(), mock.Mock(), mock.Mock()): 1

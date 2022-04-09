@@ -429,13 +429,19 @@ async def test_handle_action_GameOption_ScenarioFile(
     game_connection: GameConnection
 ):
     # Valid example from a replay
-    game.set_game_option("ScenarioFile", "/maps/scmp_009/scmp_009_scenario.lua")
+    await game_connection.handle_action(
+        "GameOption", ["ScenarioFile", "/maps/scmp_009/scmp_009_scenario.lua"]
+    )
     assert game.map_file_path == "maps/scmp_009.zip"
 
     # Examples that document behavior but might not make sense or be necessary
-    game.set_game_option("ScenarioFile", "C:\\Maps\\Some_Map")
+    await game_connection.handle_action(
+        "GameOption", ["ScenarioFile", "C:\\Maps\\Some_Map"]
+    )
     assert game.map_file_path == "maps/some_map.zip"
-    game.set_game_option("ScenarioFile", "/maps/'some map'/scenario.lua")
+    await game_connection.handle_action(
+        "GameOption", ["ScenarioFile", "/maps/'some map'/scenario.lua"]
+    )
     assert game.map_file_path == "maps/some map.zip"
 
 

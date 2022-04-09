@@ -905,7 +905,7 @@ class Game:
             return self.id == other.id
 
     def __hash__(self):
-        return self.id.__hash__()
+        return hash(self.id)
 
     def __str__(self) -> str:
         return (

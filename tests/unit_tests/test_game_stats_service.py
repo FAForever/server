@@ -31,8 +31,10 @@ def achievement_service():
 
 
 @pytest.fixture()
-def game_stats_service(event_service, achievement_service):
-    return GameStatsService(event_service, achievement_service)
+async def game_stats_service(event_service, achievement_service):
+    service = GameStatsService(event_service, achievement_service)
+    await service.initialize()
+    return service
 
 
 @pytest.fixture()
