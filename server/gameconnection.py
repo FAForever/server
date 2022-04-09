@@ -23,7 +23,7 @@ from .games import (
     GameState,
     ValidityState
 )
-from .games.typedefs import FA
+from .games.typedefs import FA, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, GpgNetServerProtocol, Protocol
@@ -227,8 +227,28 @@ class GameConnection(GpgNetServerProtocol):
         if not self.is_host():
             return
 
-        self.game.set_game_option(key, value)
-        # Game object handles marking as dirty
+        # Type transformations
+        if key == "Victory":
+            value = Victory.__members__.get(value.upper())
+        elif key == "Slots":
+            value = int(value)
+
+        self.game.game_options[key] = value
+
+        # Additional attributes
+        if key == "ScenarioFile":
+            # TODO: What is the point of this transformation?
+            raw = repr(value)
+            scenario_path = \
+                raw.replace("\\", "/").replace("//", "/").replace("'", "")
+            with contextlib.suppress(IndexError):
+                map_name = scenario_path.split("/")[2].lower()
+                self.game.map_file_path = f"maps/{map_name}.zip"
+                await self.game.update_map_info()
+        elif key == "Title":
+            with contextlib.suppress(ValueError):
+                self.game.name = value
+                self._mark_dirty()
 
     async def handle_game_mods(self, mode: Any, args: list[Any]):
         if not self.is_host():

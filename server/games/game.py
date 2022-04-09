@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import json
 import logging
 import re
@@ -628,35 +627,6 @@ class Game:
 
     def get_game_option(self, key: str, default: Any = None) -> Optional[Any]:
         return self.game_options.get(key, default)
-
-    def set_game_option(self, key: str, value: Any):
-        # Type transformations
-        if key == "Victory":
-            value = Victory.__members__.get(value.upper())
-        elif key == "Slots":
-            value = int(value)
-
-        self.game_options[key] = value
-
-        # Additional attributes
-        if key == "ScenarioFile":
-            # TODO: What is the point of this transformation?
-            raw = repr(value)
-            scenario_path = \
-                raw.replace("\\", "/").replace("//", "/").replace("'", "")
-            with contextlib.suppress(IndexError):
-                self.map_file_path = "maps/{}.zip".format(
-                    scenario_path.split("/")[2].lower()
-                )
-                map_info = self.game_service.map_info_cache.get(self.map_file_path)
-                if map_info is not None:
-                    self.set_map_info(map_info)
-                else:
-                    asyncio.create_task(self.update_map_info())
-        elif key == "Title":
-            with contextlib.suppress(ValueError):
-                self.name = value
-                self.mark_dirty()
 
     def get_player_option(self, player_id: int, key: str) -> Optional[Any]:
         """

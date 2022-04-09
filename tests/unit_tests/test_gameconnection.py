@@ -404,8 +404,32 @@ async def test_cannot_parse_game_results(
 
 # TODO: Convert this to test for game.set_game_option
 async def test_handle_action_GameOption(game, game_connection: GameConnection):
+    game.game_options = {"AIReplacement": "Off"}
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
-    game.set_game_option.assert_called_once_with("Victory", "sandbox")
+    assert game.game_options["Victory"] == Victory.SANDBOX
+    await game_connection.handle_action("GameOption", ["AIReplacement", "On"])
+    assert game.game_options["AIReplacement"] == "On"
+    await game_connection.handle_action("GameOption", ["Slots", "7"])
+    assert game.game_options["Slots"] == 7
+    await game_connection.handle_action("GameOption", ["Title", "All welcome"])
+    assert game.name == "All welcome"
+    await game_connection.handle_action("GameOption", ["ArbitraryKey", "ArbitraryValue"])
+    assert game.game_options["ArbitraryKey"] == "ArbitraryValue"
+
+
+async def test_handle_action_GameOption_ScenarioFile(
+    game,
+    game_connection: GameConnection
+):
+    # Valid example from a replay
+    game.set_game_option("ScenarioFile", "/maps/scmp_009/scmp_009_scenario.lua")
+    assert game.map_file_path == "maps/scmp_009.zip"
+
+    # Examples that document behavior but might not make sense or be necessary
+    game.set_game_option("ScenarioFile", "C:\\Maps\\Some_Map")
+    assert game.map_file_path == "maps/some_map.zip"
+    game.set_game_option("ScenarioFile", "/maps/'some map'/scenario.lua")
+    assert game.map_file_path == "maps/some map.zip"
 
 
 async def test_handle_action_GameOption_not_host(
@@ -414,8 +438,9 @@ async def test_handle_action_GameOption_not_host(
     players
 ):
     game_connection.player = players.joining
+    game.game_options = {"Victory": "asdf"}
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
-    game.set_game_option.assert_not_called()
+    assert game.game_options == {"Victory": "asdf"}
 
 
 async def test_json_stats(

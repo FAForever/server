@@ -325,32 +325,6 @@ async def test_invalid_get_player_option_key(game: Game, players):
     assert game.get_player_option(players.hosting.id, -1) is None
 
 
-def test_set_game_option(game: Game):
-    game.game_options = {"AIReplacement": "Off"}
-    game.set_game_option("Victory", "sandbox")
-    assert game.game_options["Victory"] == Victory.SANDBOX
-    game.set_game_option("AIReplacement", "On")
-    assert game.game_options["AIReplacement"] == "On"
-    game.set_game_option("Slots", "7")
-    assert game.max_players == 7
-    game.set_game_option("Title", "All welcome")
-    assert game.name == "All welcome"
-    game.set_game_option("ArbitraryKey", "ArbitraryValue")
-    assert game.game_options["ArbitraryKey"] == "ArbitraryValue"
-
-
-async def test_set_game_option_scenario_file(game: Game):
-    # Valid example from a replay
-    game.set_game_option("ScenarioFile", "/maps/scmp_009/scmp_009_scenario.lua")
-    assert game.map_file_path == "maps/scmp_009.zip"
-
-    # Examples that document behavior but might not make sense or be necessary
-    game.set_game_option("ScenarioFile", "C:\\Maps\\Some_Map")
-    assert game.map_file_path == "maps/some_map.zip"
-    game.set_game_option("ScenarioFile", "/maps/'some map'/scenario.lua")
-    assert game.map_file_path == "maps/some map.zip"
-
-
 async def test_add_game_connection(game: Game, players, mock_game_connection):
     game.state = GameState.LOBBY
     mock_game_connection.player = players.hosting
