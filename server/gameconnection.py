@@ -248,7 +248,8 @@ class GameConnection(GpgNetServerProtocol):
         elif key == "Title":
             with contextlib.suppress(ValueError):
                 self.game.name = value
-                self._mark_dirty()
+
+        self._mark_dirty()
 
     async def handle_game_mods(self, mode: Any, args: list[Any]):
         if not self.is_host():
