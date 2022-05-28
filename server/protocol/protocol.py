@@ -4,10 +4,26 @@ from abc import ABCMeta, abstractmethod
 from asyncio import StreamReader, StreamWriter
 
 import server.metrics as metrics
+from server.config import config
 
 from ..asyncio_extensions import synchronizedmethod
 
-json_encoder = json.JSONEncoder(separators=(",", ":"))
+
+class CustomJSONEncoder(json.JSONEncoder):
+    # taken from https://stackoverflow.com/a/53798633
+    def encode(self, o):
+        def round_floats(o):
+            if isinstance(o, float):
+                return round(o, config.JSON_FLOAT_MAX_DIGITS)
+            if isinstance(o, dict):
+                return {k: round_floats(v) for k, v in o.items()}
+            if isinstance(o, (list, tuple)):
+                return [round_floats(x) for x in o]
+            return o
+        return super().encode(round_floats(o))
+
+
+json_encoder = CustomJSONEncoder(separators=(",", ":"))
 
 
 class DisconnectedError(ConnectionError):
