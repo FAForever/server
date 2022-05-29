@@ -310,7 +310,7 @@ async def test_game_ended_rates_game(lobby_server):
 async def test_game_ended_broadcasts_rating_update(
     lobby_server, channel, mocker,
 ):
-    mocker.patch("server.config.JSON_FLOAT_MAX_DIGITS", 4)
+    mocker.patch("server.config.JSON_ROUND_FLOATS_PRECISION", 4)
     mq_proto_all = await connect_mq_consumer(
         lobby_server,
         channel,
@@ -620,7 +620,7 @@ async def test_ladder_game_draw_bug(lobby_server, database, mocker):
     their own ACU in order to kill the enemy ACU and be awarded a victory
     instead of a draw.
     """
-    mocker.patch("server.config.JSON_FLOAT_MAX_DIGITS", 13)
+    mocker.patch("server.config.JSON_ROUND_FLOATS_PRECISION", 13)
     player1_id, proto1, player2_id, proto2 = await queue_players_for_matchmaking(lobby_server)
 
     msg1, msg2 = await asyncio.gather(*[

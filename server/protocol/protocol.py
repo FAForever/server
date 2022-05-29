@@ -14,13 +14,17 @@ class CustomJSONEncoder(json.JSONEncoder):
     def encode(self, o):
         def round_floats(o):
             if isinstance(o, float):
-                return round(o, config.JSON_FLOAT_MAX_DIGITS)
+                return round(o, config.JSON_ROUND_FLOATS_PRECISION)
             if isinstance(o, dict):
                 return {k: round_floats(v) for k, v in o.items()}
             if isinstance(o, (list, tuple)):
                 return [round_floats(x) for x in o]
             return o
-        return super().encode(round_floats(o))
+
+        if config.JSON_ROUND_FLOATS:
+            return super().encode(round_floats(o))
+        else:
+            return super().encode(o)
 
 
 json_encoder = CustomJSONEncoder(separators=(",", ":"))

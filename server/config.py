@@ -124,8 +124,11 @@ class ConfigurationStore:
         self.QUEUE_POP_DESIRED_MATCHES = 2.5
         # How many previous queue sizes to consider
         self.QUEUE_POP_TIME_MOVING_AVG_SIZE = 5
+
+        # Whether floats should be rounded before json encoding
+        self.JSON_ROUND_FLOATS = True
         # The maximum number of decimal places to use for float serialization
-        self.JSON_FLOAT_MAX_DIGITS = 2
+        self.JSON_ROUND_FLOATS_PRECISION = 2
 
         self._defaults = {
             key: value for key, value in vars(self).items() if key.isupper()
