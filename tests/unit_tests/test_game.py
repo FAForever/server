@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import time
@@ -1107,3 +1108,34 @@ async def test_game_results_commander_kills(
         "TestUser": 1,
         "TestUser2": 0,
     }
+
+
+@fast_forward(5)
+async def test_game_rated_only_once(event_loop, game, game_add_players):
+    game.state = GameState.LOBBY
+    game_add_players(game, 2)
+
+    async def fake_process_game_results():
+        await asyncio.sleep(1)
+
+    game.process_game_results = mock.AsyncMock(
+        side_effect=fake_process_game_results
+    )
+
+    await game.launch()
+    await game.add_result(0, 1, "defeat", -10)
+    await game.add_result(0, 2, "victory", 10)
+
+    game.finished = True
+
+    # Trigger the end game check to happen at the same time
+    await asyncio.gather(
+        game.check_game_finish(mock.Mock()),
+        game.check_game_finish(mock.Mock()),
+        game.check_game_finish(mock.Mock()),
+        game.check_game_finish(mock.Mock()),
+        game.check_game_finish(mock.Mock()),
+        game.check_game_finish(mock.Mock())
+    )
+
+    game.process_game_results.assert_called_once()

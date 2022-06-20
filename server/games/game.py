@@ -119,6 +119,7 @@ class Game:
         }
         self.mods = {}
         self._hosted_future = asyncio.Future()
+        self._finish_lock = asyncio.Lock()
 
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
@@ -386,18 +387,19 @@ class Game:
     async def check_game_finish(self, player):
         await self.check_sim_end()
 
-        host_left_lobby = (
-            player == self.host and self.state is not GameState.LIVE
-        )
+        async with self._finish_lock:
+            host_left_lobby = (
+                player == self.host and self.state is not GameState.LIVE
+            )
 
-        if self.state is not GameState.ENDED and (
-            self.finished or
-            len(self._connections) == 0 or
-            host_left_lobby
-        ):
-            await self.on_game_finish()
-        else:
-            self._process_pending_army_stats()
+            if self.state is not GameState.ENDED and (
+                self.finished or
+                len(self._connections) == 0 or
+                host_left_lobby
+            ):
+                await self.on_game_finish()
+            else:
+                self._process_pending_army_stats()
 
     async def check_sim_end(self):
         if self.finished:
