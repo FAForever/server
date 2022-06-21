@@ -35,7 +35,7 @@ pytest-mock = "*"
 pytest-cov = "*"
 pytest-asyncio = "*"
 vulture = "*"
-hypothesis = "*"
+hypothesis = "<=6.47.1"  # Later versions add a prerelease dependency. See https://github.com/pypa/pipenv/issues/1760
 pdoc3 = "*"
 
 [requires]
