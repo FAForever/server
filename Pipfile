@@ -27,7 +27,7 @@ pyyaml = "*"
 aio_pika = "*"
 sortedcontainers = "*"
 pyjwt = {version = ">=2.4.0", extras = ["crypto"]}
-uvloop = "*"
+uvloop = {version = "*", markers = "sys_platform != 'win32'"}
 
 [dev-packages]
 pytest = "*"
