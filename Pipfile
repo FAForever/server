@@ -20,14 +20,14 @@ trueskill = "*"
 aiocron = "*"
 oauthlib = "*"
 sqlalchemy = "*"
-twilio = ">=6.0.0,<6.51.0"  # See https://github.com/twilio/twilio-python/issues/556
+twilio = ">=7.0.0"
 humanize = ">=2.6.0"
 aiomysql = {editable = true, git = "https://github.com/aio-libs/aiomysql"}
 pyyaml = "*"
 aio_pika = "*"
 sortedcontainers = "*"
-pyjwt = {version = ">=2", extras = ["crypto"]}
-uvloop = "*"
+pyjwt = {version = ">=2.4.0", extras = ["crypto"]}
+uvloop = {version = "*", markers = "sys_platform != 'win32'"}
 
 [dev-packages]
 pytest = "*"
@@ -35,7 +35,7 @@ pytest-mock = "*"
 pytest-cov = "*"
 pytest-asyncio = "*"
 vulture = "*"
-hypothesis = "*"
+hypothesis = "<=6.47.1"  # Later versions add a prerelease dependency. See https://github.com/pypa/pipenv/issues/1760
 pdoc3 = "*"
 
 [requires]
