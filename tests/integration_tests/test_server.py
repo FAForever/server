@@ -362,8 +362,7 @@ async def test_info_broadcast_to_rabbitmq(lobby_server, channel):
     ("test", "test_password"),
     ("ban_revoked", "ban_revoked"),
     ("ban_expired", "ban_expired"),
-    ("No_UID", "his_pw"),
-    ("steam_id", "steam_id")
+    ("No_UID", "his_pw")
 ])
 async def test_game_host_authenticated(lobby_server, user):
     _, _, proto = await connect_and_sign_in(user, lobby_server)

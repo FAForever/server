@@ -79,6 +79,8 @@ class ConfigurationStore:
         self.FORCE_STEAM_LINK_AFTER_DATE = 1536105599  # 5 september 2018 by default
         self.FORCE_STEAM_LINK = False
 
+        self.ALLOW_PASSWORD_LOGIN = True
+
         self.NEWBIE_BASE_MEAN = 500
         self.NEWBIE_MIN_GAMES = 10
         self.START_RATING_MEAN = 1500
