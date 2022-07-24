@@ -1067,7 +1067,7 @@ async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
     host, port = policy_server
     config.FAF_POLICY_SERVER_BASE_URL = f"http://{host}:{port}"
 
-    for result in ("vm", "already_associated", "fraudulent"):
+    for result in ("already_associated", "fraudulent"):
         lobbyconnection.abort = mock.AsyncMock()
         honest = await lobbyconnection.check_policy_conformity(1, result, session=100)
         assert honest is False
