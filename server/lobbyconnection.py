@@ -380,7 +380,6 @@ class LobbyConnection:
                 t_login.c.id,
                 t_login.c.login,
                 t_login.c.password,
-                t_login.c.create_time,
                 lobby_ban.c.reason,
                 lobby_ban.c.expires_at
             ]).select_from(t_login.outerjoin(lobby_ban))
@@ -397,7 +396,6 @@ class LobbyConnection:
         player_id = row.id
         real_username = row.login
         dbPassword = row.password
-        create_time = row.create_time
         ban_reason = row.reason
         ban_expiry = row.expires_at
 
@@ -532,7 +530,11 @@ class LobbyConnection:
                 "Rejected login from user: %s, %s",
                 login, self.session
             )
-            raise ClientError("Username password login has been disabled please use a different client to login")
+            raise ClientError(
+                "Username password login has been disabled please use "
+                "a different client to login",
+                recoverable=False
+            )
 
         async with self._db.acquire() as conn:
             player_id, username = await self.check_user_login(
@@ -553,7 +555,8 @@ class LobbyConnection:
     ):
         conforms_policy = await self.check_policy_conformity(
             player_id, unique_id, self.session,
-            # All players are required to have game ownership verified so this is for informational purposes only
+            # All players are required to have game ownership verified
+            # so this is for informational purposes only
             ignore_result=True
         )
         if not conforms_policy:
