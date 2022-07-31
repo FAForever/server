@@ -153,6 +153,9 @@ if __name__ == "__main__":
         )
     )
     logger.addHandler(stderr_handler)
+    logger.setLevel(logging.INFO)
+
+    config.refresh()
     logger.setLevel(config.LOG_LEVEL)
 
     if config.USE_UVLOOP:
