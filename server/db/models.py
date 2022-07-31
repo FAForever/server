@@ -182,7 +182,6 @@ login = Table(
     Column("password",      String,     nullable=False),
     Column("email",         String,     nullable=False, unique=True),
     Column("ip",            String),
-    Column("steamid",       Integer,    unique=True),
     Column("create_time",   TIMESTAMP,  nullable=False),
     Column("update_time",   TIMESTAMP,  nullable=False),
     Column("user_agent",    String),

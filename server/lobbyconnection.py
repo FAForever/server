@@ -380,8 +380,6 @@ class LobbyConnection:
                 t_login.c.id,
                 t_login.c.login,
                 t_login.c.password,
-                t_login.c.steamid,
-                t_login.c.create_time,
                 lobby_ban.c.reason,
                 lobby_ban.c.expires_at
             ]).select_from(t_login.outerjoin(lobby_ban))
@@ -398,8 +396,6 @@ class LobbyConnection:
         player_id = row.id
         real_username = row.login
         dbPassword = row.password
-        steamid = row.steamid
-        create_time = row.create_time
         ban_reason = row.reason
         ban_expiry = row.expires_at
 
@@ -414,22 +410,7 @@ class LobbyConnection:
             )
             raise BanError(ban_expiry, ban_reason)
 
-        # New accounts are prevented from playing if they didn't link to steam
-
-        if config.FORCE_STEAM_LINK and not steamid and create_time.timestamp() > config.FORCE_STEAM_LINK_AFTER_DATE:
-            self._logger.debug(
-                "Rejected login from new user: %s, %s, %s",
-                player_id, username, self.session
-            )
-            raise ClientError(
-                "Unfortunately, you must currently link your account to Steam "
-                "in order to play Forged Alliance Forever. You can do so on "
-                '<a href="{steamlink_url}">{steamlink_url}</a>.'.format(
-                    steamlink_url=config.WWW_URL + "/account/link"
-                ),
-                recoverable=False)
-
-        return player_id, real_username, steamid
+        return player_id, real_username
 
     def _set_user_agent_and_version(self, user_agent, version):
         metrics.user_connections.labels(str(self.user_agent), str(self.version)).dec()
@@ -475,24 +456,6 @@ class LobbyConnection:
         if ignore_result:
             return True
 
-        if response.get("result", "") == "vm":
-            self._logger.debug("Using VM: %d: %s", player_id, uid_hash)
-            await self.send({
-                "command": "notice",
-                "style": "error",
-                "text": (
-                    "You need to link your account to Steam in order to use "
-                    "FAF in a virtual machine. Please contact an admin or "
-                    "moderator on the forums if you feel this is a false "
-                    "positive."
-                )
-            })
-            await self.send_warning("Your computer seems to be a virtual machine.<br><br>In order to "
-                                    "log in from a VM, you have to link your account to Steam: <a href='" +
-                                    config.WWW_URL + "/account/link'>" +
-                                    config.WWW_URL + "/account/link</a>.<br>If you need an exception, please contact an "
-                                                     "admin or moderator on the forums", fatal=True)
-
         if response.get("result", "") == "already_associated":
             self._logger.warning("UID hit: %d: %s", player_id, uid_hash)
             await self.send_warning("Your computer is already associated with another FAF account.<br><br>In order to "
@@ -536,7 +499,7 @@ class LobbyConnection:
 
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([t_login.c.login, t_login.c.steamid])
+                select([t_login.c.login])
                 .where(t_login.c.id == player_id)
             )
             row = result.fetchone()
@@ -546,7 +509,6 @@ class LobbyConnection:
                 raise AuthenticationError("Cannot find user id", auth_method)
 
             username = row.login
-            steamid = row.steamid
 
         new_irc_password = hexlify(os.urandom(16)).decode()
         await self.send({
@@ -555,7 +517,7 @@ class LobbyConnection:
         })
 
         await self.on_player_login(
-            player_id, username, new_irc_password, steamid, unique_id, auth_method
+            player_id, username, new_irc_password, unique_id, auth_method
         )
 
     async def command_hello(self, message):
@@ -563,13 +525,24 @@ class LobbyConnection:
         password = message["password"]
         unique_id = message["unique_id"]
 
+        if not config.ALLOW_PASSWORD_LOGIN:
+            self._logger.debug(
+                "Rejected login from user: %s, %s",
+                login, self.session
+            )
+            raise ClientError(
+                "Username password login has been disabled please use "
+                "a different client to login",
+                recoverable=False
+            )
+
         async with self._db.acquire() as conn:
-            player_id, username, steamid = await self.check_user_login(
+            player_id, username = await self.check_user_login(
                 conn, login, password
             )
 
         await self.on_player_login(
-            player_id, username, password, steamid, unique_id, "password"
+            player_id, username, password, unique_id, "password"
         )
 
     async def on_player_login(
@@ -577,16 +550,14 @@ class LobbyConnection:
         player_id: int,
         username: str,
         password: str,
-        steamid: int,
         unique_id: str,
         method: str
     ):
         conforms_policy = await self.check_policy_conformity(
             player_id, unique_id, self.session,
-            ignore_result=(
-                steamid is not None or
-                self.player_service.is_uniqueid_exempt(player_id)
-            )
+            # All players are required to have game ownership verified
+            # so this is for informational purposes only
+            ignore_result=True
         )
         if not conforms_policy:
             return

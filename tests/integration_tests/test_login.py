@@ -191,8 +191,7 @@ async def test_server_valid_login_moderator(lobby_server):
     ("test", "test_password"),
     ("ban_revoked", "ban_revoked"),
     ("ban_expired", "ban_expired"),
-    ("No_UID", "his_pw"),
-    ("steam_id", "steam_id")
+    ("No_UID", "his_pw")
 ])
 async def test_policy_server_contacted(lobby_server, policy_server, player_service, user):
     player_service.is_uniqueid_exempt = lambda _: False
