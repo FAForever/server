@@ -6,14 +6,13 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Iterable, Optional
 
 import server.metrics as metrics
-
-from ..asyncio_extensions import SpinLock, synchronized
-from ..decorators import with_logger
-from ..players import PlayerState
 from .algorithm.team_matchmaker import TeamMatchMaker
 from .map_pool import MapPool
 from .pop_timer import PopTimer
 from .search import Match, Search
+from ..asyncio_extensions import SpinLock, synchronized
+from ..decorators import with_logger
+from ..players import PlayerState
 
 MatchFoundCallback = Callable[[Search, Search, "MatchmakerQueue"], Any]
 
@@ -189,11 +188,11 @@ class MatchmakerQueue:
             self._report_party_sizes(search2)
 
             rating_imbalance = abs(search1.cumulative_rating - search2.cumulative_rating)
-            metrics.match_rating_imbalance.labels(self.name).set(rating_imbalance)
+            metrics.match_rating_imbalance.labels(self.name).observe(rating_imbalance)
 
             ratings = search1.displayed_ratings + search2.displayed_ratings
             rating_variety = max(ratings) - min(ratings)
-            metrics.match_rating_variety.labels(self.name).set(rating_variety)
+            metrics.match_rating_variety.labels(self.name).observe(rating_variety)
 
             metrics.match_quality.labels(self.name).observe(
                 search1.quality_with(search2)
