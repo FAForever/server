@@ -203,7 +203,7 @@ class GameService(Service):
 
         for state in GameState:
             for rating_type in rating_type_counter.keys():
-                metrics.active_games_by_rating_type.labels(rating_type).set(
+                metrics.active_games_by_rating_type.labels(rating_type, state.name).set(
                     rating_type_counter[(rating_type, state)]
                 )
 
