@@ -6,13 +6,14 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Iterable, Optional
 
 import server.metrics as metrics
+
+from ..asyncio_extensions import SpinLock, synchronized
+from ..decorators import with_logger
+from ..players import PlayerState
 from .algorithm.team_matchmaker import TeamMatchMaker
 from .map_pool import MapPool
 from .pop_timer import PopTimer
 from .search import Match, Search
-from ..asyncio_extensions import SpinLock, synchronized
-from ..decorators import with_logger
-from ..players import PlayerState
 
 MatchFoundCallback = Callable[[Search, Search, "MatchmakerQueue"], Any]
 

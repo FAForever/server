@@ -9,6 +9,7 @@ import aiocron
 from sqlalchemy import select
 
 from server.config import config
+
 from . import metrics
 from .core import Service
 from .db import FAFDatabase
