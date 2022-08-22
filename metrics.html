@@ -65,16 +65,18 @@ match_quality = Histogram(
     buckets=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0],
 )
 
-match_rating_imbalance = Gauge(
+match_rating_imbalance = Histogram(
     &#34;server_matchmaker_matches_imbalance&#34;,
     &#34;Rating difference between the two teams&#34;,
     [&#34;queue&#34;],
+    buckets=[50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 800, 900, 1000],
 )
 
-match_rating_variety = Gauge(
+match_rating_variety = Histogram(
     &#34;server_matchmaker_matches_rating_variety&#34;,
     &#34;Maximum rating difference between two players in the game&#34;,
     [&#34;queue&#34;],
+    buckets=[100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000],
 )
 
 unmatched_searches = Gauge(
@@ -170,6 +172,14 @@ active_games = Gauge(
     &#34;Includes games in lobby, games currently running, and games that ended &#34;
     &#34;but are still in the game_service.&#34;,
     [&#34;game_mode&#34;, &#34;game_state&#34;],
+)
+
+active_games_by_rating_type = Gauge(
+    &#34;server_game_active_games_by_rating_type_total&#34;,
+    &#34;Number of currently active games by rating type. &#34;
+    &#34;Includes games in lobby, games currently running, and games that ended &#34;
+    &#34;but are still in the game_service.&#34;,
+    [&#34;rating_type&#34;, &#34;game_state&#34;],
 )
 
 rated_games = Counter(
