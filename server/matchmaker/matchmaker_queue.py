@@ -189,11 +189,11 @@ class MatchmakerQueue:
             self._report_party_sizes(search2)
 
             rating_imbalance = abs(search1.cumulative_rating - search2.cumulative_rating)
-            metrics.match_rating_imbalance.labels(self.name).set(rating_imbalance)
+            metrics.match_rating_imbalance.labels(self.name).observe(rating_imbalance)
 
             ratings = search1.displayed_ratings + search2.displayed_ratings
             rating_variety = max(ratings) - min(ratings)
-            metrics.match_rating_variety.labels(self.name).set(rating_variety)
+            metrics.match_rating_variety.labels(self.name).observe(rating_variety)
 
             metrics.match_quality.labels(self.name).observe(
                 search1.quality_with(search2)

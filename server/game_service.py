@@ -193,6 +193,20 @@ class GameService(Service):
                     game_counter[(mode, state)]
                 )
 
+        rating_type_counter = Counter(
+            (
+                game.rating_type,
+                game.state
+            )
+            for game in self._games.values()
+        )
+
+        for state in GameState:
+            for rating_type in rating_type_counter.keys():
+                metrics.active_games_by_rating_type.labels(rating_type, state.name).set(
+                    rating_type_counter[(rating_type, state)]
+                )
+
     @property
     def live_games(self) -> list[Game]:
         return [game for game in self._games.values()
