@@ -79,7 +79,7 @@ class GeoIpService(Service):
         # Run every Wednesday because GeoLite2 is updated every first Tuesday
         # of the month.
         self._update_cron = aiocron.crontab(
-            &#34;0 0 0 * * 3&#34;, func=self.check_update_geoip_db
+            &#34;0 0 * * 3&#34;, func=self.check_update_geoip_db
         )
         self._check_file_timer = Timer(
             60 * 10, self.check_geoip_db_file_updated, start=True
@@ -379,7 +379,7 @@ class GeoIpService(Service):
         # Run every Wednesday because GeoLite2 is updated every first Tuesday
         # of the month.
         self._update_cron = aiocron.crontab(
-            &#34;0 0 0 * * 3&#34;, func=self.check_update_geoip_db
+            &#34;0 0 * * 3&#34;, func=self.check_update_geoip_db
         )
         self._check_file_timer = Timer(
             60 * 10, self.check_geoip_db_file_updated, start=True
