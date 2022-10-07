@@ -13,6 +13,7 @@ from server.protocol import (
     QDataStreamProtocol,
     SimpleJsonProtocol
 )
+from server.protocol.protocol import json_encoder
 
 
 @pytest.fixture(scope="session")
@@ -256,3 +257,47 @@ async def test_read_when_disconnected(protocol):
 
     with pytest.raises(DisconnectedError):
         await protocol.read_message()
+
+
+def test_json_encoder_float_serialization():
+    assert json_encoder.encode(123.0) == "123.0"
+    assert json_encoder.encode(0.99) == "0.99"
+    assert json_encoder.encode(0.999) == "1.0"
+
+
+@given(message=st_messages())
+def test_json_encoder_encodes_server_messages(message):
+    new_encode = json_encoder.encode
+    old_encode = json.JSONEncoder(separators=(",", ":")).encode
+
+    assert new_encode(message) == old_encode(message)
+
+
+def st_dictionaries():
+    value_types = (
+        st.booleans(),
+        st.text(),
+        st.integers(),
+        st.none(),
+    )
+    key_types = (*value_types, st.floats())
+    return st.dictionaries(
+        keys=st.one_of(*key_types),
+        values=st.one_of(
+            *value_types,
+            st.lists(st.one_of(*value_types)),
+            st.tuples(st.one_of(*value_types)),
+        )
+    )
+
+
+@ given(dct=st_dictionaries())
+def test_json_encoder_encodes_dicts(dct):
+    old_encode = json.JSONEncoder(separators=(",", ":")).encode
+    new_encode = json_encoder.encode
+
+    assert new_encode(dct) == old_encode(dct)
+
+    wrong_dict_key = (1, 2)
+    with pytest.raises(TypeError):
+        json_encoder.encode({wrong_dict_key: "a"})

@@ -132,8 +132,8 @@ class ServerContext:
             asyncio.CancelledError,
         ):
             pass
-        except Exception:
-            self._logger.exception()
+        except Exception as e:
+            self._logger.exception(e)
         finally:
             del self.connections[connection]
             # Do not wait for buffers to empty here. This could stop the process
