@@ -217,8 +217,8 @@ async def test_start_game_timeout(
         mock.call({
             "command": "notice",
             "style": "info",
-            "text": "You have received 1 violations for failing to connect "
-            "to matchmaker games."
+            "text": "You have caused a matchmaker connection failure. "
+            "further failures will result in a temporary time-out from matchmaker."
         })
     ]
     p1.lobby_connection.write.assert_has_calls(p1_calls)
