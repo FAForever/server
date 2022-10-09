@@ -99,7 +99,7 @@ class ViolationService(Service):
                 "style": "info",
                 "text": (
                     f"You have caused a matchmaking connection failure {violation.count} time(s). "
-                    "multiple failures result in temporary time-outs from matchmaker. "
+                    "Multiple failures result in temporary time-outs from matchmaker. "
                     "Please seek support on the forums or discord for persistent issues." +
                     extra_text
                 )
