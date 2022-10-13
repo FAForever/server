@@ -29,6 +29,7 @@ class Search:
 
     def __init__(
         self,
+        queue,
         players: list[Player],
         start_time: Optional[float] = None,
         rating_type: str = RatingType.LADDER_1V1,
@@ -38,6 +39,7 @@ class Search:
         for player in players:
             assert player.ratings[rating_type] is not None
 
+        self.queue = queue
         self.players = players
         self.rating_type = rating_type
         self.start_time = start_time or time.time()
@@ -274,6 +276,12 @@ class Search:
             f"{f', FMA: {self.failed_matching_attempts}' if self.failed_matching_attempts else ''}"
             f"{', has_newbie)' if self.has_newbie() else ')'}"
         )
+
+    def __eq__(self, other):
+        return self.players == other.players
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def get_original_searches(self) -> list["Search"]:
         """

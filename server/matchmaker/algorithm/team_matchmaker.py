@@ -2,29 +2,16 @@ import logging
 import statistics
 from collections import defaultdict
 from math import sqrt
-from typing import Iterable, NamedTuple
+from typing import Iterable
 
 from sortedcontainers import SortedList
 
+from ..game_candidate import GameCandidate
 from ...config import config
 from ...decorators import with_logger
 from ..search import CombinedSearch, Match, Search, get_average_rating
 from .matchmaker import Matchmaker
 from .stable_marriage import StableMarriageMatchmaker
-
-
-class GameCandidate(NamedTuple):
-    """
-    Holds the participating searches and a quality rating for a potential game
-    from the matchmaker. The quality is not the trueskill quality!
-    """
-    match: Match
-    quality: float
-
-    @property
-    def all_searches(self) -> set[Search]:
-        return set(search for team in self.match for search in team.get_original_searches())
-
 
 class UnevenTeamsException(Exception):
     pass
@@ -57,9 +44,9 @@ class TeamMatchMaker(Matchmaker):
     9. repeat 8. until the list is empty
     """
 
-    def find(self, searches: Iterable[Search], team_size: int) -> tuple[list[Match], list[Search]]:
+    def find(self, searches: Iterable[Search], team_size: int) -> list[GameCandidate]:
         if not searches:
-            return [], []
+            return []
 
         if team_size == 1:
             return StableMarriageMatchmaker().find(searches, 1)
@@ -94,13 +81,6 @@ class TeamMatchMaker(Matchmaker):
                     game.match[0].cumulative_rating - game.match[1].cumulative_rating,
                     game.quality
                 )
-
-        matches = self.pick_noncolliding_games(possible_games)
-        for match in matches:
-            for team in match:
-                for search in team.get_original_searches():
-                    searches.remove(search)
-        return matches, list(searches)
 
     @staticmethod
     def pick_neighboring_players(searches: list[Search], index: int, team_size: int) -> list[Search]:

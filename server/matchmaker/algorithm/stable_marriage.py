@@ -3,6 +3,7 @@ import math
 import statistics as stats
 from typing import Iterable
 
+from .team_matchmaker import GameCandidate
 from ...decorators import with_logger
 from ..search import Match, Search
 from .matchmaker import Matchmaker, MatchmakingPolicy1v1
@@ -81,8 +82,9 @@ class StableMarriageMatchmaker(Matchmaker):
     """
 
     def find(
-        self, searches: Iterable[Search], team_size: int
-    ) -> tuple[list[Match], list[Search]]:
+            self, searches: Iterable[Search], team_size: int
+    ) -> list[GameCandidate]:
+        # TODO: fix
         if team_size != 1:
             self._logger.error(
                 "Invalid team size %i for stable marriage matchmaker will be ignored",
