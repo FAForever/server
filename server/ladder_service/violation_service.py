@@ -98,8 +98,9 @@ class ViolationService(Service):
                 "command": "notice",
                 "style": "info",
                 "text": (
-                    f"You have received {violation.count} violations "
-                    "for failing to connect to matchmaker games." +
+                    f"You have caused a matchmaking connection failure {violation.count} time(s). "
+                    "Multiple failures result in temporary time-outs from matchmaker. "
+                    "Please seek support on the forums or discord for persistent issues." +
                     extra_text
                 )
             })

@@ -217,8 +217,11 @@ async def test_start_game_timeout(
         mock.call({
             "command": "notice",
             "style": "info",
-            "text": "You have received 1 violations for failing to connect "
-            "to matchmaker games."
+            "text": (
+                "You have caused a matchmaking connection failure 1 time(s). "
+                "Multiple failures result in temporary time-outs from matchmaker. "
+                "Please seek support on the forums or discord for persistent issues."
+            )
         })
     ]
     p1.lobby_connection.write.assert_has_calls(p1_calls)
@@ -273,8 +276,11 @@ async def test_start_game_timeout_on_send(
         mock.call({
             "command": "notice",
             "style": "info",
-            "text": "You have received 1 violations for failing to connect "
-            "to matchmaker games."
+            "text": (
+                "You have caused a matchmaking connection failure 1 time(s). "
+                "Multiple failures result in temporary time-outs from matchmaker. "
+                "Please seek support on the forums or discord for persistent issues."
+            )
         })
     ]
     p1.lobby_connection.write.assert_has_calls(p1_calls)
