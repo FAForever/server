@@ -126,8 +126,9 @@ class ViolationService(Service):
                 &#34;command&#34;: &#34;notice&#34;,
                 &#34;style&#34;: &#34;info&#34;,
                 &#34;text&#34;: (
-                    f&#34;You have received {violation.count} violations &#34;
-                    &#34;for failing to connect to matchmaker games.&#34; +
+                    f&#34;You have caused a matchmaking connection failure {violation.count} time(s). &#34;
+                    &#34;Multiple failures result in temporary time-outs from matchmaker. &#34;
+                    &#34;Please seek support on the forums or discord for persistent issues.&#34; +
                     extra_text
                 )
             })
@@ -373,8 +374,9 @@ class ViolationService(Service):
                 &#34;command&#34;: &#34;notice&#34;,
                 &#34;style&#34;: &#34;info&#34;,
                 &#34;text&#34;: (
-                    f&#34;You have received {violation.count} violations &#34;
-                    &#34;for failing to connect to matchmaker games.&#34; +
+                    f&#34;You have caused a matchmaking connection failure {violation.count} time(s). &#34;
+                    &#34;Multiple failures result in temporary time-outs from matchmaker. &#34;
+                    &#34;Please seek support on the forums or discord for persistent issues.&#34; +
                     extra_text
                 )
             })
@@ -481,8 +483,9 @@ class ViolationService(Service):
             &#34;command&#34;: &#34;notice&#34;,
             &#34;style&#34;: &#34;info&#34;,
             &#34;text&#34;: (
-                f&#34;You have received {violation.count} violations &#34;
-                &#34;for failing to connect to matchmaker games.&#34; +
+                f&#34;You have caused a matchmaking connection failure {violation.count} time(s). &#34;
+                &#34;Multiple failures result in temporary time-outs from matchmaker. &#34;
+                &#34;Please seek support on the forums or discord for persistent issues.&#34; +
                 extra_text
             )
         })</code></pre>
