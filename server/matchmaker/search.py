@@ -27,10 +27,20 @@ class Search:
     Represents the state of a users search for a match.
     """
 
+    def adjusted_rating(self, player: Player) -> Rating:
+        """
+        Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
+        """
+        mean, dev = player.ratings[self.rating_type]
+        game_count = player.game_count[self.rating_type]
+        adjusted_mean = ((config.NEWBIE_MIN_GAMES - game_count) * config.NEWBIE_BASE_MEAN
+                         + game_count * mean) / config.NEWBIE_MIN_GAMES
+        return Rating(adjusted_mean, dev)
+
     def __init__(
         self,
-        queue,
         players: list[Player],
+        queue,
         start_time: Optional[float] = None,
         rating_type: str = RatingType.LADDER_1V1,
         on_matched: OnMatchedCallback = lambda _1, _2: None
@@ -49,16 +59,6 @@ class Search:
 
         # Precompute this
         self.quality_against_self = self.quality_with(self)
-
-    def adjusted_rating(self, player: Player) -> Rating:
-        """
-        Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
-        """
-        mean, dev = player.ratings[self.rating_type]
-        game_count = player.game_count[self.rating_type]
-        adjusted_mean = ((config.NEWBIE_MIN_GAMES - game_count) * config.NEWBIE_BASE_MEAN
-                         + game_count * mean) / config.NEWBIE_MIN_GAMES
-        return Rating(adjusted_mean, dev)
 
     def is_newbie(self, player: Player) -> bool:
         return player.game_count[self.rating_type] <= config.NEWBIE_MIN_GAMES

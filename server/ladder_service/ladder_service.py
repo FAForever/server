@@ -145,8 +145,8 @@ class LadderService(Service):
         for name, info in db_queues.items():
             if name not in self.queues:
                 queue = MatchmakerQueue(
-                    self.game_service,
-                    self.on_match_found,
+                    game_service=self.game_service,
+                    on_match_found=self.on_match_found,
                     timer=self.timer,
                     matchmaker=self.matchmaker,
                     name=name,
@@ -340,7 +340,7 @@ class LadderService(Service):
 
         queue = self.queues[queue_name]
         search = Search(
-            players,
+            players=players,
             rating_type=queue.rating_type,
             on_matched=on_matched,
             queue=queue
