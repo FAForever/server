@@ -50,6 +50,11 @@ from server.players import Player, PlayerState
 from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
 
 
+def has_no_overlap(match: Match, matches_tmm_searches: set[Search]):
+    searches_in_match = set(search for team in match for search in team.get_original_searches())
+    return searches_in_match.isdisjoint(matches_tmm_searches)
+
+
 @with_logger
 class LadderService(Service):
     """
@@ -94,13 +99,11 @@ class LadderService(Service):
             try:
                 await self.timer.next_pop()
                 possible_games = list()
-                for queue in self.queues.values():
+                for queue in self._queues_without1v1():
                     possible_games += await queue.find_matches()
-
-                    # Any searches in the queue at this point were unable to find a
-                    # match this round and will have higher priority next round.
-                matches = self.matchmaker.pick_noncolliding_games(possible_games)
-                await self._found_matches(matches)
+                matches_tmm = self.matchmaker.pick_noncolliding_games(possible_games)
+                matches_tmm = await self._add_matches_from1v1(matches_tmm)
+                await self._found_matches(matches_tmm)
 
             except asyncio.CancelledError:
                 break
@@ -111,6 +114,23 @@ class LadderService(Service):
                 # To avoid potential busy loops
                 await asyncio.sleep(1)
         self._logger.error("popping queues stopped")
+
+    async def _add_matches_from1v1(self, matches_tmm):
+        if self._1v1queue() is not None:
+            matches_1v1 = await self._1v1queue().find_matches1v1()
+            matches_tmm_searches = set(search for match in matches_tmm
+                                       for team in match
+                                       for search in team.get_original_searches())
+            matches_1v1 = [match for match in matches_1v1 if has_no_overlap(match, matches_tmm_searches)]
+            matches_tmm += matches_1v1
+        return matches_tmm
+
+    def _queues_without1v1(self) -> list[MatchmakerQueue]:
+        return [queue for queue in self.queues.values() if queue.team_size != 1]
+
+    def _1v1queue(self) -> MatchmakerQueue:
+        queue1v1 = [queue for queue in self.queues.values() if queue.team_size == 1]
+        return queue1v1[0] if queue1v1 else None
 
     async def _found_matches(self, matches: list[Match]):
         for queue in self.queues.values():

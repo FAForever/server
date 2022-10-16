@@ -43,13 +43,9 @@ class TeamMatchMaker(Matchmaker):
     8. pick the first game from the game list and remove all other games that contain the same players
     9. repeat 8. until the list is empty
     """
-
     def find(self, searches: Iterable[Search], team_size: int) -> list[GameCandidate]:
         if not searches:
             return []
-
-        if team_size == 1:
-            return StableMarriageMatchmaker().find(searches, 1)
 
         searches = SortedList(searches, key=lambda s: s.average_rating)
         possible_games = []

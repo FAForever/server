@@ -3,7 +3,6 @@ import math
 import statistics as stats
 from typing import Iterable
 
-from .team_matchmaker import GameCandidate
 from ...decorators import with_logger
 from ..search import Match, Search
 from .matchmaker import Matchmaker, MatchmakingPolicy1v1
@@ -82,9 +81,8 @@ class StableMarriageMatchmaker(Matchmaker):
     """
 
     def find(
-            self, searches: Iterable[Search], team_size: int
-    ) -> list[GameCandidate]:
-        # TODO: fix
+        self, searches: Iterable[Search], team_size: int = 1
+    ) -> list[Match]:
         if team_size != 1:
             self._logger.error(
                 "Invalid team size %i for stable marriage matchmaker will be ignored",
@@ -107,10 +105,10 @@ class StableMarriageMatchmaker(Matchmaker):
         ]
         self._logger.debug("Matching randomly for remaining newbies...")
 
-        randomly_matched_newbies, unmatched_searches = RandomlyMatchNewbies().find(remaining_searches)
+        randomly_matched_newbies = RandomlyMatchNewbies().find(remaining_searches)
         matches.update(randomly_matched_newbies)
 
-        return self._remove_duplicates(matches), unmatched_searches
+        return self._remove_duplicates(matches)
 
     @staticmethod
     def _remove_duplicates(matches: dict[Search, Search]) -> list[Match]:

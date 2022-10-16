@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Iterable, Optional
 
 import server.metrics as metrics
+from .algorithm.stable_marriage import StableMarriageMatchmaker
 from .algorithm.team_matchmaker import TeamMatchMaker, GameCandidate
 from .map_pool import MapPool
 from .search import Match, Search
@@ -38,18 +39,18 @@ class MatchmakerSearchTimer:
 @with_logger
 class MatchmakerQueue:
     def __init__(
-        self,
-        game_service: "GameService",
-        on_match_found: MatchFoundCallback,
-        timer: "PopTimer",
-        name: str,
-        queue_id: int,
-        featured_mod: str,
-        rating_type: str,
-        matchmaker: TeamMatchMaker,
-        team_size: int = 1,
-        params: Optional[dict[str, Any]] = None,
-        map_pools: Iterable[tuple[MapPool, Optional[int], Optional[int]]] = (),
+            self,
+            game_service: "GameService",
+            on_match_found: MatchFoundCallback,
+            timer: "PopTimer",
+            name: str,
+            queue_id: int,
+            featured_mod: str,
+            rating_type: str,
+            matchmaker: TeamMatchMaker,
+            team_size: int = 1,
+            params: Optional[dict[str, Any]] = None,
+            map_pools: Iterable[tuple[MapPool, Optional[int], Optional[int]]] = (),
     ):
         self.game_service = game_service
         self.name = name
@@ -67,10 +68,10 @@ class MatchmakerQueue:
         self.timer = timer
 
     def add_map_pool(
-        self,
-        map_pool: MapPool,
-        min_rating: Optional[int],
-        max_rating: Optional[int]
+            self,
+            map_pool: MapPool,
+            min_rating: Optional[int],
+            max_rating: Optional[int]
     ) -> None:
         self.map_pools[map_pool.id] = (map_pool, min_rating, max_rating)
 
@@ -135,6 +136,23 @@ class MatchmakerQueue:
             self.team_size,
         )
 
+    async def find_matches1v1(self) -> list[Match]:
+        self._logger.info("Searching for 1v1 matches: %s", self.name)
+
+        searches = list(self._queue.keys())
+
+        if self.num_players < 2 * self.team_size:
+            return []
+        matchmaker = StableMarriageMatchmaker()
+        # Call self.match on all matches and filter out the ones that were cancelled
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            None,
+            matchmaker.find,
+            searches,
+            self.team_size,
+        )
+
     def get_unmatched_searches(self, proposed_matches: list[Match]) -> list[Search]:
         searches = list(self._queue.keys())
         for match in proposed_matches:
@@ -185,8 +203,8 @@ class MatchmakerQueue:
             ).inc()
 
     def _register_unmatched_searches(
-        self,
-        unmatched_searches: list[Search],
+            self,
+            unmatched_searches: list[Search],
     ):
         """
         Tells all unmatched searches that they went through a failed matching
@@ -218,8 +236,8 @@ class MatchmakerQueue:
             return False
         # Additional failsafe. Ideally this check will never fail.
         if any(
-            player.state != PlayerState.SEARCHING_LADDER
-            for player in s1.players + s2.players
+                player.state != PlayerState.SEARCHING_LADDER
+                for player in s1.players + s2.players
         ):
             self._logger.warning(
                 "Tried to match searches %s and %s while some players had "
