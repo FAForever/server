@@ -96,9 +96,9 @@ class ConfigurationStore:
         # stdev of the ratings of all participating players
         self.MAXIMUM_RATING_DEVIATION = 250
         # Quality bonus for each failed matching attempt per full team
-        self.TIME_BONUS = 0.02
+        self.TIME_BONUS = 0.01
         self.MAXIMUM_TIME_BONUS = 0.2
-        self.NEWBIE_TIME_BONUS = 0.5
+        self.NEWBIE_TIME_BONUS = 0.25
         self.MAXIMUM_NEWBIE_TIME_BONUS = 3.0
         self.MINORITY_BONUS = 1.0
 
@@ -120,7 +120,7 @@ class ConfigurationStore:
         self.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX = 0.3
         self.LADDER_TOP_PLAYER_SEARCH_EXPANSION_STEP = 0.15
         # The maximum amount of time in seconds) to wait between pops.
-        self.QUEUE_POP_TIME_MAX = 180
+        self.QUEUE_POP_TIME_MAX = 90
         # The number of possible matches we would like to have when the queue
         # pops. The queue pop time will be adjusted based on the current rate of
         # players queuing to try and hit this number.
