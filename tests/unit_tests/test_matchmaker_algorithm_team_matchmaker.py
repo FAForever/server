@@ -214,6 +214,8 @@ def test_ignore_impossible_team_splits(player_factory):
 
 @given(team_a=st_searches(4), team_b=st_searches(4))
 def test_game_quality(team_a, team_b):
+    config.MINORITY_BONUS = 0
+
     game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4)
 
     assert game.quality <= 1.0
@@ -226,7 +228,7 @@ def test_maximum_game_quality_for_even_teams(player):
     team_b = CombinedSearch(*[search] * 4)
     game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4)
 
-    assert game.quality == 1.0
+    assert game.quality >= 1.0
 
 
 def test_low_game_quality_for_high_rating_disparity(player_factory):

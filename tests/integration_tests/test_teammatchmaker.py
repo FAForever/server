@@ -236,6 +236,11 @@ async def test_game_matchmaking_with_parties(lobby_server):
 
 @fast_forward(30)
 async def test_newbie_matchmaking_with_parties(lobby_server):
+    """
+    This tests that newbies get matched even if the resulting
+    game would be too unbalanced normally
+    """
+
     # Two completely new tmm players
     id1, _, proto1 = await connect_and_sign_in(
         ("ladder1", "ladder1"), lobby_server
