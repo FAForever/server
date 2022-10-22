@@ -11,7 +11,8 @@ class Matchmaker(ABC):
     def find(
         self,
         searches: Iterable[Search],
-        team_size: int
+        team_size: int,
+        rating_peak: float
     ) -> tuple[list[Match], list[Search]]:
         pass
 

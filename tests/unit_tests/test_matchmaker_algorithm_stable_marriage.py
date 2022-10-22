@@ -474,7 +474,7 @@ def test_matchmaker(player_factory):
     ]
     team_size = 1
     matchmaker = stable_marriage.StableMarriageMatchmaker()
-    match_pairs, unmatched_searches = matchmaker.find(searches, team_size)
+    match_pairs, unmatched_searches = matchmaker.find(searches, team_size, 1000)
     match_sets = [set(pair) for pair in match_pairs]
 
     assert {newbie_that_matches1, newbie_that_matches2} in match_sets
@@ -495,7 +495,7 @@ def test_matchmaker_performance(player_factory, bench, caplog):
     with bench:
         team_size = 1
         matchmaker = stable_marriage.StableMarriageMatchmaker()
-        matchmaker.find(searches, team_size)
+        matchmaker.find(searches, team_size, 1000)
 
     assert bench.elapsed() < 0.5
 
@@ -507,7 +507,7 @@ def test_matchmaker_random_only(player_factory):
     searches = (newbie1, newbie2)
     team_size = 1
     matchmaker = stable_marriage.StableMarriageMatchmaker()
-    match_pairs, unmatched_searches = matchmaker.find(searches, team_size)
+    match_pairs, unmatched_searches = matchmaker.find(searches, team_size, 1000)
     match_sets = [set(pair) for pair in match_pairs]
 
     assert {newbie1, newbie2} in match_sets
@@ -522,7 +522,7 @@ def test_find_will_not_match_low_quality_games(player_factory):
 
     team_size = 1
     matchmaker = stable_marriage.StableMarriageMatchmaker()
-    matches, unmatched_searches = matchmaker.find(searches, team_size)
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
 
     assert len(matches) == 0
     assert len(unmatched_searches) == len(searches)
@@ -543,7 +543,7 @@ def test_unmatched_searches_without_newbies(player_factory):
 
     team_size = 1
     matchmaker = stable_marriage.StableMarriageMatchmaker()
-    matches, unmatched_searches = matchmaker.find(searches, team_size)
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
 
     expected_number_of_matches = 2
     assert len(matches) == expected_number_of_matches
@@ -573,7 +573,7 @@ def test_unmatched_searches_with_newbies(player_factory):
 
     team_size = 1
     matchmaker = stable_marriage.StableMarriageMatchmaker()
-    matches, unmatched_searches = matchmaker.find(searches, team_size)
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
 
     expected_number_of_matches = 5
     assert len(matches) == expected_number_of_matches

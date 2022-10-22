@@ -59,7 +59,7 @@ def test_team_matchmaker_performance(player_factory, bench, caplog):
     searches = [Search([player_factory(1500, 500, ladder_games=1)]) for _ in range(num_searches)]
 
     with bench:
-        matchmaker.find(searches, 4)
+        matchmaker.find(searches, 4, 1000)
 
     assert bench.elapsed() < 0.5
 
@@ -78,7 +78,7 @@ def test_team_matchmaker_algorithm(player_factory):
     s.append(c3)
     s.append(c4)
 
-    matches, unmatched = matchmaker.find(s, 4)
+    matches, unmatched = matchmaker.find(s, 4, 1000)
 
     assert set(matches[1][0].get_original_searches()) == {c1, s[2], s[5]}
     assert set(matches[1][1].get_original_searches()) == {c3, s[1], s[6]}
@@ -86,7 +86,7 @@ def test_team_matchmaker_algorithm(player_factory):
     assert set(matches[0][1].get_original_searches()) == {c2, s[0], s[3]}
     assert set(unmatched) == {s[7]}
     for match in matches:
-        assert matchmaker.assign_game_quality(match, 4).quality > config.MINIMUM_GAME_QUALITY
+        assert matchmaker.assign_game_quality(match, 4, 1000).quality > config.MINIMUM_GAME_QUALITY
 
 
 def test_team_matchmaker_algorithm_2(player_factory):
@@ -103,13 +103,13 @@ def test_team_matchmaker_algorithm_2(player_factory):
     s.append(c3)
     s.append(c4)
 
-    matches, unmatched = matchmaker.find(s, 4)
+    matches, unmatched = matchmaker.find(s, 4, 1000)
 
     assert set(matches[0][0].get_original_searches()) == {c4, s[4]}
     assert set(matches[0][1].get_original_searches()) == {c2, c3}
     assert set(unmatched) == {s[0], s[1], s[2], s[3], s[5], s[6], s[7], c1}
     for match in matches:
-        assert matchmaker.assign_game_quality(match, 4).quality > config.MINIMUM_GAME_QUALITY
+        assert matchmaker.assign_game_quality(match, 4, 1000).quality > config.MINIMUM_GAME_QUALITY
 
 
 @pytest.mark.slow
@@ -206,7 +206,7 @@ def test_ignore_impossible_team_splits(player_factory):
     s.append(c2)
     s.append(c3)
 
-    matches, unmatched = TeamMatchMaker().find(s, 4)
+    matches, unmatched = TeamMatchMaker().find(s, 4, 1000)
 
     assert matches == []
     assert set(unmatched) == set(s)
@@ -216,7 +216,7 @@ def test_ignore_impossible_team_splits(player_factory):
 def test_game_quality(team_a, team_b):
     config.MINORITY_BONUS = 0
 
-    game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4)
+    game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4, 1000)
 
     assert game.quality <= 1.0
 
@@ -226,7 +226,7 @@ def test_maximum_game_quality_for_even_teams(player):
     search = Search([player])
     team_a = CombinedSearch(*[search] * 4)
     team_b = CombinedSearch(*[search] * 4)
-    game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4)
+    game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4, 1000)
 
     assert game.quality >= 1.0
 
@@ -235,7 +235,7 @@ def test_low_game_quality_for_high_rating_disparity(player_factory):
     s = make_searches([100, 100, 4000, 4000, 4000, 4000, 100, 100], player_factory)
     team_a = CombinedSearch(*[s[0], s[1], s[2], s[3]])
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
-    game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4)
+    game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4, 1000)
 
     assert game.quality < 0.0
 
@@ -244,7 +244,7 @@ def test_low_game_quality_for_unfair_teams(player_factory):
     s = make_searches([100, 100, 100, 100, 4000, 4000, 4000, 4000], player_factory)
     team_a = CombinedSearch(*[s[0], s[1], s[2], s[3]])
     team_b = CombinedSearch(*[s[4], s[5], s[6], s[7]])
-    game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4)
+    game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4, 1000)
 
     assert game.quality < 0.0
 
@@ -255,11 +255,11 @@ def test_game_quality_time_bonus(s):
     team_a = CombinedSearch(*[s.pop(), s.pop(), s.pop()])
     c1 = CombinedSearch(*[s.pop(), s.pop()])
     team_b = CombinedSearch(*[c1, s.pop()])
-    quality_before = matchmaker.assign_game_quality((team_a, team_b), 3).quality
+    quality_before = matchmaker.assign_game_quality((team_a, team_b), 3, 1000).quality
 
     team_a.register_failed_matching_attempt()
     team_b.register_failed_matching_attempt()
-    quality_after = matchmaker.assign_game_quality((team_a, team_b), 3).quality
+    quality_after = matchmaker.assign_game_quality((team_a, team_b), 3, 1000).quality
 
     if team_a.has_high_rated_player() or team_b.has_high_rated_player():
         num_newbies = 0
@@ -281,12 +281,12 @@ def test_game_quality_max_time_bonus(s):
     team_a = CombinedSearch(*[s.pop(), s.pop(), s.pop()])
     c1 = CombinedSearch(*[s.pop(), s.pop()])
     team_b = CombinedSearch(*[c1, s.pop()])
-    quality_before = matchmaker.assign_game_quality((team_a, team_b), 3).quality
+    quality_before = matchmaker.assign_game_quality((team_a, team_b), 3, 1000).quality
 
     for _ in range(30):
         team_a.register_failed_matching_attempt()
         team_b.register_failed_matching_attempt()
-    quality_after = matchmaker.assign_game_quality((team_a, team_b), 3).quality
+    quality_after = matchmaker.assign_game_quality((team_a, team_b), 3, 1000).quality
 
     if team_a.has_high_rated_player() or team_b.has_high_rated_player():
         num_newbies = 0

@@ -57,12 +57,14 @@ class TeamMatchMaker(Matchmaker):
     9. repeat 8. until the list is empty
     """
 
-    def find(self, searches: Iterable[Search], team_size: int) -> tuple[list[Match], list[Search]]:
+    def find(
+            self, searches: Iterable[Search], team_size: int, rating_peak: float
+    ) -> tuple[list[Match], list[Search]]:
         if not searches:
             return [], []
 
         if team_size == 1:
-            return StableMarriageMatchmaker().find(searches, 1)
+            return StableMarriageMatchmaker().find(searches, 1, rating_peak)
 
         searches = SortedList(searches, key=lambda s: s.average_rating)
         possible_games = []
@@ -77,7 +79,7 @@ class TeamMatchMaker(Matchmaker):
             try:
                 participants = self.pick_neighboring_players(searches, index, team_size)
                 match = self.make_teams(participants, team_size)
-                game = self.assign_game_quality(match, team_size)
+                game = self.assign_game_quality(match, team_size, rating_peak)
                 possible_games.append(game)
             except NotEnoughPlayersException:
                 self._logger.warning("Couldn't pick enough players for a full game. Skipping this game...")
@@ -268,7 +270,7 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug("used %s as best filler", [candidate])
         return candidate
 
-    def assign_game_quality(self, match: Match, team_size: int) -> GameCandidate:
+    def assign_game_quality(self, match: Match, team_size: int, rating_peak: float) -> GameCandidate:
         newbie_bonus = 0
         time_bonus = 0
         minority_bonus = 0
@@ -285,7 +287,7 @@ class TeamMatchMaker(Matchmaker):
                 search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * num_newbies / team_size
                 newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * num_newbies / team_size)
 
-                minority_bonus = ((search.average_rating - 900) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
+                minority_bonus = ((search.average_rating - rating_peak) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
 
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
         unfairness = rating_disparity / config.MAXIMUM_RATING_IMBALANCE

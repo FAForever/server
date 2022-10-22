@@ -58,6 +58,7 @@ class MatchmakerQueue:
         self.featured_mod = featured_mod
         self.rating_type = rating_type
         self.team_size = team_size
+        self.rating_peak = 1000.0
         self.params = params or {}
         self.map_pools = {info[0].id: info for info in map_pools}
 
@@ -172,6 +173,7 @@ class MatchmakerQueue:
             self.matchmaker.find,
             searches,
             self.team_size,
+            self.rating_peak,
         )
 
         # filter out matches that were cancelled
