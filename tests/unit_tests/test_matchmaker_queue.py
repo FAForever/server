@@ -239,6 +239,30 @@ def test_combined_search_attributes(matchmaker_players):
     assert search.failed_matching_attempts == 2
 
 
+async def test_load_from_database(queue_factory):
+    queue = queue_factory(rating_type="global")
+    await queue.update_data()
+    assert queue.rating_peak == 500.0
+
+
+async def test_load_from_database_tmm(queue_factory):
+    queue = queue_factory(rating_type="tmm_2v2")
+    await queue.update_data()
+    assert queue.rating_peak == 0.0
+
+
+async def test_load_from_database_no_entries(queue_factory):
+    queue = queue_factory(rating_type="ladder_1v1")
+    await queue.update_data()
+    assert queue.rating_peak == 1000.0
+
+
+async def test_load_from_database_unknown_rating_type(queue_factory):
+    queue = queue_factory(rating_type="unspecified")
+    await queue.update_data()
+    assert queue.rating_peak == 1000.0
+
+
 def test_queue_time_until_next_pop(queue_factory):
     team_size = 2
     t1 = PopTimer(queue_factory(team_size=team_size))

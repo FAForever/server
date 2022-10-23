@@ -91,7 +91,7 @@ class LadderService(Service):
                     params=info.get("params")
                 )
                 self.queues[name] = queue
-                queue.initialize()
+                await queue.initialize()
             else:
                 queue = self.queues[name]
                 queue.featured_mod = info["mod"]

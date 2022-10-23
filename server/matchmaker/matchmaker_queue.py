@@ -1,13 +1,18 @@
 import asyncio
+import statistics
 import time
 from collections import OrderedDict
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
 from typing import Any, Callable, Iterable, Optional
 
+import aiocron
+from sqlalchemy import select
+
 import server.metrics as metrics
 
 from ..asyncio_extensions import SpinLock, synchronized
+from ..db.models import leaderboard_rating_journal, leaderboard
 from ..decorators import with_logger
 from ..players import PlayerState
 from .algorithm.team_matchmaker import TeamMatchMaker
@@ -89,8 +94,50 @@ class MatchmakerQueue:
     def get_game_options(self) -> dict[str, Any]:
         return self.params.get("GameOptions") or None
 
-    def initialize(self):
+    async def initialize(self):
         asyncio.create_task(self.queue_pop_timer())
+        await self.update_data()
+        self._update_cron = aiocron.crontab(
+            "*/10 * * * *", func=self.update_data
+        )
+
+    async def update_data(self):
+        async with self._db.acquire() as conn:
+            rows = await conn.execute(
+                select([
+                    leaderboard_rating_journal.c.rating_mean_before,
+                    leaderboard_rating_journal.c.rating_deviation_before
+                ])
+                .select_from(leaderboard_rating_journal.join(leaderboard))
+                .where(leaderboard.c.technical_name == self.rating_type)
+                .order_by(leaderboard_rating_journal.c.id.desc())
+                .limit(1000)
+            )
+
+            if len(rows) > 0:
+                self.rating_peak = statistics.mean(
+                    row.rating_mean_before - 3 * row.rating_deviation_before for row in rows
+                )
+
+            if len(rows) < 100:
+                self._logger.warning(
+                    "Could only fetch %s ratings for %s queue.",
+                    len(rows),
+                    self.rating_type
+                )
+
+            if self.rating_peak < 600 or self.rating_peak > 1200:
+                self._logger.warning(
+                    "Estimated rating peak for %s is %s. This could lead to issues with matchmaking.",
+                    self.rating_type,
+                    self.rating_peak
+                )
+            else:
+                self._logger.info(
+                    "Estimated rating peak for %s is %s.",
+                    self.rating_type,
+                    self.rating_peak
+                )
 
     @property
     def num_players(self) -> int:
