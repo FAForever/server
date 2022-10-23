@@ -99,7 +99,7 @@ class LadderService(Service):
                 queue.featured_mod = info["mod"]
                 queue.rating_type = info["rating_type"]
                 queue.team_size = info["team_size"]
-                queue.rating_peak = self.fetch_rating_peak(conn, info["rating_type"])
+                queue.rating_peak = await self.fetch_rating_peak(conn, info["rating_type"])
             queue.map_pools.clear()
             for map_pool_id, min_rating, max_rating in info["map_pools"]:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]
@@ -237,15 +237,15 @@ class LadderService(Service):
         )
 
         rating_peak = 1000.0
-        if len(rows) > 0:
+        if rows.rowcount > 0:
             rating_peak = statistics.mean(
                 row.rating_mean_before - 3 * row.rating_deviation_before for row in rows
             )
 
-        if len(rows) < 100:
+        if rows.rowcount < 100:
             self._logger.warning(
                 "Could only fetch %s ratings for %s queue.",
-                len(rows),
+                rows.rowcount,
                 rating_type
             )
 
