@@ -95,7 +95,7 @@ async def test_load_from_database(ladder_service, queue_factory):
 
         queue = ladder_service.queues["tmm2v2"]
         assert queue.rating_type == "tmm_2v2"
-        assert queue.rating_peak == 0.0
+        assert queue.rating_peak == 1100.0
 
         queue = ladder_service.queues["gameoptions"]
         assert queue.rating_type == "global"
