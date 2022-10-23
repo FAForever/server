@@ -54,6 +54,8 @@ async def test_load_from_database(ladder_service, queue_factory):
         queue = ladder_service.queues["ladder1v1"]
         assert queue.name == "ladder1v1"
         assert queue.get_game_options() is None
+        assert queue.rating_type == "ladder_1v1"
+        assert queue.rating_peak == 1000.0
         assert len(queue.map_pools) == 3
         assert list(queue.map_pools[1][0].maps.values()) == [
             Map(id=15, name="SCMP_015", path="maps/scmp_015.zip"),
@@ -91,7 +93,13 @@ async def test_load_from_database(ladder_service, queue_factory):
             }),
         ]
 
+        queue = ladder_service.queues["tmm2v2"]
+        assert queue.rating_type == "tmm2v2"
+        assert queue.rating_peak == 0.0
+
         queue = ladder_service.queues["gameoptions"]
+        assert queue.rating_type == "global"
+        assert queue.rating_peak == 500.0
         assert queue.get_game_options() == {
             "Share": "ShareUntilDeath",
             "UnitCap": 500

@@ -276,16 +276,15 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
   (41954, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 2 minute),
   (41955, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 3 minute);
 
-insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime, after_mean) values
-  (41942, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), NULL),
-  (41943, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1400),
-  (41944, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1600);
+insert into game_player_stats (id, gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime, after_mean) values
+  (1, 41942, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), NULL),
+  (2, 41943, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1400),
+  (3, 41944, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1600);
 
 insert into leaderboard_rating_journal (game_player_stats_id, leaderboard_id, rating_mean_before, rating_mean_after, rating_deviation_before, rating_deviation_after) values
-  (1, 1, 1500, 1400, 500, 400),
-  (2, 1, 1300, 1310, 100, 100),
-  (3, 1,  800,  810, 100, 100),
-  (4, 3, 1500, 1400, 500, 400);
+  (1, 1, 1200, 1210, 100, 100),
+  (2, 1, 1600, 1500, 500, 400),
+  (3, 3, 1500, 1400, 500, 400);
 
 insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_id, name_key, team_size, params, enabled) values
   (1, "ladder1v1", 6, 2, "matchmaker.ladder1v1", 1, NULL, true),

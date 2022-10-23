@@ -5,6 +5,7 @@ import asyncio
 import json
 import random
 import re
+import statistics
 from collections import defaultdict
 from typing import Awaitable, Callable, Optional
 
@@ -20,7 +21,8 @@ from server.db.models import (
     game_featuredMods,
     game_player_stats,
     game_stats,
-    leaderboard
+    leaderboard,
+    leaderboard_rating_journal
 )
 from server.db.models import map as t_map
 from server.db.models import (
@@ -91,12 +93,13 @@ class LadderService(Service):
                     params=info.get("params")
                 )
                 self.queues[name] = queue
-                await queue.initialize()
+                queue.initialize()
             else:
                 queue = self.queues[name]
                 queue.featured_mod = info["mod"]
                 queue.rating_type = info["rating_type"]
                 queue.team_size = info["team_size"]
+                queue.rating_peak = self.fetch_rating_peak(conn, info["rating_type"])
             queue.map_pools.clear()
             for map_pool_id, min_rating, max_rating in info["map_pools"]:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]
@@ -220,6 +223,46 @@ class LadderService(Service):
                 del matchmaker_queues[name]
                 errored.add(name)
         return matchmaker_queues
+
+    async def fetch_rating_peak(self, conn, rating_type):
+        rows = await conn.execute(
+            select([
+                leaderboard_rating_journal.c.rating_mean_before,
+                leaderboard_rating_journal.c.rating_deviation_before
+            ])
+            .select_from(leaderboard_rating_journal.join(leaderboard))
+            .where(leaderboard.c.technical_name == rating_type)
+            .order_by(leaderboard_rating_journal.c.id.desc())
+            .limit(1000)
+        )
+
+        rating_peak = 1000.0
+        if len(rows) > 0:
+            rating_peak = statistics.mean(
+                row.rating_mean_before - 3 * row.rating_deviation_before for row in rows
+            )
+
+        if len(rows) < 100:
+            self._logger.warning(
+                "Could only fetch %s ratings for %s queue.",
+                len(rows),
+                rating_type
+            )
+
+        if rating_peak < 600 or rating_peak > 1200:
+            self._logger.warning(
+                "Estimated rating peak for %s is %s. This could lead to issues with matchmaking.",
+                rating_type,
+                rating_peak
+            )
+        else:
+            self._logger.info(
+                "Estimated rating peak for %s is %s.",
+                rating_type,
+                rating_peak
+            )
+
+        return rating_peak
 
     def start_search(
         self,
