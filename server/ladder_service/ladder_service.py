@@ -244,6 +244,7 @@ class LadderService(Service):
                 rating_peak = statistics.mean(
                     row.rating_mean_before - 3 * row.rating_deviation_before for row in rows
                 )
+            metrics.leaderboard_rating_peak.labels(rating_type).set(rating_peak)
 
             if rowcount < 100:
                 self._logger.warning(
