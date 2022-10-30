@@ -58,7 +58,7 @@ class TeamMatchMaker(Matchmaker):
     """
 
     def find(
-            self, searches: Iterable[Search], team_size: int, rating_peak: float
+        self, searches: Iterable[Search], team_size: int, rating_peak: float
     ) -> tuple[list[Match], list[Search]]:
         if not searches:
             return [], []

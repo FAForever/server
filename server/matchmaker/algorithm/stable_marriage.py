@@ -81,7 +81,7 @@ class StableMarriageMatchmaker(Matchmaker):
     """
 
     def find(
-            self, searches: Iterable[Search], team_size: int, rating_peak: float
+        self, searches: Iterable[Search], team_size: int, rating_peak: float
     ) -> tuple[list[Match], list[Search]]:
         if team_size != 1:
             self._logger.error(

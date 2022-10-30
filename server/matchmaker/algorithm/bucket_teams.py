@@ -21,7 +21,7 @@ class BucketTeamMatchmaker(Matchmaker):
     """
 
     def find(
-            self, searches: Iterable[Search], team_size: int, rating_peak: float
+        self, searches: Iterable[Search], team_size: int, rating_peak: float
     ) -> tuple[list[Match], list[Search]]:
         teams, searches_without_team = self._find_teams(searches, team_size)
 
