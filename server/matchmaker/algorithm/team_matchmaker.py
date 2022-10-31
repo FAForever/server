@@ -2,28 +2,22 @@ import logging
 import statistics
 from collections import defaultdict
 from math import sqrt
-from typing import Iterable, NamedTuple
+from typing import Iterable
 
 from sortedcontainers import SortedList
 
 from ...config import config
 from ...decorators import with_logger
-from ..search import CombinedSearch, Match, Search, get_average_rating
+from ..game_candidate import GameCandidate
+from ..search import (
+    CombinedSearch,
+    Match,
+    Search,
+    are_searches_disjoint,
+    get_average_rating
+)
 from .matchmaker import Matchmaker
 from .stable_marriage import StableMarriageMatchmaker
-
-
-class GameCandidate(NamedTuple):
-    """
-    Holds the participating searches and a quality rating for a potential game
-    from the matchmaker. The quality is not the trueskill quality!
-    """
-    match: Match
-    quality: float
-
-    @property
-    def all_searches(self) -> set[Search]:
-        return set(search for team in self.match for search in team.get_original_searches())
 
 
 class UnevenTeamsException(Exception):
@@ -59,12 +53,9 @@ class TeamMatchMaker(Matchmaker):
 
     def find(
         self, searches: Iterable[Search], team_size: int, rating_peak: float
-    ) -> tuple[list[Match], list[Search]]:
+    ) -> list[GameCandidate]:
         if not searches:
-            return [], []
-
-        if team_size == 1:
-            return StableMarriageMatchmaker().find(searches, 1, rating_peak)
+            return []
 
         searches = SortedList(searches, key=lambda s: s.average_rating)
         possible_games = []
@@ -96,13 +87,7 @@ class TeamMatchMaker(Matchmaker):
                     game.match[0].cumulative_rating - game.match[1].cumulative_rating,
                     game.quality
                 )
-
-        matches = self.pick_noncolliding_games(possible_games)
-        for match in matches:
-            for team in match:
-                for search in team.get_original_searches():
-                    searches.remove(search)
-        return matches, list(searches)
+        return possible_games
 
     @staticmethod
     def pick_neighboring_players(searches: list[Search], index: int, team_size: int) -> list[Search]:
@@ -321,7 +306,7 @@ class TeamMatchMaker(Matchmaker):
         matches = []
         used_searches = set()
         for game in reversed(games):
-            if used_searches.isdisjoint(game.all_searches):
+            if are_searches_disjoint(used_searches, game.all_searches):
                 matches.append(game.match)
                 used_searches.update(game.all_searches)
                 self._logger.debug("used players: %s", [search for search in used_searches])

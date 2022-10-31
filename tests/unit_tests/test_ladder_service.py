@@ -5,12 +5,13 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from server import LadderService
+from server import LadderService, config
 from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
 from server.games import LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service import game_name
-from server.matchmaker import MapPool, MatchmakerQueue
+from server.matchmaker import CombinedSearch, MapPool, MatchmakerQueue, Search
+from server.matchmaker.algorithm.team_matchmaker import TeamMatchMaker
 from server.players import PlayerState
 from server.rating import RatingType
 from server.types import Map, NeroxisGeneratedMap
@@ -18,6 +19,20 @@ from tests.conftest import make_player
 from tests.utils import autocontext, exhaust_callbacks, fast_forward
 
 from .strategies import st_players
+
+
+@pytest.fixture
+def matchmaker_players_all_match(player_factory):
+    return player_factory("Dostya", player_id=1, ladder_rating=(1500, 50), state=PlayerState.SEARCHING_LADDER), \
+           player_factory("Brackman", player_id=2, ladder_rating=(1500, 50), state=PlayerState.SEARCHING_LADDER), \
+           player_factory("Zoidberg", player_id=3, ladder_rating=(1500, 50), state=PlayerState.SEARCHING_LADDER), \
+           player_factory("QAI", player_id=4, ladder_rating=(1500, 50), state=PlayerState.SEARCHING_LADDER), \
+           player_factory("Rhiza", player_id=5, ladder_rating=(1500, 50), state=PlayerState.SEARCHING_LADDER)
+
+
+@pytest.fixture
+def uninitialized_service(player_factory):
+    return LadderService(mock.Mock(), mock.Mock(), mock.Mock())
 
 
 async def test_queue_initialization(database, game_service, violation_service):
@@ -29,16 +44,13 @@ async def test_queue_initialization(database, game_service, violation_service):
         return queue
 
     with mock.patch(
-        "server.ladder_service.ladder_service.MatchmakerQueue",
-        make_mock_queue
+            "server.ladder_service.ladder_service.MatchmakerQueue",
+            make_mock_queue
     ):
         for name in list(ladder_service.queues.keys()):
             ladder_service.queues[name] = make_mock_queue()
 
         await ladder_service.initialize()
-
-        for queue in ladder_service.queues.values():
-            queue.initialize.assert_called_once()
 
 
 async def test_load_from_database(ladder_service, queue_factory):
@@ -112,6 +124,7 @@ async def test_load_from_database_new_data(ladder_service, database):
         await conn.execute(matchmaker_queue.insert().values(
             id=1000000,
             technical_name="test",
+            team_size=4,
             featured_mod_id=1,
             leaderboard_id=1,
             name_key="test.name"
@@ -122,13 +135,13 @@ async def test_load_from_database_new_data(ladder_service, database):
         ))
 
     await ladder_service.update_data()
-
     test_queue = ladder_service.queues["test"]
 
     assert test_queue.name == "test"
-    assert test_queue._is_running
     # Queue pop times are 1 second for tests
     test_queue.find_matches = mock.AsyncMock()
+    await ladder_service.initialize()
+
     await asyncio.sleep(1.5)
 
     test_queue.find_matches.assert_called()
@@ -141,10 +154,10 @@ async def test_load_from_database_new_data(ladder_service, database):
 @settings(deadline=None)
 @autocontext("ladder_and_game_service_context", "monkeypatch_context")
 async def test_start_game_1v1(
-    ladder_and_game_service,
-    monkeypatch,
-    player1,
-    player2
+        ladder_and_game_service,
+        monkeypatch,
+        player1,
+        player2
 ):
     ladder_service, game_service = ladder_and_game_service
     queue = ladder_service.queues["ladder1v1"]
@@ -168,10 +181,10 @@ async def test_start_game_1v1(
 
 
 async def test_start_game_with_game_options(
-    ladder_service,
-    game_service,
-    monkeypatch,
-    player_factory
+        ladder_service,
+        game_service,
+        monkeypatch,
+        player_factory
 ):
     queue = ladder_service.queues["gameoptions"]
     p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
@@ -197,9 +210,9 @@ async def test_start_game_with_game_options(
 
 @fast_forward(65)
 async def test_start_game_timeout(
-    ladder_service: LadderService,
-    player_factory,
-    monkeypatch
+        ladder_service: LadderService,
+        player_factory,
+        monkeypatch
 ):
     queue = ladder_service.queues["ladder1v1"]
     p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
@@ -246,9 +259,9 @@ async def test_start_game_timeout(
 
 @fast_forward(200)
 async def test_start_game_timeout_on_send(
-    ladder_service: LadderService,
-    player_factory,
-    monkeypatch
+        ladder_service: LadderService,
+        player_factory,
+        monkeypatch
 ):
     queue = ladder_service.queues["ladder1v1"]
     p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
@@ -259,6 +272,7 @@ async def test_start_game_timeout_on_send(
 
     async def wait_forever(*args, **kwargs):
         await asyncio.sleep(1000)
+
     # Even though launch_game isn't called by start_game, these mocks are
     # important for the test in case someone refactors the code to call it.
     p1.lobby_connection.launch_game.side_effect = wait_forever
@@ -300,9 +314,9 @@ async def test_start_game_timeout_on_send(
 
 
 async def test_start_game_game_closed_by_guest(
-    ladder_service: LadderService,
-    player_factory,
-    monkeypatch
+        ladder_service: LadderService,
+        player_factory,
+        monkeypatch
 ):
     queue = ladder_service.queues["ladder1v1"]
     p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
@@ -331,9 +345,9 @@ async def test_start_game_game_closed_by_guest(
 
 
 async def test_start_game_game_closed_by_host(
-    ladder_service: LadderService,
-    player_factory,
-    monkeypatch
+        ladder_service: LadderService,
+        player_factory,
+        monkeypatch
 ):
     queue = ladder_service.queues["ladder1v1"]
     p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
@@ -371,12 +385,12 @@ async def test_start_game_game_closed_by_host(
 @settings(deadline=None)
 @autocontext("ladder_and_game_service_context", "monkeypatch_context")
 async def test_start_game_with_teams(
-    ladder_and_game_service,
-    monkeypatch,
-    player1,
-    player2,
-    player3,
-    player4
+        ladder_and_game_service,
+        monkeypatch,
+        player1,
+        player2,
+        player3,
+        player4
 ):
     ladder_service, game_service = ladder_and_game_service
     queue = ladder_service.queues["tmm2v2"]
@@ -407,9 +421,9 @@ async def test_start_game_with_teams(
 @given(
     team1=st.lists(
         st.sampled_from((
-            make_player("p1", player_id=1, global_rating=(500, 10)),
-            make_player("p3", player_id=3, global_rating=(1000, 10)),
-            make_player("p5", player_id=5, global_rating=(2000, 10))
+                make_player("p1", player_id=1, global_rating=(500, 10)),
+                make_player("p3", player_id=3, global_rating=(1000, 10)),
+                make_player("p5", player_id=5, global_rating=(2000, 10))
         )),
         min_size=3,
         max_size=3,
@@ -417,9 +431,9 @@ async def test_start_game_with_teams(
     ),
     team2=st.lists(
         st.sampled_from((
-            make_player("p2", player_id=2, global_rating=(500, 10)),
-            make_player("p4", player_id=4, global_rating=(1000, 10)),
-            make_player("p6", player_id=6, global_rating=(2000, 10))
+                make_player("p2", player_id=2, global_rating=(500, 10)),
+                make_player("p4", player_id=4, global_rating=(1000, 10)),
+                make_player("p6", player_id=6, global_rating=(2000, 10))
         )),
         min_size=3,
         max_size=3,
@@ -429,11 +443,11 @@ async def test_start_game_with_teams(
 @settings(deadline=None)
 @autocontext("ladder_and_game_service_context", "monkeypatch_context")
 async def test_start_game_start_spots(
-    ladder_and_game_service,
-    monkeypatch,
-    queue_factory,
-    team1,
-    team2
+        ladder_and_game_service,
+        monkeypatch,
+        queue_factory,
+        team1,
+        team2
 ):
     ladder_service, game_service = ladder_and_game_service
     queue = queue_factory(
@@ -486,9 +500,9 @@ async def test_write_rating_progress(ladder_service: LadderService, player_facto
 
 
 async def test_search_info_message(
-    ladder_service: LadderService,
-    player_factory,
-    queue_factory,
+        ladder_service: LadderService,
+        player_factory,
+        queue_factory,
 ):
     ladder_service.queues["tmm2v2"] = queue_factory("tmm2v2")
 
@@ -550,9 +564,9 @@ async def test_search_info_message(
 
 
 async def test_start_search_multiqueue(
-    ladder_service: LadderService,
-    player_factory,
-    queue_factory,
+        ladder_service: LadderService,
+        player_factory,
+        queue_factory,
 ):
     ladder_service.queues["tmm2v2"] = queue_factory("tmm2v2")
 
@@ -574,9 +588,9 @@ async def test_start_search_multiqueue(
 
 
 async def test_start_search_multiqueue_multiple_players(
-    ladder_service: LadderService,
-    player_factory,
-    queue_factory,
+        ladder_service: LadderService,
+        player_factory,
+        queue_factory,
 ):
     ladder_service.queues["tmm2v2"] = queue_factory("tmm2v2")
 
@@ -620,9 +634,9 @@ async def test_start_search_multiqueue_multiple_players(
 
 
 async def test_game_start_cancels_search(
-    ladder_service: LadderService,
-    player_factory,
-    queue_factory,
+        ladder_service: LadderService,
+        player_factory,
+        queue_factory,
 ):
     ladder_service.queues["tmm2v2"] = queue_factory("tmm2v2")
 
@@ -660,8 +674,8 @@ async def test_game_start_cancels_search(
 
 
 async def test_on_match_found_sets_player_state(
-    ladder_service: LadderService,
-    player_factory,
+        ladder_service: LadderService,
+        player_factory,
 ):
     p1 = player_factory(
         "Dostya",
@@ -691,9 +705,9 @@ async def test_on_match_found_sets_player_state(
 
 
 async def test_start_and_cancel_search(
-    ladder_service: LadderService,
-    player_factory,
-    event_loop,
+        ladder_service: LadderService,
+        player_factory,
+        event_loop,
 ):
     p1 = player_factory(
         "Dostya",
@@ -717,9 +731,9 @@ async def test_start_and_cancel_search(
 
 
 async def test_start_search_cancels_previous_search(
-    ladder_service: LadderService,
-    player_factory,
-    event_loop,
+        ladder_service: LadderService,
+        player_factory,
+        event_loop,
 ):
     p1 = player_factory(
         "Dostya",
@@ -746,9 +760,9 @@ async def test_start_search_cancels_previous_search(
 
 
 async def test_cancel_all_searches(
-    ladder_service: LadderService,
-    player_factory,
-    event_loop,
+        ladder_service: LadderService,
+        player_factory,
+        event_loop,
 ):
     p1 = player_factory(
         "Dostya",
@@ -773,8 +787,8 @@ async def test_cancel_all_searches(
 
 
 async def test_cancel_twice(
-    ladder_service: LadderService,
-    player_factory,
+        ladder_service: LadderService,
+        player_factory,
 ):
     p1 = player_factory(
         "Dostya",
@@ -806,8 +820,8 @@ async def test_cancel_twice(
 
 @fast_forward(5)
 async def test_start_game_called_on_match(
-    ladder_service: LadderService,
-    player_factory,
+        ladder_service: LadderService,
+        player_factory,
 ):
     p1 = player_factory(
         "Dostya",
@@ -836,14 +850,14 @@ async def test_start_game_called_on_match(
 
 
 @pytest.mark.parametrize("ratings", (
-    (((1500, 500), 0), ((1000, 100), 1000)),
-    (((1500, 500), 0), ((300, 100), 1000)),
-    (((400, 100), 10), ((300, 100), 1000))
+        (((1500, 500), 0), ((1000, 100), 1000)),
+        (((1500, 500), 0), ((300, 100), 1000)),
+        (((400, 100), 10), ((300, 100), 1000))
 ))
 async def test_start_game_map_selection_newbie_pool(
-    ladder_service: LadderService,
-    player_factory,
-    ratings
+        ladder_service: LadderService,
+        player_factory,
+        ratings
 ):
     p1 = player_factory(
         ladder_rating=ratings[0][0],
@@ -868,7 +882,7 @@ async def test_start_game_map_selection_newbie_pool(
 
 
 async def test_start_game_map_selection_pros(
-    ladder_service: LadderService, player_factory
+        ladder_service: LadderService, player_factory
 ):
     p1 = player_factory(
         ladder_rating=(2000, 50),
@@ -893,7 +907,7 @@ async def test_start_game_map_selection_pros(
 
 
 async def test_start_game_map_selection_rating_type(
-    ladder_service: LadderService, player_factory
+        ladder_service: LadderService, player_factory
 ):
     p1 = player_factory(
         ladder_rating=(2000, 50),
@@ -1032,8 +1046,8 @@ async def test_game_name_many_teams(player_factory):
 
 
 async def test_write_rating_progress_message(
-    ladder_service: LadderService,
-    player_factory
+        ladder_service: LadderService,
+        player_factory
 ):
     player = player_factory(ladder_rating=(1500, 500))
     player.write_message = mock.Mock()
@@ -1056,8 +1070,8 @@ async def test_write_rating_progress_message(
 
 
 async def test_write_rating_progress_message_2(
-    ladder_service: LadderService,
-    player_factory
+        ladder_service: LadderService,
+        player_factory
 ):
     player = player_factory(ladder_rating=(1500, 400.1235))
     player.write_message = mock.Mock()
@@ -1071,8 +1085,8 @@ async def test_write_rating_progress_message_2(
 
 
 async def test_write_rating_progress_other_rating(
-    ladder_service: LadderService,
-    player_factory
+        ladder_service: LadderService,
+        player_factory
 ):
     player = player_factory(
         ladder_rating=(1500, 500),
@@ -1088,3 +1102,129 @@ async def test_write_rating_progress_other_rating(
     assert player.write_message.call_args[0][0].get("command") == "notice"
     assert player.write_message.call_args[0][0].get("style") == "info"
     assert "40%" in player.write_message.call_args[0][0].get("text", "")
+
+
+async def test_queue_cancel_while_being_matched_registers_failed_attempt(
+        matchmaker_queue, matchmaker_players_all_match, uninitialized_service
+):
+    uninitialized_service.queues = {matchmaker_queue.id: matchmaker_queue}
+    p1, p2, p3, p4, _ = matchmaker_players_all_match
+    searches = [Search([p1], matchmaker_queue), Search([p2], matchmaker_queue), Search([p3], matchmaker_queue),
+                Search([p4], matchmaker_queue)]
+    for search in searches:
+        asyncio.create_task(matchmaker_queue.search(search))
+
+    searches[0].cancel()
+
+    await asyncio.sleep(0.01)
+    await uninitialized_service._queue_pop_iteration()
+
+    for search in searches[1:]:
+        assert search.is_matched ^ (search.failed_matching_attempts == 1)
+
+    assert sum(search.failed_matching_attempts for search in searches[1:]) == 1
+    matchmaker_queue.on_match_found.assert_called_once()
+    uninitialized_service.game_service.mark_dirty.assert_called_once_with(matchmaker_queue)
+
+
+async def test_queue_pop_communicates_failed_attempts(matchmaker_queue, player_factory, uninitialized_service):
+    uninitialized_service.queues = {matchmaker_queue.id: matchmaker_queue}
+    s1 = Search([player_factory("Player1", player_id=1, ladder_rating=(3000, 50), ladder_game_count=1000)],
+                matchmaker_queue)
+    s2 = Search([player_factory("Player2", player_id=2, ladder_rating=(1000, 50), ladder_game_count=1000)],
+                matchmaker_queue)
+
+    matchmaker_queue.push(s1)
+    assert s1.failed_matching_attempts == 0
+
+    await uninitialized_service._queue_pop_iteration()
+
+    assert s1.failed_matching_attempts == 1
+
+    matchmaker_queue.push(s2)
+    assert s1.failed_matching_attempts == 1
+    assert s2.failed_matching_attempts == 0
+
+    await uninitialized_service._queue_pop_iteration()
+
+    # These searches should not have been matched
+    assert s1.failed_matching_attempts == 2
+    assert s2.failed_matching_attempts == 1
+
+
+async def test_queue_many(matchmaker_queue, player_factory, uninitialized_service):
+    uninitialized_service.queues = {matchmaker_queue.id: matchmaker_queue}
+    p1, p2, p3 = player_factory("Dostya", ladder_rating=(2200, 150), state=PlayerState.SEARCHING_LADDER,
+                                ladder_game_count=1000), \
+                 player_factory("Brackman", ladder_rating=(1500, 150), state=PlayerState.SEARCHING_LADDER,
+                                ladder_game_count=1000), \
+                 player_factory("Zoidberg", ladder_rating=(1500, 125), state=PlayerState.SEARCHING_LADDER,
+                                ladder_game_count=1000)
+
+    s1 = Search([p1], matchmaker_queue)
+    s2 = Search([p2], matchmaker_queue)
+    s3 = Search([p3], matchmaker_queue)
+    matchmaker_queue.push(s1)
+    matchmaker_queue.push(s2)
+    matchmaker_queue.push(s3)
+
+    await uninitialized_service._queue_pop_iteration()
+
+    assert not s1.is_matched
+    assert s2.is_matched
+    assert s3.is_matched
+    matchmaker_queue.on_match_found.assert_called_once_with(
+        s2, s3, matchmaker_queue
+    )
+
+
+def make_searches(ratings, player_factory, matchmaker_queue):
+    return [Search([player_factory(ladder_rating=(r + 300, 100),
+                                   ladder_game_count=1000,
+                                   state=PlayerState.SEARCHING_LADDER)], matchmaker_queue) for r in ratings]
+
+
+async def test_team_matchmaker_algorithm(uninitialized_service, matchmaker_queue, player_factory):
+    matchmaker_queue.team_size = 4
+
+    matchmaker = TeamMatchMaker()
+    s = make_searches(
+        [1300, 900, 1250, 902, 1100, 1150, 1304, 950, 1150, 1200, 1090],
+        player_factory, matchmaker_queue)
+    matchmaker_queue.push(CombinedSearch(*[s.pop(), s.pop()]))
+    matchmaker_queue.push(CombinedSearch(*[s.pop(), s.pop()]))
+    matchmaker_queue.push(CombinedSearch(*[s.pop(), s.pop()]))
+    matchmaker_queue.push(CombinedSearch(*[s.pop(), s.pop(), s.pop()]))
+    matchmaker_queue.push(s.pop())
+    matchmaker_queue.push(s.pop())
+
+    uninitialized_service.queues["tmm"] = matchmaker_queue
+    await uninitialized_service._queue_pop_iteration()
+    args = matchmaker_queue.on_match_found.call_args.args
+    s1 = args[0]
+    s2 = args[1]
+
+    assert matchmaker.assign_game_quality((s1, s2), 4).quality > config.MINIMUM_GAME_QUALITY
+
+
+async def test_team_matchmaker_algorithm_2(uninitialized_service, matchmaker_queue, player_factory):
+    matchmaker_queue.team_size = 4
+
+    matchmaker = TeamMatchMaker()
+    s = make_searches(
+        [1300, 900, 1250, 902, 1100, 1250, 1304, 950, 1150, 1200, 1290, 1090, 1105],
+        player_factory, matchmaker_queue)
+    matchmaker_queue.push(CombinedSearch(*[s.pop(), s.pop(), s.pop()]))
+    matchmaker_queue.push(CombinedSearch(*[s.pop(), s.pop()]))
+    matchmaker_queue.push(CombinedSearch(*[s.pop(), s.pop()]))
+    matchmaker_queue.push(CombinedSearch(*[s.pop(), s.pop(), s.pop(), s.pop()]))
+    matchmaker_queue.push(s.pop())
+    matchmaker_queue.push(s.pop())
+
+    uninitialized_service.queues["tmm"] = matchmaker_queue
+    await uninitialized_service._queue_pop_iteration()
+    args = matchmaker_queue.on_match_found.call_args.args
+    s1 = args[0]
+    s2 = args[1]
+
+    assert matchmaker.assign_game_quality((s1, s2), 4).quality > config.MINIMUM_GAME_QUALITY

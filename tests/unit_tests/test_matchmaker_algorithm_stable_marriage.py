@@ -274,10 +274,9 @@ def test_random_newbie_matching_is_symmetric(player_factory):
     s6 = Search([player_factory(600, 500, name="p6", ladder_games=5)])
 
     searches = [s1, s2, s3, s4, s5, s6]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert len(matches) == len(searches)
-    assert len(unmatched_searches) == 0
 
     for search in matches:
         opponent = matches[search]
@@ -291,12 +290,10 @@ def test_newbies_are_forcefully_matched_with_newbies(player_factory):
     pro.register_failed_matching_attempt()
 
     searches = [newbie1, pro, newbie2]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert matches[newbie1] == newbie2
     assert matches[newbie2] == newbie1
-    assert unmatched_searches == [pro]
-
 
 def test_newbie_team_matched_with_newbie_team(player_factory):
     newbie1 = Search([
@@ -309,11 +306,10 @@ def test_newbie_team_matched_with_newbie_team(player_factory):
     ])
 
     searches = [newbie1, newbie2]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert matches[newbie1] == newbie2
     assert matches[newbie2] == newbie1
-    assert len(unmatched_searches) == 0
 
 
 def test_partial_newbie_team_matched_with_newbie_team(player_factory):
@@ -327,11 +323,10 @@ def test_partial_newbie_team_matched_with_newbie_team(player_factory):
     ])
 
     searches = [partial_newbie, newbie]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert matches[partial_newbie] == newbie
     assert matches[newbie] == partial_newbie
-    assert len(unmatched_searches) == 0
 
 
 def test_newbie_and_top_rated_team_not_matched_randomly(player_factory):
@@ -345,10 +340,9 @@ def test_newbie_and_top_rated_team_not_matched_randomly(player_factory):
     ])
 
     searches = [newbie_and_top_rated, newbie]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert not matches
-    assert len(unmatched_searches) == len(searches)
 
 
 def test_unmatched_newbies_forcefully_match_pros(player_factory):
@@ -356,15 +350,13 @@ def test_unmatched_newbies_forcefully_match_pros(player_factory):
     pro = Search([player_factory(1400, 10, ladder_games=100)])
 
     searches = [newbie, pro]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
     # No match if the pro is on their first attempt
     assert len(matches) == 0
-    assert len(unmatched_searches) == 2
 
     pro.register_failed_matching_attempt()
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
     assert len(matches) == 2
-    assert len(unmatched_searches) == 0
 
 
 def test_newbie_team_matched_with_pro_team(player_factory):
@@ -378,15 +370,13 @@ def test_newbie_team_matched_with_pro_team(player_factory):
     ])
 
     searches = [newbie, pro]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
     # No match if the pros are on their first attempt
     assert len(matches) == 0
-    assert len(unmatched_searches) == 2
 
     pro.register_failed_matching_attempt()
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
     assert len(matches) == 2
-    assert len(unmatched_searches) == 0
 
 
 def test_unmatched_newbies_do_not_forcefully_match_top_players(player_factory):
@@ -395,10 +385,9 @@ def test_unmatched_newbies_do_not_forcefully_match_top_players(player_factory):
     top_player.register_failed_matching_attempt()
 
     searches = [newbie, top_player]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert len(matches) == 0
-    assert len(unmatched_searches) == 2
 
 
 def test_newbie_team_dos_not_match_with_top_players_team(player_factory):
@@ -413,10 +402,9 @@ def test_newbie_team_dos_not_match_with_top_players_team(player_factory):
     top_player.register_failed_matching_attempt()
 
     searches = [newbie, top_player]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert len(matches) == 0
-    assert len(unmatched_searches) == 2
 
 
 def unmatched_newbie_teams_do_not_forcefully_match_pros(player_factory):
@@ -442,10 +430,9 @@ def test_odd_number_of_unmatched_newbies(player_factory):
     pro.register_failed_matching_attempt()
 
     searches = [newbie1, pro, newbie2, newbie3]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
+    matches = stable_marriage.RandomlyMatchNewbies().find(searches)
 
     assert len(matches) == 4
-    assert len(unmatched_searches) == 0
 
 
 def test_matchmaker(player_factory):
@@ -474,13 +461,12 @@ def test_matchmaker(player_factory):
     ]
     team_size = 1
     matchmaker = stable_marriage.StableMarriageMatchmaker()
-    match_pairs, unmatched_searches = matchmaker.find(searches, team_size, 1000)
+    match_pairs = matchmaker.find(searches, team_size, 1000)
     match_sets = [set(pair) for pair in match_pairs]
 
     assert {newbie_that_matches1, newbie_that_matches2} in match_sets
     assert {pro_that_matches1, pro_that_matches2} in match_sets
     assert {newbie_force_matched, pro_alone} in match_sets
-    assert unmatched_searches == [top_player]
     for match_pair in match_pairs:
         assert top_player not in match_pair
 
@@ -507,11 +493,10 @@ def test_matchmaker_random_only(player_factory):
     searches = (newbie1, newbie2)
     team_size = 1
     matchmaker = stable_marriage.StableMarriageMatchmaker()
-    match_pairs, unmatched_searches = matchmaker.find(searches, team_size, 1000)
+    match_pairs = matchmaker.find(searches, team_size, 1000)
     match_sets = [set(pair) for pair in match_pairs]
 
     assert {newbie1, newbie2} in match_sets
-    assert len(unmatched_searches) == 0
 
 
 def test_find_will_not_match_low_quality_games(player_factory):
@@ -522,13 +507,13 @@ def test_find_will_not_match_low_quality_games(player_factory):
 
     team_size = 1
     matchmaker = stable_marriage.StableMarriageMatchmaker()
-    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
+    matches = matchmaker.find(searches, team_size, 1000)
 
     assert len(matches) == 0
-    assert len(unmatched_searches) == len(searches)
 
 
 def test_unmatched_searches_without_newbies(player_factory):
+    # TODO migrate
     players = [
         player_factory(100, 10, name="lowRating_unmatched_1"),
         player_factory(500, 10, name="lowRating_unmatched_2"),
@@ -543,11 +528,10 @@ def test_unmatched_searches_without_newbies(player_factory):
 
     team_size = 1
     matchmaker = stable_marriage.StableMarriageMatchmaker()
-    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
+    matches = matchmaker.find(searches, team_size, 1000)
 
     expected_number_of_matches = 2
     assert len(matches) == expected_number_of_matches
-    assert len(unmatched_searches) == len(searches) - 2 * team_size * expected_number_of_matches
 
 
 def test_unmatched_searches_with_newbies(player_factory):
@@ -573,8 +557,7 @@ def test_unmatched_searches_with_newbies(player_factory):
 
     team_size = 1
     matchmaker = stable_marriage.StableMarriageMatchmaker()
-    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
+    matches = matchmaker.find(searches, team_size, 1000)
 
     expected_number_of_matches = 5
     assert len(matches) == expected_number_of_matches
-    assert len(unmatched_searches) == len(searches) - 2 * team_size * expected_number_of_matches

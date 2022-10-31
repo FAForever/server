@@ -43,11 +43,19 @@ from server.matchmaker import (
     MapPool,
     MatchmakerQueue,
     OnMatchedCallback,
+    PopTimer,
     Search
 )
+from server.matchmaker.algorithm.team_matchmaker import TeamMatchMaker
+from server.matchmaker.search import Match, are_searches_disjoint
 from server.metrics import MatchLaunch
 from server.players import Player, PlayerState
 from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
+
+
+def has_no_overlap(match: Match, matches_tmm_searches: set[Search]):
+    searches_in_match = set(search for team in match for search in team.get_original_searches())
+    return are_searches_disjoint(searches_in_match, matches_tmm_searches)
 
 
 @with_logger
@@ -63,6 +71,7 @@ class LadderService(Service):
         game_service: GameService,
         violation_service: ViolationService,
     ):
+        self._is_running = True
         self._db = database
         self._informed_players: set[Player] = set()
         self.game_service = game_service
@@ -70,10 +79,70 @@ class LadderService(Service):
         self.violation_service = violation_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
+        self.timer = None
+        self.matchmaker = TeamMatchMaker()
+        self.timer = PopTimer()
 
     async def initialize(self) -> None:
         await self.update_data()
         self._update_cron = aiocron.crontab("*/10 * * * *", func=self.update_data)
+        await self._initialize_pop_timer()
+
+    async def _initialize_pop_timer(self) -> None:
+        self.timer.queues = list(self.queues.values())
+        asyncio.create_task(self._queue_pop_timer())
+
+    async def _queue_pop_timer(self) -> None:
+        """ Periodically tries to match all Searches in the queue. The amount
+        of time until next queue 'pop' is determined by the number of players
+        in the queue.
+        """
+        self._logger.debug("MatchmakerQueue pop timer initialized")
+        while self._is_running:
+            try:
+                await self.timer.next_pop()
+                await self._queue_pop_iteration()
+
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                self._logger.exception(
+                    "Unexpected error during queue pop timer loop!"
+                )
+                # To avoid potential busy loops
+                await asyncio.sleep(1)
+        self._logger.error("popping queues stopped")
+
+    async def _queue_pop_iteration(self):
+        possible_games = list()
+        for queue in self._queues_without1v1():
+            possible_games += await queue.find_matches()
+        matches_tmm = self.matchmaker.pick_noncolliding_games(possible_games)
+        matches_tmm = await self._add_matches_from1v1(matches_tmm)
+        await self._found_matches(matches_tmm)
+
+    async def _add_matches_from1v1(self, matches_tmm):
+        for queue in self._1v1queues():
+            matches_1v1 = await queue.find_matches1v1()
+            self._logger.debug("Suggested the following matches %s", matches_1v1)
+            matches_tmm_searches = set(search for match in matches_tmm
+                                       for team in match
+                                       for search in team.get_original_searches())
+            matches_1v1 = [match for match in matches_1v1 if has_no_overlap(match, matches_tmm_searches)]
+            self._logger.debug("Found the following 1v1 matches %s", matches_1v1)
+            matches_tmm += matches_1v1
+        return matches_tmm
+
+    def _queues_without1v1(self) -> list[MatchmakerQueue]:
+        return [queue for queue in self.queues.values() if queue.team_size != 1]
+
+    def _1v1queues(self) -> list[MatchmakerQueue]:
+        return [queue for queue in self.queues.values() if queue.team_size == 1]
+
+    async def _found_matches(self, matches: list[Match]):
+        for queue in self.queues.values():
+            await queue.found_matches([match for match in matches if match[0].queue == queue])
+            self.game_service.mark_dirty(queue)
 
     async def update_data(self) -> None:
         async with self._db.acquire() as conn:
@@ -83,8 +152,10 @@ class LadderService(Service):
         for name, info in db_queues.items():
             if name not in self.queues:
                 queue = MatchmakerQueue(
-                    self.game_service,
-                    self.on_match_found,
+                    game_service=self.game_service,
+                    on_match_found=self.on_match_found,
+                    timer=self.timer,
+                    matchmaker=self.matchmaker,
                     name=name,
                     queue_id=info["id"],
                     featured_mod=info["mod"],
@@ -93,7 +164,6 @@ class LadderService(Service):
                     params=info.get("params")
                 )
                 self.queues[name] = queue
-                queue.initialize()
             else:
                 queue = self.queues[name]
                 queue.featured_mod = info["mod"]
@@ -118,7 +188,6 @@ class LadderService(Service):
         # Remove queues that don't exist anymore
         for queue_name in list(self.queues.keys()):
             if queue_name not in db_queues:
-                self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
 
     async def fetch_map_pools(self, conn) -> dict[int, tuple[str, list[Map]]]:
@@ -323,9 +392,10 @@ class LadderService(Service):
 
         queue = self.queues[queue_name]
         search = Search(
-            players,
+            players=players,
             rating_type=queue.rating_type,
-            on_matched=on_matched
+            on_matched=on_matched,
+            queue=queue
         )
 
         for player in players:
@@ -723,8 +793,7 @@ class LadderService(Service):
             self._informed_players.remove(player)
 
     async def shutdown(self):
-        for queue in self.queues.values():
-            queue.shutdown()
+        self._is_running = False
 
 
 class NotConnectedError(asyncio.TimeoutError):

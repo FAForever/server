@@ -3,7 +3,7 @@ import itertools
 import math
 import statistics
 import time
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Iterable, Optional
 
 import trueskill
 
@@ -27,27 +27,6 @@ class Search:
     Represents the state of a users search for a match.
     """
 
-    def __init__(
-        self,
-        players: list[Player],
-        start_time: Optional[float] = None,
-        rating_type: str = RatingType.LADDER_1V1,
-        on_matched: OnMatchedCallback = lambda _1, _2: None
-    ):
-        assert isinstance(players, list)
-        for player in players:
-            assert player.ratings[rating_type] is not None
-
-        self.players = players
-        self.rating_type = rating_type
-        self.start_time = start_time or time.time()
-        self._match = asyncio.get_event_loop().create_future()
-        self._failed_matching_attempts = 0
-        self.on_matched = on_matched
-
-        # Precompute this
-        self.quality_against_self = self.quality_with(self)
-
     def adjusted_rating(self, player: Player) -> Rating:
         """
         Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
@@ -57,6 +36,29 @@ class Search:
         adjusted_mean = ((config.NEWBIE_MIN_GAMES - game_count) * config.NEWBIE_BASE_MEAN
                          + game_count * mean) / config.NEWBIE_MIN_GAMES
         return Rating(adjusted_mean, dev)
+
+    def __init__(
+            self,
+            players: list[Player],
+            queue=None,
+            start_time: Optional[float] = None,
+            rating_type: str = RatingType.LADDER_1V1,
+            on_matched: OnMatchedCallback = lambda _1, _2: None
+    ):
+        assert isinstance(players, list)
+        for player in players:
+            assert player.ratings[rating_type] is not None
+
+        self.queue = queue
+        self.players = players
+        self.rating_type = rating_type
+        self.start_time = start_time or time.time()
+        self._match = asyncio.get_event_loop().create_future()
+        self._failed_matching_attempts = 0
+        self.on_matched = on_matched
+
+        # Precompute this
+        self.quality_against_self = self.quality_with(self)
 
     def is_newbie(self, player: Player) -> bool:
         return player.game_count[self.rating_type] <= config.NEWBIE_MIN_GAMES
@@ -291,6 +293,7 @@ class CombinedSearch(Search):
 
         self.rating_type = rating_type
         self.searches = searches
+        self.queue = searches[0].queue
 
     @property
     def players(self) -> list[Player]:
@@ -375,3 +378,11 @@ class CombinedSearch(Search):
         Returns the searches of which this CombinedSearch is comprised
         """
         return list(self.searches)
+
+
+def are_searches_disjoint(match1_searches: Iterable[Search], match2_searches: Iterable[Search]):
+    for search in match1_searches:
+        for search2 in match2_searches:
+            if search.players == search2.players:
+                return False
+    return True
