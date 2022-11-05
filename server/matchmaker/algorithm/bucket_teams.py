@@ -21,12 +21,12 @@ class BucketTeamMatchmaker(Matchmaker):
     """
 
     def find(
-        self, searches: Iterable[Search], team_size: int
+        self, searches: Iterable[Search], team_size: int, rating_peak: float
     ) -> tuple[list[Match], list[Search]]:
         teams, searches_without_team = self._find_teams(searches, team_size)
 
         matchmaker1v1 = StableMarriageMatchmaker()
-        matches, unmatched_searches = matchmaker1v1.find(teams, 1)
+        matches, unmatched_searches = matchmaker1v1.find(teams, 1, rating_peak)
 
         unmatched_searches.extend(searches_without_team)
         return matches, unmatched_searches

@@ -57,12 +57,14 @@ class TeamMatchMaker(Matchmaker):
     9. repeat 8. until the list is empty
     """
 
-    def find(self, searches: Iterable[Search], team_size: int) -> tuple[list[Match], list[Search]]:
+    def find(
+        self, searches: Iterable[Search], team_size: int, rating_peak: float
+    ) -> tuple[list[Match], list[Search]]:
         if not searches:
             return [], []
 
         if team_size == 1:
-            return StableMarriageMatchmaker().find(searches, 1)
+            return StableMarriageMatchmaker().find(searches, 1, rating_peak)
 
         searches = SortedList(searches, key=lambda s: s.average_rating)
         possible_games = []
@@ -77,7 +79,7 @@ class TeamMatchMaker(Matchmaker):
             try:
                 participants = self.pick_neighboring_players(searches, index, team_size)
                 match = self.make_teams(participants, team_size)
-                game = self.assign_game_quality(match, team_size)
+                game = self.assign_game_quality(match, team_size, rating_peak)
                 possible_games.append(game)
             except NotEnoughPlayersException:
                 self._logger.warning("Couldn't pick enough players for a full game. Skipping this game...")
@@ -268,19 +270,24 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug("used %s as best filler", [candidate])
         return candidate
 
-    def assign_game_quality(self, match: Match, team_size: int) -> GameCandidate:
+    def assign_game_quality(self, match: Match, team_size: int, rating_peak: float) -> GameCandidate:
         newbie_bonus = 0
         time_bonus = 0
+        minority_bonus = 0
         ratings = []
         for team in match:
             for search in team.get_original_searches():
                 ratings.append(search.average_rating)
-                # Time bonus accumulation for a game should not depend on team size or whether the participants are premade or not.
-                search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * len(search.players) / team_size
-                time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS * len(search.players) / team_size)
+                # Time bonus accumulation for a game should not depend on
+                # team size or whether the participants are premade or not.
+                normalize_size = len(search.players) / team_size
+                search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * normalize_size
+                time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS * normalize_size)
                 num_newbies = search.num_newbies()
                 search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * num_newbies / team_size
                 newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * num_newbies / team_size)
+
+                minority_bonus = ((search.average_rating - rating_peak) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
 
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
         unfairness = rating_disparity / config.MAXIMUM_RATING_IMBALANCE
@@ -289,12 +296,13 @@ class TeamMatchMaker(Matchmaker):
 
         # Visually this creates a cone in the unfairness-rating_variety plane
         # that slowly raises with the time bonuses.
-        quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus
+        quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus + minority_bonus
         if not any(team.has_high_rated_player() for team in match):
             quality += newbie_bonus
         self._logger.debug(
             "bonuses: %s rating disparity: %s -> unfairness: %f deviation: %f -> variety: %f -> game quality: %f",
-            newbie_bonus + time_bonus, rating_disparity, unfairness, deviation, rating_variety, quality)
+            newbie_bonus + time_bonus + minority_bonus, rating_disparity, unfairness, deviation, rating_variety, quality
+        )
         return GameCandidate(match, quality)
 
     def pick_noncolliding_games(self, games: list[GameCandidate]) -> list[Match]:

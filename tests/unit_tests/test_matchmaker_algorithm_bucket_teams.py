@@ -254,7 +254,7 @@ def test_BucketTeamMatchmaker_1v1(player_factory):
 
     team_size = 1
     matchmaker = BucketTeamMatchmaker()
-    matches, unmatched_searches = matchmaker.find(searches, team_size)
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
 
     assert len(matches) == num_players / 2 / team_size
     assert len(unmatched_searches) == num_players - 2 * team_size * len(matches)
@@ -267,7 +267,7 @@ def test_BucketTeamMatchmaker_2v2_single_searches(player_factory):
 
     team_size = 2
     matchmaker = BucketTeamMatchmaker()
-    matches, unmatched_searches = matchmaker.find(searches, team_size)
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
 
     assert len(matches) == num_players / 2 / team_size
     assert len(unmatched_searches) == num_players - 2 * team_size * len(matches)
@@ -280,7 +280,7 @@ def test_BucketTeamMatchmaker_2v2_full_party_searches(player_factory):
 
     team_size = 2
     matchmaker = BucketTeamMatchmaker()
-    matches, unmatched_searches = matchmaker.find(searches, team_size)
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
 
     assert len(matches) == num_players / 2 / team_size
     assert len(unmatched_searches) == num_players - 2 * team_size * len(matches)
@@ -296,7 +296,7 @@ def test_BucketTeammatchmaker_2v2_mixed_party_sizes(player_factory):
 
     team_size = 2
     matchmaker = BucketTeamMatchmaker()
-    matches, unmatched_searches = matchmaker.find(searches, team_size)
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
 
     assert len(matches) == num_players / 2 / team_size
     assert len(unmatched_searches) == num_players - 2 * team_size * len(matches)
@@ -316,7 +316,7 @@ def test_2v2_count_unmatched_searches(player_factory):
 
     team_size = 2
     matchmaker = BucketTeamMatchmaker()
-    matches, unmatched_searches = matchmaker.find(searches, team_size)
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
 
     assert len(matches) == 1
     number_of_unmatched_players = sum(
