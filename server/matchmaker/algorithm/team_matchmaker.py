@@ -31,7 +31,7 @@ class NotEnoughPlayersException(Exception):
 @with_logger
 class TeamMatchMaker(Matchmaker):
     """
-    Matchmaker for teams of varied size. Untested for higher than 4v4 but it should work
+    Matchmaker for teams of varied size. Untested for higher than 4v4 but it should work.
 
     Overview of the algorithm:
     1. list all the parties in queue by their average rating.
@@ -46,9 +46,6 @@ class TeamMatchMaker(Matchmaker):
     4. add this game to a games list
     5. repeat 2. to 4. for every party.
     6. you now have a list of potential games with minimal rating variation and minimal rating imbalance.
-    7. remove all games with match quality below threshold then sort by quality descending
-    8. pick the first game from the game list and remove all other games that contain the same players
-    9. repeat 8. until the list is empty
     """
 
     def find(
@@ -57,10 +54,13 @@ class TeamMatchMaker(Matchmaker):
         if not searches:
             return []
 
+        if team_size == 1:
+            return [GameCandidate(match, config.MINIMUM_GAME_QUALITY)
+                    for match in StableMarriageMatchmaker().find(searches, team_size, rating_peak)]
+
         searches = SortedList(searches, key=lambda s: s.average_rating)
         possible_games = []
 
-        self._logger.debug("========= starting matching algorithm =========")
         self._logger.debug("Searches in queue: %s", list(searches))
 
         for index, search in enumerate(searches):

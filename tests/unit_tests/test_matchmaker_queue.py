@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import time
 from unittest import mock
 
 import pytest

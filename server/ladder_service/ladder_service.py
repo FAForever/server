@@ -115,29 +115,10 @@ class LadderService(Service):
 
     async def _queue_pop_iteration(self):
         possible_games = list()
-        for queue in self._queues_without1v1():
+        for queue in self.queues.values():
             possible_games += await queue.find_matches()
         matches_tmm = self.matchmaker.pick_noncolliding_games(possible_games)
-        matches_tmm = await self._add_matches_from1v1(matches_tmm)
         await self._found_matches(matches_tmm)
-
-    async def _add_matches_from1v1(self, matches_tmm):
-        for queue in self._1v1queues():
-            matches_1v1 = await queue.find_matches1v1()
-            self._logger.debug("Suggested the following matches %s", matches_1v1)
-            matches_tmm_searches = set(search for match in matches_tmm
-                                       for team in match
-                                       for search in team.get_original_searches())
-            matches_1v1 = [match for match in matches_1v1 if has_no_overlap(match, matches_tmm_searches)]
-            self._logger.debug("Found the following 1v1 matches %s", matches_1v1)
-            matches_tmm += matches_1v1
-        return matches_tmm
-
-    def _queues_without1v1(self) -> list[MatchmakerQueue]:
-        return [queue for queue in self.queues.values() if queue.team_size != 1]
-
-    def _1v1queues(self) -> list[MatchmakerQueue]:
-        return [queue for queue in self.queues.values() if queue.team_size == 1]
 
     async def _found_matches(self, matches: list[Match]):
         for queue in self.queues.values():

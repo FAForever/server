@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from ..search import Match, Search
+from ..search import Search
 from .matchmaker import MatchmakingPolicy1v1
 
 

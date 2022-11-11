@@ -9,7 +9,6 @@ import server.metrics as metrics
 
 from ..decorators import with_logger
 from ..players import PlayerState
-from .algorithm.stable_marriage import StableMarriageMatchmaker
 from .algorithm.team_matchmaker import GameCandidate, TeamMatchMaker
 from .map_pool import MapPool
 from .search import Match, Search
@@ -137,23 +136,6 @@ class MatchmakerQueue:
             searches,
             self.team_size,
             self.rating_peak,
-        )
-
-    async def find_matches1v1(self) -> list[Match]:
-        self._logger.info("Searching for 1v1 matches: %s", self.name)
-
-        searches = list(self._queue.keys())
-
-        if self.num_players < 2 * self.team_size:
-            return []
-        matchmaker = StableMarriageMatchmaker()
-        # Call self.match on all matches and filter out the ones that were cancelled
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None,
-            matchmaker.find,
-            searches,
-            self.team_size,
         )
 
     def get_unmatched_searches(self, proposed_matches: list[Match]) -> list[Search]:
