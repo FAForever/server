@@ -15,6 +15,15 @@ class MatchLaunch:
 info = Info("build", "Information collected on server start")
 
 # ==========
+# Tournament
+# ==========
+matches_tournament = Counter(
+    "server_tournament_matches_total",
+    "Number of tournament matches made",
+    ["status"]
+)
+
+# ==========
 # Matchmaker
 # ==========
 matches = Counter(

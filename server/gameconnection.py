@@ -236,9 +236,8 @@ class GameConnection(GpgNetServerProtocol):
             raw = repr(value)
             self.game.map_scenario_path = \
                 raw.replace("\\", "/").replace("//", "/").replace("'", "")
-            self.game.map_file_path = "maps/{}.zip".format(
+            self.game.map_name = \
                 self.game.map_scenario_path.split("/")[2].lower()
-            )
         elif key == "Title":
             with contextlib.suppress(ValueError):
                 self.game.name = value

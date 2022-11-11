@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 import time
 from collections import defaultdict
 from typing import Any, Iterable, Optional
@@ -47,6 +48,9 @@ class GameError(Exception):
     pass
 
 
+MAP_FILE_PATH_PATTERN = re.compile(r"maps/(.+)\.zip")
+
+
 class Game:
     """
     Object that lasts for the lifetime of a game on FAF.
@@ -62,7 +66,7 @@ class Game:
         game_stats_service: "GameStatsService",
         host: Optional[Player] = None,
         name: str = "None",
-        map_: str = "SCMP_007",
+        map_name: str = "SCMP_007",
         game_mode: str = FeaturedModType.FAF,
         matchmaker_queue_id: Optional[int] = None,
         rating_type: Optional[str] = None,
@@ -89,7 +93,7 @@ class Game:
         self.host = host
         self.name = name
         self.map_id = None
-        self.map_file_path = f"maps/{map_}.zip"
+        self.map_name = map_name
         self.map_scenario_path = None
         self.password = None
         self._players_at_launch: list[Player] = []
@@ -152,6 +156,30 @@ class Game:
         """
         max_len = game_stats.c.gameName.type.length
         self._name = value[:max_len]
+
+    @property
+    def map_name(self):
+        return self._map_name
+
+    @map_name.setter
+    def map_name(self, name: str):
+        self._map_name = name
+        self._map_file_path = f"maps/{name}.zip"
+
+    @property
+    def map_file_path(self):
+        return self._map_file_path
+
+    @map_file_path.setter
+    def map_file_path(self, path: str):
+        m = re.match(MAP_FILE_PATH_PATTERN, path)
+        if m is None:
+            raise ValueError(
+                "Map path must start with 'maps/' and end with '.zip'"
+            )
+
+        self._map_name = m.group(1)
+        self._map_file_path = path
 
     @property
     def armies(self) -> frozenset[int]:
@@ -253,7 +281,7 @@ class Game:
             raise GameError(
                 "Missing team for at least one player. (player, team): {}"
                 .format([(player, self.get_player_option(player.id, "Team"))
-                        for player in self.players])
+                         for player in self.players])
             )
 
         teams = defaultdict(set)
@@ -439,7 +467,7 @@ class Game:
                 await self.process_game_results()
 
                 self._process_pending_army_stats()
-        except Exception:    # pragma: no cover
+        except Exception:  # pragma: no cover
             self._logger.exception("Error during game end")
         finally:
             self.state = GameState.ENDED
@@ -565,6 +593,7 @@ class Game:
     def get_basic_info(self) -> BasicGameInfo:
         return BasicGameInfo(
             self.id,
+            self.game_type,
             self.rating_type,
             self.map_id,
             self.game_mode,
@@ -936,10 +965,7 @@ class Game:
         try:
             return str(self.map_scenario_path.split("/")[2]).lower()
         except (IndexError, AttributeError):
-            if self.map_file_path:
-                return self.map_file_path[5:-4].lower()
-            else:
-                return "scmp_009"
+            return self.map_name
 
     def __eq__(self, other):
         if not isinstance(other, Game):
@@ -955,3 +981,9 @@ class Game:
             f"Game({self.id}, {self.host.login if self.host else ''}, "
             f"{self.map_file_path})"
         )
+
+    def wait_launched(self, param):
+        pass
+
+    def wait_hosted(self, param):
+        pass

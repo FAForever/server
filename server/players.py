@@ -21,6 +21,7 @@ class PlayerState(Enum):
     JOINING = 4
     SEARCHING_LADDER = 5
     STARTING_AUTOMATCH = 6
+    STARTING_TOURNAMENT = 7
 
 
 class Player:

@@ -33,6 +33,7 @@ class GameType(Enum):
     COOP = "coop"
     CUSTOM = "custom"
     MATCHMAKER = "matchmaker"
+    TOURNAMENT = "tournament"
 
 
 @unique
@@ -90,12 +91,14 @@ class BasicGameInfo(NamedTuple):
     Holds basic information about a game that does not change after launch.
     Fields:
      - game_id: id of the game
+     - game_type: type of the game
      - rating_type: str (e.g. "ladder1v1")
      - map_id: id of the map used
      - game_mode: name of the featured mod
     """
 
     game_id: int
+    game_type: GameType
     rating_type: Optional[str]
     map_id: int
     game_mode: str

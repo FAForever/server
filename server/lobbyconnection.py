@@ -58,6 +58,7 @@ from .players import Player, PlayerState
 from .protocol import DisconnectedError, Protocol
 from .rating import InclusiveRange, RatingType
 from .rating_service import RatingService
+from .tournament_service import TournamentService
 from .types import Address, GameLaunchOptions
 
 
@@ -75,6 +76,7 @@ class LobbyConnection:
         party_service: PartyService,
         rating_service: RatingService,
         oauth_service: OAuthService,
+        tournament_service: TournamentService,
     ):
         self._db = database
         self.geoip_service = geoip
@@ -86,6 +88,7 @@ class LobbyConnection:
         self.party_service = party_service
         self.rating_service = rating_service
         self.oauth_service = oauth_service
+        self.tournament_service = tournament_service
         self._authenticated = False
         self.player: Optional[Player] = None
         self.game_connection: Optional[GameConnection] = None
@@ -946,7 +949,7 @@ class LobbyConnection:
             raise ClientError("Title must contain only ascii characters.")
 
         mod = message.get("mod") or FeaturedModType.FAF
-        mapname = message.get("mapname") or "scmp_007"
+        map_name = message.get("mapname") or "scmp_007"
         password = message.get("password")
         game_mode = mod.lower()
         rating_min = message.get("rating_min")
@@ -965,13 +968,18 @@ class LobbyConnection:
             game_class=game_class,
             host=self.player,
             name=title,
-            mapname=mapname,
+            map_name=map_name,
             password=password,
             rating_type=RatingType.GLOBAL,
             displayed_rating_range=InclusiveRange(rating_min, rating_max),
             enforce_rating_range=enforce_rating_range
         )
         await self.launch_game(game, is_host=True)
+
+    @player_idle("ready up for a tournament game")
+    async def command_is_ready_response(self, message):
+        assert isinstance(self.player, Player)
+        await self.tournament_service.on_is_ready_response(message, self.player)
 
     async def command_match_ready(self, message):
         """

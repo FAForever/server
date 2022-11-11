@@ -31,6 +31,7 @@ async def test_multiple_contexts(
     party_service,
     rating_service,
     oauth_service,
+    tournament_service,
     event_loop
 ):
     config.USE_POLICY_SERVER = False
@@ -49,7 +50,8 @@ async def test_multiple_contexts(
             "ladder_service": ladder_service,
             "rating_service": rating_service,
             "party_service": party_service,
-            "oauth_service": oauth_service
+            "oauth_service": oauth_service,
+            "tournament_service": tournament_service,
         }
     )
     broadcast_service.server = instance

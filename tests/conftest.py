@@ -16,6 +16,7 @@ from unittest import mock
 import hypothesis
 import pytest
 
+from server import LadderService, TournamentService, ViolationService
 from server.api.api_accessor import ApiAccessor
 from server.api.oauth_session import OAuth2Session
 from server.config import TRACE, config
@@ -118,6 +119,7 @@ def caplog_context():
     be reset between examples. Use this fixture instead to ensure that cleanup
     happens every time the test function is called.
     """
+
     @contextmanager
     def make_caplog_context(request):
         result = pytest.LogCaptureFixture(request.node, _ispytest=True)
@@ -148,6 +150,7 @@ def test_data(request):
 async def global_database(request) -> FAFDatabase:
     def opt(val):
         return request.config.getoption(val)
+
     host, user, pw, name, port = (
         opt("--mysql_host"),
         opt("--mysql_username"),
@@ -322,6 +325,29 @@ async def rating_service(database, player_service, message_queue_service):
 
 
 @pytest.fixture
+async def tournament_service(game_service: GameService, player_service: PlayerService,
+                             message_queue_service: MessageQueueService,
+                             ladder_service: LadderService) -> TournamentService:
+    service = TournamentService(game_service, message_queue_service, player_service, ladder_service)
+    await service.initialize()
+
+    yield service
+
+    await service.shutdown()
+
+
+@pytest.fixture
+async def ladder_service(database, game_service: GameService, player_service: PlayerService,
+                         violation_service: ViolationService) -> LadderService:
+    service = LadderService(database, game_service, violation_service)
+    await service.initialize()
+
+    yield service
+
+    await service.shutdown()
+
+
+@pytest.fixture
 async def message_queue_service():
     service = MessageQueueService()
     await service.initialize()
@@ -381,6 +407,7 @@ def queue_factory():
             team_size=team_size,
             **kwargs
         )
+
     return make
 
 

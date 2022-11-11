@@ -4,9 +4,11 @@ Interfaces with RabbitMQ
 
 import asyncio
 import json
+from typing import Any, Callable
 
 import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
+from aio_pika.abc import AbstractIncomingMessage
 from aio_pika.exceptions import ProbableAuthenticationError
 
 from .asyncio_extensions import synchronizedmethod
@@ -29,6 +31,8 @@ class MessageQueueService(Service):
     def __init__(self) -> None:
         self._connection = None
         self._channel = None
+        self._listening_info = []
+        self.default_exchange = None
         self._exchanges = {}
         self._exchange_types = {}
         self._is_ready = False
@@ -48,9 +52,27 @@ class MessageQueueService(Service):
             await self._connect()
         except ConnectionAttemptFailed:
             return
-        self._is_ready = True
 
         await self._declare_exchange(config.MQ_EXCHANGE_NAME, ExchangeType.TOPIC)
+        await self._connect_listening_queues()
+        self._is_ready = True
+
+    async def _connect_listening_queues(self):
+        for listening_info in self._listening_info:
+            await self._declare_listening_queue(**listening_info)
+
+    async def listen_to_message(self, queue_name: str, routing_key: str,
+                                callback: Callable[[AbstractIncomingMessage], Any]):
+        listening_info = {
+            "queue_name": queue_name,
+            "routing_key": routing_key,
+            "callback": callback
+        }
+        self._listening_info.append(
+            listening_info
+        )
+        if self._is_ready:
+            await self._declare_listening_queue(listening_info)
 
     async def _connect(self) -> None:
         try:
@@ -64,6 +86,7 @@ class MessageQueueService(Service):
                 ),
                 loop=asyncio.get_running_loop(),
             )
+
         except ConnectionError as e:
             self._logger.warning(
                 "Unable to connect to RabbitMQ. Is it running?", exc_info=True
@@ -128,6 +151,7 @@ class MessageQueueService(Service):
         payload: dict,
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        correlation_id=None
     ) -> None:
         if not self._is_ready:
             self._logger.warning(
@@ -140,7 +164,7 @@ class MessageQueueService(Service):
             raise KeyError(f"Unknown exchange {exchange_name}.")
 
         message = aio_pika.Message(
-            json.dumps(payload).encode(), delivery_mode=delivery_mode
+            json.dumps(payload).encode(), delivery_mode=delivery_mode, correlation_id=correlation_id
         )
 
         async with self._channel.transaction():
@@ -167,4 +191,12 @@ class MessageQueueService(Service):
             await self._declare_exchange(
                 exchange_name, self._exchange_types[exchange_name]
             )
+
+        await self._connect_listening_queues()
         self._is_ready = True
+
+    async def _declare_listening_queue(self, listening_info):
+        queue = await self._channel.declare_queue(listening_info["queue_name"], auto_delete=False, durable=True)
+        # Binding queue
+        await queue.bind(self._exchanges[config.MQ_EXCHANGE_NAME], listening_info["routing_key"])
+        await queue.consume(callback=listening_info["callback"], no_ack=True)

@@ -25,7 +25,7 @@ async def test_create_game(players, game_service):
         game_mode="faf",
         host=players.hosting,
         name="Test",
-        mapname="SCMP_007",
+        map_name="SCMP_007",
         password=None
     )
     assert game is not None
@@ -42,7 +42,7 @@ async def test_all_games(players, game_service):
         game_mode="faf",
         host=players.hosting,
         name="Test",
-        mapname="SCMP_007",
+        map_name="SCMP_007",
         password=None
     )
     assert game in game_service.pending_games
@@ -68,7 +68,7 @@ async def test_create_game_other_gamemode(players, game_service):
         game_mode="labwars",
         host=players.hosting,
         name="Test",
-        mapname="SCMP_007",
+        map_name="SCMP_007",
         password=None
     )
     assert game is not None

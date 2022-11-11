@@ -6,6 +6,7 @@ import pytest
 from aiohttp import web
 from sqlalchemy import and_, select
 
+from server import TournamentService
 from server.config import config
 from server.db.models import ban, friends_and_foes
 from server.exceptions import BanError, ClientError
@@ -104,7 +105,8 @@ def lobbyconnection(
         ladder_service=mock.create_autospec(LadderService),
         party_service=mock.create_autospec(PartyService),
         oauth_service=mock.create_autospec(OAuthService),
-        rating_service=rating_service
+        rating_service=rating_service,
+        tournament_service=mock.create_autospec(TournamentService)
     )
 
     lc.player = mock_player
@@ -250,7 +252,7 @@ async def test_command_game_host_creates_game(
         "host": players.hosting,
         "visibility": VisibilityState.PUBLIC,
         "password": test_game_info["password"],
-        "mapname": test_game_info["mapname"],
+        "map_name": test_game_info["mapname"],
         "rating_type": RatingType.GLOBAL,
         "displayed_rating_range": InclusiveRange(None, None),
         "enforce_rating_range": False

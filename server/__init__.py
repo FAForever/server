@@ -117,6 +117,7 @@ from .protocol import Protocol, QDataStreamProtocol
 from .rating_service.rating_service import RatingService
 from .servercontext import ServerContext
 from .stats.game_stats_service import GameStatsService
+from .tournament_service import TournamentService
 
 __author__ = "Askaholic, Chris Kitching, Dragonfire, Gael Honorez, Jeroen De Dauw, Crotalus, Michael Søndergaard, Michel Jung"
 __contact__ = "admin@faforever.com"
@@ -134,6 +135,7 @@ __all__ = (
     "MessageQueueService",
     "OAuthService",
     "PartyService",
+    "TournamentService",
     "PlayerService",
     "RatingService",
     "RatingService",
@@ -144,6 +146,7 @@ __all__ = (
     "protocol",
     "run_control_server",
 )
+
 
 logger = logging.getLogger("server")
 
@@ -197,6 +200,7 @@ class ServerInstance(object):
             party_service=self.services["party_service"],
             rating_service=self.services["rating_service"],
             oauth_service=self.services["oauth_service"],
+            tournament_service=self.services["tournament_service"],
         )
 
     def write_broadcast(
