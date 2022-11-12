@@ -135,6 +135,7 @@ class LadderService(Service):
                 queue.featured_mod = info[&#34;mod&#34;]
                 queue.rating_type = info[&#34;rating_type&#34;]
                 queue.team_size = info[&#34;team_size&#34;]
+                queue.rating_peak = await self.fetch_rating_peak(info[&#34;rating_type&#34;])
             queue.map_pools.clear()
             for map_pool_id, min_rating, max_rating in info[&#34;map_pools&#34;]:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]
@@ -258,6 +259,50 @@ class LadderService(Service):
                 del matchmaker_queues[name]
                 errored.add(name)
         return matchmaker_queues
+
+    async def fetch_rating_peak(self, rating_type):
+        async with self._db.acquire() as conn:
+            result = await conn.execute(
+                select([
+                    leaderboard_rating_journal.c.rating_mean_before,
+                    leaderboard_rating_journal.c.rating_deviation_before
+                ])
+                .select_from(leaderboard_rating_journal.join(leaderboard))
+                .where(leaderboard.c.technical_name == rating_type)
+                .order_by(leaderboard_rating_journal.c.id.desc())
+                .limit(1000)
+            )
+            rows = result.fetchall()
+            rowcount = len(rows)
+
+            rating_peak = 1000.0
+            if rowcount &gt; 0:
+                rating_peak = statistics.mean(
+                    row.rating_mean_before - 3 * row.rating_deviation_before for row in rows
+                )
+            metrics.leaderboard_rating_peak.labels(rating_type).set(rating_peak)
+
+            if rowcount &lt; 100:
+                self._logger.warning(
+                    &#34;Could only fetch %s ratings for %s queue.&#34;,
+                    rowcount,
+                    rating_type
+                )
+
+            if rating_peak &lt; 600 or rating_peak &gt; 1200:
+                self._logger.warning(
+                    &#34;Estimated rating peak for %s is %s. This could lead to issues with matchmaking.&#34;,
+                    rating_type,
+                    rating_peak
+                )
+            else:
+                self._logger.info(
+                    &#34;Estimated rating peak for %s is %s.&#34;,
+                    rating_type,
+                    rating_peak
+                )
+
+            return rating_peak
 
     def start_search(
         self,
@@ -869,6 +914,60 @@ class LadderService(Service):
     return matchmaker_queues</code></pre>
 </details>
 </dd>
+<dt id="server.ladder_service.LadderService.fetch_rating_peak"><code class="name flex">
+<span>async def <span class="ident">fetch_rating_peak</span></span>(<span>self, rating_type)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def fetch_rating_peak(self, rating_type):
+    async with self._db.acquire() as conn:
+        result = await conn.execute(
+            select([
+                leaderboard_rating_journal.c.rating_mean_before,
+                leaderboard_rating_journal.c.rating_deviation_before
+            ])
+            .select_from(leaderboard_rating_journal.join(leaderboard))
+            .where(leaderboard.c.technical_name == rating_type)
+            .order_by(leaderboard_rating_journal.c.id.desc())
+            .limit(1000)
+        )
+        rows = result.fetchall()
+        rowcount = len(rows)
+
+        rating_peak = 1000.0
+        if rowcount &gt; 0:
+            rating_peak = statistics.mean(
+                row.rating_mean_before - 3 * row.rating_deviation_before for row in rows
+            )
+        metrics.leaderboard_rating_peak.labels(rating_type).set(rating_peak)
+
+        if rowcount &lt; 100:
+            self._logger.warning(
+                &#34;Could only fetch %s ratings for %s queue.&#34;,
+                rowcount,
+                rating_type
+            )
+
+        if rating_peak &lt; 600 or rating_peak &gt; 1200:
+            self._logger.warning(
+                &#34;Estimated rating peak for %s is %s. This could lead to issues with matchmaking.&#34;,
+                rating_type,
+                rating_peak
+            )
+        else:
+            self._logger.info(
+                &#34;Estimated rating peak for %s is %s.&#34;,
+                rating_type,
+                rating_peak
+            )
+
+        return rating_peak</code></pre>
+</details>
+</dd>
 <dt id="server.ladder_service.LadderService.get_game_history"><code class="name flex">
 <span>async def <span class="ident">get_game_history</span></span>(<span>self, players: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], queue_id: int, limit: int = 3) ‑> list[int]</span>
 </code></dt>
@@ -1168,6 +1267,7 @@ so it should only perform fast operations.</p></div>
             queue.featured_mod = info[&#34;mod&#34;]
             queue.rating_type = info[&#34;rating_type&#34;]
             queue.team_size = info[&#34;team_size&#34;]
+            queue.rating_peak = await self.fetch_rating_peak(info[&#34;rating_type&#34;])
         queue.map_pools.clear()
         for map_pool_id, min_rating, max_rating in info[&#34;map_pools&#34;]:
             map_pool_name, map_list = map_pool_maps[map_pool_id]
@@ -1278,6 +1378,7 @@ so it should only perform fast operations.</p></div>
 <li><code><a title="server.ladder_service.LadderService.cancel_search" href="#server.ladder_service.LadderService.cancel_search">cancel_search</a></code></li>
 <li><code><a title="server.ladder_service.LadderService.fetch_map_pools" href="#server.ladder_service.LadderService.fetch_map_pools">fetch_map_pools</a></code></li>
 <li><code><a title="server.ladder_service.LadderService.fetch_matchmaker_queues" href="#server.ladder_service.LadderService.fetch_matchmaker_queues">fetch_matchmaker_queues</a></code></li>
+<li><code><a title="server.ladder_service.LadderService.fetch_rating_peak" href="#server.ladder_service.LadderService.fetch_rating_peak">fetch_rating_peak</a></code></li>
 <li><code><a title="server.ladder_service.LadderService.get_game_history" href="#server.ladder_service.LadderService.get_game_history">get_game_history</a></code></li>
 <li><code><a title="server.ladder_service.LadderService.launch_match" href="#server.ladder_service.LadderService.launch_match">launch_match</a></code></li>
 <li><code><a title="server.ladder_service.LadderService.on_match_found" href="#server.ladder_service.LadderService.on_match_found">on_match_found</a></code></li>

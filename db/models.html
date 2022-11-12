@@ -245,6 +245,7 @@ leaderboard_rating = Table(
 
 leaderboard_rating_journal = Table(
     &#34;leaderboard_rating_journal&#34;, metadata,
+    Column(&#34;id&#34;,                        Integer,    primary_key=True),
     Column(&#34;game_player_stats_id&#34;,      Integer,    ForeignKey(&#34;game_player_stats.id&#34;)),
     Column(&#34;leaderboard_id&#34;,            Integer,    ForeignKey(&#34;leaderboard.id&#34;)),
     Column(&#34;rating_mean_before&#34;,        Float,      nullable=False),

@@ -102,6 +102,13 @@ matchmaker_queue_pop = Gauge(
     [&#34;queue&#34;],
 )
 
+leaderboard_rating_peak = Gauge(
+    &#34;server_leaderboard_rating_peak&#34;,
+    &#34;Average rating of the recently active players in this leaderboard&#34;
+    &#34;i.e. the peak of the bell curve&#34;,
+    [&#34;rating_type&#34;]
+)
+
 # =====
 # Users
 # =====

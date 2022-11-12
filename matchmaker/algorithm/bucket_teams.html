@@ -49,12 +49,12 @@ class BucketTeamMatchmaker(Matchmaker):
     &#34;&#34;&#34;
 
     def find(
-        self, searches: Iterable[Search], team_size: int
+        self, searches: Iterable[Search], team_size: int, rating_peak: float
     ) -&gt; tuple[list[Match], list[Search]]:
         teams, searches_without_team = self._find_teams(searches, team_size)
 
         matchmaker1v1 = StableMarriageMatchmaker()
-        matches, unmatched_searches = matchmaker1v1.find(teams, 1)
+        matches, unmatched_searches = matchmaker1v1.find(teams, 1, rating_peak)
 
         unmatched_searches.extend(searches_without_team)
         return matches, unmatched_searches
@@ -338,12 +338,12 @@ class BucketTeamMatchmaker(Matchmaker):
     &#34;&#34;&#34;
 
     def find(
-        self, searches: Iterable[Search], team_size: int
+        self, searches: Iterable[Search], team_size: int, rating_peak: float
     ) -&gt; tuple[list[Match], list[Search]]:
         teams, searches_without_team = self._find_teams(searches, team_size)
 
         matchmaker1v1 = StableMarriageMatchmaker()
-        matches, unmatched_searches = matchmaker1v1.find(teams, 1)
+        matches, unmatched_searches = matchmaker1v1.find(teams, 1, rating_peak)
 
         unmatched_searches.extend(searches_without_team)
         return matches, unmatched_searches
@@ -377,7 +377,7 @@ class BucketTeamMatchmaker(Matchmaker):
 <h3>Methods</h3>
 <dl>
 <dt id="server.matchmaker.algorithm.bucket_teams.BucketTeamMatchmaker.find"><code class="name flex">
-<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> tuple[list[tuple['Search', 'Search']], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
+<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int, rating_peak: float) ‑> tuple[list[tuple['Search', 'Search']], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -386,12 +386,12 @@ class BucketTeamMatchmaker(Matchmaker):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def find(
-    self, searches: Iterable[Search], team_size: int
+    self, searches: Iterable[Search], team_size: int, rating_peak: float
 ) -&gt; tuple[list[Match], list[Search]]:
     teams, searches_without_team = self._find_teams(searches, team_size)
 
     matchmaker1v1 = StableMarriageMatchmaker()
-    matches, unmatched_searches = matchmaker1v1.find(teams, 1)
+    matches, unmatched_searches = matchmaker1v1.find(teams, 1, rating_peak)
 
     unmatched_searches.extend(searches_without_team)
     return matches, unmatched_searches</code></pre>

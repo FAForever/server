@@ -85,12 +85,14 @@ class TeamMatchMaker(Matchmaker):
     9. repeat 8. until the list is empty
     &#34;&#34;&#34;
 
-    def find(self, searches: Iterable[Search], team_size: int) -&gt; tuple[list[Match], list[Search]]:
+    def find(
+        self, searches: Iterable[Search], team_size: int, rating_peak: float
+    ) -&gt; tuple[list[Match], list[Search]]:
         if not searches:
             return [], []
 
         if team_size == 1:
-            return StableMarriageMatchmaker().find(searches, 1)
+            return StableMarriageMatchmaker().find(searches, 1, rating_peak)
 
         searches = SortedList(searches, key=lambda s: s.average_rating)
         possible_games = []
@@ -105,7 +107,7 @@ class TeamMatchMaker(Matchmaker):
             try:
                 participants = self.pick_neighboring_players(searches, index, team_size)
                 match = self.make_teams(participants, team_size)
-                game = self.assign_game_quality(match, team_size)
+                game = self.assign_game_quality(match, team_size, rating_peak)
                 possible_games.append(game)
             except NotEnoughPlayersException:
                 self._logger.warning(&#34;Couldn&#39;t pick enough players for a full game. Skipping this game...&#34;)
@@ -296,19 +298,24 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug(&#34;used %s as best filler&#34;, [candidate])
         return candidate
 
-    def assign_game_quality(self, match: Match, team_size: int) -&gt; GameCandidate:
+    def assign_game_quality(self, match: Match, team_size: int, rating_peak: float) -&gt; GameCandidate:
         newbie_bonus = 0
         time_bonus = 0
+        minority_bonus = 0
         ratings = []
         for team in match:
             for search in team.get_original_searches():
                 ratings.append(search.average_rating)
-                # Time bonus accumulation for a game should not depend on team size or whether the participants are premade or not.
-                search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * len(search.players) / team_size
-                time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS * len(search.players) / team_size)
+                # Time bonus accumulation for a game should not depend on
+                # team size or whether the participants are premade or not.
+                normalize_size = len(search.players) / team_size
+                search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * normalize_size
+                time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS * normalize_size)
                 num_newbies = search.num_newbies()
                 search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * num_newbies / team_size
                 newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * num_newbies / team_size)
+
+                minority_bonus = ((search.average_rating - rating_peak) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
 
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
         unfairness = rating_disparity / config.MAXIMUM_RATING_IMBALANCE
@@ -317,12 +324,13 @@ class TeamMatchMaker(Matchmaker):
 
         # Visually this creates a cone in the unfairness-rating_variety plane
         # that slowly raises with the time bonuses.
-        quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus
+        quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus + minority_bonus
         if not any(team.has_high_rated_player() for team in match):
             quality += newbie_bonus
         self._logger.debug(
             &#34;bonuses: %s rating disparity: %s -&gt; unfairness: %f deviation: %f -&gt; variety: %f -&gt; game quality: %f&#34;,
-            newbie_bonus + time_bonus, rating_disparity, unfairness, deviation, rating_variety, quality)
+            newbie_bonus + time_bonus + minority_bonus, rating_disparity, unfairness, deviation, rating_variety, quality
+        )
         return GameCandidate(match, quality)
 
     def pick_noncolliding_games(self, games: list[GameCandidate]) -&gt; list[Match]:
@@ -481,12 +489,14 @@ class TeamMatchMaker(Matchmaker):
     9. repeat 8. until the list is empty
     &#34;&#34;&#34;
 
-    def find(self, searches: Iterable[Search], team_size: int) -&gt; tuple[list[Match], list[Search]]:
+    def find(
+        self, searches: Iterable[Search], team_size: int, rating_peak: float
+    ) -&gt; tuple[list[Match], list[Search]]:
         if not searches:
             return [], []
 
         if team_size == 1:
-            return StableMarriageMatchmaker().find(searches, 1)
+            return StableMarriageMatchmaker().find(searches, 1, rating_peak)
 
         searches = SortedList(searches, key=lambda s: s.average_rating)
         possible_games = []
@@ -501,7 +511,7 @@ class TeamMatchMaker(Matchmaker):
             try:
                 participants = self.pick_neighboring_players(searches, index, team_size)
                 match = self.make_teams(participants, team_size)
-                game = self.assign_game_quality(match, team_size)
+                game = self.assign_game_quality(match, team_size, rating_peak)
                 possible_games.append(game)
             except NotEnoughPlayersException:
                 self._logger.warning(&#34;Couldn&#39;t pick enough players for a full game. Skipping this game...&#34;)
@@ -692,19 +702,24 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug(&#34;used %s as best filler&#34;, [candidate])
         return candidate
 
-    def assign_game_quality(self, match: Match, team_size: int) -&gt; GameCandidate:
+    def assign_game_quality(self, match: Match, team_size: int, rating_peak: float) -&gt; GameCandidate:
         newbie_bonus = 0
         time_bonus = 0
+        minority_bonus = 0
         ratings = []
         for team in match:
             for search in team.get_original_searches():
                 ratings.append(search.average_rating)
-                # Time bonus accumulation for a game should not depend on team size or whether the participants are premade or not.
-                search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * len(search.players) / team_size
-                time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS * len(search.players) / team_size)
+                # Time bonus accumulation for a game should not depend on
+                # team size or whether the participants are premade or not.
+                normalize_size = len(search.players) / team_size
+                search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * normalize_size
+                time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS * normalize_size)
                 num_newbies = search.num_newbies()
                 search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * num_newbies / team_size
                 newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * num_newbies / team_size)
+
+                minority_bonus = ((search.average_rating - rating_peak) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
 
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
         unfairness = rating_disparity / config.MAXIMUM_RATING_IMBALANCE
@@ -713,12 +728,13 @@ class TeamMatchMaker(Matchmaker):
 
         # Visually this creates a cone in the unfairness-rating_variety plane
         # that slowly raises with the time bonuses.
-        quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus
+        quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus + minority_bonus
         if not any(team.has_high_rated_player() for team in match):
             quality += newbie_bonus
         self._logger.debug(
             &#34;bonuses: %s rating disparity: %s -&gt; unfairness: %f deviation: %f -&gt; variety: %f -&gt; game quality: %f&#34;,
-            newbie_bonus + time_bonus, rating_disparity, unfairness, deviation, rating_variety, quality)
+            newbie_bonus + time_bonus + minority_bonus, rating_disparity, unfairness, deviation, rating_variety, quality
+        )
         return GameCandidate(match, quality)
 
     def pick_noncolliding_games(self, games: list[GameCandidate]) -&gt; list[Match]:
@@ -803,7 +819,7 @@ def pick_neighboring_players(searches: list[Search], index: int, team_size: int)
 <h3>Methods</h3>
 <dl>
 <dt id="server.matchmaker.algorithm.team_matchmaker.TeamMatchMaker.assign_game_quality"><code class="name flex">
-<span>def <span class="ident">assign_game_quality</span></span>(<span>self, match: tuple['Search', 'Search'], team_size: int) ‑> <a title="server.matchmaker.algorithm.team_matchmaker.GameCandidate" href="#server.matchmaker.algorithm.team_matchmaker.GameCandidate">GameCandidate</a></span>
+<span>def <span class="ident">assign_game_quality</span></span>(<span>self, match: tuple['Search', 'Search'], team_size: int, rating_peak: float) ‑> <a title="server.matchmaker.algorithm.team_matchmaker.GameCandidate" href="#server.matchmaker.algorithm.team_matchmaker.GameCandidate">GameCandidate</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -811,19 +827,24 @@ def pick_neighboring_players(searches: list[Search], index: int, team_size: int)
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def assign_game_quality(self, match: Match, team_size: int) -&gt; GameCandidate:
+<pre><code class="python">def assign_game_quality(self, match: Match, team_size: int, rating_peak: float) -&gt; GameCandidate:
     newbie_bonus = 0
     time_bonus = 0
+    minority_bonus = 0
     ratings = []
     for team in match:
         for search in team.get_original_searches():
             ratings.append(search.average_rating)
-            # Time bonus accumulation for a game should not depend on team size or whether the participants are premade or not.
-            search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * len(search.players) / team_size
-            time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS * len(search.players) / team_size)
+            # Time bonus accumulation for a game should not depend on
+            # team size or whether the participants are premade or not.
+            normalize_size = len(search.players) / team_size
+            search_time_bonus = search.failed_matching_attempts * config.TIME_BONUS * normalize_size
+            time_bonus += min(search_time_bonus, config.MAXIMUM_TIME_BONUS * normalize_size)
             num_newbies = search.num_newbies()
             search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * num_newbies / team_size
             newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * num_newbies / team_size)
+
+            minority_bonus = ((search.average_rating - rating_peak) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
 
     rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
     unfairness = rating_disparity / config.MAXIMUM_RATING_IMBALANCE
@@ -832,17 +853,18 @@ def pick_neighboring_players(searches: list[Search], index: int, team_size: int)
 
     # Visually this creates a cone in the unfairness-rating_variety plane
     # that slowly raises with the time bonuses.
-    quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus
+    quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus + minority_bonus
     if not any(team.has_high_rated_player() for team in match):
         quality += newbie_bonus
     self._logger.debug(
         &#34;bonuses: %s rating disparity: %s -&gt; unfairness: %f deviation: %f -&gt; variety: %f -&gt; game quality: %f&#34;,
-        newbie_bonus + time_bonus, rating_disparity, unfairness, deviation, rating_variety, quality)
+        newbie_bonus + time_bonus + minority_bonus, rating_disparity, unfairness, deviation, rating_variety, quality
+    )
     return GameCandidate(match, quality)</code></pre>
 </details>
 </dd>
 <dt id="server.matchmaker.algorithm.team_matchmaker.TeamMatchMaker.find"><code class="name flex">
-<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> tuple[list[tuple['Search', 'Search']], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
+<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int, rating_peak: float) ‑> tuple[list[tuple['Search', 'Search']], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -850,12 +872,14 @@ def pick_neighboring_players(searches: list[Search], index: int, team_size: int)
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def find(self, searches: Iterable[Search], team_size: int) -&gt; tuple[list[Match], list[Search]]:
+<pre><code class="python">def find(
+    self, searches: Iterable[Search], team_size: int, rating_peak: float
+) -&gt; tuple[list[Match], list[Search]]:
     if not searches:
         return [], []
 
     if team_size == 1:
-        return StableMarriageMatchmaker().find(searches, 1)
+        return StableMarriageMatchmaker().find(searches, 1, rating_peak)
 
     searches = SortedList(searches, key=lambda s: s.average_rating)
     possible_games = []
@@ -870,7 +894,7 @@ def pick_neighboring_players(searches: list[Search], index: int, team_size: int)
         try:
             participants = self.pick_neighboring_players(searches, index, team_size)
             match = self.make_teams(participants, team_size)
-            game = self.assign_game_quality(match, team_size)
+            game = self.assign_game_quality(match, team_size, rating_peak)
             possible_games.append(game)
         except NotEnoughPlayersException:
             self._logger.warning(&#34;Couldn&#39;t pick enough players for a full game. Skipping this game...&#34;)

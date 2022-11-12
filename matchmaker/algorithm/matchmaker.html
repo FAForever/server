@@ -39,7 +39,8 @@ class Matchmaker(ABC):
     def find(
         self,
         searches: Iterable[Search],
-        team_size: int
+        team_size: int,
+        rating_peak: float
     ) -&gt; tuple[list[Match], list[Search]]:
         pass
 
@@ -98,7 +99,8 @@ class Matchmaker(ABC):
     def find(
         self,
         searches: Iterable[Search],
-        team_size: int
+        team_size: int,
+        rating_peak: float
     ) -&gt; tuple[list[Match], list[Search]]:
         pass</code></pre>
 </details>
@@ -115,7 +117,7 @@ class Matchmaker(ABC):
 <h3>Methods</h3>
 <dl>
 <dt id="server.matchmaker.algorithm.matchmaker.Matchmaker.find"><code class="name flex">
-<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> tuple[list[tuple['Search', 'Search']], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
+<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int, rating_peak: float) ‑> tuple[list[tuple['Search', 'Search']], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -127,7 +129,8 @@ class Matchmaker(ABC):
 def find(
     self,
     searches: Iterable[Search],
-    team_size: int
+    team_size: int,
+    rating_peak: float
 ) -&gt; tuple[list[Match], list[Search]]:
     pass</code></pre>
 </details>

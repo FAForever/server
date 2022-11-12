@@ -109,7 +109,7 @@ class StableMarriageMatchmaker(Matchmaker):
     &#34;&#34;&#34;
 
     def find(
-        self, searches: Iterable[Search], team_size: int
+        self, searches: Iterable[Search], team_size: int, rating_peak: float
     ) -&gt; tuple[list[Match], list[Search]]:
         if team_size != 1:
             self._logger.error(
@@ -429,7 +429,7 @@ class StableMarriageMatchmaker(Matchmaker):
     &#34;&#34;&#34;
 
     def find(
-        self, searches: Iterable[Search], team_size: int
+        self, searches: Iterable[Search], team_size: int, rating_peak: float
     ) -&gt; tuple[list[Match], list[Search]]:
         if team_size != 1:
             self._logger.error(
@@ -475,7 +475,7 @@ class StableMarriageMatchmaker(Matchmaker):
 <h3>Methods</h3>
 <dl>
 <dt id="server.matchmaker.algorithm.stable_marriage.StableMarriageMatchmaker.find"><code class="name flex">
-<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int) ‑> tuple[list[tuple['Search', 'Search']], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
+<span>def <span class="ident">find</span></span>(<span>self, searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>], team_size: int, rating_peak: float) ‑> tuple[list[tuple['Search', 'Search']], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -484,7 +484,7 @@ class StableMarriageMatchmaker(Matchmaker):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def find(
-    self, searches: Iterable[Search], team_size: int
+    self, searches: Iterable[Search], team_size: int, rating_peak: float
 ) -&gt; tuple[list[Match], list[Search]]:
     if team_size != 1:
         self._logger.error(
