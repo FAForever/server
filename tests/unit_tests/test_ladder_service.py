@@ -1204,7 +1204,7 @@ async def test_team_matchmaker_algorithm(uninitialized_service, matchmaker_queue
     s1 = args[0]
     s2 = args[1]
 
-    assert matchmaker.assign_game_quality((s1, s2), 4).quality > config.MINIMUM_GAME_QUALITY
+    assert matchmaker.assign_game_quality((s1, s2), 4, 1000).quality > config.MINIMUM_GAME_QUALITY
 
 
 async def test_team_matchmaker_algorithm_2(uninitialized_service, matchmaker_queue, player_factory):
@@ -1227,4 +1227,4 @@ async def test_team_matchmaker_algorithm_2(uninitialized_service, matchmaker_que
     s1 = args[0]
     s2 = args[1]
 
-    assert matchmaker.assign_game_quality((s1, s2), 4).quality > config.MINIMUM_GAME_QUALITY
+    assert matchmaker.assign_game_quality((s1, s2), 4, 1000).quality > config.MINIMUM_GAME_QUALITY
