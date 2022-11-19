@@ -5,6 +5,7 @@ from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
 from .test_game import open_fa, queue_players_for_matchmaking, start_search
+from .test_parties import accept_party_invite, invite_to_party
 
 
 @fast_forward(360)
@@ -154,6 +155,61 @@ async def test_violation_persisted_across_logins(mocker, lobby_server):
         "command": "game_matchmaking",
         "state": "start",
         "queue_name": "ladder1v1"
+    })
+
+    msg = await read_until_command(host, "search_timeout", timeout=10)
+    assert msg == {
+        "command": "search_timeout",
+        "timeouts": [{
+            "player": host_id,
+            "expires_at": "2022-02-05T00:10:00+00:00"
+        }]
+    }
+
+
+@fast_forward(360)
+async def test_violation_persisted_across_parties(mocker, lobby_server):
+    mocker.patch(
+        "server.ladder_service.violation_service.datetime_now",
+        return_value=datetime(2022, 2, 5, tzinfo=timezone.utc)
+    )
+    host_id, host, guest_id, guest = await queue_players_for_matchmaking(lobby_server)
+
+    await read_until_command(host, "match_cancelled", timeout=120)
+    await read_until_command(guest, "match_cancelled", timeout=10)
+
+    # Second time searching there is no ban
+    await start_search(host)
+    await start_search(guest)
+    await read_until_command(host, "match_cancelled", timeout=120)
+    await read_until_command(guest, "match_cancelled", timeout=10)
+
+    # Third time searching there is a short ban
+    await host.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "queue_name": "ladder1v1"
+    })
+
+    msg = await read_until_command(host, "search_timeout", timeout=10)
+    assert msg == {
+        "command": "search_timeout",
+        "timeouts": [{
+            "player": host_id,
+            "expires_at": "2022-02-05T00:10:00+00:00"
+        }]
+    }
+
+    await invite_to_party(guest, host_id)
+    await read_until_command(host, "party_invite", timeout=10)
+    await accept_party_invite(host, guest_id)
+    await read_until_command(guest, "update_party", timeout=10)
+
+    # Guest should not be able to queue when player in their party has a ban
+    await guest.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "queue_name": "tmm2v2"
     })
 
     msg = await read_until_command(host, "search_timeout", timeout=10)
