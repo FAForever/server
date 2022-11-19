@@ -63,24 +63,25 @@ class ViolationService(Service):
     """
 
     def __init__(self):
-        self.violations: dict[Player, Violation] = {}
+        # We store a reference to the original `Player` object for logging only
+        self._violations: dict[int, tuple[Player, Violation]] = {}
 
     async def initialize(self):
         self._cleanup_task = at_interval(5, func=self.clear_expired)
 
     def clear_expired(self):
         now = datetime_now()
-        for player, violation in list(self.violations.items()):
+        for player, violation in list(self._violations.values()):
             if violation.is_expired(now):
                 self._clear_violation(player)
 
     def register_violations(self, players: list[Player]):
         now = datetime_now()
         for player in players:
-            violation = self.violations.get(player)
+            violation = self.get_violation(player)
             if violation is None or violation.is_expired(now):
                 violation = Violation(time=now)
-                self.violations[player] = violation
+                self.set_violation(player, violation)
             else:
                 violation.register()
 
@@ -109,7 +110,7 @@ class ViolationService(Service):
         now = datetime_now()
         result = {}
         for player in players:
-            violation = self.violations.get(player)
+            violation = self.get_violation(player)
             if not violation:
                 continue
             elif violation.get_ban_expiration() > now:
@@ -119,11 +120,18 @@ class ViolationService(Service):
 
         return result
 
+    def get_violation(self, player: Player) -> Optional[Violation]:
+        _, violation = self._violations.get(player.id, (None, None))
+        return violation
+
+    def set_violation(self, player: Player, violation: Violation):
+        self._violations[player.id] = (player, violation)
+
     def _clear_violation(self, player: Player):
-        violation = self.violations.get(player)
+        violation = self.get_violation(player)
         self._logger.debug(
             "Cleared violation for player %s: %s",
             player.login,
             violation
         )
-        del self.violations[player]
+        del self._violations[player.id]

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from tests.utils import fast_forward
 
-from .conftest import read_until_command
+from .conftest import connect_and_sign_in, read_until_command
 from .test_game import open_fa, queue_players_for_matchmaking, start_search
 
 
@@ -106,4 +106,61 @@ async def test_violation_for_guest_timeout(mocker, lobby_server):
         "command": "notice",
         "style": "info",
         "text": "Player ladder2 is timed out for 30 minutes"
+    }
+
+
+@fast_forward(360)
+async def test_violation_persisted_across_logins(mocker, lobby_server):
+    mocker.patch(
+        "server.ladder_service.violation_service.datetime_now",
+        return_value=datetime(2022, 2, 5, tzinfo=timezone.utc)
+    )
+    host_id, host, _, guest = await queue_players_for_matchmaking(lobby_server)
+
+    await read_until_command(host, "match_cancelled", timeout=120)
+    await read_until_command(guest, "match_cancelled", timeout=10)
+
+    # Second time searching there is no ban
+    await start_search(host)
+    await start_search(guest)
+    await read_until_command(host, "match_cancelled", timeout=120)
+    await read_until_command(guest, "match_cancelled", timeout=10)
+
+    # Third time searching there is a short ban
+    await host.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "queue_name": "ladder1v1"
+    })
+
+    msg = await read_until_command(host, "search_timeout", timeout=10)
+    assert msg == {
+        "command": "search_timeout",
+        "timeouts": [{
+            "player": host_id,
+            "expires_at": "2022-02-05T00:10:00+00:00"
+        }]
+    }
+
+    await host.close()
+
+    _, _, host = await connect_and_sign_in(
+        ("ladder1", "ladder1"),
+        lobby_server
+    )
+
+    # Player should still be banned after re-logging
+    await host.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "queue_name": "ladder1v1"
+    })
+
+    msg = await read_until_command(host, "search_timeout", timeout=10)
+    assert msg == {
+        "command": "search_timeout",
+        "timeouts": [{
+            "player": host_id,
+            "expires_at": "2022-02-05T00:10:00+00:00"
+        }]
     }

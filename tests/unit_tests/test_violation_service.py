@@ -60,12 +60,13 @@ def test_violation_clear_expired(
     v1 = Violation(time=NOW - timedelta(hours=1))
     v2 = Violation(time=NOW)
 
-    violation_service.violations[p1] = v1
-    violation_service.violations[p2] = v2
+    violation_service.set_violation(p1, v1)
+    violation_service.set_violation(p2, v2)
 
     violation_service.clear_expired()
 
-    assert violation_service.violations == {p2: v2}
+    assert violation_service.get_violation(p1) is None
+    assert violation_service.get_violation(p2) == v2
 
 
 def test_register_violation(
@@ -89,7 +90,21 @@ def test_get_violations_clears_expired(
     player_factory
 ):
     p1 = player_factory("Test3", player_id=1)
+    v1 = Violation(time=NOW - timedelta(hours=1))
 
-    violation_service.violations[p1] = Violation(time=NOW - timedelta(hours=1))
+    violation_service.set_violation(p1, v1)
     violation_service.get_violations([p1])
-    assert violation_service.violations == {}
+    assert violation_service.get_violation(p1) is None
+
+
+def test_violation_tracked_by_player_id(
+    violation_service: ViolationService,
+    player_factory
+):
+    p1 = player_factory("Test", player_id=1)
+    p2 = player_factory("Test_Renamed", player_id=1)
+
+    v1 = Violation(time=NOW - timedelta(hours=1))
+
+    violation_service.set_violation(p1, v1)
+    assert violation_service.get_violation(p2) == v1
