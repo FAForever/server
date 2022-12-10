@@ -100,7 +100,7 @@ class ConfigurationStore:
         self.MAXIMUM_TIME_BONUS = 0.2
         self.NEWBIE_TIME_BONUS = 0.25
         self.MAXIMUM_NEWBIE_TIME_BONUS = 3.0
-        self.MINORITY_BONUS = 1.0
+        self.MINORITY_BONUS = 0.7
 
         self.TWILIO_ACCOUNT_SID = ""
         self.TWILIO_TOKEN = ""
