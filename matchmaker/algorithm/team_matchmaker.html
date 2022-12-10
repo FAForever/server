@@ -315,7 +315,7 @@ class TeamMatchMaker(Matchmaker):
                 search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * num_newbies / team_size
                 newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * num_newbies / team_size)
 
-                minority_bonus = ((search.average_rating - rating_peak) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
+                minority_bonus += ((search.average_rating - rating_peak) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
 
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
         unfairness = rating_disparity / config.MAXIMUM_RATING_IMBALANCE
@@ -719,7 +719,7 @@ class TeamMatchMaker(Matchmaker):
                 search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * num_newbies / team_size
                 newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * num_newbies / team_size)
 
-                minority_bonus = ((search.average_rating - rating_peak) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
+                minority_bonus += ((search.average_rating - rating_peak) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
 
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
         unfairness = rating_disparity / config.MAXIMUM_RATING_IMBALANCE
@@ -844,7 +844,7 @@ def pick_neighboring_players(searches: list[Search], index: int, team_size: int)
             search_newbie_bonus = search.failed_matching_attempts * config.NEWBIE_TIME_BONUS * num_newbies / team_size
             newbie_bonus += min(search_newbie_bonus, config.MAXIMUM_NEWBIE_TIME_BONUS * num_newbies / team_size)
 
-            minority_bonus = ((search.average_rating - rating_peak) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
+            minority_bonus += ((search.average_rating - rating_peak) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
 
     rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
     unfairness = rating_disparity / config.MAXIMUM_RATING_IMBALANCE
