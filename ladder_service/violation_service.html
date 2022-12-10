@@ -91,24 +91,25 @@ class ViolationService(Service):
     &#34;&#34;&#34;
 
     def __init__(self):
-        self.violations: dict[Player, Violation] = {}
+        # We store a reference to the original `Player` object for logging only
+        self._violations: dict[int, tuple[Player, Violation]] = {}
 
     async def initialize(self):
         self._cleanup_task = at_interval(5, func=self.clear_expired)
 
     def clear_expired(self):
         now = datetime_now()
-        for player, violation in list(self.violations.items()):
+        for player, violation in list(self._violations.values()):
             if violation.is_expired(now):
                 self._clear_violation(player)
 
     def register_violations(self, players: list[Player]):
         now = datetime_now()
         for player in players:
-            violation = self.violations.get(player)
+            violation = self.get_violation(player)
             if violation is None or violation.is_expired(now):
                 violation = Violation(time=now)
-                self.violations[player] = violation
+                self.set_violation(player, violation)
             else:
                 violation.register()
 
@@ -137,7 +138,7 @@ class ViolationService(Service):
         now = datetime_now()
         result = {}
         for player in players:
-            violation = self.violations.get(player)
+            violation = self.get_violation(player)
             if not violation:
                 continue
             elif violation.get_ban_expiration() &gt; now:
@@ -147,14 +148,21 @@ class ViolationService(Service):
 
         return result
 
+    def get_violation(self, player: Player) -&gt; Optional[Violation]:
+        _, violation = self._violations.get(player.id, (None, None))
+        return violation
+
+    def set_violation(self, player: Player, violation: Violation):
+        self._violations[player.id] = (player, violation)
+
     def _clear_violation(self, player: Player):
-        violation = self.violations.get(player)
+        violation = self.get_violation(player)
         self._logger.debug(
             &#34;Cleared violation for player %s: %s&#34;,
             player.login,
             violation
         )
-        del self.violations[player]</code></pre>
+        del self._violations[player.id]</code></pre>
 </details>
 </section>
 <section>
@@ -339,24 +347,25 @@ class ViolationService(Service):
     &#34;&#34;&#34;
 
     def __init__(self):
-        self.violations: dict[Player, Violation] = {}
+        # We store a reference to the original `Player` object for logging only
+        self._violations: dict[int, tuple[Player, Violation]] = {}
 
     async def initialize(self):
         self._cleanup_task = at_interval(5, func=self.clear_expired)
 
     def clear_expired(self):
         now = datetime_now()
-        for player, violation in list(self.violations.items()):
+        for player, violation in list(self._violations.values()):
             if violation.is_expired(now):
                 self._clear_violation(player)
 
     def register_violations(self, players: list[Player]):
         now = datetime_now()
         for player in players:
-            violation = self.violations.get(player)
+            violation = self.get_violation(player)
             if violation is None or violation.is_expired(now):
                 violation = Violation(time=now)
-                self.violations[player] = violation
+                self.set_violation(player, violation)
             else:
                 violation.register()
 
@@ -385,7 +394,7 @@ class ViolationService(Service):
         now = datetime_now()
         result = {}
         for player in players:
-            violation = self.violations.get(player)
+            violation = self.get_violation(player)
             if not violation:
                 continue
             elif violation.get_ban_expiration() &gt; now:
@@ -395,14 +404,21 @@ class ViolationService(Service):
 
         return result
 
+    def get_violation(self, player: Player) -&gt; Optional[Violation]:
+        _, violation = self._violations.get(player.id, (None, None))
+        return violation
+
+    def set_violation(self, player: Player, violation: Violation):
+        self._violations[player.id] = (player, violation)
+
     def _clear_violation(self, player: Player):
-        violation = self.violations.get(player)
+        violation = self.get_violation(player)
         self._logger.debug(
             &#34;Cleared violation for player %s: %s&#34;,
             player.login,
             violation
         )
-        del self.violations[player]</code></pre>
+        del self._violations[player.id]</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -421,9 +437,23 @@ class ViolationService(Service):
 </summary>
 <pre><code class="python">def clear_expired(self):
     now = datetime_now()
-    for player, violation in list(self.violations.items()):
+    for player, violation in list(self._violations.values()):
         if violation.is_expired(now):
             self._clear_violation(player)</code></pre>
+</details>
+</dd>
+<dt id="server.ladder_service.violation_service.ViolationService.get_violation"><code class="name flex">
+<span>def <span class="ident">get_violation</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> Optional[<a title="server.ladder_service.violation_service.Violation" href="#server.ladder_service.violation_service.Violation">Violation</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_violation(self, player: Player) -&gt; Optional[Violation]:
+    _, violation = self._violations.get(player.id, (None, None))
+    return violation</code></pre>
 </details>
 </dd>
 <dt id="server.ladder_service.violation_service.ViolationService.get_violations"><code class="name flex">
@@ -439,7 +469,7 @@ class ViolationService(Service):
     now = datetime_now()
     result = {}
     for player in players:
-        violation = self.violations.get(player)
+        violation = self.get_violation(player)
         if not violation:
             continue
         elif violation.get_ban_expiration() &gt; now:
@@ -462,10 +492,10 @@ class ViolationService(Service):
 <pre><code class="python">def register_violations(self, players: list[Player]):
     now = datetime_now()
     for player in players:
-        violation = self.violations.get(player)
+        violation = self.get_violation(player)
         if violation is None or violation.is_expired(now):
             violation = Violation(time=now)
-            self.violations[player] = violation
+            self.set_violation(player, violation)
         else:
             violation.register()
 
@@ -489,6 +519,19 @@ class ViolationService(Service):
                 extra_text
             )
         })</code></pre>
+</details>
+</dd>
+<dt id="server.ladder_service.violation_service.ViolationService.set_violation"><code class="name flex">
+<span>def <span class="ident">set_violation</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, violation: <a title="server.ladder_service.violation_service.Violation" href="#server.ladder_service.violation_service.Violation">Violation</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_violation(self, player: Player, violation: Violation):
+    self._violations[player.id] = (player, violation)</code></pre>
 </details>
 </dd>
 </dl>
@@ -535,8 +578,10 @@ class ViolationService(Service):
 <h4><code><a title="server.ladder_service.violation_service.ViolationService" href="#server.ladder_service.violation_service.ViolationService">ViolationService</a></code></h4>
 <ul class="">
 <li><code><a title="server.ladder_service.violation_service.ViolationService.clear_expired" href="#server.ladder_service.violation_service.ViolationService.clear_expired">clear_expired</a></code></li>
+<li><code><a title="server.ladder_service.violation_service.ViolationService.get_violation" href="#server.ladder_service.violation_service.ViolationService.get_violation">get_violation</a></code></li>
 <li><code><a title="server.ladder_service.violation_service.ViolationService.get_violations" href="#server.ladder_service.violation_service.ViolationService.get_violations">get_violations</a></code></li>
 <li><code><a title="server.ladder_service.violation_service.ViolationService.register_violations" href="#server.ladder_service.violation_service.ViolationService.register_violations">register_violations</a></code></li>
+<li><code><a title="server.ladder_service.violation_service.ViolationService.set_violation" href="#server.ladder_service.violation_service.ViolationService.set_violation">set_violation</a></code></li>
 </ul>
 </li>
 </ul>
