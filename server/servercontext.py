@@ -133,7 +133,11 @@ class ServerContext:
         ):
             pass
         except Exception:
-            self._logger.exception()
+            self._logger.exception(
+                "%s: Exception in protocol for '%s'",
+                self.name,
+                connection.get_user_identifier()
+            )
         finally:
             del self.connections[connection]
             # Do not wait for buffers to empty here. This could stop the process
