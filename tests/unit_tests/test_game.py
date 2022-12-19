@@ -509,7 +509,7 @@ async def test_game_ends_in_mutually_agreed_draw(game: Game, game_add_players):
     await game.add_result(players[1].id, 1, "mutual_draw", 0)
     await game.on_game_finish()
 
-    assert game.validity is ValidityState.MUTUAL_DRAW
+    assert game.validity is ValidityState.VALID
 
 
 async def test_game_not_ends_in_unilatery_agreed_draw(

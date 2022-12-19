@@ -161,10 +161,6 @@ class Game:
         )
 
     @property
-    def is_mutually_agreed_draw(self) -> bool:
-        return self._results.is_mutually_agreed_draw(self.armies)
-
-    @property
     def players(self) -> list[Player]:
         """
         Players in the game
@@ -429,11 +425,6 @@ class Game:
 
                 if self.desyncs > 20:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
-                    return
-
-                if time.time() - self.launched_at > 4 * 60 and self.is_mutually_agreed_draw:
-                    self._logger.info("Game is a mutual draw")
-                    await self.mark_invalid(ValidityState.MUTUAL_DRAW)
                     return
 
                 await self.process_game_results()
