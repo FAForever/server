@@ -150,7 +150,11 @@ class ServerContext:
             with self.suppress_and_log(connection.on_connection_lost, Exception):
                 await connection.on_connection_lost()
 
-            self._logger.debug("%s: Client disconnected", self.name)
+            self._logger.debug(
+                "%s: Client disconnected for '%s'",
+                self.name,
+                connection.get_user_identifier()
+            )
             metrics.user_connections.labels(
                 connection.user_agent,
                 connection.version
