@@ -289,6 +289,7 @@ class TeamMatchMaker(Matchmaker):
 
                 minority_bonus += ((search.average_rating - rating_peak) * 0.001) ** 4 * normalize_size * config.MINORITY_BONUS
 
+        minority_bonus = min(minority_bonus, config.MINORITY_BONUS)
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
         unfairness = rating_disparity / config.MAXIMUM_RATING_IMBALANCE
         deviation = statistics.pstdev(ratings)

@@ -228,7 +228,7 @@ def test_maximum_game_quality_for_even_teams(player):
     team_b = CombinedSearch(*[search] * 4)
     game = TeamMatchMaker().assign_game_quality((team_a, team_b), 4, 1000)
 
-    assert game.quality >= 1.0
+    assert 1.0 <= game.quality <= 1.0 + config.MINORITY_BONUS
 
 
 def test_low_game_quality_for_high_rating_disparity(player_factory):
