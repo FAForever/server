@@ -122,6 +122,6 @@ async def test_unexpected_exception(context, caplog):
     ctx.protocol_class = make_protocol
 
     with caplog.at_level("TRACE"):
-        _, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())
+        _, _ = await asyncio.open_connection(*srv.sockets[0].getsockname())
 
     assert "Exception in protocol" in caplog.text
