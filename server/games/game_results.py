@@ -97,18 +97,6 @@ class GameResultReports(Mapping):
         army_results.append(result)
         self._dirty_armies.add(result.army)
 
-    def is_mutually_agreed_draw(self, player_armies) -> bool:
-        # Can't tell if we have no results
-        if not self:
-            return False
-        # Everyone has to agree to a mutual draw
-        for army in player_armies:
-            if army not in self:
-                continue
-            if any(r.outcome is not ArmyReportedOutcome.MUTUAL_DRAW for r in self[army]):
-                return False
-        return True
-
     def outcome(self, army: int) -> ArmyOutcome:
         """
         Determines what the outcome was for a given army.
