@@ -162,7 +162,11 @@ class ServerContext:
         ):
             pass
         except Exception:
-            self._logger.exception()
+            self._logger.exception(
+                &#34;%s: Exception in protocol for &#39;%s&#39;&#34;,
+                self.name,
+                connection.get_user_identifier()
+            )
         finally:
             del self.connections[connection]
             # Do not wait for buffers to empty here. This could stop the process
@@ -175,7 +179,11 @@ class ServerContext:
             with self.suppress_and_log(connection.on_connection_lost, Exception):
                 await connection.on_connection_lost()
 
-            self._logger.debug(&#34;%s: Client disconnected&#34;, self.name)
+            self._logger.debug(
+                &#34;%s: Client disconnected for &#39;%s&#39;&#34;,
+                self.name,
+                connection.get_user_identifier()
+            )
             metrics.user_connections.labels(
                 connection.user_agent,
                 connection.version
@@ -331,7 +339,11 @@ class ServerContext:
         ):
             pass
         except Exception:
-            self._logger.exception()
+            self._logger.exception(
+                &#34;%s: Exception in protocol for &#39;%s&#39;&#34;,
+                self.name,
+                connection.get_user_identifier()
+            )
         finally:
             del self.connections[connection]
             # Do not wait for buffers to empty here. This could stop the process
@@ -344,7 +356,11 @@ class ServerContext:
             with self.suppress_and_log(connection.on_connection_lost, Exception):
                 await connection.on_connection_lost()
 
-            self._logger.debug(&#34;%s: Client disconnected&#34;, self.name)
+            self._logger.debug(
+                &#34;%s: Client disconnected for &#39;%s&#39;&#34;,
+                self.name,
+                connection.get_user_identifier()
+            )
             metrics.user_connections.labels(
                 connection.user_agent,
                 connection.version
@@ -415,7 +431,11 @@ def sockets(self):
     ):
         pass
     except Exception:
-        self._logger.exception()
+        self._logger.exception(
+            &#34;%s: Exception in protocol for &#39;%s&#39;&#34;,
+            self.name,
+            connection.get_user_identifier()
+        )
     finally:
         del self.connections[connection]
         # Do not wait for buffers to empty here. This could stop the process
@@ -428,7 +448,11 @@ def sockets(self):
         with self.suppress_and_log(connection.on_connection_lost, Exception):
             await connection.on_connection_lost()
 
-        self._logger.debug(&#34;%s: Client disconnected&#34;, self.name)
+        self._logger.debug(
+            &#34;%s: Client disconnected for &#39;%s&#39;&#34;,
+            self.name,
+            connection.get_user_identifier()
+        )
         metrics.user_connections.labels(
             connection.user_agent,
             connection.version
