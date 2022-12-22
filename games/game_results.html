@@ -125,18 +125,6 @@ class GameResultReports(Mapping):
         army_results.append(result)
         self._dirty_armies.add(result.army)
 
-    def is_mutually_agreed_draw(self, player_armies) -&gt; bool:
-        # Can&#39;t tell if we have no results
-        if not self:
-            return False
-        # Everyone has to agree to a mutual draw
-        for army in player_armies:
-            if army not in self:
-                continue
-            if any(r.outcome is not ArmyReportedOutcome.MUTUAL_DRAW for r in self[army]):
-                return False
-        return True
-
     def outcome(self, army: int) -&gt; ArmyOutcome:
         &#34;&#34;&#34;
         Determines what the outcome was for a given army.
@@ -775,18 +763,6 @@ class GameResultReports(Mapping):
         army_results.append(result)
         self._dirty_armies.add(result.army)
 
-    def is_mutually_agreed_draw(self, player_armies) -&gt; bool:
-        # Can&#39;t tell if we have no results
-        if not self:
-            return False
-        # Everyone has to agree to a mutual draw
-        for army in player_armies:
-            if army not in self:
-                continue
-            if any(r.outcome is not ArmyReportedOutcome.MUTUAL_DRAW for r in self[army]):
-                return False
-        return True
-
     def outcome(self, army: int) -&gt; ArmyOutcome:
         &#34;&#34;&#34;
         Determines what the outcome was for a given army.
@@ -974,28 +950,6 @@ async def from_db(cls, database, game_id):
     army_results = self._back.setdefault(result.army, [])
     army_results.append(result)
     self._dirty_armies.add(result.army)</code></pre>
-</details>
-</dd>
-<dt id="server.games.game_results.GameResultReports.is_mutually_agreed_draw"><code class="name flex">
-<span>def <span class="ident">is_mutually_agreed_draw</span></span>(<span>self, player_armies) ‑> bool</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def is_mutually_agreed_draw(self, player_armies) -&gt; bool:
-    # Can&#39;t tell if we have no results
-    if not self:
-        return False
-    # Everyone has to agree to a mutual draw
-    for army in player_armies:
-        if army not in self:
-            continue
-        if any(r.outcome is not ArmyReportedOutcome.MUTUAL_DRAW for r in self[army]):
-            return False
-    return True</code></pre>
 </details>
 </dd>
 <dt id="server.games.game_results.GameResultReports.metadata"><code class="name flex">
@@ -1199,10 +1153,9 @@ no results for a given army.</p></div>
 </li>
 <li>
 <h4><code><a title="server.games.game_results.GameResultReports" href="#server.games.game_results.GameResultReports">GameResultReports</a></code></h4>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="server.games.game_results.GameResultReports.add" href="#server.games.game_results.GameResultReports.add">add</a></code></li>
 <li><code><a title="server.games.game_results.GameResultReports.from_db" href="#server.games.game_results.GameResultReports.from_db">from_db</a></code></li>
-<li><code><a title="server.games.game_results.GameResultReports.is_mutually_agreed_draw" href="#server.games.game_results.GameResultReports.is_mutually_agreed_draw">is_mutually_agreed_draw</a></code></li>
 <li><code><a title="server.games.game_results.GameResultReports.metadata" href="#server.games.game_results.GameResultReports.metadata">metadata</a></code></li>
 <li><code><a title="server.games.game_results.GameResultReports.outcome" href="#server.games.game_results.GameResultReports.outcome">outcome</a></code></li>
 <li><code><a title="server.games.game_results.GameResultReports.score" href="#server.games.game_results.GameResultReports.score">score</a></code></li>

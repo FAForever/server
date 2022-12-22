@@ -189,10 +189,6 @@ class Game:
         )
 
     @property
-    def is_mutually_agreed_draw(self) -&gt; bool:
-        return self._results.is_mutually_agreed_draw(self.armies)
-
-    @property
     def players(self) -&gt; list[Player]:
         &#34;&#34;&#34;
         Players in the game
@@ -457,11 +453,6 @@ class Game:
 
                 if self.desyncs &gt; 20:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
-                    return
-
-                if time.time() - self.launched_at &gt; 4 * 60 and self.is_mutually_agreed_draw:
-                    self._logger.info(&#34;Game is a mutual draw&#34;)
-                    await self.mark_invalid(ValidityState.MUTUAL_DRAW)
                     return
 
                 await self.process_game_results()
@@ -1118,10 +1109,6 @@ class Game:
         )
 
     @property
-    def is_mutually_agreed_draw(self) -&gt; bool:
-        return self._results.is_mutually_agreed_draw(self.armies)
-
-    @property
     def players(self) -&gt; list[Player]:
         &#34;&#34;&#34;
         Players in the game
@@ -1386,11 +1373,6 @@ class Game:
 
                 if self.desyncs &gt; 20:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
-                    return
-
-                if time.time() - self.launched_at &gt; 4 * 60 and self.is_mutually_agreed_draw:
-                    self._logger.info(&#34;Game is a mutual draw&#34;)
-                    await self.mark_invalid(ValidityState.MUTUAL_DRAW)
                     return
 
                 await self.process_game_results()
@@ -2037,18 +2019,6 @@ def is_multi_team(self) -&gt; bool:
     return len(self.teams) &gt; 2</code></pre>
 </details>
 </dd>
-<dt id="server.games.game.Game.is_mutually_agreed_draw"><code class="name">var <span class="ident">is_mutually_agreed_draw</span> : bool</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def is_mutually_agreed_draw(self) -&gt; bool:
-    return self._results.is_mutually_agreed_draw(self.armies)</code></pre>
-</details>
-</dd>
 <dt id="server.games.game.Game.map_folder_name"><code class="name">var <span class="ident">map_folder_name</span> : str</code></dt>
 <dd>
 <div class="desc"><p>Map folder name</p></div>
@@ -2582,11 +2552,6 @@ performance.</p></div>
 
             if self.desyncs &gt; 20:
                 await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
-                return
-
-            if time.time() - self.launched_at &gt; 4 * 60 and self.is_mutually_agreed_draw:
-                self._logger.info(&#34;Game is a mutual draw&#34;)
-                await self.mark_invalid(ValidityState.MUTUAL_DRAW)
                 return
 
             await self.process_game_results()
@@ -3199,7 +3164,6 @@ care about recording stats for, after all).</p></div>
 <li><code><a title="server.games.game.Game.is_even" href="#server.games.game.Game.is_even">is_even</a></code></li>
 <li><code><a title="server.games.game.Game.is_ffa" href="#server.games.game.Game.is_ffa">is_ffa</a></code></li>
 <li><code><a title="server.games.game.Game.is_multi_team" href="#server.games.game.Game.is_multi_team">is_multi_team</a></code></li>
-<li><code><a title="server.games.game.Game.is_mutually_agreed_draw" href="#server.games.game.Game.is_mutually_agreed_draw">is_mutually_agreed_draw</a></code></li>
 <li><code><a title="server.games.game.Game.is_visible_to_player" href="#server.games.game.Game.is_visible_to_player">is_visible_to_player</a></code></li>
 <li><code><a title="server.games.game.Game.launch" href="#server.games.game.Game.launch">launch</a></code></li>
 <li><code><a title="server.games.game.Game.load_results" href="#server.games.game.Game.load_results">load_results</a></code></li>
