@@ -133,7 +133,11 @@ class ServerContext:
         ):
             pass
         except Exception:
-            self._logger.exception()
+            self._logger.exception(
+                "%s: Exception in protocol for '%s'",
+                self.name,
+                connection.get_user_identifier()
+            )
         finally:
             del self.connections[connection]
             # Do not wait for buffers to empty here. This could stop the process
@@ -146,7 +150,11 @@ class ServerContext:
             with self.suppress_and_log(connection.on_connection_lost, Exception):
                 await connection.on_connection_lost()
 
-            self._logger.debug("%s: Client disconnected", self.name)
+            self._logger.debug(
+                "%s: Client disconnected for '%s'",
+                self.name,
+                connection.get_user_identifier()
+            )
             metrics.user_connections.labels(
                 connection.user_agent,
                 connection.version
