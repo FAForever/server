@@ -23,7 +23,7 @@ from server import (
 from server.config import config
 from server.control import ControlServer
 from server.db.models import login
-from server.protocol import Protocol
+from server.protocol import Protocol, QDataStreamProtocol, SimpleJsonProtocol
 from server.servercontext import ServerContext
 from tests.utils import exhaust_callbacks
 
@@ -115,7 +115,7 @@ def jwk_kid():
 
 
 @pytest.fixture
-async def lobby_server(
+async def lobby_contexts(
     event_loop,
     database,
     broadcast_service,
@@ -157,19 +157,35 @@ async def lobby_server(
         # Set up the back reference
         broadcast_service.server = instance
 
-        ctx = await instance.listen(("127.0.0.1", None))
-        ctx.__connected_client_protos = []
+        contexts = {
+            "qstream": await instance.listen(
+                ("127.0.0.1", None),
+                protocol_class=QDataStreamProtocol
+            ),
+            "json": await instance.listen(
+                ("127.0.0.1", None),
+                protocol_class=SimpleJsonProtocol
+            )
+        }
+        for context in contexts.values():
+            context.__connected_client_protos = []
         player_service.is_uniqueid_exempt = lambda id: True
 
-        yield ctx
+        yield contexts
 
-        await ctx.stop()
-        await ctx.shutdown()
-        # Close connected protocol objects
-        # https://github.com/FAForever/server/issues/717
-        for proto in ctx.__connected_client_protos:
-            proto.abort()
+        for context in contexts.values():
+            await context.stop()
+            await context.shutdown()
+            # Close connected protocol objects
+            # https://github.com/FAForever/server/issues/717
+            for proto in context.__connected_client_protos:
+                proto.abort()
         await exhaust_callbacks(event_loop)
+
+
+@pytest.fixture(params=("qstream", "json"))
+def lobby_server(request, lobby_contexts):
+    yield lobby_contexts[request.param]
 
 
 @pytest.fixture
