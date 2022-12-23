@@ -35,6 +35,19 @@ async def test_server_deprecated_client(lobby_server):
     assert msg["command"] == "notice"
 
 
+async def test_very_long_message(lobby_server, caplog):
+    _, _, proto = await connect_and_sign_in(("test", "test_password"), lobby_server)
+
+    DATA_SIZE = 2 ** 20
+    # We don't want to capture the TRACE of our massive message
+    with caplog.at_level("DEBUG"):
+        await proto.send_message({
+            "command": "invalid",
+            "data": "B" * DATA_SIZE}
+        )
+        await read_until_command(proto, "invalid")
+
+
 async def test_old_client_error(lobby_server):
     error_msg = {
         "command": "notice",

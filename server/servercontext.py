@@ -17,6 +17,9 @@ from .lobbyconnection import LobbyConnection
 from .protocol import DisconnectedError, Protocol, QDataStreamProtocol
 from .types import Address
 
+MiB = 2 ** 20
+LIMIT = 10 * MiB
+
 
 @with_logger
 class ServerContext:
@@ -48,7 +51,8 @@ class ServerContext:
         self._server = await asyncio.start_server(
             self.client_connected,
             host=host,
-            port=port
+            port=port,
+            limit=LIMIT,
         )
 
         for sock in self.sockets:
