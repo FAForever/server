@@ -49,11 +49,6 @@ async def test_very_long_message(lobby_server, caplog):
 
 
 async def test_old_client_error(lobby_server):
-    error_msg = {
-        "command": "notice",
-        "style": "error",
-        "text": 'Cannot join game. Please update your client to the newest version.'
-    }
     player_id, session, proto = await connect_and_sign_in(
         ("test", "test_password"),
         lobby_server
@@ -72,6 +67,11 @@ async def test_old_client_error(lobby_server):
         "text": 'Your client version is no longer supported. Please update to the newest version: https://faforever.com'
     }
 
+    error_msg = {
+        "command": "notice",
+        "style": "error",
+        "text": 'Cannot join game. Please update your client to the newest version.'
+    }
     await proto.send_message({"command": "game_host"})
     msg = await proto.read_message()
     assert msg == error_msg
