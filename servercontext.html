@@ -194,7 +194,7 @@ class ServerContext:
         try:
             yield
         except exceptions:
-            if hasattr(func.__self__):
+            if hasattr(func, &#34;__self__&#34;):
                 desc = f&#34;{func.__self__.__class__}.{func.__name__}&#34;
             else:
                 desc = func.__name__
@@ -371,7 +371,7 @@ class ServerContext:
         try:
             yield
         except exceptions:
-            if hasattr(func.__self__):
+            if hasattr(func, &#34;__self__&#34;):
                 desc = f&#34;{func.__self__.__class__}.{func.__name__}&#34;
             else:
                 desc = func.__name__
@@ -545,7 +545,7 @@ def suppress_and_log(self, func, *exceptions: type[BaseException]):
     try:
         yield
     except exceptions:
-        if hasattr(func.__self__):
+        if hasattr(func, &#34;__self__&#34;):
             desc = f&#34;{func.__self__.__class__}.{func.__name__}&#34;
         else:
             desc = func.__name__

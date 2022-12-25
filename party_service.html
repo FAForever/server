@@ -198,7 +198,6 @@ class PartyService(Service):
 
     def remove_party(self, party):
         # Remove all players who were in the party
-        self._logger.info(&#34;Removing party: %s&#34;, party.members)
         for member in party:
             self._logger.info(&#34;Removing party for player %s&#34;, member.player)
             if party == self.player_parties.get(member.player):
@@ -401,7 +400,6 @@ class PartyService(Service):
 
     def remove_party(self, party):
         # Remove all players who were in the party
-        self._logger.info(&#34;Removing party: %s&#34;, party.members)
         for member in party:
             self._logger.info(&#34;Removing party for player %s&#34;, member.player)
             if party == self.player_parties.get(member.player):
@@ -591,7 +589,6 @@ class PartyService(Service):
 </summary>
 <pre><code class="python">def remove_party(self, party):
     # Remove all players who were in the party
-    self._logger.info(&#34;Removing party: %s&#34;, party.members)
     for member in party:
         self._logger.info(&#34;Removing party for player %s&#34;, member.player)
         if party == self.player_parties.get(member.player):
