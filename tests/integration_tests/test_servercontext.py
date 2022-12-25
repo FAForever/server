@@ -125,3 +125,19 @@ async def test_unexpected_exception(context, caplog):
         _, _ = await asyncio.open_connection(*srv.sockets[0].getsockname())
 
     assert "Exception in protocol" in caplog.text
+
+
+async def test_unexpected_exception_in_connection_lost(context, caplog):
+    srv, ctx = context
+
+    ctx._services[0].on_connection_lost = mock.Mock(
+        side_effect=RuntimeError("test"),
+        __name__="on_connection_lost"
+    )
+
+    with caplog.at_level("TRACE"):
+        _, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())
+        writer.close()
+        await asyncio.sleep(0.1)
+
+    assert "Unexpected exception in on_connection_lost" in caplog.text
