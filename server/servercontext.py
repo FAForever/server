@@ -95,9 +95,6 @@ class ServerContext:
             self._server.close()
             await self._server.wait_closed()
 
-    def __contains__(self, connection):
-        return connection in self.connections
-
     def write_broadcast(self, message, validate_fn=lambda _: True):
         self.write_broadcast_raw(
             self.protocol_class.encode_message(message),
