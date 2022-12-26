@@ -173,7 +173,7 @@ class ServerContext:
             yield
         except exceptions:
             if hasattr(func, "__self__"):
-                desc = f"{func.__self__.__class__}.{func.__name__}"
+                desc = f"{func.__self__.__class__.__name__}.{func.__name__}"
             else:
                 desc = func.__name__
             self._logger.warning(
