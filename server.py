@@ -26,7 +26,7 @@ from server.game_service import GameService
 from server.ice_servers.nts import TwilioNTS
 from server.player_service import PlayerService
 from server.profiler import Profiler
-from server.protocol import SimpleJsonProtocol
+from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
 
 
 async def main():
@@ -109,8 +109,33 @@ async def main():
         )
     config.register_callback("CONTROL_SERVER_PORT", restart_control_server)
 
-    await instance.listen(("", 8001))
-    await instance.listen(("", 8002), SimpleJsonProtocol)
+    PROTO_CLASSES = {
+        QDataStreamProtocol.__name__: QDataStreamProtocol,
+        SimpleJsonProtocol.__name__: SimpleJsonProtocol
+    }
+    for cfg in config.LISTEN:
+        try:
+            host = cfg.get("address", "")
+            port = cfg.get("port", 0)
+            proto_class_name = cfg.get("protocol", QDataStreamProtocol.__name__)
+            proto_class = PROTO_CLASSES[proto_class_name]
+
+            await instance.listen(
+                address=(host, port),
+                protocol_class=proto_class
+            )
+        except Exception:
+            logger.exception(
+                "Failed to start server instance with config: %s",
+                cfg
+            )
+            done.set_result(-1)
+
+    if not instance.contexts:
+        logger.warning(
+            "The server was not configured to listen on any ports! No one will "
+            "be able to connect."
+        )
 
     server.metrics.info.info({
         "version": version,

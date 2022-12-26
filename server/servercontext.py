@@ -91,8 +91,9 @@ class ServerContext:
 
     async def stop(self):
         self._logger.debug("%s: stop()", self.name)
-        self._server.close()
-        await self._server.wait_closed()
+        if self._server:
+            self._server.close()
+            await self._server.wait_closed()
 
     def __contains__(self, connection):
         return connection in self.connections

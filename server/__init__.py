@@ -261,9 +261,9 @@ class ServerInstance(object):
             list(self.services.values()),
             protocol_class
         )
-        self.contexts.add(ctx)
-
         await ctx.listen(*address)
+
+        self.contexts.add(ctx)
 
         return ctx
 
