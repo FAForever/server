@@ -123,7 +123,7 @@ async def main():
         time.perf_counter() - startup_time
     )
 
-    await done
+    exit_code = await done
 
     shutdown_time = time.perf_counter()
 
@@ -133,6 +133,8 @@ async def main():
 
     # Close DB connections
     await database.close()
+
+    return exit_code
 
 
 if __name__ == "__main__":
@@ -162,7 +164,7 @@ if __name__ == "__main__":
         import uvloop
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-    asyncio.run(main())
+    exit_code = asyncio.run(main())
 
     stop_time = time.perf_counter()
     logger.info(
@@ -175,3 +177,8 @@ if __name__ == "__main__":
             "Server shut down in %0.2f seconds",
             stop_time - shutdown_time
         )
+
+    if exit_code:
+        logger.error("Server shut down with exit code: %s", exit_code)
+
+    exit(exit_code)
