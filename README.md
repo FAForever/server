@@ -34,6 +34,14 @@ work on your issue.
 
 [![Issue hunt](https://github.com/BoostIO/issuehunt-materials/raw/master/v1/issuehunt-button-v1.svg?sanitize=true)](https://issuehunt.io/r/FAForever/server)
 
+## Major Software Dependencies
+
+The lobby server integrates with a few external services and has been tested
+with the following versions:
+
+-   MariaDB 10.6
+-   (optional) RabbitMQ 3.9
+
 # Contributing
 
 Before opening a pull request, please take a moment to look over the
