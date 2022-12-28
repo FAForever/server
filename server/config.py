@@ -37,14 +37,14 @@ class ConfigurationStore:
         self.CONFIGURATION_REFRESH_TIME = 300
         self.LISTEN = [
             {
-                "address": "",
-                "port": 8001,
-                "protocol": "QDataStreamProtocol",
+                "ADDRESS": "",
+                "PORT": 8001,
+                "PROTOCOL": "QDataStreamProtocol",
             },
             {
-                "address": "",
-                "port": 8002,
-                "protocol": "SimpleJsonProtocol"
+                "ADDRESS": "",
+                "PORT": 8002,
+                "PROTOCOL": "SimpleJsonProtocol"
             }
         ]
         self.LOG_LEVEL = "DEBUG"

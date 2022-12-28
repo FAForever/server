@@ -115,9 +115,9 @@ async def main():
     }
     for cfg in config.LISTEN:
         try:
-            host = cfg.get("address", "")
-            port = cfg.get("port", 0)
-            proto_class_name = cfg.get("protocol", QDataStreamProtocol.__name__)
+            host = cfg["ADDRESS"]
+            port = cfg["PORT"]
+            proto_class_name = cfg["PROTOCOL"]
             proto_class = PROTO_CLASSES[proto_class_name]
 
             await instance.listen(
