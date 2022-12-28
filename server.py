@@ -124,17 +124,13 @@ async def main():
                 address=(host, port),
                 protocol_class=proto_class
             )
-        except Exception:
-            logger.exception(
-                "Failed to start server instance with config: %s",
-                cfg
-            )
-            done.set_result(-1)
+        except Exception as e:
+            raise RuntimeError(f"Error with server instance config: {cfg}") from e
 
     if not instance.contexts:
-        logger.warning(
-            "The server was not configured to listen on any ports! No one will "
-            "be able to connect."
+        raise RuntimeError(
+            "The server was not configured to listen on any ports! Check the "
+            "config file and try again."
         )
 
     server.metrics.info.info({
