@@ -114,16 +114,19 @@ class ServerContext:
                 )
 
     async def client_connected(self, stream_reader, stream_writer):
-        self._logger.debug("%s: Client connected", self.name)
+        peername = Address(*stream_writer.get_extra_info("peername"))
+        self._logger.info(
+            "%s: Client connected from %s:%s",
+            self.name,
+            peername.host,
+            peername.port
+        )
         protocol = self.protocol_class(stream_reader, stream_writer)
         connection = self._connection_factory()
         self.connections[connection] = protocol
 
         try:
-            await connection.on_connection_made(
-                protocol,
-                Address(*stream_writer.get_extra_info("peername"))
-            )
+            await connection.on_connection_made(protocol, peername)
             metrics.user_connections.labels("None", "None").inc()
             while protocol.is_connected():
                 message = await protocol.read_message()
@@ -154,7 +157,7 @@ class ServerContext:
             with self.suppress_and_log(connection.on_connection_lost, Exception):
                 await connection.on_connection_lost()
 
-            self._logger.debug(
+            self._logger.info(
                 "%s: Client disconnected for '%s'",
                 self.name,
                 connection.get_user_identifier()
