@@ -8,6 +8,7 @@ from .coop import CoopGame
 from .custom_game import CustomGame
 from .game import Game, GameError
 from .ladder_game import LadderGame
+from .tournament_game import TournamentGame
 from .typedefs import (
     FeaturedModType,
     GameConnectionState,
@@ -41,6 +42,7 @@ __all__ = (
     "GameType",
     "InitMode",
     "LadderGame",
+    "TournamentGame",
     "ValidityState",
     "Victory",
     "VisibilityState",

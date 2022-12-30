@@ -415,7 +415,8 @@ async def test_handle_action_GameOption(
     assert game.max_players == 7
     # I don't know what these paths actually look like
     await game_connection.handle_action("GameOption", ["ScenarioFile", "C:\\Maps\\Some_Map"])
-    assert game.map_file_path == "maps/some_map.zip"
+    assert game.map_name == "some_map"
+    assert game.map_scenario_path == "C:/Maps/Some_Map"
     await game_connection.handle_action("GameOption", ["Title", "All welcome"])
     assert game.name == "All welcome"
     await game_connection.handle_action("GameOption", ["ArbitraryKey", "ArbitraryValue"])

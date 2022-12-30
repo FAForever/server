@@ -1,7 +1,7 @@
 """
 Manages the lifecycle of active games
 """
-
+import asyncio
 from collections import Counter
 from typing import Optional, Union, ValuesView
 
@@ -9,7 +9,6 @@ import aiocron
 from sqlalchemy import select
 
 from server.config import config
-
 from . import metrics
 from .core import Service
 from .db import FAFDatabase
@@ -145,7 +144,7 @@ class GameService(Service):
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
-        mapname: Optional[str] = None,
+        map_name: Optional[str] = None,
         password: Optional[str] = None,
         matchmaker_queue_id: Optional[int] = None,
         **kwargs
@@ -159,7 +158,7 @@ class GameService(Service):
             "id_": game_id,
             "host": host,
             "name": name,
-            "map_": mapname,
+            "map_name": map_name,
             "game_mode": game_mode,
             "game_service": self,
             "game_stats_service": self.game_stats_service,
@@ -262,3 +261,8 @@ class GameService(Service):
             metrics.rated_games.labels(game_results.rating_type).inc()
             # TODO: Remove when rating service starts listening to message queue
             await self._rating_service.enqueue(result_dict)
+
+
+class NotConnectedError(asyncio.TimeoutError):
+    def __init__(self, players: list[Player]):
+        self.players = players

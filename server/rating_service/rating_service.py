@@ -20,7 +20,6 @@ from server.message_queue_service import MessageQueueService
 from server.metrics import rating_service_backlog
 from server.player_service import PlayerService
 from server.rating import Leaderboard, PlayerRatings, Rating, RatingType
-
 from .game_rater import AdjustmentGameRater, GameRater, GameRatingError
 from .typedefs import (
     GameRatingResult,
@@ -140,6 +139,10 @@ class RatingService(Service):
 
     async def _rate(self, summary: GameRatingSummary) -> None:
         assert self._rating_type_ids is not None
+
+        if summary.rating_type is None:
+            self._logger.debug(f"Not processing game {summary.game_id} since it is not rated.")
+            return
 
         if summary.rating_type not in self._rating_type_ids:
             raise GameRatingError(f"Unknown rating type {summary.rating_type}.")

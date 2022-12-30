@@ -18,6 +18,7 @@ from server import (
     OAuthService,
     PartyService,
     ServerInstance,
+    TournamentService,
     ViolationService
 )
 from server.config import config
@@ -61,9 +62,19 @@ async def party_service(game_service):
 
 
 @pytest.fixture
+async def tournament_service(game_service, message_queue_service, player_service, ladder_service):
+    service = TournamentService(game_service, message_queue_service, player_service, ladder_service)
+    await service.initialize()
+
+    yield service
+
+    await service.shutdown()
+
+
+@pytest.fixture
 async def broadcast_service(
-    message_queue_service,
-    game_service,
+        message_queue_service,
+        game_service,
     player_service,
 ):
     # The reference to the ServerInstance needs to be established later
@@ -119,17 +130,18 @@ async def lobby_contexts(
     event_loop,
     database,
     broadcast_service,
-    player_service,
-    game_service,
-    geoip_service,
-    ladder_service,
-    rating_service,
-    message_queue_service,
-    party_service,
-    oauth_service,
-    violation_service,
-    policy_server,
-    jwks_server
+        player_service,
+        game_service,
+        geoip_service,
+        ladder_service,
+        rating_service,
+        message_queue_service,
+        party_service,
+        oauth_service,
+        violation_service,
+        policy_server,
+        jwks_server,
+        tournament_service
 ):
     mock_policy = mock.patch(
         "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
@@ -153,6 +165,7 @@ async def lobby_contexts(
                 "party_service": party_service,
                 "oauth_service": oauth_service,
                 "violation_service": violation_service,
+                "tournament_service": tournament_service,
             })
         # Set up the back reference
         broadcast_service.server = instance

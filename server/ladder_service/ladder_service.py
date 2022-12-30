@@ -34,8 +34,8 @@ from server.db.models import (
     matchmaker_queue_map_pool
 )
 from server.decorators import with_logger
-from server.game_service import GameService
-from server.games import InitMode, LadderGame
+from server.game_service import GameService, NotConnectedError
+from server.games import Game, InitMode, LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service.game_name import game_name
 from server.ladder_service.violation_service import ViolationService
@@ -563,7 +563,7 @@ class LadderService(Service):
             if game_options:
                 game.gameOptions.update(game_options)
 
-            mapname = re.match("maps/(.+).zip", map_path).group(1)
+            map_name = re.match("maps/(.+).zip", map_path).group(1)
             # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
             # Really in the future, just send a better description
 
@@ -571,7 +571,7 @@ class LadderService(Service):
 
             def make_game_options(player: Player) -> GameLaunchOptions:
                 return GameLaunchOptions(
-                    mapname=mapname,
+                    mapname=map_name,
                     expected_players=len(all_players),
                     game_options=game_options,
                     team=game.get_player_option(player.id, "Team"),
@@ -579,7 +579,7 @@ class LadderService(Service):
                     map_position=game.get_player_option(player.id, "StartSpot")
                 )
 
-            await self.launch_match(game, host, all_guests, make_game_options)
+            await self.launch_server_made_game(game, host, all_guests, make_game_options)
             self._logger.debug("Ladder game launched successfully %s", game)
             metrics.matches.labels(queue.name, MatchLaunch.SUCCESSFUL).inc()
         except Exception as e:
@@ -623,9 +623,9 @@ class LadderService(Service):
                 )
                 self.violation_service.register_violations(abandoning_players)
 
-    async def launch_match(
+    async def launch_server_made_game(
         self,
-        game: LadderGame,
+        game: Game,
         host: Player,
         guests: list[Player],
         make_game_options: Callable[[Player], GameLaunchOptions]
@@ -725,8 +725,3 @@ class LadderService(Service):
     async def shutdown(self):
         for queue in self.queues.values():
             queue.shutdown()
-
-
-class NotConnectedError(asyncio.TimeoutError):
-    def __init__(self, players: list[Player]):
-        self.players = players

@@ -1,8 +1,10 @@
 import asyncio
+import json
 from unittest import mock
 
 import aio_pika
 import pytest
+from aio_pika.abc import AbstractIncomingMessage
 
 from server.config import config
 from server.decorators import with_logger
@@ -175,3 +177,21 @@ async def test_declaring_exchange_without_initialization(mq_uninit_service):
     assert service._is_ready
     assert service._connection is not None
     assert service._exchanges.get(exchange_name) is not None
+
+
+async def test_listening_to_incoming_messages(mq_service: MessageQueueService):
+    callback = Callback()
+    await mq_service.listen_to_message("test", "routing.test", callback.callback_listening)
+    await mq_service.declare_exchange(config.MQ_EXCHANGE_NAME)
+    await mq_service.publish(config.MQ_EXCHANGE_NAME, "routing.test", {"test": "test"})
+    await callback.called_future
+
+
+class Callback:
+
+    def __init__(self) -> None:
+        self.called_future = asyncio.Future()
+
+    def callback_listening(self, message: AbstractIncomingMessage):
+        assert json.loads(message.body)["test"] == "test"
+        self.called_future.set_result(None)
