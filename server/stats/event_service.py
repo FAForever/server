@@ -1,4 +1,3 @@
-from server.api.api_accessor import ApiAccessor
 from server.core import Service
 from server.decorators import with_logger
 
@@ -34,8 +33,6 @@ EVENT_SERAPHIM_WINS = "15b6c19a-6084-4e82-ada9-6c30e282191f"
 
 @with_logger
 class EventService(Service):
-    def __init__(self, api_accessor: ApiAccessor):
-        self.api_accessor = api_accessor
 
     async def execute_batch_update(self, player_id, queue):
         """
@@ -61,6 +58,7 @@ class EventService(Service):
         ```
         Else, returns None
         """
+        return
         self._logger.info("Recording %d events for player %d", len(queue), player_id)
         try:
             response, content = await self.api_accessor.update_events(queue, player_id)

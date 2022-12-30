@@ -2,18 +2,12 @@ from unittest import mock
 
 import pytest
 
-from server.api.api_accessor import ApiAccessor
 from server.stats.event_service import EventService
 
 
 @pytest.fixture()
-def api_accessor():
-    return mock.Mock(spec=ApiAccessor)
-
-
-@pytest.fixture()
-def service(api_accessor: ApiAccessor):
-    return EventService(api_accessor)
+def service():
+    return EventService()
 
 
 def create_queue():

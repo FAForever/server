@@ -1,4 +1,3 @@
-from server.api.api_accessor import ApiAccessor
 from server.core import Service
 from server.decorators import with_logger
 
@@ -63,8 +62,6 @@ ACH_DONT_MESS_WITH_ME = "2103e0de-1c87-4fba-bc1b-0bba66669607"
 
 @with_logger
 class AchievementService(Service):
-    def __init__(self, api_accessor: ApiAccessor):
-        self.api_accessor = api_accessor
 
     async def execute_batch_update(self, player_id, queue):
         """
@@ -95,6 +92,7 @@ class AchievementService(Service):
         ```
         Otherwise, it returns None
         """
+        return
         self._logger.info("Updating %d achievements for player %d", len(queue), player_id)
         try:
             response, content = await self.api_accessor.update_achievements(queue, player_id)

@@ -139,7 +139,6 @@ async def lobby_contexts(
         instance = ServerInstance(
             "UnitTestServer",
             database,
-            api_accessor=None,
             twilio_nts=None,
             loop=event_loop,
             _override_services={

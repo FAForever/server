@@ -2,21 +2,12 @@ from unittest import mock
 
 import pytest
 
-from server.api.api_accessor import ApiAccessor, SessionManager
 from server.stats.achievement_service import AchievementService
 
 
 @pytest.fixture()
-def api_accessor():
-    m = mock.Mock(spec=ApiAccessor)
-    m.update_achievements = mock.AsyncMock(return_value=(200, mock.MagicMock()))
-    m.api_session = SessionManager()
-    return m
-
-
-@pytest.fixture()
-def service(api_accessor: ApiAccessor):
-    return AchievementService(api_accessor)
+def service():
+    return AchievementService()
 
 
 def create_queue():
