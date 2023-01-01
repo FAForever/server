@@ -139,11 +139,12 @@ class ServerContext:
             asyncio.CancelledError,
         ):
             pass
-        except Exception:
+        except Exception as e:
             self._logger.exception(
-                "%s: Exception in protocol for '%s'",
+                "%s: Exception in protocol for '%s': %s",
                 self.name,
-                connection.get_user_identifier()
+                connection.get_user_identifier(),
+                e
             )
         finally:
             del self.connections[connection]

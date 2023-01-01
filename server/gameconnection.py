@@ -214,8 +214,11 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.exception("Bad command arguments")
         except ConnectionError as e:
             raise e
-        except Exception:  # pragma: no cover
-            self._logger.exception("Something awful happened in a game thread!")
+        except Exception as e:  # pragma: no cover
+            self._logger.exception(
+                "Something awful happened in a game thread! %s",
+                e
+            )
             await self.abort()
 
     async def handle_desync(self, *_args):  # pragma: no cover
