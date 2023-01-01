@@ -362,11 +362,11 @@ class GameConnection(GpgNetServerProtocol):
     async def handle_json_stats(self, stats: str):
         try:
             self.game.report_army_stats(stats)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             self._logger.warning(
-                "Malformed game stats reported by %s: '...%s'",
+                "Malformed game stats reported by %s: '...%s...'",
                 self._player.login,
-                stats[-20:]
+                stats[e.pos-20:e.pos+20]
             )
 
     async def handle_enforce_rating(self):
