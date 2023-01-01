@@ -5,6 +5,7 @@ Game communication over GpgNet
 import asyncio
 import contextlib
 import json
+import logging
 from typing import Any
 
 from sqlalchemy import select
@@ -13,7 +14,6 @@ from server.db import FAFDatabase
 
 from .config import TRACE
 from .db.models import coop_leaderboard, coop_map, teamkills
-from .decorators import with_logger
 from .game_service import GameService
 from .games import (
     CoopGame,
@@ -30,7 +30,6 @@ from .players import Player, PlayerState
 from .protocol import DisconnectedError, GpgNetServerProtocol, Protocol
 
 
-@with_logger
 class GameConnection(GpgNetServerProtocol):
     """
     Responsible for connections to the game, using the GPGNet protocol
@@ -50,6 +49,9 @@ class GameConnection(GpgNetServerProtocol):
         Construct a new GameConnection
         """
         super().__init__()
+        self._logger = logging.getLogger(
+            f"{self.__class__.__qualname__}.{game.id}"
+        )
         self._db = database
         self._logger.debug("GameConnection initializing")
 
