@@ -1,8 +1,9 @@
 from server.core import Service
 from server.decorators import with_logger
-from server.games import FeaturedModType, Game
+from server.games import Game
 from server.games.game_results import ArmyOutcome
 from server.players import Player
+from server.rating import RatingType
 from server.stats.achievement_service import *
 from server.stats.event_service import *
 from server.stats.unit import *
@@ -90,7 +91,7 @@ class GameStatsService(Service):
         unit_stats = stats["units"]
         scored_highest = highest_scorer == player.login
 
-        if survived and game.game_mode == FeaturedModType.LADDER_1V1:
+        if survived and game.rating_type == RatingType.LADDER_1V1:
             self._unlock(ACH_FIRST_SUCCESS, a_queue)
 
         self._increment(ACH_NOVICE, 1, a_queue)
