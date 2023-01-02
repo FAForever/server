@@ -4,6 +4,7 @@ Interfaces with RabbitMQ
 
 import asyncio
 import json
+from typing import Iterable
 
 import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
@@ -129,6 +130,22 @@ class MessageQueueService(Service):
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -> None:
+        await self.publish_many(
+            exchange_name,
+            routing,
+            [payload],
+            mandatory=mandatory,
+            delivery_mode=delivery_mode
+        )
+
+    async def publish_many(
+        self,
+        exchange_name: str,
+        routing: str,
+        payloads: Iterable[dict],
+        mandatory: bool = False,
+        delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+    ) -> None:
         if not self._is_ready:
             self._logger.warning(
                 "Not connected to RabbitMQ, unable to publish message."
@@ -139,19 +156,24 @@ class MessageQueueService(Service):
         if exchange is None:
             raise KeyError(f"Unknown exchange {exchange_name}.")
 
-        message = aio_pika.Message(
-            json.dumps(payload).encode(), delivery_mode=delivery_mode
-        )
-
         async with self._channel.transaction():
-            await exchange.publish(
-                message,
-                routing_key=routing,
-                mandatory=mandatory
-            )
-            self._logger.log(
-                TRACE, "Published message %s to %s/%s", payload, exchange_name, routing
-            )
+            for payload in payloads:
+                message = aio_pika.Message(
+                    json.dumps(payload).encode(),
+                    delivery_mode=delivery_mode
+                )
+                await exchange.publish(
+                    message,
+                    routing_key=routing,
+                    mandatory=mandatory
+                )
+                self._logger.log(
+                    TRACE,
+                    "Published message %s to %s/%s",
+                    payload,
+                    exchange_name,
+                    routing
+                )
 
     @synchronizedmethod("initialization_lock")
     async def reconnect(self) -> None:

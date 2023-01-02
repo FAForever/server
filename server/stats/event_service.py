@@ -1,5 +1,7 @@
+from server.config import config
 from server.core import Service
 from server.decorators import with_logger
+from server.message_queue_service import MessageQueueService
 
 EVENT_CUSTOM_GAMES_PLAYED = "cfa449a6-655b-48d5-9a27-6044804fe35c"
 EVENT_RANKED_1V1_GAMES_PLAYED = "4a929def-e347-45b4-b26d-4325a3115859"
@@ -33,6 +35,8 @@ EVENT_SERAPHIM_WINS = "15b6c19a-6084-4e82-ada9-6c30e282191f"
 
 @with_logger
 class EventService(Service):
+    def __init__(self, message_queue_service: MessageQueueService):
+        self.message_queue_service = message_queue_service
 
     async def execute_batch_update(self, player_id, queue):
         """
@@ -43,42 +47,24 @@ class EventService(Service):
         - `queue`: an array of event updates in the form:
         ```
         [{
-            "event_id": string,
-            "update_count": long
+            "eventId": string,
+            "count": long
         }]
         ```
 
         # Returns
-        If successful, this method returns an array with the following structure:
-        ```
-        [{
-            "event_id": string,
-            "count": long
-        }]
-        ```
-        Else, returns None
+        None
         """
-        return
         self._logger.info("Recording %d events for player %d", len(queue), player_id)
-        try:
-            response, content = await self.api_accessor.update_events(queue, player_id)
-        except ConnectionError:
-            self._logger.error("Failed to update events: connection error")
-            return None
-        if response < 300:
-            """
-            Converting the Java API data to the structure mentioned above
-            """
-            events_data = []
-            for event in content["data"]:
-                events_data.append({
-                    "event_id": event["attributes"]["eventId"],
-                    "count": event["attributes"]["currentCount"]
-                })
-
-            return events_data
-
-        return None
+        update_data = [
+            {"playerId": player_id, **data}
+            for data in queue
+        ]
+        await self.message_queue_service.publish_many(
+            config.MQ_EXCHANGE_NAME,
+            "request.event.update",
+            update_data,
+        )
 
     def record_event(self, event_id, count, queue):
         """
@@ -93,4 +79,4 @@ class EventService(Service):
         if count == 0:
             return
 
-        queue.append({"event_id": event_id, "count": count})
+        queue.append({"eventId": event_id, "count": count})

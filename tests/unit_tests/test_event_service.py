@@ -2,68 +2,46 @@ from unittest import mock
 
 import pytest
 
+from server.config import config
+from server.message_queue_service import MessageQueueService
 from server.stats.event_service import EventService
 
 
-@pytest.fixture()
-def service():
-    return EventService()
+@pytest.fixture
+def message_queue_service():
+    return mock.create_autospec(MessageQueueService)
 
 
-def create_queue():
-    return [
-        dict(event_id="1-2-3", count=1),
-        dict(event_id="2-3-4", count=4),
-    ]
+@pytest.fixture
+def service(message_queue_service):
+    return EventService(message_queue_service)
 
 
 async def test_fill_queue(service: EventService):
-
     queue = []
     service.record_event("1-2-3", 0, queue)
     service.record_event("1-2-3", 1, queue)
     service.record_event("2-3-4", 4, queue)
 
     assert queue == [
-        dict(event_id="1-2-3", count=1),
-        dict(event_id="2-3-4", count=4),
+        {"eventId": "1-2-3", "count": 1},
+        {"eventId": "2-3-4", "count": 4},
     ]
 
 
-async def test_api_broken(service: EventService):
-    service.api_accessor.update_events = mock.AsyncMock(return_value=(500, None))
-    result = await service.execute_batch_update(42, create_queue())
-    assert result is None
+async def test_execute_batch_update(service: EventService):
+    queue = [
+        {"eventId": "1-2-3", "count": 1},
+        {"eventId": "2-3-4", "count": 4},
+    ]
 
+    await service.execute_batch_update(3, queue)
 
-async def test_api_broken_2(service: EventService):
-    service.api_accessor.update_events = mock.AsyncMock(side_effect=ConnectionError())
-    result = await service.execute_batch_update(42, create_queue())
-    assert result is None
-
-
-async def test_record_multiple(service: EventService):
-
-    content = {
-        "data": [
-            {"attributes": {"eventId": "1-2-3", "currentCount": 1}},
-            {"attributes": {"eventId": "2-3-4", "currentCount": 4}}
+    service.message_queue_service.publish_many.assert_called_once_with(
+        config.MQ_EXCHANGE_NAME,
+        "request.event.update",
+        [
+            {"playerId": 3, "eventId": "1-2-3", "count": 1},
+            {"playerId": 3, "eventId": "2-3-4", "count": 4},
         ]
-    }
-
-    queue = create_queue()
-
-    service.api_accessor.update_events = mock.AsyncMock(return_value=(200, content))
-    result = await service.execute_batch_update(42, queue)
-
-    events_data = []
-    for event in content["data"]:
-        converted_event = dict(
-            event_id=event["attributes"]["eventId"],
-            count=event["attributes"]["currentCount"]
-        )
-        events_data.append(converted_event)
-
-    assert result == events_data
-
-    service.api_accessor.update_events.assert_called_once_with(queue, 42)
+    )

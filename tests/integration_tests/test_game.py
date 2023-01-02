@@ -1,5 +1,6 @@
 import asyncio
 import gc
+import json
 from collections import defaultdict
 
 import pytest
@@ -888,6 +889,123 @@ async def test_gamestate_ended_modifies_player_list(lobby_server):
 
 @pytest.mark.rabbitmq
 @fast_forward(30)
+async def test_game_stats_broadcasts_achievement_updates(
+    lobby_server,
+    channel
+):
+    mq_proto_ach = await connect_mq_consumer(
+        lobby_server,
+        channel,
+        "request.achievement.update"
+    )
+    mq_proto_evt = await connect_mq_consumer(
+        lobby_server,
+        channel,
+        "request.event.update"
+    )
+
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(guest_proto, "game_info")
+
+    # Set up the game
+    game_id = await host_game(host_proto)
+    await join_game(guest_proto, game_id)
+    # Set player options
+    await send_player_options(
+        host_proto,
+        [host_id, "Army", 1],
+        [host_id, "Team", 1],
+        [host_id, "StartSpot", 1],
+        [host_id, "Faction", 1],
+        [host_id, "Color", 1],
+        [guest_id, "Army", 2],
+        [guest_id, "Team", 2],
+        [guest_id, "StartSpot", 2],
+        [guest_id, "Faction", 2],
+        [guest_id, "Color", 2],
+    )
+    # Launch game
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Launching"]
+    })
+
+    await read_until_launched(host_proto, game_id)
+
+    # Report results
+    # We only want achievement updates for 1 player so don't report stats for both
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [1, "victory 10"]
+        })
+
+    # Report stats
+    with open("tests/data/game_stats_simple_win.json", "r") as f:
+        stats = json.loads(f.read())["stats"]
+
+    stats[0]["name"] = "test"
+    stats[1]["name"] = "Rhiza"
+    await host_proto.send_message({
+        "target": "game",
+        "command": "JsonStats",
+        "args": [json.dumps({"stats": stats})]
+    })
+
+    # Achievement updates
+    assert await asyncio.wait_for(mq_proto_ach.read_message(), timeout=10) == {
+        "playerId": host_id,
+        "achievementId": "c6e6039f-c543-424e-ab5f-b34df1336e81",  # ACH_NOVICE
+        "operation": "INCREMENT",
+        "steps": 1
+    }
+    assert await asyncio.wait_for(mq_proto_ach.read_message(), timeout=5) == {
+        "playerId": host_id,
+        "achievementId": "d5c759fe-a1a8-4103-888d-3ba319562867",  # ACH_JUNIOR
+        "operation": "INCREMENT",
+        "steps": 1
+    }
+    assert await asyncio.wait_for(mq_proto_ach.read_message(), timeout=5) == {
+        "playerId": host_id,
+        "achievementId": "6a37e2fc-1609-465e-9eca-91eeda4e63c4",  # ACH_SENIOR
+        "operation": "INCREMENT",
+        "steps": 1
+    }
+    assert await asyncio.wait_for(mq_proto_ach.read_message(), timeout=5) == {
+        "playerId": host_id,
+        "achievementId": "bd12277a-6604-466a-9ee6-af6908573585",  # ACH_VETERAN
+        "operation": "INCREMENT",
+        "steps": 1
+    }
+    assert await asyncio.wait_for(mq_proto_ach.read_message(), timeout=5) == {
+        "playerId": host_id,
+        "achievementId": "805f268c-88aa-4073-aa2b-ea30700f70d6",  # ACH_ADDICT
+        "operation": "INCREMENT",
+        "steps": 1
+    }
+
+    # Event updates
+    assert await asyncio.wait_for(mq_proto_evt.read_message(), timeout=10) == {
+        "playerId": host_id,
+        "eventId": "1b900d26-90d2-43d0-a64e-ed90b74c3704",  # EVENT_UEF_PLAYS
+        "count": 1
+    }
+    assert await asyncio.wait_for(mq_proto_evt.read_message(), timeout=10) == {
+        "playerId": host_id,
+        "eventId": "7be6fdc5-7867-4467-98ce-f7244a66625a",  # EVENT_UEF_WINS
+        "count": 1
+    }
+
+
+@pytest.mark.rabbitmq
+@fast_forward(30)
 async def test_galactic_war_1v1_game_ended_broadcasts_army_results(
     lobby_server,
     channel
@@ -923,7 +1041,6 @@ async def test_galactic_war_1v1_game_ended_broadcasts_army_results(
         [guest_id, "Faction", 2],
         [guest_id, "Color", 2],
     )
-
     # Launch game
     await host_proto.send_message({
         "target": "game",

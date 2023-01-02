@@ -1,5 +1,3 @@
-
-from server.config import config
 from server.core import Service
 from server.decorators import with_logger
 from server.games import FeaturedModType, Game
@@ -14,7 +12,11 @@ from ..factions import Faction
 
 @with_logger
 class GameStatsService(Service):
-    def __init__(self, event_service: EventService, achievement_service: AchievementService):
+    def __init__(
+        self,
+        event_service: EventService,
+        achievement_service: AchievementService
+    ):
         self._event_service = event_service
         self._achievement_service = achievement_service
 
@@ -123,16 +125,9 @@ class GameStatsService(Service):
         self._lowest_acu_health(_count(blueprint_stats, lambda x: x.get("lowest_health", 0), *ACUS), survived, a_queue)
         self._highscore(scored_highest, number_of_humans, a_queue)
 
-        if config.USE_API:
-            updated_achievements = await self._achievement_service.execute_batch_update(player.id, a_queue)
+        await self._achievement_service.execute_batch_update(player.id, a_queue)
+        await self._event_service.execute_batch_update(player.id, e_queue)
 
-            if updated_achievements is None:
-                self._logger.warning("API returned an error while handling the achievements batch update.")
-                return
-
-            await self._event_service.execute_batch_update(player.id, e_queue)
-            if player.lobby_connection is not None:
-                await player.lobby_connection.send_updated_achievements(updated_achievements)
 
     def _category_stats(self, unit_stats, survived, achievements_queue, events_queue):
         built_air = unit_stats["air"].get("built", 0)

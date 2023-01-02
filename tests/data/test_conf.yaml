@@ -18,7 +18,6 @@ API_CLIENT_ID: "client_id"
 API_CLIENT_SECRET: "banana"
 API_TOKEN_URI: "https://api.test.faforever.com/oauth/token"
 API_BASE_URL: "https://api.test.faforever.com/"
-USE_API: true
 
 WWW_URL: "https://www.faforever.com"
 CONTENT_URL: "http://content.faforever.com"

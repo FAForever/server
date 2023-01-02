@@ -396,13 +396,13 @@ def matchmaker_queue(game_service) -> MatchmakerQueue:
 
 
 @pytest.fixture
-def event_service():
-    return EventService()
+def event_service(message_queue_service):
+    return EventService(message_queue_service)
 
 
 @pytest.fixture
-def achievement_service():
-    return AchievementService()
+def achievement_service(message_queue_service):
+    return AchievementService(message_queue_service)
 
 
 @pytest.fixture
