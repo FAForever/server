@@ -261,9 +261,9 @@ class ServerInstance(object):
             list(self.services.values()),
             protocol_class
         )
-        self.contexts.add(ctx)
-
         await ctx.listen(*address)
+
+        self.contexts.add(ctx)
 
         return ctx
 
@@ -274,9 +274,10 @@ class ServerInstance(object):
         )
         for result, ctx in zip(results, self.contexts):
             if isinstance(result, BaseException):
-                self._logger.error(
+                self._logger.exception(
                     "Unexpected error when stopping context %s",
-                    ctx
+                    ctx,
+                    exc_info=result
                 )
 
         results = await asyncio.gather(

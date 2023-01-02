@@ -26,7 +26,7 @@ from server.game_service import GameService
 from server.ice_servers.nts import TwilioNTS
 from server.player_service import PlayerService
 from server.profiler import Profiler
-from server.protocol import SimpleJsonProtocol
+from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
 
 
 async def main():
@@ -109,8 +109,29 @@ async def main():
         )
     config.register_callback("CONTROL_SERVER_PORT", restart_control_server)
 
-    await instance.listen(("", 8001))
-    await instance.listen(("", 8002), SimpleJsonProtocol)
+    PROTO_CLASSES = {
+        QDataStreamProtocol.__name__: QDataStreamProtocol,
+        SimpleJsonProtocol.__name__: SimpleJsonProtocol
+    }
+    for cfg in config.LISTEN:
+        try:
+            host = cfg["ADDRESS"]
+            port = cfg["PORT"]
+            proto_class_name = cfg["PROTOCOL"]
+            proto_class = PROTO_CLASSES[proto_class_name]
+
+            await instance.listen(
+                address=(host, port),
+                protocol_class=proto_class
+            )
+        except Exception as e:
+            raise RuntimeError(f"Error with server instance config: {cfg}") from e
+
+    if not instance.contexts:
+        raise RuntimeError(
+            "The server was not configured to listen on any ports! Check the "
+            "config file and try again."
+        )
 
     server.metrics.info.info({
         "version": version,
@@ -123,7 +144,7 @@ async def main():
         time.perf_counter() - startup_time
     )
 
-    await done
+    exit_code = await done
 
     shutdown_time = time.perf_counter()
 
@@ -133,6 +154,8 @@ async def main():
 
     # Close DB connections
     await database.close()
+
+    return exit_code
 
 
 if __name__ == "__main__":
@@ -162,7 +185,7 @@ if __name__ == "__main__":
         import uvloop
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-    asyncio.run(main())
+    exit_code = asyncio.run(main())
 
     stop_time = time.perf_counter()
     logger.info(
@@ -175,3 +198,8 @@ if __name__ == "__main__":
             "Server shut down in %0.2f seconds",
             stop_time - shutdown_time
         )
+
+    if exit_code:
+        logger.error("Server shut down with exit code: %s", exit_code)
+
+    exit(exit_code)

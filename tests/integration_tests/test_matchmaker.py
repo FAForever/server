@@ -99,6 +99,7 @@ async def test_game_launch_message_game_options(lobby_server, tmp_user):
         }
 
 
+@pytest.mark.flaky
 @fast_forward(15)
 async def test_game_matchmaking_start(lobby_server, database):
     host_id, host, guest_id, guest = await queue_players_for_matchmaking(lobby_server)

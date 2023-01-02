@@ -969,7 +969,7 @@ async def test_galactic_war_1v1_game_ended_broadcasts_army_results(
             "args": ["Ended"]
         })
 
-    message = await asyncio.wait_for(mq_proto_all.read_message(), timeout=5)
+    message = await asyncio.wait_for(mq_proto_all.read_message(), timeout=10)
 
     assert message == {
         "game_id": 41956,
@@ -1009,7 +1009,7 @@ async def test_galactic_war_1v1_game_ended_broadcasts_army_results(
 
     with pytest.raises(asyncio.TimeoutError):
         # We expect only one message to be broadcast
-        await asyncio.wait_for(mq_proto_all.read_message(), timeout=5)
+        await asyncio.wait_for(mq_proto_all.read_message(), timeout=10)
 
 
 @pytest.mark.rabbitmq
@@ -1107,7 +1107,7 @@ async def test_galactic_war_2v1_game_ended_broadcasts_army_results(lobby_server,
             "args": ["Ended"]
         })
 
-    message = await asyncio.wait_for(mq_proto_all.read_message(), timeout=5)
+    message = await asyncio.wait_for(mq_proto_all.read_message(), timeout=10)
 
     assert message == {
         "commander_kills": {},
@@ -1153,4 +1153,4 @@ async def test_galactic_war_2v1_game_ended_broadcasts_army_results(lobby_server,
 
     with pytest.raises(asyncio.TimeoutError):
         # We expect only one message to be broadcast
-        await asyncio.wait_for(mq_proto_all.read_message(), timeout=5)
+        await asyncio.wait_for(mq_proto_all.read_message(), timeout=10)

@@ -46,7 +46,7 @@ class ServerContext:
         return f"ServerContext({self.name})"
 
     async def listen(self, host, port):
-        self._logger.debug("%s: listen(%s, %s)", self.name, host, port)
+        self._logger.debug("%s: listen(%r, %r)", self.name, host, port)
 
         self._server = await asyncio.start_server(
             self.client_connected,
@@ -57,6 +57,8 @@ class ServerContext:
 
         for sock in self.sockets:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            host, port, *_ = sock.getsockname()
+            self._logger.info("%s: listening on %s:%s", self.name, host, port)
 
         return self._server
 
@@ -88,12 +90,10 @@ class ServerContext:
         self._logger.debug("%s: All connections closed", self.name)
 
     async def stop(self):
-        self._server.close()
-        await self._server.wait_closed()
         self._logger.debug("%s: stop()", self.name)
-
-    def __contains__(self, connection):
-        return connection in self.connections
+        if self._server:
+            self._server.close()
+            await self._server.wait_closed()
 
     def write_broadcast(self, message, validate_fn=lambda _: True):
         self.write_broadcast_raw(
@@ -170,7 +170,7 @@ class ServerContext:
             yield
         except exceptions:
             if hasattr(func, "__self__"):
-                desc = f"{func.__self__.__class__}.{func.__name__}"
+                desc = f"{func.__self__.__class__.__name__}.{func.__name__}"
             else:
                 desc = func.__name__
             self._logger.warning(
