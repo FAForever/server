@@ -64,6 +64,18 @@ class ConfigurationStore:
         Change default values here.
         &#34;&#34;&#34;
         self.CONFIGURATION_REFRESH_TIME = 300
+        self.LISTEN = [
+            {
+                &#34;ADDRESS&#34;: &#34;&#34;,
+                &#34;PORT&#34;: 8001,
+                &#34;PROTOCOL&#34;: &#34;QDataStreamProtocol&#34;,
+            },
+            {
+                &#34;ADDRESS&#34;: &#34;&#34;,
+                &#34;PORT&#34;: 8002,
+                &#34;PROTOCOL&#34;: &#34;SimpleJsonProtocol&#34;
+            }
+        ]
         self.LOG_LEVEL = &#34;DEBUG&#34;
         # Whether or not to use uvloop as a drop-in replacement for asyncio&#39;s
         # default event loop
@@ -260,6 +272,18 @@ class ConfigurationStore:
         Change default values here.
         &#34;&#34;&#34;
         self.CONFIGURATION_REFRESH_TIME = 300
+        self.LISTEN = [
+            {
+                &#34;ADDRESS&#34;: &#34;&#34;,
+                &#34;PORT&#34;: 8001,
+                &#34;PROTOCOL&#34;: &#34;QDataStreamProtocol&#34;,
+            },
+            {
+                &#34;ADDRESS&#34;: &#34;&#34;,
+                &#34;PORT&#34;: 8002,
+                &#34;PROTOCOL&#34;: &#34;SimpleJsonProtocol&#34;
+            }
+        ]
         self.LOG_LEVEL = &#34;DEBUG&#34;
         # Whether or not to use uvloop as a drop-in replacement for asyncio&#39;s
         # default event loop

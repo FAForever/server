@@ -75,7 +75,7 @@ class ServerContext:
         return f&#34;ServerContext({self.name})&#34;
 
     async def listen(self, host, port):
-        self._logger.debug(&#34;%s: listen(%s, %s)&#34;, self.name, host, port)
+        self._logger.debug(&#34;%s: listen(%r, %r)&#34;, self.name, host, port)
 
         self._server = await asyncio.start_server(
             self.client_connected,
@@ -86,6 +86,8 @@ class ServerContext:
 
         for sock in self.sockets:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            host, port, *_ = sock.getsockname()
+            self._logger.info(&#34;%s: listening on %s:%s&#34;, self.name, host, port)
 
         return self._server
 
@@ -117,12 +119,10 @@ class ServerContext:
         self._logger.debug(&#34;%s: All connections closed&#34;, self.name)
 
     async def stop(self):
-        self._server.close()
-        await self._server.wait_closed()
         self._logger.debug(&#34;%s: stop()&#34;, self.name)
-
-    def __contains__(self, connection):
-        return connection in self.connections
+        if self._server:
+            self._server.close()
+            await self._server.wait_closed()
 
     def write_broadcast(self, message, validate_fn=lambda _: True):
         self.write_broadcast_raw(
@@ -199,7 +199,7 @@ class ServerContext:
             yield
         except exceptions:
             if hasattr(func, &#34;__self__&#34;):
-                desc = f&#34;{func.__self__.__class__}.{func.__name__}&#34;
+                desc = f&#34;{func.__self__.__class__.__name__}.{func.__name__}&#34;
             else:
                 desc = func.__name__
             self._logger.warning(
@@ -253,7 +253,7 @@ class ServerContext:
         return f&#34;ServerContext({self.name})&#34;
 
     async def listen(self, host, port):
-        self._logger.debug(&#34;%s: listen(%s, %s)&#34;, self.name, host, port)
+        self._logger.debug(&#34;%s: listen(%r, %r)&#34;, self.name, host, port)
 
         self._server = await asyncio.start_server(
             self.client_connected,
@@ -264,6 +264,8 @@ class ServerContext:
 
         for sock in self.sockets:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            host, port, *_ = sock.getsockname()
+            self._logger.info(&#34;%s: listening on %s:%s&#34;, self.name, host, port)
 
         return self._server
 
@@ -295,12 +297,10 @@ class ServerContext:
         self._logger.debug(&#34;%s: All connections closed&#34;, self.name)
 
     async def stop(self):
-        self._server.close()
-        await self._server.wait_closed()
         self._logger.debug(&#34;%s: stop()&#34;, self.name)
-
-    def __contains__(self, connection):
-        return connection in self.connections
+        if self._server:
+            self._server.close()
+            await self._server.wait_closed()
 
     def write_broadcast(self, message, validate_fn=lambda _: True):
         self.write_broadcast_raw(
@@ -377,7 +377,7 @@ class ServerContext:
             yield
         except exceptions:
             if hasattr(func, &#34;__self__&#34;):
-                desc = f&#34;{func.__self__.__class__}.{func.__name__}&#34;
+                desc = f&#34;{func.__self__.__class__.__name__}.{func.__name__}&#34;
             else:
                 desc = func.__name__
             self._logger.warning(
@@ -474,7 +474,7 @@ def sockets(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def listen(self, host, port):
-    self._logger.debug(&#34;%s: listen(%s, %s)&#34;, self.name, host, port)
+    self._logger.debug(&#34;%s: listen(%r, %r)&#34;, self.name, host, port)
 
     self._server = await asyncio.start_server(
         self.client_connected,
@@ -485,6 +485,8 @@ def sockets(self):
 
     for sock in self.sockets:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        host, port, *_ = sock.getsockname()
+        self._logger.info(&#34;%s: listening on %s:%s&#34;, self.name, host, port)
 
     return self._server</code></pre>
 </details>
@@ -532,9 +534,10 @@ def sockets(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def stop(self):
-    self._server.close()
-    await self._server.wait_closed()
-    self._logger.debug(&#34;%s: stop()&#34;, self.name)</code></pre>
+    self._logger.debug(&#34;%s: stop()&#34;, self.name)
+    if self._server:
+        self._server.close()
+        await self._server.wait_closed()</code></pre>
 </details>
 </dd>
 <dt id="server.servercontext.ServerContext.suppress_and_log"><code class="name flex">
@@ -552,7 +555,7 @@ def suppress_and_log(self, func, *exceptions: type[BaseException]):
         yield
     except exceptions:
         if hasattr(func, &#34;__self__&#34;):
-            desc = f&#34;{func.__self__.__class__}.{func.__name__}&#34;
+            desc = f&#34;{func.__self__.__class__.__name__}.{func.__name__}&#34;
         else:
             desc = func.__name__
         self._logger.warning(
