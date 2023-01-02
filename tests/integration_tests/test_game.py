@@ -51,6 +51,43 @@ async def join_game(proto: Protocol, uid: int):
     await asyncio.sleep(0.5)
 
 
+async def setup_game_1v1(
+    host_proto: Protocol,
+    host_id: int,
+    guest_proto: Protocol,
+    guest_id: int,
+    mod: str = "faf"
+):
+    # Set up the game
+    game_id = await host_game(host_proto, mod=mod)
+    await join_game(guest_proto, game_id)
+    # Set player options
+    await send_player_options(
+        host_proto,
+        [host_id, "Army", 1],
+        [host_id, "Team", 1],
+        [host_id, "StartSpot", 1],
+        [host_id, "Faction", 1],
+        [host_id, "Color", 1],
+        [guest_id, "Army", 2],
+        [guest_id, "Team", 2],
+        [guest_id, "StartSpot", 2],
+        [guest_id, "Faction", 2],
+        [guest_id, "Color", 2],
+    )
+
+    # Launch game
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Launching"]
+    })
+
+    await read_until_launched(host_proto, game_id)
+
+    return game_id
+
+
 async def read_until_launched(proto: Protocol, uid=None, timeout=60):
     def predecate(cmd) -> bool:
         if cmd["command"] != "game_info":
@@ -234,32 +271,7 @@ async def test_game_ended_rates_game(lobby_server):
     await read_until_command(guest_proto, "game_info")
     ratings = await get_player_ratings(host_proto, "test", "Rhiza")
 
-    # Set up the game
-    game_id = await host_game(host_proto)
-    await join_game(guest_proto, game_id)
-    # Set player options
-    await send_player_options(
-        host_proto,
-        [host_id, "Army", 1],
-        [host_id, "Team", 1],
-        [host_id, "StartSpot", 0],
-        [host_id, "Faction", 1],
-        [host_id, "Color", 1],
-        [guest_id, "Army", 2],
-        [guest_id, "Team", 1],
-        [guest_id, "StartSpot", 1],
-        [guest_id, "Faction", 1],
-        [guest_id, "Color", 2],
-    )
-
-    # Launch game
-    await host_proto.send_message({
-        "target": "game",
-        "command": "GameState",
-        "args": ["Launching"]
-    })
-
-    await read_until_launched(host_proto, game_id)
+    await setup_game_1v1(host_proto, host_id, guest_proto, guest_id)
     await host_proto.send_message({
         "target": "game",
         "command": "EnforceRating",
@@ -323,35 +335,7 @@ async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
     await read_until_command(guest_proto, "game_info")
     old_ratings = await get_player_ratings(host_proto, "test", "Rhiza")
 
-    # Set up the game
-    game_id = await host_game(host_proto)
-    await join_game(guest_proto, game_id)
-    # Set player options
-    await send_player_options(
-        host_proto,
-        [host_id, "Army", 1],
-        [host_id, "Team", 1],
-        [host_id, "StartSpot", 0],
-        [host_id, "Faction", 1],
-        [host_id, "Color", 1],
-        [guest_id, "Army", 2],
-        [guest_id, "Team", 1],
-        [guest_id, "StartSpot", 1],
-        [guest_id, "Faction", 1],
-        [guest_id, "Color", 2],
-    )
-
-    # Launch game
-    await host_proto.send_message({
-        "target": "game",
-        "command": "GameState",
-        "args": ["Launching"]
-    })
-
-    await read_until(
-        host_proto,
-        lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
-    )
+    await setup_game_1v1(host_proto, host_id, guest_proto, guest_id)
     await host_proto.send_message({
         "target": "game",
         "command": "EnforceRating",
@@ -747,30 +731,7 @@ async def test_gamestate_ended_clears_references(
     await read_until_command(test_proto, "game_info")
     await read_until_command(rhiza_proto, "game_info")
 
-    # Set up the game
-    game_id = await host_game(test_proto)
-    await join_game(rhiza_proto, game_id)
-    # Set player options
-    await send_player_options(
-        test_proto,
-        [test_id, "Army", 1],
-        [test_id, "Team", 1],
-        [test_id, "StartSpot", 1],
-        [test_id, "Faction", 1],
-        [test_id, "Color", 1],
-        [rhiza_id, "Army", 2],
-        [rhiza_id, "Team", 1],
-        [rhiza_id, "StartSpot", 2],
-        [rhiza_id, "Faction", 1],
-        [rhiza_id, "Color", 1],
-    )
-
-    # Launch game
-    await test_proto.send_message({
-        "target": "game",
-        "command": "GameState",
-        "args": ["Launching"]
-    })
+    game_id = await setup_game_1v1(test_proto, test_id, rhiza_proto, rhiza_id)
     await asyncio.sleep(0.1)
 
     game = game_service[game_id]
@@ -912,31 +873,7 @@ async def test_game_stats_broadcasts_achievement_updates(
     )
     await read_until_command(guest_proto, "game_info")
 
-    # Set up the game
-    game_id = await host_game(host_proto)
-    await join_game(guest_proto, game_id)
-    # Set player options
-    await send_player_options(
-        host_proto,
-        [host_id, "Army", 1],
-        [host_id, "Team", 1],
-        [host_id, "StartSpot", 1],
-        [host_id, "Faction", 1],
-        [host_id, "Color", 1],
-        [guest_id, "Army", 2],
-        [guest_id, "Team", 2],
-        [guest_id, "StartSpot", 2],
-        [guest_id, "Faction", 2],
-        [guest_id, "Color", 2],
-    )
-    # Launch game
-    await host_proto.send_message({
-        "target": "game",
-        "command": "GameState",
-        "args": ["Launching"]
-    })
-
-    await read_until_launched(host_proto, game_id)
+    await setup_game_1v1(host_proto, host_id, guest_proto, guest_id)
 
     # Report results
     # We only want achievement updates for 1 player so don't report stats for both
@@ -1024,34 +961,7 @@ async def test_galactic_war_1v1_game_ended_broadcasts_army_results(
     )
     await read_until_command(guest_proto, "game_info")
 
-    # Set up the game
-    game_id = await host_game(host_proto, mod="gw")
-    await join_game(guest_proto, game_id)
-    # Set player options
-    await send_player_options(
-        host_proto,
-        [host_id, "Army", 1],
-        [host_id, "Team", 1],
-        [host_id, "StartSpot", 1],
-        [host_id, "Faction", 1],
-        [host_id, "Color", 1],
-        [guest_id, "Army", 2],
-        [guest_id, "Team", 2],
-        [guest_id, "StartSpot", 2],
-        [guest_id, "Faction", 2],
-        [guest_id, "Color", 2],
-    )
-    # Launch game
-    await host_proto.send_message({
-        "target": "game",
-        "command": "GameState",
-        "args": ["Launching"]
-    })
-
-    await read_until(
-        host_proto,
-        lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
-    )
+    await setup_game_1v1(host_proto, host_id, guest_proto, guest_id, mod="gw")
     await host_proto.send_message({
         "target": "game",
         "command": "EnforceRating",
