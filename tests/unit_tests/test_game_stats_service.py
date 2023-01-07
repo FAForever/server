@@ -10,7 +10,6 @@ from server.games.game_results import (
     GameResultReport,
     GameResultReports
 )
-from server.lobbyconnection import LobbyConnection
 from server.stats import achievement_service as ach
 from server.stats import event_service as ev
 from server.stats.game_stats_service import GameStatsService
@@ -115,9 +114,6 @@ async def test_process_game_stats(
 ):
     with open("tests/data/game_stats_full_example.json", "r") as stats_file:
         stats = json.loads(stats_file.read())["stats"]
-
-    mock_lconn = mock.create_autospec(LobbyConnection)
-    player.lobby_connection = mock_lconn
 
     await game_stats_service.process_game_stats(player, game, stats)
 
@@ -237,7 +233,6 @@ async def test_process_game_stats(
     assert len(event_service.mock_calls) == 20
     assert achievement_service.execute_batch_update.called
     assert event_service.execute_batch_update.called
-    assert mock_lconn.send_updated_achievements.called
 
 
 async def test_process_game_stats_single_player(
@@ -265,7 +260,7 @@ async def test_process_game_stats_ai_game(
 async def test_process_game_won_ladder1v1(
     game_stats_service, player, game, achievement_service
 ):
-    game.game_mode = "ladder1v1"
+    game.rating_type = "ladder_1v1"
 
     with open("tests/data/game_stats_simple_win.json", "r") as stats_file:
         stats = json.loads(stats_file.read())["stats"]

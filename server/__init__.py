@@ -94,7 +94,6 @@ from prometheus_client import start_http_server
 
 import server.metrics as metrics
 
-from .api.api_accessor import ApiAccessor
 from .asyncio_extensions import synchronizedmethod
 from .broadcast_service import BroadcastService
 from .config import TRACE, config
@@ -163,7 +162,6 @@ class ServerInstance(object):
         self,
         name: str,
         database: FAFDatabase,
-        api_accessor: Optional[ApiAccessor],
         twilio_nts: Optional[TwilioNTS],
         loop: asyncio.BaseEventLoop,
         # For testing
@@ -172,7 +170,6 @@ class ServerInstance(object):
         self.name = name
         self._logger = logging.getLogger(self.name)
         self.database = database
-        self.api_accessor = api_accessor
         self.twilio_nts = twilio_nts
         self.loop = loop
 
@@ -183,7 +180,6 @@ class ServerInstance(object):
         self.services = _override_services or create_services({
             "server": self,
             "database": self.database,
-            "api_accessor": self.api_accessor,
             "loop": self.loop,
         })
 

@@ -72,7 +72,6 @@ class ConfigurationStore:
         self.API_CLIENT_SECRET = "banana"
         self.API_TOKEN_URI = "https://api.test.faforever.com/oauth/token"
         self.API_BASE_URL = "https://api.test.faforever.com/"
-        self.USE_API = True
         # Location of the OAuth jwks
         self.HYDRA_JWKS_URI = "https://hydra.faforever.com/.well-known/jwks.json"
 

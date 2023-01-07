@@ -20,7 +20,6 @@ import humanize
 from docopt import docopt
 
 import server
-from server.api.api_accessor import ApiAccessor
 from server.config import config
 from server.game_service import GameService
 from server.ice_servers.nts import TwilioNTS
@@ -77,12 +76,9 @@ async def main():
             "Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers."
         )
 
-    api_accessor = ApiAccessor()
-
     instance = server.ServerInstance(
         "LobbyServer",
         database,
-        api_accessor,
         twilio_nts,
         loop
     )

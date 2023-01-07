@@ -16,8 +16,6 @@ from unittest import mock
 import hypothesis
 import pytest
 
-from server.api.api_accessor import ApiAccessor
-from server.api.oauth_session import OAuth2Session
 from server.config import TRACE, config
 from server.db import FAFDatabase
 from server.game_service import GameService
@@ -398,23 +396,13 @@ def matchmaker_queue(game_service) -> MatchmakerQueue:
 
 
 @pytest.fixture
-def api_accessor():
-    session = mock.create_autospec(OAuth2Session)
-    session.request.return_value = (200, "test")
-
-    api_accessor = ApiAccessor()
-    api_accessor.api_session.session = session
-    return api_accessor
+def event_service(message_queue_service):
+    return EventService(message_queue_service)
 
 
 @pytest.fixture
-def event_service(api_accessor):
-    return EventService(api_accessor)
-
-
-@pytest.fixture
-def achievement_service(api_accessor):
-    return AchievementService(api_accessor)
+def achievement_service(message_queue_service):
+    return AchievementService(message_queue_service)
 
 
 @pytest.fixture
