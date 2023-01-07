@@ -139,6 +139,14 @@ class ServerContext:
             asyncio.CancelledError,
         ):
             pass
+        except UnicodeDecodeError as e:
+            self._logger.exception(
+                "%s: Unicode error in protocol for '%s': %s '...%s...'",
+                self.name,
+                connection.get_user_identifier(),
+                e,
+                e.object[e.start-20:e.end+20]
+            )
         except Exception as e:
             self._logger.exception(
                 "%s: Exception in protocol for '%s': %s",
