@@ -26,9 +26,10 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from server.api.api_accessor import ApiAccessor
+<pre><code class="python">from server.config import config
 from server.core import Service
 from server.decorators import with_logger
+from server.message_queue_service import MessageQueueService
 
 ACH_NOVICE = &#34;c6e6039f-c543-424e-ab5f-b34df1336e81&#34;
 ACH_JUNIOR = &#34;d5c759fe-a1a8-4103-888d-3ba319562867&#34;
@@ -91,8 +92,8 @@ ACH_DONT_MESS_WITH_ME = &#34;2103e0de-1c87-4fba-bc1b-0bba66669607&#34;
 
 @with_logger
 class AchievementService(Service):
-    def __init__(self, api_accessor: ApiAccessor):
-        self.api_accessor = api_accessor
+    def __init__(self, message_queue_service: MessageQueueService):
+        self.message_queue_service = message_queue_service
 
     async def execute_batch_update(self, player_id, queue):
         &#34;&#34;&#34;
@@ -103,8 +104,8 @@ class AchievementService(Service):
         - `queue`: an array of achievement updates in the form:
         ```
         [{
-            &#34;achievement_id&#34;: string,
-            &#34;update_type&#34;: &#34;REVEAL|INCREMENT|UNLOCK|SET_STEPS_AT_LEAST&#34;,
+            &#34;achievementId&#34;: string,
+            &#34;operation&#34;: &#34;REVEAL|INCREMENT|UNLOCK|SET_STEPS_AT_LEAST&#34;,
             &#34;steps&#34;: integer
         }]
         ```
@@ -124,30 +125,15 @@ class AchievementService(Service):
         Otherwise, it returns None
         &#34;&#34;&#34;
         self._logger.info(&#34;Updating %d achievements for player %d&#34;, len(queue), player_id)
-        try:
-            response, content = await self.api_accessor.update_achievements(queue, player_id)
-        except ConnectionError:
-            self._logger.error(&#34;Failed to update achievements: connection error&#34;)
-            return None
-        if response &lt; 300:
-            &#34;&#34;&#34;
-            Converting the Java API data to the structure mentioned above
-            &#34;&#34;&#34;
-            api_data = content[&#34;data&#34;]
-            achievements_data = []
-            for achievement in api_data:
-                converted_achievement = {
-                    &#34;achievement_id&#34;: achievement[&#34;attributes&#34;][&#34;achievementId&#34;],
-                    &#34;current_state&#34;: achievement[&#34;attributes&#34;][&#34;state&#34;],
-                    &#34;newly_unlocked&#34;: achievement[&#34;attributes&#34;][&#34;newlyUnlocked&#34;]
-                }
-                if &#34;steps&#34; in achievement[&#34;attributes&#34;]:
-                    converted_achievement[&#34;current_steps&#34;] = achievement[&#34;attributes&#34;][&#34;steps&#34;]
-
-                achievements_data.append(converted_achievement)
-
-            return achievements_data
-        return None
+        update_data = [
+            {&#34;playerId&#34;: player_id, **data}
+            for data in queue
+        ]
+        await self.message_queue_service.publish_many(
+            config.MQ_EXCHANGE_NAME,
+            &#34;request.achievement.update&#34;,
+            update_data,
+        )
 
     def unlock(self, achievement_id, queue):
         &#34;&#34;&#34;
@@ -159,8 +145,8 @@ class AchievementService(Service):
         executed later
         &#34;&#34;&#34;
         queue.append({
-            &#34;achievement_id&#34;: achievement_id,
-            &#34;update_type&#34;: &#34;UNLOCK&#34;
+            &#34;achievementId&#34;: achievement_id,
+            &#34;operation&#34;: &#34;UNLOCK&#34;
         })
 
     def reveal(self, achievement_id, queue):
@@ -173,8 +159,8 @@ class AchievementService(Service):
         executed later
         &#34;&#34;&#34;
         queue.append({
-            &#34;achievement_id&#34;: achievement_id,
-            &#34;update_type&#34;: &#34;REVEAL&#34;
+            &#34;achievementId&#34;: achievement_id,
+            &#34;operation&#34;: &#34;REVEAL&#34;
         })
 
     def increment(self, achievement_id, steps, queue):
@@ -191,8 +177,8 @@ class AchievementService(Service):
             return
 
         queue.append({
-            &#34;achievement_id&#34;: achievement_id,
-            &#34;update_type&#34;: &#34;INCREMENT&#34;,
+            &#34;achievementId&#34;: achievement_id,
+            &#34;operation&#34;: &#34;INCREMENT&#34;,
             &#34;steps&#34;: steps
         })
 
@@ -211,8 +197,8 @@ class AchievementService(Service):
             return
 
         queue.append({
-            &#34;achievement_id&#34;: achievement_id,
-            &#34;update_type&#34;: &#34;SET_STEPS_AT_LEAST&#34;,
+            &#34;achievementId&#34;: achievement_id,
+            &#34;operation&#34;: &#34;SET_STEPS_AT_LEAST&#34;,
             &#34;steps&#34;: steps
         })</code></pre>
 </details>
@@ -228,7 +214,7 @@ class AchievementService(Service):
 <dl>
 <dt id="server.stats.achievement_service.AchievementService"><code class="flex name class">
 <span>class <span class="ident">AchievementService</span></span>
-<span>(</span><span>api_accessor: <a title="server.api.api_accessor.ApiAccessor" href="../api/api_accessor.html#server.api.api_accessor.ApiAccessor">ApiAccessor</a>)</span>
+<span>(</span><span>message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="../message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>All services should inherit from this class.</p>
@@ -239,8 +225,8 @@ class AchievementService(Service):
 </summary>
 <pre><code class="python">@with_logger
 class AchievementService(Service):
-    def __init__(self, api_accessor: ApiAccessor):
-        self.api_accessor = api_accessor
+    def __init__(self, message_queue_service: MessageQueueService):
+        self.message_queue_service = message_queue_service
 
     async def execute_batch_update(self, player_id, queue):
         &#34;&#34;&#34;
@@ -251,8 +237,8 @@ class AchievementService(Service):
         - `queue`: an array of achievement updates in the form:
         ```
         [{
-            &#34;achievement_id&#34;: string,
-            &#34;update_type&#34;: &#34;REVEAL|INCREMENT|UNLOCK|SET_STEPS_AT_LEAST&#34;,
+            &#34;achievementId&#34;: string,
+            &#34;operation&#34;: &#34;REVEAL|INCREMENT|UNLOCK|SET_STEPS_AT_LEAST&#34;,
             &#34;steps&#34;: integer
         }]
         ```
@@ -272,30 +258,15 @@ class AchievementService(Service):
         Otherwise, it returns None
         &#34;&#34;&#34;
         self._logger.info(&#34;Updating %d achievements for player %d&#34;, len(queue), player_id)
-        try:
-            response, content = await self.api_accessor.update_achievements(queue, player_id)
-        except ConnectionError:
-            self._logger.error(&#34;Failed to update achievements: connection error&#34;)
-            return None
-        if response &lt; 300:
-            &#34;&#34;&#34;
-            Converting the Java API data to the structure mentioned above
-            &#34;&#34;&#34;
-            api_data = content[&#34;data&#34;]
-            achievements_data = []
-            for achievement in api_data:
-                converted_achievement = {
-                    &#34;achievement_id&#34;: achievement[&#34;attributes&#34;][&#34;achievementId&#34;],
-                    &#34;current_state&#34;: achievement[&#34;attributes&#34;][&#34;state&#34;],
-                    &#34;newly_unlocked&#34;: achievement[&#34;attributes&#34;][&#34;newlyUnlocked&#34;]
-                }
-                if &#34;steps&#34; in achievement[&#34;attributes&#34;]:
-                    converted_achievement[&#34;current_steps&#34;] = achievement[&#34;attributes&#34;][&#34;steps&#34;]
-
-                achievements_data.append(converted_achievement)
-
-            return achievements_data
-        return None
+        update_data = [
+            {&#34;playerId&#34;: player_id, **data}
+            for data in queue
+        ]
+        await self.message_queue_service.publish_many(
+            config.MQ_EXCHANGE_NAME,
+            &#34;request.achievement.update&#34;,
+            update_data,
+        )
 
     def unlock(self, achievement_id, queue):
         &#34;&#34;&#34;
@@ -307,8 +278,8 @@ class AchievementService(Service):
         executed later
         &#34;&#34;&#34;
         queue.append({
-            &#34;achievement_id&#34;: achievement_id,
-            &#34;update_type&#34;: &#34;UNLOCK&#34;
+            &#34;achievementId&#34;: achievement_id,
+            &#34;operation&#34;: &#34;UNLOCK&#34;
         })
 
     def reveal(self, achievement_id, queue):
@@ -321,8 +292,8 @@ class AchievementService(Service):
         executed later
         &#34;&#34;&#34;
         queue.append({
-            &#34;achievement_id&#34;: achievement_id,
-            &#34;update_type&#34;: &#34;REVEAL&#34;
+            &#34;achievementId&#34;: achievement_id,
+            &#34;operation&#34;: &#34;REVEAL&#34;
         })
 
     def increment(self, achievement_id, steps, queue):
@@ -339,8 +310,8 @@ class AchievementService(Service):
             return
 
         queue.append({
-            &#34;achievement_id&#34;: achievement_id,
-            &#34;update_type&#34;: &#34;INCREMENT&#34;,
+            &#34;achievementId&#34;: achievement_id,
+            &#34;operation&#34;: &#34;INCREMENT&#34;,
             &#34;steps&#34;: steps
         })
 
@@ -359,8 +330,8 @@ class AchievementService(Service):
             return
 
         queue.append({
-            &#34;achievement_id&#34;: achievement_id,
-            &#34;update_type&#34;: &#34;SET_STEPS_AT_LEAST&#34;,
+            &#34;achievementId&#34;: achievement_id,
+            &#34;operation&#34;: &#34;SET_STEPS_AT_LEAST&#34;,
             &#34;steps&#34;: steps
         })</code></pre>
 </details>
@@ -381,8 +352,8 @@ class AchievementService(Service):
 <li><code>queue</code>: an array of achievement updates in the form:</li>
 </ul>
 <pre><code>[{
-    &quot;achievement_id&quot;: string,
-    &quot;update_type&quot;: &quot;REVEAL|INCREMENT|UNLOCK|SET_STEPS_AT_LEAST&quot;,
+    &quot;achievementId&quot;: string,
+    &quot;operation&quot;: &quot;REVEAL|INCREMENT|UNLOCK|SET_STEPS_AT_LEAST&quot;,
     &quot;steps&quot;: integer
 }]
 </code></pre>
@@ -411,8 +382,8 @@ class AchievementService(Service):
     - `queue`: an array of achievement updates in the form:
     ```
     [{
-        &#34;achievement_id&#34;: string,
-        &#34;update_type&#34;: &#34;REVEAL|INCREMENT|UNLOCK|SET_STEPS_AT_LEAST&#34;,
+        &#34;achievementId&#34;: string,
+        &#34;operation&#34;: &#34;REVEAL|INCREMENT|UNLOCK|SET_STEPS_AT_LEAST&#34;,
         &#34;steps&#34;: integer
     }]
     ```
@@ -432,30 +403,15 @@ class AchievementService(Service):
     Otherwise, it returns None
     &#34;&#34;&#34;
     self._logger.info(&#34;Updating %d achievements for player %d&#34;, len(queue), player_id)
-    try:
-        response, content = await self.api_accessor.update_achievements(queue, player_id)
-    except ConnectionError:
-        self._logger.error(&#34;Failed to update achievements: connection error&#34;)
-        return None
-    if response &lt; 300:
-        &#34;&#34;&#34;
-        Converting the Java API data to the structure mentioned above
-        &#34;&#34;&#34;
-        api_data = content[&#34;data&#34;]
-        achievements_data = []
-        for achievement in api_data:
-            converted_achievement = {
-                &#34;achievement_id&#34;: achievement[&#34;attributes&#34;][&#34;achievementId&#34;],
-                &#34;current_state&#34;: achievement[&#34;attributes&#34;][&#34;state&#34;],
-                &#34;newly_unlocked&#34;: achievement[&#34;attributes&#34;][&#34;newlyUnlocked&#34;]
-            }
-            if &#34;steps&#34; in achievement[&#34;attributes&#34;]:
-                converted_achievement[&#34;current_steps&#34;] = achievement[&#34;attributes&#34;][&#34;steps&#34;]
-
-            achievements_data.append(converted_achievement)
-
-        return achievements_data
-    return None</code></pre>
+    update_data = [
+        {&#34;playerId&#34;: player_id, **data}
+        for data in queue
+    ]
+    await self.message_queue_service.publish_many(
+        config.MQ_EXCHANGE_NAME,
+        &#34;request.achievement.update&#34;,
+        update_data,
+    )</code></pre>
 </details>
 </dd>
 <dt id="server.stats.achievement_service.AchievementService.increment"><code class="name flex">
@@ -488,8 +444,8 @@ executed later</li>
         return
 
     queue.append({
-        &#34;achievement_id&#34;: achievement_id,
-        &#34;update_type&#34;: &#34;INCREMENT&#34;,
+        &#34;achievementId&#34;: achievement_id,
+        &#34;operation&#34;: &#34;INCREMENT&#34;,
         &#34;steps&#34;: steps
     })</code></pre>
 </details>
@@ -519,8 +475,8 @@ executed later</li>
     executed later
     &#34;&#34;&#34;
     queue.append({
-        &#34;achievement_id&#34;: achievement_id,
-        &#34;update_type&#34;: &#34;REVEAL&#34;
+        &#34;achievementId&#34;: achievement_id,
+        &#34;operation&#34;: &#34;REVEAL&#34;
     })</code></pre>
 </details>
 </dd>
@@ -556,8 +512,8 @@ executed later</li>
         return
 
     queue.append({
-        &#34;achievement_id&#34;: achievement_id,
-        &#34;update_type&#34;: &#34;SET_STEPS_AT_LEAST&#34;,
+        &#34;achievementId&#34;: achievement_id,
+        &#34;operation&#34;: &#34;SET_STEPS_AT_LEAST&#34;,
         &#34;steps&#34;: steps
     })</code></pre>
 </details>
@@ -587,8 +543,8 @@ executed later</li>
     executed later
     &#34;&#34;&#34;
     queue.append({
-        &#34;achievement_id&#34;: achievement_id,
-        &#34;update_type&#34;: &#34;UNLOCK&#34;
+        &#34;achievementId&#34;: achievement_id,
+        &#34;operation&#34;: &#34;UNLOCK&#34;
     })</code></pre>
 </details>
 </dd>

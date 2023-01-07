@@ -199,7 +199,6 @@ from prometheus_client import start_http_server
 
 import server.metrics as metrics
 
-from .api.api_accessor import ApiAccessor
 from .asyncio_extensions import synchronizedmethod
 from .broadcast_service import BroadcastService
 from .config import TRACE, config
@@ -268,7 +267,6 @@ class ServerInstance(object):
         self,
         name: str,
         database: FAFDatabase,
-        api_accessor: Optional[ApiAccessor],
         twilio_nts: Optional[TwilioNTS],
         loop: asyncio.BaseEventLoop,
         # For testing
@@ -277,7 +275,6 @@ class ServerInstance(object):
         self.name = name
         self._logger = logging.getLogger(self.name)
         self.database = database
-        self.api_accessor = api_accessor
         self.twilio_nts = twilio_nts
         self.loop = loop
 
@@ -288,7 +285,6 @@ class ServerInstance(object):
         self.services = _override_services or create_services({
             &#34;server&#34;: self,
             &#34;database&#34;: self.database,
-            &#34;api_accessor&#34;: self.api_accessor,
             &#34;loop&#34;: self.loop,
         })
 
@@ -414,10 +410,6 @@ class ServerInstance(object):
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
 <dl>
-<dt><code class="name"><a title="server.api" href="api/index.html">server.api</a></code></dt>
-<dd>
-<div class="desc"><p>API connector</p></div>
-</dd>
 <dt><code class="name"><a title="server.asyncio_extensions" href="asyncio_extensions.html">server.asyncio_extensions</a></code></dt>
 <dd>
 <div class="desc"><p>Some helper functions for common async tasks</p></div>
@@ -2948,7 +2940,11 @@ time we need, but which can in principle change over time.</p></div>
 </summary>
 <pre><code class="python">@with_logger
 class GameStatsService(Service):
-    def __init__(self, event_service: EventService, achievement_service: AchievementService):
+    def __init__(
+        self,
+        event_service: EventService,
+        achievement_service: AchievementService
+    ):
         self._event_service = event_service
         self._achievement_service = achievement_service
 
@@ -3022,7 +3018,7 @@ class GameStatsService(Service):
         unit_stats = stats[&#34;units&#34;]
         scored_highest = highest_scorer == player.login
 
-        if survived and game.game_mode == FeaturedModType.LADDER_1V1:
+        if survived and game.rating_type == RatingType.LADDER_1V1:
             self._unlock(ACH_FIRST_SUCCESS, a_queue)
 
         self._increment(ACH_NOVICE, 1, a_queue)
@@ -3057,16 +3053,9 @@ class GameStatsService(Service):
         self._lowest_acu_health(_count(blueprint_stats, lambda x: x.get(&#34;lowest_health&#34;, 0), *ACUS), survived, a_queue)
         self._highscore(scored_highest, number_of_humans, a_queue)
 
-        if config.USE_API:
-            updated_achievements = await self._achievement_service.execute_batch_update(player.id, a_queue)
+        await self._achievement_service.execute_batch_update(player.id, a_queue)
+        await self._event_service.execute_batch_update(player.id, e_queue)
 
-            if updated_achievements is None:
-                self._logger.warning(&#34;API returned an error while handling the achievements batch update.&#34;)
-                return
-
-            await self._event_service.execute_batch_update(player.id, e_queue)
-            if player.lobby_connection is not None:
-                await player.lobby_connection.send_updated_achievements(updated_achievements)
 
     def _category_stats(self, unit_stats, survived, achievements_queue, events_queue):
         built_air = unit_stats[&#34;air&#34;].get(&#34;built&#34;, 0)
@@ -5104,6 +5093,22 @@ class MessageQueueService(Service):
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -&gt; None:
+        await self.publish_many(
+            exchange_name,
+            routing,
+            [payload],
+            mandatory=mandatory,
+            delivery_mode=delivery_mode
+        )
+
+    async def publish_many(
+        self,
+        exchange_name: str,
+        routing: str,
+        payloads: Iterable[dict],
+        mandatory: bool = False,
+        delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+    ) -&gt; None:
         if not self._is_ready:
             self._logger.warning(
                 &#34;Not connected to RabbitMQ, unable to publish message.&#34;
@@ -5114,19 +5119,24 @@ class MessageQueueService(Service):
         if exchange is None:
             raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
 
-        message = aio_pika.Message(
-            json.dumps(payload).encode(), delivery_mode=delivery_mode
-        )
-
         async with self._channel.transaction():
-            await exchange.publish(
-                message,
-                routing_key=routing,
-                mandatory=mandatory
-            )
-            self._logger.log(
-                TRACE, &#34;Published message %s to %s/%s&#34;, payload, exchange_name, routing
-            )
+            for payload in payloads:
+                message = aio_pika.Message(
+                    json.dumps(payload).encode(),
+                    delivery_mode=delivery_mode
+                )
+                await exchange.publish(
+                    message,
+                    routing_key=routing,
+                    mandatory=mandatory
+                )
+                self._logger.log(
+                    TRACE,
+                    &#34;Published message %s to %s/%s&#34;,
+                    payload,
+                    exchange_name,
+                    routing
+                )
 
     @synchronizedmethod(&#34;initialization_lock&#34;)
     async def reconnect(self) -&gt; None:
@@ -5189,6 +5199,32 @@ class MessageQueueService(Service):
     mandatory: bool = False,
     delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
 ) -&gt; None:
+    await self.publish_many(
+        exchange_name,
+        routing,
+        [payload],
+        mandatory=mandatory,
+        delivery_mode=delivery_mode
+    )</code></pre>
+</details>
+</dd>
+<dt id="server.MessageQueueService.publish_many"><code class="name flex">
+<span>async def <span class="ident">publish_many</span></span>(<span>self, exchange_name: str, routing: str, payloads: Iterable[dict], mandatory: bool = False, delivery_mode: aio_pika.abc.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def publish_many(
+    self,
+    exchange_name: str,
+    routing: str,
+    payloads: Iterable[dict],
+    mandatory: bool = False,
+    delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+) -&gt; None:
     if not self._is_ready:
         self._logger.warning(
             &#34;Not connected to RabbitMQ, unable to publish message.&#34;
@@ -5199,19 +5235,24 @@ class MessageQueueService(Service):
     if exchange is None:
         raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
 
-    message = aio_pika.Message(
-        json.dumps(payload).encode(), delivery_mode=delivery_mode
-    )
-
     async with self._channel.transaction():
-        await exchange.publish(
-            message,
-            routing_key=routing,
-            mandatory=mandatory
-        )
-        self._logger.log(
-            TRACE, &#34;Published message %s to %s/%s&#34;, payload, exchange_name, routing
-        )</code></pre>
+        for payload in payloads:
+            message = aio_pika.Message(
+                json.dumps(payload).encode(),
+                delivery_mode=delivery_mode
+            )
+            await exchange.publish(
+                message,
+                routing_key=routing,
+                mandatory=mandatory
+            )
+            self._logger.log(
+                TRACE,
+                &#34;Published message %s to %s/%s&#34;,
+                payload,
+                exchange_name,
+                routing
+            )</code></pre>
 </details>
 </dd>
 <dt id="server.MessageQueueService.reconnect"><code class="name flex">
@@ -7044,7 +7085,7 @@ class RatingService(Service):
 </dd>
 <dt id="server.ServerInstance"><code class="flex name class">
 <span>class <span class="ident">ServerInstance</span></span>
-<span>(</span><span>name: str, database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, api_accessor: Optional[<a title="server.api.api_accessor.ApiAccessor" href="api/api_accessor.html#server.api.api_accessor.ApiAccessor">ApiAccessor</a>], twilio_nts: Optional[<a title="server.ice_servers.nts.TwilioNTS" href="ice_servers/nts.html#server.ice_servers.nts.TwilioNTS">TwilioNTS</a>], loop: asyncio.base_events.BaseEventLoop)</span>
+<span>(</span><span>name: str, database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, twilio_nts: Optional[<a title="server.ice_servers.nts.TwilioNTS" href="ice_servers/nts.html#server.ice_servers.nts.TwilioNTS">TwilioNTS</a>], loop: asyncio.base_events.BaseEventLoop)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A class representing a shared server state. Each <code><a title="server.ServerInstance" href="#server.ServerInstance">ServerInstance</a></code> may be
@@ -7065,7 +7106,6 @@ state, i.e. the same players, games, etc.</p></div>
         self,
         name: str,
         database: FAFDatabase,
-        api_accessor: Optional[ApiAccessor],
         twilio_nts: Optional[TwilioNTS],
         loop: asyncio.BaseEventLoop,
         # For testing
@@ -7074,7 +7114,6 @@ state, i.e. the same players, games, etc.</p></div>
         self.name = name
         self._logger = logging.getLogger(self.name)
         self.database = database
-        self.api_accessor = api_accessor
         self.twilio_nts = twilio_nts
         self.loop = loop
 
@@ -7085,7 +7124,6 @@ state, i.e. the same players, games, etc.</p></div>
         self.services = _override_services or create_services({
             &#34;server&#34;: self,
             &#34;database&#34;: self.database,
-            &#34;api_accessor&#34;: self.api_accessor,
             &#34;loop&#34;: self.loop,
         })
 
@@ -7607,7 +7645,6 @@ class ViolationService(Service):
 <ul id="index">
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
-<li><code><a title="server.api" href="api/index.html">server.api</a></code></li>
 <li><code><a title="server.asyncio_extensions" href="asyncio_extensions.html">server.asyncio_extensions</a></code></li>
 <li><code><a title="server.broadcast_service" href="broadcast_service.html">server.broadcast_service</a></code></li>
 <li><code><a title="server.config" href="config.html">server.config</a></code></li>
@@ -7756,6 +7793,7 @@ class ViolationService(Service):
 <ul class="">
 <li><code><a title="server.MessageQueueService.declare_exchange" href="#server.MessageQueueService.declare_exchange">declare_exchange</a></code></li>
 <li><code><a title="server.MessageQueueService.publish" href="#server.MessageQueueService.publish">publish</a></code></li>
+<li><code><a title="server.MessageQueueService.publish_many" href="#server.MessageQueueService.publish_many">publish_many</a></code></li>
 <li><code><a title="server.MessageQueueService.reconnect" href="#server.MessageQueueService.reconnect">reconnect</a></code></li>
 </ul>
 </li>

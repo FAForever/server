@@ -33,6 +33,7 @@ Interfaces with RabbitMQ
 
 import asyncio
 import json
+from typing import Iterable
 
 import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
@@ -158,6 +159,22 @@ class MessageQueueService(Service):
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -&gt; None:
+        await self.publish_many(
+            exchange_name,
+            routing,
+            [payload],
+            mandatory=mandatory,
+            delivery_mode=delivery_mode
+        )
+
+    async def publish_many(
+        self,
+        exchange_name: str,
+        routing: str,
+        payloads: Iterable[dict],
+        mandatory: bool = False,
+        delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+    ) -&gt; None:
         if not self._is_ready:
             self._logger.warning(
                 &#34;Not connected to RabbitMQ, unable to publish message.&#34;
@@ -168,19 +185,24 @@ class MessageQueueService(Service):
         if exchange is None:
             raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
 
-        message = aio_pika.Message(
-            json.dumps(payload).encode(), delivery_mode=delivery_mode
-        )
-
         async with self._channel.transaction():
-            await exchange.publish(
-                message,
-                routing_key=routing,
-                mandatory=mandatory
-            )
-            self._logger.log(
-                TRACE, &#34;Published message %s to %s/%s&#34;, payload, exchange_name, routing
-            )
+            for payload in payloads:
+                message = aio_pika.Message(
+                    json.dumps(payload).encode(),
+                    delivery_mode=delivery_mode
+                )
+                await exchange.publish(
+                    message,
+                    routing_key=routing,
+                    mandatory=mandatory
+                )
+                self._logger.log(
+                    TRACE,
+                    &#34;Published message %s to %s/%s&#34;,
+                    payload,
+                    exchange_name,
+                    routing
+                )
 
     @synchronizedmethod(&#34;initialization_lock&#34;)
     async def reconnect(self) -&gt; None:
@@ -349,6 +371,22 @@ class MessageQueueService(Service):
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
     ) -&gt; None:
+        await self.publish_many(
+            exchange_name,
+            routing,
+            [payload],
+            mandatory=mandatory,
+            delivery_mode=delivery_mode
+        )
+
+    async def publish_many(
+        self,
+        exchange_name: str,
+        routing: str,
+        payloads: Iterable[dict],
+        mandatory: bool = False,
+        delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+    ) -&gt; None:
         if not self._is_ready:
             self._logger.warning(
                 &#34;Not connected to RabbitMQ, unable to publish message.&#34;
@@ -359,19 +397,24 @@ class MessageQueueService(Service):
         if exchange is None:
             raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
 
-        message = aio_pika.Message(
-            json.dumps(payload).encode(), delivery_mode=delivery_mode
-        )
-
         async with self._channel.transaction():
-            await exchange.publish(
-                message,
-                routing_key=routing,
-                mandatory=mandatory
-            )
-            self._logger.log(
-                TRACE, &#34;Published message %s to %s/%s&#34;, payload, exchange_name, routing
-            )
+            for payload in payloads:
+                message = aio_pika.Message(
+                    json.dumps(payload).encode(),
+                    delivery_mode=delivery_mode
+                )
+                await exchange.publish(
+                    message,
+                    routing_key=routing,
+                    mandatory=mandatory
+                )
+                self._logger.log(
+                    TRACE,
+                    &#34;Published message %s to %s/%s&#34;,
+                    payload,
+                    exchange_name,
+                    routing
+                )
 
     @synchronizedmethod(&#34;initialization_lock&#34;)
     async def reconnect(self) -&gt; None:
@@ -434,6 +477,32 @@ class MessageQueueService(Service):
     mandatory: bool = False,
     delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
 ) -&gt; None:
+    await self.publish_many(
+        exchange_name,
+        routing,
+        [payload],
+        mandatory=mandatory,
+        delivery_mode=delivery_mode
+    )</code></pre>
+</details>
+</dd>
+<dt id="server.message_queue_service.MessageQueueService.publish_many"><code class="name flex">
+<span>async def <span class="ident">publish_many</span></span>(<span>self, exchange_name: str, routing: str, payloads: Iterable[dict], mandatory: bool = False, delivery_mode: aio_pika.abc.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def publish_many(
+    self,
+    exchange_name: str,
+    routing: str,
+    payloads: Iterable[dict],
+    mandatory: bool = False,
+    delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+) -&gt; None:
     if not self._is_ready:
         self._logger.warning(
             &#34;Not connected to RabbitMQ, unable to publish message.&#34;
@@ -444,19 +513,24 @@ class MessageQueueService(Service):
     if exchange is None:
         raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
 
-    message = aio_pika.Message(
-        json.dumps(payload).encode(), delivery_mode=delivery_mode
-    )
-
     async with self._channel.transaction():
-        await exchange.publish(
-            message,
-            routing_key=routing,
-            mandatory=mandatory
-        )
-        self._logger.log(
-            TRACE, &#34;Published message %s to %s/%s&#34;, payload, exchange_name, routing
-        )</code></pre>
+        for payload in payloads:
+            message = aio_pika.Message(
+                json.dumps(payload).encode(),
+                delivery_mode=delivery_mode
+            )
+            await exchange.publish(
+                message,
+                routing_key=routing,
+                mandatory=mandatory
+            )
+            self._logger.log(
+                TRACE,
+                &#34;Published message %s to %s/%s&#34;,
+                payload,
+                exchange_name,
+                routing
+            )</code></pre>
 </details>
 </dd>
 <dt id="server.message_queue_service.MessageQueueService.reconnect"><code class="name flex">
@@ -521,6 +595,7 @@ async def reconnect(self) -&gt; None:
 <ul class="">
 <li><code><a title="server.message_queue_service.MessageQueueService.declare_exchange" href="#server.message_queue_service.MessageQueueService.declare_exchange">declare_exchange</a></code></li>
 <li><code><a title="server.message_queue_service.MessageQueueService.publish" href="#server.message_queue_service.MessageQueueService.publish">publish</a></code></li>
+<li><code><a title="server.message_queue_service.MessageQueueService.publish_many" href="#server.message_queue_service.MessageQueueService.publish_many">publish_many</a></code></li>
 <li><code><a title="server.message_queue_service.MessageQueueService.reconnect" href="#server.message_queue_service.MessageQueueService.reconnect">reconnect</a></code></li>
 </ul>
 </li>
