@@ -143,16 +143,19 @@ class ServerContext:
                 )
 
     async def client_connected(self, stream_reader, stream_writer):
-        self._logger.debug(&#34;%s: Client connected&#34;, self.name)
+        peername = Address(*stream_writer.get_extra_info(&#34;peername&#34;))
+        self._logger.info(
+            &#34;%s: Client connected from %s:%s&#34;,
+            self.name,
+            peername.host,
+            peername.port
+        )
         protocol = self.protocol_class(stream_reader, stream_writer)
         connection = self._connection_factory()
         self.connections[connection] = protocol
 
         try:
-            await connection.on_connection_made(
-                protocol,
-                Address(*stream_writer.get_extra_info(&#34;peername&#34;))
-            )
+            await connection.on_connection_made(protocol, peername)
             metrics.user_connections.labels(&#34;None&#34;, &#34;None&#34;).inc()
             while protocol.is_connected():
                 message = await protocol.read_message()
@@ -165,11 +168,20 @@ class ServerContext:
             asyncio.CancelledError,
         ):
             pass
-        except Exception:
+        except UnicodeDecodeError as e:
             self._logger.exception(
-                &#34;%s: Exception in protocol for &#39;%s&#39;&#34;,
+                &#34;%s: Unicode error in protocol for &#39;%s&#39;: %s &#39;...%s...&#39;&#34;,
                 self.name,
-                connection.get_user_identifier()
+                connection.get_user_identifier(),
+                e,
+                e.object[e.start-20:e.end+20]
+            )
+        except Exception as e:
+            self._logger.exception(
+                &#34;%s: Exception in protocol for &#39;%s&#39;: %s&#34;,
+                self.name,
+                connection.get_user_identifier(),
+                e
             )
         finally:
             del self.connections[connection]
@@ -183,7 +195,7 @@ class ServerContext:
             with self.suppress_and_log(connection.on_connection_lost, Exception):
                 await connection.on_connection_lost()
 
-            self._logger.debug(
+            self._logger.info(
                 &#34;%s: Client disconnected for &#39;%s&#39;&#34;,
                 self.name,
                 connection.get_user_identifier()
@@ -321,16 +333,19 @@ class ServerContext:
                 )
 
     async def client_connected(self, stream_reader, stream_writer):
-        self._logger.debug(&#34;%s: Client connected&#34;, self.name)
+        peername = Address(*stream_writer.get_extra_info(&#34;peername&#34;))
+        self._logger.info(
+            &#34;%s: Client connected from %s:%s&#34;,
+            self.name,
+            peername.host,
+            peername.port
+        )
         protocol = self.protocol_class(stream_reader, stream_writer)
         connection = self._connection_factory()
         self.connections[connection] = protocol
 
         try:
-            await connection.on_connection_made(
-                protocol,
-                Address(*stream_writer.get_extra_info(&#34;peername&#34;))
-            )
+            await connection.on_connection_made(protocol, peername)
             metrics.user_connections.labels(&#34;None&#34;, &#34;None&#34;).inc()
             while protocol.is_connected():
                 message = await protocol.read_message()
@@ -343,11 +358,20 @@ class ServerContext:
             asyncio.CancelledError,
         ):
             pass
-        except Exception:
+        except UnicodeDecodeError as e:
             self._logger.exception(
-                &#34;%s: Exception in protocol for &#39;%s&#39;&#34;,
+                &#34;%s: Unicode error in protocol for &#39;%s&#39;: %s &#39;...%s...&#39;&#34;,
                 self.name,
-                connection.get_user_identifier()
+                connection.get_user_identifier(),
+                e,
+                e.object[e.start-20:e.end+20]
+            )
+        except Exception as e:
+            self._logger.exception(
+                &#34;%s: Exception in protocol for &#39;%s&#39;: %s&#34;,
+                self.name,
+                connection.get_user_identifier(),
+                e
             )
         finally:
             del self.connections[connection]
@@ -361,7 +385,7 @@ class ServerContext:
             with self.suppress_and_log(connection.on_connection_lost, Exception):
                 await connection.on_connection_lost()
 
-            self._logger.debug(
+            self._logger.info(
                 &#34;%s: Client disconnected for &#39;%s&#39;&#34;,
                 self.name,
                 connection.get_user_identifier()
@@ -413,16 +437,19 @@ def sockets(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def client_connected(self, stream_reader, stream_writer):
-    self._logger.debug(&#34;%s: Client connected&#34;, self.name)
+    peername = Address(*stream_writer.get_extra_info(&#34;peername&#34;))
+    self._logger.info(
+        &#34;%s: Client connected from %s:%s&#34;,
+        self.name,
+        peername.host,
+        peername.port
+    )
     protocol = self.protocol_class(stream_reader, stream_writer)
     connection = self._connection_factory()
     self.connections[connection] = protocol
 
     try:
-        await connection.on_connection_made(
-            protocol,
-            Address(*stream_writer.get_extra_info(&#34;peername&#34;))
-        )
+        await connection.on_connection_made(protocol, peername)
         metrics.user_connections.labels(&#34;None&#34;, &#34;None&#34;).inc()
         while protocol.is_connected():
             message = await protocol.read_message()
@@ -435,11 +462,20 @@ def sockets(self):
         asyncio.CancelledError,
     ):
         pass
-    except Exception:
+    except UnicodeDecodeError as e:
         self._logger.exception(
-            &#34;%s: Exception in protocol for &#39;%s&#39;&#34;,
+            &#34;%s: Unicode error in protocol for &#39;%s&#39;: %s &#39;...%s...&#39;&#34;,
             self.name,
-            connection.get_user_identifier()
+            connection.get_user_identifier(),
+            e,
+            e.object[e.start-20:e.end+20]
+        )
+    except Exception as e:
+        self._logger.exception(
+            &#34;%s: Exception in protocol for &#39;%s&#39;: %s&#34;,
+            self.name,
+            connection.get_user_identifier(),
+            e
         )
     finally:
         del self.connections[connection]
@@ -453,7 +489,7 @@ def sockets(self):
         with self.suppress_and_log(connection.on_connection_lost, Exception):
             await connection.on_connection_lost()
 
-        self._logger.debug(
+        self._logger.info(
             &#34;%s: Client disconnected for &#39;%s&#39;&#34;,
             self.name,
             connection.get_user_identifier()

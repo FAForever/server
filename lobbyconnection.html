@@ -126,7 +126,7 @@ class LobbyConnection:
 
         self._attempted_connectivity_test = False
 
-        self._logger.debug(&#34;LobbyConnection initialized&#34;)
+        self._logger.debug(&#34;LobbyConnection initialized for &#39;%s&#39;&#34;, self.session)
 
     @property
     def authenticated(self):
@@ -147,9 +147,10 @@ class LobbyConnection:
     async def abort(self, logspam=&#34;&#34;):
         self._authenticated = False
 
-        identity = self.player.login if self.player else self.peer_address.host
         self._logger.warning(
-            &#34;Aborting connection for %s. %s&#34;, identity, logspam
+            &#34;Aborting connection for &#39;%s&#39;. %s&#34;,
+            self.get_user_identifier(),
+            logspam
         )
 
         if self.game_connection:
@@ -591,8 +592,12 @@ class LobbyConnection:
         if not conforms_policy:
             return
 
-        self._logger.debug(
-            &#34;Login from: %s, %s, %s, %s&#34;, player_id, username, method, self.session
+        self._logger.info(
+            &#34;Login from: %s(id=%s), using method &#39;%s&#39; for session %s&#34;,
+            username,
+            player_id,
+            method,
+            self.session
         )
         metrics.user_logins.labels(&#34;success&#34;, method).inc()
 
@@ -1359,7 +1364,7 @@ class LobbyConnection:
 
         self._attempted_connectivity_test = False
 
-        self._logger.debug(&#34;LobbyConnection initialized&#34;)
+        self._logger.debug(&#34;LobbyConnection initialized for &#39;%s&#39;&#34;, self.session)
 
     @property
     def authenticated(self):
@@ -1380,9 +1385,10 @@ class LobbyConnection:
     async def abort(self, logspam=&#34;&#34;):
         self._authenticated = False
 
-        identity = self.player.login if self.player else self.peer_address.host
         self._logger.warning(
-            &#34;Aborting connection for %s. %s&#34;, identity, logspam
+            &#34;Aborting connection for &#39;%s&#39;. %s&#34;,
+            self.get_user_identifier(),
+            logspam
         )
 
         if self.game_connection:
@@ -1824,8 +1830,12 @@ class LobbyConnection:
         if not conforms_policy:
             return
 
-        self._logger.debug(
-            &#34;Login from: %s, %s, %s, %s&#34;, player_id, username, method, self.session
+        self._logger.info(
+            &#34;Login from: %s(id=%s), using method &#39;%s&#39; for session %s&#34;,
+            username,
+            player_id,
+            method,
+            self.session
         )
         metrics.user_logins.labels(&#34;success&#34;, method).inc()
 
@@ -2565,9 +2575,10 @@ def authenticated(self):
 <pre><code class="python">async def abort(self, logspam=&#34;&#34;):
     self._authenticated = False
 
-    identity = self.player.login if self.player else self.peer_address.host
     self._logger.warning(
-        &#34;Aborting connection for %s. %s&#34;, identity, logspam
+        &#34;Aborting connection for &#39;%s&#39;. %s&#34;,
+        self.get_user_identifier(),
+        logspam
     )
 
     if self.game_connection:
@@ -3804,8 +3815,12 @@ async def command_kick_player_from_party(self, message):
     if not conforms_policy:
         return
 
-    self._logger.debug(
-        &#34;Login from: %s, %s, %s, %s&#34;, player_id, username, method, self.session
+    self._logger.info(
+        &#34;Login from: %s(id=%s), using method &#39;%s&#39; for session %s&#34;,
+        username,
+        player_id,
+        method,
+        self.session
     )
     metrics.user_logins.labels(&#34;success&#34;, method).inc()
 
