@@ -5,6 +5,7 @@ Game communication over GpgNet
 import asyncio
 import contextlib
 import json
+import logging
 from typing import Any
 
 from sqlalchemy import select
@@ -13,7 +14,6 @@ from server.db import FAFDatabase
 
 from .config import TRACE
 from .db.models import coop_leaderboard, coop_map, teamkills
-from .decorators import with_logger
 from .game_service import GameService
 from .games import (
     CoopGame,
@@ -30,7 +30,6 @@ from .players import Player, PlayerState
 from .protocol import DisconnectedError, GpgNetServerProtocol, Protocol
 
 
-@with_logger
 class GameConnection(GpgNetServerProtocol):
     """
     Responsible for connections to the game, using the GPGNet protocol
@@ -50,6 +49,9 @@ class GameConnection(GpgNetServerProtocol):
         Construct a new GameConnection
         """
         super().__init__()
+        self._logger = logging.getLogger(
+            f"{self.__class__.__qualname__}.{game.id}"
+        )
         self._db = database
         self._logger.debug("GameConnection initializing")
 
@@ -212,8 +214,11 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.exception("Bad command arguments")
         except ConnectionError as e:
             raise e
-        except Exception:  # pragma: no cover
-            self._logger.exception("Something awful happened in a game thread!")
+        except Exception as e:  # pragma: no cover
+            self._logger.exception(
+                "Something awful happened in a game thread! %s",
+                e
+            )
             await self.abort()
 
     async def handle_desync(self, *_args):  # pragma: no cover
@@ -362,11 +367,11 @@ class GameConnection(GpgNetServerProtocol):
     async def handle_json_stats(self, stats: str):
         try:
             self.game.report_army_stats(stats)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             self._logger.warning(
-                "Malformed game stats reported by %s: '...%s'",
+                "Malformed game stats reported by %s: '...%s...'",
                 self._player.login,
-                stats[-20:]
+                stats[e.pos-20:e.pos+20]
             )
 
     async def handle_enforce_rating(self):
