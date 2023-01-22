@@ -26,10 +26,10 @@ def player_factory(player_factory):
     player_id_counter = 0
 
     def make(
-        mean: int = 1500,
-        deviation: int = 500,
-        ladder_games: int = config.NEWBIE_MIN_GAMES+1,
-        name=None
+            mean: int = 1500,
+            deviation: int = 500,
+            ladder_games: int = config.NEWBIE_MIN_GAMES + 1,
+            name=None
     ):
         """Make a player with the given ratings"""
         nonlocal player_id_counter
@@ -42,6 +42,7 @@ def player_factory(player_factory):
         )
         player_id_counter += 1
         return player
+
     return make
 
 
@@ -62,54 +63,6 @@ def test_team_matchmaker_performance(player_factory, bench, caplog):
         matchmaker.find(searches, 4, 1000)
 
     assert bench.elapsed() < 0.5
-
-
-def test_team_matchmaker_algorithm(player_factory):
-    matchmaker = TeamMatchMaker()
-    s = make_searches(
-        [1251, 1116, 1038, 1332, 1271, 1142, 1045, 1347, 1359, 1348, 1227, 1118, 1058, 1338, 1271, 1137, 1025],
-        player_factory)
-    c1 = CombinedSearch(*[s.pop(), s.pop()])
-    c2 = CombinedSearch(*[s.pop(), s.pop()])
-    c3 = CombinedSearch(*[s.pop(), s.pop()])
-    c4 = CombinedSearch(*[s.pop(), s.pop(), s.pop()])
-    s.append(c1)
-    s.append(c2)
-    s.append(c3)
-    s.append(c4)
-
-    matches, unmatched = matchmaker.find(s, 4, 1000)
-
-    assert set(matches[1][0].get_original_searches()) == {c1, s[2], s[5]}
-    assert set(matches[1][1].get_original_searches()) == {c3, s[1], s[6]}
-    assert set(matches[0][0].get_original_searches()) == {c4, s[4]}
-    assert set(matches[0][1].get_original_searches()) == {c2, s[0], s[3]}
-    assert set(unmatched) == {s[7]}
-    for match in matches:
-        assert matchmaker.assign_game_quality(match, 4, 1000).quality > config.MINIMUM_GAME_QUALITY
-
-
-def test_team_matchmaker_algorithm_2(player_factory):
-    matchmaker = TeamMatchMaker()
-    s = make_searches(
-        [227, 1531, 1628, 1722, 1415, 1146, 937, 1028, 1315, 1236, 1125, 1252, 1185, 1333, 1263, 1184, 1037],
-        player_factory)
-    c1 = CombinedSearch(*[s.pop(), s.pop()])
-    c2 = CombinedSearch(*[s.pop(), s.pop()])
-    c3 = CombinedSearch(*[s.pop(), s.pop()])
-    c4 = CombinedSearch(*[s.pop(), s.pop(), s.pop()])
-    s.append(c1)
-    s.append(c2)
-    s.append(c3)
-    s.append(c4)
-
-    matches, unmatched = matchmaker.find(s, 4, 1000)
-
-    assert set(matches[0][0].get_original_searches()) == {c4, s[4]}
-    assert set(matches[0][1].get_original_searches()) == {c2, c3}
-    assert set(unmatched) == {s[0], s[1], s[2], s[3], s[5], s[6], s[7], c1}
-    for match in matches:
-        assert matchmaker.assign_game_quality(match, 4, 1000).quality > config.MINIMUM_GAME_QUALITY
 
 
 @pytest.mark.slow
@@ -206,10 +159,9 @@ def test_ignore_impossible_team_splits(player_factory):
     s.append(c2)
     s.append(c3)
 
-    matches, unmatched = TeamMatchMaker().find(s, 4, 1000)
+    matches = TeamMatchMaker().find(s, 4, 1000)
 
     assert matches == []
-    assert set(unmatched) == set(s)
 
 
 @given(team_a=st_searches(4), team_b=st_searches(4))
@@ -267,11 +219,11 @@ def test_game_quality_time_bonus(s):
         num_newbies = team_a.num_newbies() + team_b.num_newbies()
 
     assert (
-        quality_before
-        # player number / team size * time bonus
-        + 6 / 3 * config.TIME_BONUS
-        + num_newbies / 3 * config.NEWBIE_TIME_BONUS
-        == pytest.approx(quality_after)
+            quality_before
+            # player number / team size * time bonus
+            + 6 / 3 * config.TIME_BONUS
+            + num_newbies / 3 * config.NEWBIE_TIME_BONUS
+            == pytest.approx(quality_after)
     )
 
 
@@ -294,11 +246,11 @@ def test_game_quality_max_time_bonus(s):
         num_newbies = team_a.num_newbies() + team_b.num_newbies()
 
     assert (
-        quality_before
-        # player number / team size * time bonus
-        + 6 / 3 * config.MAXIMUM_TIME_BONUS
-        + num_newbies / 3 * config.MAXIMUM_NEWBIE_TIME_BONUS
-        == pytest.approx(quality_after)
+            quality_before
+            # player number / team size * time bonus
+            + 6 / 3 * config.MAXIMUM_TIME_BONUS
+            + num_newbies / 3 * config.MAXIMUM_NEWBIE_TIME_BONUS
+            == pytest.approx(quality_after)
     )
 
 

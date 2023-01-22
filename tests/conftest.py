@@ -29,6 +29,7 @@ from server.games import (
 from server.geoip_service import GeoIpService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import MatchmakerQueue
+from server.matchmaker.algorithm.team_matchmaker import TeamMatchMaker
 from server.message_queue_service import MessageQueueService
 from server.oauth_service import OAuthService
 from server.player_service import PlayerService
@@ -254,6 +255,7 @@ def make_player(
     global_games=0,
     ladder_games=0,
     lobby_connection_spec=None,
+    ladder_game_count=None,
     **kwargs
 ):
     ratings = {k: v for k, v in {
@@ -268,6 +270,8 @@ def make_player(
 
     p = Player(login=login, ratings=ratings, game_count=games, **kwargs)
     p.state = state
+    if ladder_game_count is not None:
+        p.game_count[RatingType.LADDER_1V1] = ladder_game_count
 
     if lobby_connection_spec:
         if not isinstance(lobby_connection_spec, str):
@@ -370,6 +374,8 @@ def queue_factory():
         nonlocal queue_id
         queue_id += 1
         return MatchmakerQueue(
+            timer=mock.Mock(),
+            matchmaker=mock.Mock(),
             game_service=mock.Mock(),
             on_match_found=mock.Mock(),
             name=name,
@@ -387,10 +393,12 @@ def matchmaker_queue(game_service) -> MatchmakerQueue:
     queue = MatchmakerQueue(
         game_service,
         mock.Mock(),
+        mock.Mock(),
         "ladder1v1test",
+        1,
         FeaturedModType.LADDER_1V1,
         RatingType.LADDER_1V1,
-        1
+        TeamMatchMaker()
     )
     return queue
 

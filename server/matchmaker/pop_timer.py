@@ -25,8 +25,8 @@ class PopTimer(object):
     The exact size can be set in config.
     """
 
-    def __init__(self, queue: "MatchmakerQueue"):
-        self.queue = queue
+    def __init__(self):
+        self.queues = list()
         # Set up deque's for calculating a moving average
         self.last_queue_amounts: deque[int] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
         self.last_queue_times: deque[float] = deque(maxlen=config.QUEUE_POP_TIME_MOVING_AVG_SIZE)
@@ -39,15 +39,16 @@ class PopTimer(object):
         """ Wait for the timer to pop. """
 
         time_remaining = self.next_queue_pop - time()
-        self._logger.info("Next %s wave happening in %is", self.queue.name, time_remaining)
-        metrics.matchmaker_queue_pop.labels(self.queue.name).set(int(time_remaining))
+        self._logger.info("Next wave happening in %is", time_remaining)
         await asyncio.sleep(time_remaining)
-        num_players = self.queue.num_players
-        metrics.matchmaker_players.labels(self.queue.name).set(num_players)
+        for queue in self.queues:
+            metrics.matchmaker_queue_pop.labels(queue.name).set(int(time_remaining))
+            num_players = queue.num_players
+            metrics.matchmaker_players.labels(queue.name).set(num_players)
 
         self._last_queue_pop = time()
         self.next_queue_pop = self._last_queue_pop + self.time_until_next_pop(
-            num_players, time_remaining
+            max([queue.num_players for queue in self.queues]), time_remaining
         )
 
     def time_until_next_pop(self, num_queued: int, time_queued: float) -> float:
@@ -65,19 +66,19 @@ class PopTimer(object):
         total_times = sum(self.last_queue_times)
         if total_times:
             self._logger.debug(
-                "Queue rate for %s: %f/s", self.queue.name,
+                "Queue rate for: %f/s",
                 total_players / total_times
             )
-
-        players_per_match = self.queue.team_size * 2
-        desired_players = config.QUEUE_POP_DESIRED_MATCHES * players_per_match
+        queues_team_sizes = [queue.team_size for queue in self.queues]
+        average_players_per_match = (sum(queues_team_sizes) / len(queues_team_sizes)) * 2
+        desired_players = config.QUEUE_POP_DESIRED_MATCHES * average_players_per_match
         # Obtained by solving $ NUM_PLAYERS = rate * time $ for time.
         next_pop_time = desired_players * total_times / total_players
         if next_pop_time > config.QUEUE_POP_TIME_MAX:
             self._logger.info(
-                "Required time (%.2fs) for %s is larger than max pop time (%ds). "
+                "Required time (%.2fs) is larger than max pop time (%ds). "
                 "Consider increasing the max pop time",
-                next_pop_time, self.queue.name, config.QUEUE_POP_TIME_MAX
+                next_pop_time, config.QUEUE_POP_TIME_MAX
             )
             return config.QUEUE_POP_TIME_MAX
         return next_pop_time
