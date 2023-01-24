@@ -510,9 +510,12 @@ class LadderService(Service):
                 queue.id,
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
+
+            def get_displayed_rating(player: Player) -> float:
+                return player.ratings[queue.rating_type].displayed()
+
             rating = min(
-                player.ratings[queue.rating_type].displayed()
-                for player in all_players
+                get_displayed_rating(player) for player in all_players
             )
             pool = queue.get_map_pool_for_rating(rating)
             if not pool:
@@ -532,11 +535,8 @@ class LadderService(Service):
             game.map_file_path = map_path
             game.set_name_unchecked(game_name(team1, team2))
 
-            def get_player_mean(player: Player) -> float:
-                return player.ratings[queue.rating_type].mean
-
-            team1 = sorted(team1, key=get_player_mean)
-            team2 = sorted(team2, key=get_player_mean)
+            team1 = sorted(team1, key=get_displayed_rating)
+            team2 = sorted(team2, key=get_displayed_rating)
 
             # Shuffle the teams such that direct opponents remain the same
             zipped_teams = list(zip(team1, team2))
