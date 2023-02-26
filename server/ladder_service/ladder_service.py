@@ -514,9 +514,14 @@ class LadderService(Service):
             def get_displayed_rating(player: Player) -> float:
                 return player.ratings[queue.rating_type].displayed()
 
-            rating = statistics.mean(
-                get_displayed_rating(player) for player in all_players
-            )
+            ratings = (get_displayed_rating(player) for player in all_players)
+            if config.MAP_POOL_RATING_SELECTION == "min":
+                rating = min(ratings)
+            elif config.MAP_POOL_RATING_SELECTION == "max":
+                rating = max(ratings)
+            else:
+                rating = statistics.mean(ratings)
+
             pool = queue.get_map_pool_for_rating(rating)
             if not pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")

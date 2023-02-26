@@ -130,7 +130,8 @@ class ConfigurationStore:
         self.LADDER_SEARCH_EXPANSION_STEP = 0.05
         self.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX = 0.3
         self.LADDER_TOP_PLAYER_SEARCH_EXPANSION_STEP = 0.15
-        # The maximum amount of time in seconds) to wait between pops.
+        self.MAP_POOL_RATING_SELECTION = "mean"  # can also be "min" or "max"
+        # The maximum amount of time in seconds to wait between pops.
         self.QUEUE_POP_TIME_MAX = 90
         # The number of possible matches we would like to have when the queue
         # pops. The queue pop time will be adjusted based on the current rate of
