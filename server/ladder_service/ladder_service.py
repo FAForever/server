@@ -416,26 +416,15 @@ class LadderService(Service):
                     "command": "notice",
                     "style": "info",
                     "text": (
-                        "<i>Welcome to the matchmaker</i><br><br><b>Until "
-                        "you've played enough games for the system to learn "
-                        "your skill level, you'll be matched randomly.</b><br>"
+                        "<i>Welcome to the matchmaker</i><br><br><b>The "
+                        "matchmaking system needs to calibrate your skill level; "
+                        "your first few games may be more imbalanced as the "
+                        "system attempts to learn your capability as a player."
+                        "</b><br><b>"
                         "Afterwards, you'll be more reliably matched up with "
                         "people of your skill level: so don't worry if your "
                         "first few games are uneven. This will improve as you "
                         "play!</b>"
-                    )
-                })
-            elif deviation > 250:
-                progress = (500.0 - deviation) / 2.5
-                player.write_message({
-                    "command": "notice",
-                    "style": "info",
-                    "text": (
-                        "The matchmaking system is calibrating your skill level; "
-                        "your first few games may be slightly more imbalanced "
-                        "as the system attempts to learn your capability as a player."
-                        "<br><br>"
-                        f"<b>The learning phase is {progress:.0f}% completed</b>"
                     )
                 })
 
