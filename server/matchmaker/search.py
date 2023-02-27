@@ -151,6 +151,11 @@ class Search:
                 self._failed_matching_attempts * config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_STEP,
                 config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX
             )
+        elif self.has_newbie():
+            return min(
+                self._failed_matching_attempts * config.LADDER_NEWBIE_SEARCH_EXPANSION_STEP,
+                config.LADDER_NEWBIE_SEARCH_EXPANSION_MAX
+            )
         else:
             return min(
                 self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
