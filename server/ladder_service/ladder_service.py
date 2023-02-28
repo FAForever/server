@@ -14,7 +14,7 @@ import humanize
 from sqlalchemy import and_, func, select, text, true
 
 from server import metrics
-from server.config import config
+from server.config import MAP_POOL_RATING_SELECTION_FUNCTIONS, config
 from server.core import Service
 from server.db import FAFDatabase
 from server.db.models import (
@@ -515,12 +515,11 @@ class LadderService(Service):
                 return player.ratings[queue.rating_type].displayed()
 
             ratings = (get_displayed_rating(player) for player in all_players)
-            if config.MAP_POOL_RATING_SELECTION == "min":
-                rating = min(ratings)
-            elif config.MAP_POOL_RATING_SELECTION == "max":
-                rating = max(ratings)
-            else:
-                rating = statistics.mean(ratings)
+            func = MAP_POOL_RATING_SELECTION_FUNCTIONS.get(
+                config.MAP_POOL_RATING_SELECTION,
+                statistics.mean
+            )
+            rating = func(ratings)
 
             pool = queue.get_map_pool_for_rating(rating)
             if not pool:

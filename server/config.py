@@ -5,6 +5,7 @@ Server config variables
 import asyncio
 import logging
 import os
+import statistics
 from typing import Callable
 
 import trueskill
@@ -26,6 +27,11 @@ FFA_TEAM = 1
 # see: http://forums.faforever.com/viewtopic.php?f=45&t=11698#p119599
 # Optimum values for ladder here, using them for global as well.
 trueskill.setup(mu=1500, sigma=500, beta=240, tau=10, draw_probability=0.10)
+MAP_POOL_RATING_SELECTION_FUNCTIONS = {
+    "mean": statistics.mean,
+    "min": min,
+    "max": max,
+}
 
 
 @with_logger
@@ -130,8 +136,10 @@ class ConfigurationStore:
         self.LADDER_SEARCH_EXPANSION_STEP = 0.05
         self.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX = 0.3
         self.LADDER_TOP_PLAYER_SEARCH_EXPANSION_STEP = 0.15
-        self.MAP_POOL_RATING_SELECTION = "mean"  # can also be "min" or "max"
-        # The maximum amount of time in seconds to wait between pops.
+        # The method for choosing map pool rating
+        # Can be "mean", "min", or "max"
+        self.MAP_POOL_RATING_SELECTION = "mean"
+        # The maximum amount of time in seconds to wait between pops
         self.QUEUE_POP_TIME_MAX = 90
         # The number of possible matches we would like to have when the queue
         # pops. The queue pop time will be adjusted based on the current rate of
