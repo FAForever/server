@@ -1,8 +1,8 @@
 [scripts]
-devserver = "python server.py --configuration-file dev-config.yml"
+devserver = "python main.py --configuration-file dev-config.yml"
 tests = "py.test --doctest-modules --doctest-continue-on-failure --cov-report=term-missing --cov-branch --cov=server --mysql_database=faf -o testpaths=tests -m 'not rabbitmq'"
 integration = "py.test -o testpaths=integration_tests"
-vulture = "vulture server.py server/ --sort-by-size"
+vulture = "vulture main.py server/ --sort-by-size"
 doc = "pdoc3 --html --force server"
 
 [[source]]
