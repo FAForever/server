@@ -22,7 +22,7 @@ oauthlib = "*"
 sqlalchemy = "*"
 twilio = ">=7.0.0"
 humanize = ">=2.6.0"
-aiomysql = {editable = true, git = "https://github.com/aio-libs/aiomysql"}
+aiomysql = {git = "https://github.com/aio-libs/aiomysql"}
 pyyaml = "*"
 aio_pika = "*"
 sortedcontainers = "*"

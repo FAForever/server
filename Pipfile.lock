@@ -126,7 +126,6 @@
             "version": "==3.8.3"
         },
         "aiomysql": {
-            "editable": true,
             "git": "https://github.com/aio-libs/aiomysql",
             "ref": "bb8697d827981fcbf24841e0990cccebadf49fbf"
         },
