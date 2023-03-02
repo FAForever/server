@@ -11,7 +11,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-aio_pika = "*"
+aio_pika = "~=8.2"
 aiocron = "*"
 aiohttp = "*"
 aiomysql = {git = "https://github.com/aio-libs/aiomysql"}
@@ -23,10 +23,9 @@ prometheus_client = "*"
 pyjwt = {version = ">=2.4.0", extras = ["crypto"]}
 pyyaml = "*"
 sortedcontainers = "*"
-sqlalchemy = "*"
+sqlalchemy = "~=1.4"
 trueskill = "*"
 twilio = ">=7.0.0"
-typing = "*"
 uvloop = {version = "*", markers = "sys_platform != 'win32'"}
 
 [dev-packages]
