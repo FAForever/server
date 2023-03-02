@@ -1,6 +1,7 @@
 import re
 import subprocess
 from distutils.core import setup
+from pathlib import Path
 
 from setuptools import find_packages
 
@@ -9,7 +10,10 @@ import server
 
 def get_version() -> str:
     output = subprocess.run(
-        ["git", "describe", "--tags"],
+        [
+            "git", "--git-dir", Path(__file__).parent / ".git",
+            "describe", "--tags"
+        ],
         capture_output=True
     ).stdout.decode().strip().split("-")
     # Output is either v1.3.5 if the tag points to the current commit or
