@@ -262,7 +262,7 @@ class Search:
     def __str__(self) -> str:
         return (
             f"Search({self.rating_type}, {self._players_repr()}, threshold="
-            f"{self.match_threshold:.2}, expansion={self.search_expansion:.2})"
+            f"{self.match_threshold:.2f}, expansion={self.search_expansion:.2f})"
         )
 
     def _players_repr(self) -> str:
