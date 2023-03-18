@@ -1044,30 +1044,17 @@ async def test_write_rating_progress_message(
         "command": "notice",
         "style": "info",
         "text": (
-            "<i>Welcome to the matchmaker</i><br><br><b>Until "
-            "you've played enough games for the system to learn "
-            "your skill level, you'll be matched randomly.</b><br>"
+            "<i>Welcome to the matchmaker</i><br><br><b>The "
+            "matchmaking system needs to calibrate your skill level; "
+            "your first few games may be more imbalanced as the "
+            "system attempts to learn your capability as a player."
+            "</b><br><b>"
             "Afterwards, you'll be more reliably matched up with "
             "people of your skill level: so don't worry if your "
             "first few games are uneven. This will improve as you "
             "play!</b>"
         )
     })
-
-
-async def test_write_rating_progress_message_2(
-    ladder_service: LadderService,
-    player_factory
-):
-    player = player_factory(ladder_rating=(1500, 400.1235))
-    player.write_message = mock.Mock()
-
-    ladder_service.write_rating_progress(player, RatingType.LADDER_1V1)
-
-    player.write_message.assert_called_once()
-    assert player.write_message.call_args[0][0].get("command") == "notice"
-    assert player.write_message.call_args[0][0].get("style") == "info"
-    assert "40%" in player.write_message.call_args[0][0].get("text", "")
 
 
 async def test_write_rating_progress_other_rating(
@@ -1084,7 +1071,4 @@ async def test_write_rating_progress_other_rating(
     # and global is an available rating that's not ladder
     ladder_service.write_rating_progress(player, RatingType.GLOBAL)
 
-    player.write_message.assert_called_once()
-    assert player.write_message.call_args[0][0].get("command") == "notice"
-    assert player.write_message.call_args[0][0].get("style") == "info"
-    assert "40%" in player.write_message.call_args[0][0].get("text", "")
+    player.write_message.assert_not_called()
