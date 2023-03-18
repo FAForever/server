@@ -140,7 +140,7 @@ async def test_profiler_refresh_cancels():
     profiler.refresh()
     await asyncio.sleep(10)
 
-    assert profiler._running == False
+    assert profiler._running is False
     assert profiler.profile_count == 0
     assert profiler.profiler is None
     assert enable_mock.call_count < 12

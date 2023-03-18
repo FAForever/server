@@ -65,8 +65,8 @@ class SpinLock(_ContextManagerMixin):
 
     def __repr__(self) -> str:
         res = super().__repr__()
-        extra = 'locked' if self._locked else 'unlocked'
-        return f'<{res[1:-1]} [{extra}]>'
+        extra = "locked" if self._locked else "unlocked"
+        return f"<{res[1:-1]} [{extra}]>"
 
     def locked(self) -> bool:
         """Return True if lock is acquired."""
@@ -90,7 +90,7 @@ class SpinLock(_ContextManagerMixin):
         if self._locked:
             self._locked = False
         else:
-            raise RuntimeError('Lock is not acquired.')
+            raise RuntimeError("Lock is not acquired.")
 
 
 class _partial(object):

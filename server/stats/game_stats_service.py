@@ -129,7 +129,6 @@ class GameStatsService(Service):
         await self._achievement_service.execute_batch_update(player.id, a_queue)
         await self._event_service.execute_batch_update(player.id, e_queue)
 
-
     def _category_stats(self, unit_stats, survived, achievements_queue, events_queue):
         built_air = unit_stats["air"].get("built", 0)
         built_land = unit_stats["land"].get("built", 0)

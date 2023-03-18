@@ -64,13 +64,13 @@ async def test_old_client_error(lobby_server):
     assert msg == {
         "command": "notice",
         "style": "error",
-        "text": 'Your client version is no longer supported. Please update to the newest version: https://faforever.com'
+        "text": "Your client version is no longer supported. Please update to the newest version: https://faforever.com"
     }
 
     error_msg = {
         "command": "notice",
         "style": "error",
-        "text": 'Cannot join game. Please update your client to the newest version.'
+        "text": "Cannot join game. Please update your client to the newest version."
     }
     await proto.send_message({"command": "game_host"})
     msg = await proto.read_message()

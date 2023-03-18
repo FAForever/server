@@ -1,6 +1,5 @@
 import datetime
 
-import pytest
 from sqlalchemy import select
 
 from server.db.models import coop_leaderboard
