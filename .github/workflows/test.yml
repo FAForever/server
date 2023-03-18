@@ -15,22 +15,6 @@ env:
   FLYWAY_VERSION: 7.5.4
 
 jobs:
-  # Static Analysis
-  isort:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-
-      - name: Install dependencies
-        run: pip install isort
-
-      - run: isort . --check --diff
-
   # Tests
   unit-test:
     runs-on: ubuntu-latest

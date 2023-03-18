@@ -261,7 +261,7 @@ class Search:
         )
 
     def _players_repr(self) -> str:
-        contents = ', '.join(
+        contents = ", ".join(
             f"Player({p.login}, {p.id}, {p.ratings[self.rating_type]})"
             for p in self.players
         )

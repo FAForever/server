@@ -684,8 +684,8 @@ async def test_command_social_remove_friend(lobbyconnection, database):
 
     # Removing twice does nothing
     await lobbyconnection.on_message_received({
-        'command': 'social_remove',
-        'friend': 1
+        "command": "social_remove",
+        "friend": 1
     })
 
     friends = await get_friends(lobbyconnection.player.id, database)

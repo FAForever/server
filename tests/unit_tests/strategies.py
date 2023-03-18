@@ -73,7 +73,7 @@ def st_searches_list(draw, min_players=1, max_players=10, min_size=0, max_size=3
 
 
 @st.composite
-def st_searches_list_with_player_size(draw, min_players=1, max_players=10, min_size=1,  max_size=30):
+def st_searches_list_with_player_size(draw, min_players=1, max_players=10, min_size=1, max_size=30):
     """Strategy for generating a list of Search objects and the max player size"""
     player_size = draw(st.integers(min_value=min_players, max_value=max_players))
     searches_list = draw(
@@ -91,7 +91,7 @@ def st_searches_list_with_player_size(draw, min_players=1, max_players=10, min_s
 
 
 @st.composite
-def st_searches_list_with_index(draw, min_players=1, max_players=10, min_size=1,  max_size=30):
+def st_searches_list_with_index(draw, min_players=1, max_players=10, min_size=1, max_size=30):
     """Strategy for generating a list of Search objects and an index that points at a location in the list"""
     searches_list = draw(
         st_searches_list(

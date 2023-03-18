@@ -51,7 +51,7 @@ async def test_config_refresh_empty_file(monkeypatch):
 
 
 @fast_forward(20)
-async def test_configuration_refresh(config_service, monkeypatch):
+async def test_configuration_service_refresh(config_service, monkeypatch):
     assert config.DB_PASSWORD == "banana"
     monkeypatch.setenv("CONFIGURATION_FILE", "tests/data/refresh_conf.yaml")
     assert config.DB_PASSWORD == "banana"
