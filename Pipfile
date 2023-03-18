@@ -1,8 +1,8 @@
 [scripts]
-devserver = "python server.py --configuration-file dev-config.yml"
+devserver = "python main.py --configuration-file dev-config.yml"
 tests = "py.test --doctest-modules --doctest-continue-on-failure --cov-report=term-missing --cov-branch --cov=server --mysql_database=faf -o testpaths=tests -m 'not rabbitmq'"
 integration = "py.test -o testpaths=integration_tests"
-vulture = "vulture server.py server/ --sort-by-size"
+vulture = "vulture main.py server/ --sort-by-size"
 doc = "pdoc3 --html --force server"
 
 [[source]]
@@ -11,32 +11,31 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-typing = "*"
-aiohttp = "*"
-prometheus_client = "*"
-docopt = "*"
-maxminddb = "*"
-trueskill = "*"
+aio_pika = "~=8.2"
 aiocron = "*"
-oauthlib = "*"
-sqlalchemy = "*"
-twilio = ">=7.0.0"
+aiohttp = "*"
+aiomysql = {git = "https://github.com/aio-libs/aiomysql"}
+docopt = "*"
 humanize = ">=2.6.0"
-aiomysql = {editable = true, git = "https://github.com/aio-libs/aiomysql"}
-pyyaml = "*"
-aio_pika = "*"
-sortedcontainers = "*"
+maxminddb = "*"
+oauthlib = "*"
+prometheus_client = "*"
 pyjwt = {version = ">=2.4.0", extras = ["crypto"]}
+pyyaml = "*"
+sortedcontainers = "*"
+sqlalchemy = "~=1.4"
+trueskill = "*"
+twilio = ">=7.0.0"
 uvloop = {version = "*", markers = "sys_platform != 'win32'"}
 
 [dev-packages]
-pytest = "*"
-pytest-mock = "*"
-pytest-cov = "*"
-pytest-asyncio = "*"
-vulture = "*"
 hypothesis = "<=6.47.1"  # Later versions add a prerelease dependency. See https://github.com/pypa/pipenv/issues/1760
 pdoc3 = "*"
+pytest = "*"
+pytest-asyncio = "*"
+pytest-cov = "*"
+pytest-mock = "*"
+vulture = "*"
 
 [requires]
 python_version = "3.9"
