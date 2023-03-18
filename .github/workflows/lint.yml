@@ -24,3 +24,13 @@ jobs:
         run: pip install isort
 
       - run: isort . --check --diff
+
+  flake8:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: TrueBrain/actions-flake8@v2
+        with:
+          flake8_version: 6.0.0
+          plugins: flake8-quotes~=3.3
