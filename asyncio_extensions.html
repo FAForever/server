@@ -94,8 +94,8 @@ class SpinLock(_ContextManagerMixin):
 
     def __repr__(self) -&gt; str:
         res = super().__repr__()
-        extra = &#39;locked&#39; if self._locked else &#39;unlocked&#39;
-        return f&#39;&lt;{res[1:-1]} [{extra}]&gt;&#39;
+        extra = &#34;locked&#34; if self._locked else &#34;unlocked&#34;
+        return f&#34;&lt;{res[1:-1]} [{extra}]&gt;&#34;
 
     def locked(self) -&gt; bool:
         &#34;&#34;&#34;Return True if lock is acquired.&#34;&#34;&#34;
@@ -119,7 +119,7 @@ class SpinLock(_ContextManagerMixin):
         if self._locked:
             self._locked = False
         else:
-            raise RuntimeError(&#39;Lock is not acquired.&#39;)
+            raise RuntimeError(&#34;Lock is not acquired.&#34;)
 
 
 class _partial(object):
@@ -446,8 +446,8 @@ concurrent access is unlikely.</p></div>
 
     def __repr__(self) -&gt; str:
         res = super().__repr__()
-        extra = &#39;locked&#39; if self._locked else &#39;unlocked&#39;
-        return f&#39;&lt;{res[1:-1]} [{extra}]&gt;&#39;
+        extra = &#34;locked&#34; if self._locked else &#34;unlocked&#34;
+        return f&#34;&lt;{res[1:-1]} [{extra}]&gt;&#34;
 
     def locked(self) -&gt; bool:
         &#34;&#34;&#34;Return True if lock is acquired.&#34;&#34;&#34;
@@ -471,7 +471,7 @@ concurrent access is unlikely.</p></div>
         if self._locked:
             self._locked = False
         else:
-            raise RuntimeError(&#39;Lock is not acquired.&#39;)</code></pre>
+            raise RuntimeError(&#34;Lock is not acquired.&#34;)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -531,7 +531,7 @@ sets it to locked and returns True.</p></div>
     if self._locked:
         self._locked = False
     else:
-        raise RuntimeError(&#39;Lock is not acquired.&#39;)</code></pre>
+        raise RuntimeError(&#34;Lock is not acquired.&#34;)</code></pre>
 </details>
 </dd>
 </dl>
