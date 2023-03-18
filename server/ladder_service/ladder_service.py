@@ -14,7 +14,7 @@ import humanize
 from sqlalchemy import and_, func, select, text, true
 
 from server import metrics
-from server.config import config
+from server.config import MAP_POOL_RATING_SELECTION_FUNCTIONS, config
 from server.core import Service
 from server.db import FAFDatabase
 from server.db.models import (
@@ -499,10 +499,17 @@ class LadderService(Service):
                 queue.id,
                 limit=config.LADDER_ANTI_REPETITION_LIMIT
             )
-            rating = min(
-                player.ratings[queue.rating_type].displayed()
-                for player in all_players
+
+            def get_displayed_rating(player: Player) -> float:
+                return player.ratings[queue.rating_type].displayed()
+
+            ratings = (get_displayed_rating(player) for player in all_players)
+            func = MAP_POOL_RATING_SELECTION_FUNCTIONS.get(
+                config.MAP_POOL_RATING_SELECTION,
+                statistics.mean
             )
+            rating = func(ratings)
+
             pool = queue.get_map_pool_for_rating(rating)
             if not pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
@@ -521,11 +528,8 @@ class LadderService(Service):
             game.map_file_path = map_path
             game.set_name_unchecked(game_name(team1, team2))
 
-            def get_player_mean(player: Player) -> float:
-                return player.ratings[queue.rating_type].mean
-
-            team1 = sorted(team1, key=get_player_mean)
-            team2 = sorted(team2, key=get_player_mean)
+            team1 = sorted(team1, key=get_displayed_rating)
+            team2 = sorted(team2, key=get_displayed_rating)
 
             # Shuffle the teams such that direct opponents remain the same
             zipped_teams = list(zip(team1, team2))
