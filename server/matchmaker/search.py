@@ -151,6 +151,11 @@ class Search:
                 self._failed_matching_attempts * config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_STEP,
                 config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX
             )
+        elif self.has_newbie():
+            return min(
+                self._failed_matching_attempts * config.LADDER_NEWBIE_SEARCH_EXPANSION_STEP,
+                config.LADDER_NEWBIE_SEARCH_EXPANSION_MAX
+            )
         else:
             return min(
                 self._failed_matching_attempts * config.LADDER_SEARCH_EXPANSION_STEP,
@@ -257,7 +262,7 @@ class Search:
     def __str__(self) -> str:
         return (
             f"Search({self.rating_type}, {self._players_repr()}, threshold="
-            f"{self.match_threshold:.2}, expansion={self.search_expansion:.2})"
+            f"{self.match_threshold:.2f}, expansion={self.search_expansion:.2f})"
         )
 
     def _players_repr(self) -> str:

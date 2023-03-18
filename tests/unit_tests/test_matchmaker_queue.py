@@ -90,20 +90,21 @@ def test_search_threshold(player_factory, rating):
 def test_search_threshold_of_single_old_players_is_high(player_factory):
     old_player = player_factory("experienced_player", ladder_rating=(1500, 50))
     s = Search([old_player])
-    assert s.match_threshold >= 0.6
+    assert s.match_threshold >= 0.7
 
 
 def test_search_threshold_of_team_old_players_is_high(player_factory):
     old_player = player_factory("experienced_player", ladder_rating=(1500, 50))
     another_old_player = player_factory("another experienced_player", ladder_rating=(1600, 60))
     s = Search([old_player, another_old_player])
-    assert s.match_threshold >= 0.6
+    assert s.match_threshold >= 0.7
 
 
 def test_search_threshold_of_single_new_players_is_low(player_factory):
     new_player = player_factory("new_player", ladder_rating=(1500, 500), ladder_games=1)
     s = Search([new_player])
     assert s.match_threshold <= 0.4
+    assert s.match_threshold > 0.3
 
 
 def test_search_threshold_of_team_new_players_is_low(player_factory):
@@ -111,6 +112,23 @@ def test_search_threshold_of_team_new_players_is_low(player_factory):
     another_new_player = player_factory("another_new_player", ladder_rating=(1450, 450), ladder_games=1)
     s = Search([new_player, another_new_player])
     assert s.match_threshold <= 0.4
+    assert s.match_threshold > 0.3
+
+
+def test_search_threshold_of_single_not_so_new_players_is_higher(player_factory):
+    # This is roughly the deviation minimum after 10 games
+    new_player = player_factory("new_player", ladder_rating=(1500, 150), ladder_games=10)
+    s = Search([new_player])
+    assert s.match_threshold <= 0.7
+    assert s.match_threshold > 0.6
+
+
+def test_search_threshold_of_single_new_players_reaches_zero(player_factory):
+    new_player = player_factory("new_player", ladder_rating=(1500, 250), ladder_games=1)
+    s = Search([new_player])
+    for _ in range(100):
+        s.register_failed_matching_attempt()
+    assert s.match_threshold == 0
 
 
 @given(rating1=st_rating(), rating2=st_rating())
@@ -209,6 +227,25 @@ def test_search_expansion_for_top_players(matchmaker_players):
     s1.register_failed_matching_attempt()
     assert e1 == s1.search_expansion
     assert e1 == config.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX
+
+
+def test_search_expansion_for_newbies(matchmaker_players):
+    p1 = matchmaker_players[5]
+    s1 = Search([p1])
+
+    assert s1.search_expansion == 0.0
+
+    s1.register_failed_matching_attempt()
+    assert s1.search_expansion == config.LADDER_NEWBIE_SEARCH_EXPANSION_STEP
+
+    # Make sure that the expansion stops at some point
+    for _ in range(100):
+        s1.register_failed_matching_attempt()
+    e1 = s1.search_expansion
+
+    s1.register_failed_matching_attempt()
+    assert e1 == s1.search_expansion
+    assert e1 == config.LADDER_NEWBIE_SEARCH_EXPANSION_MAX
 
 
 async def test_search_await(matchmaker_players):

@@ -225,6 +225,93 @@ def test_stable_marriage_matches_new_players_with_new_and_old_with_old_if_same_m
     assert matches[old1] == old2
 
 
+def test_newbies_with_big_rating_difference_are_matched_after_failed_matching(player_factory):
+    new1 = Search([player_factory(1500, 500, name="new1", ladder_games=0)])
+    # this is the lower boundary of the typical rating ranges that people have after 10 games
+    new2 = Search([player_factory(100, 160, name="new2", ladder_games=config.NEWBIE_MIN_GAMES)])
+
+    searches = [new1, new2]
+
+    team_size = 1
+    matchmaker = stable_marriage.StableMarriageMatchmaker()
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
+
+    assert len(matches) == 0
+    assert len(unmatched_searches) == 2
+
+    for _ in range(6):
+        new1.register_failed_matching_attempt()
+        new2.register_failed_matching_attempt()
+
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
+
+    assert len(matches) == 1
+    assert len(unmatched_searches) == 0
+
+
+def test_newbies_with_big_rating_difference_are_matched_after_failed_matching2(player_factory):
+    # keep the rating interpolation in mind
+    new1 = Search([player_factory(1500, 500, name="new1", ladder_games=0)])
+    # this is the upper boundary of the typical rating ranges that people have after 10 games
+    new2 = Search([player_factory(1300, 160, name="new2", ladder_games=config.NEWBIE_MIN_GAMES)])
+
+    searches = [new1, new2]
+
+    team_size = 1
+    matchmaker = stable_marriage.StableMarriageMatchmaker()
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
+
+    assert len(matches) == 0
+    assert len(unmatched_searches) == 2
+
+    for _ in range(6):
+        new1.register_failed_matching_attempt()
+        new2.register_failed_matching_attempt()
+
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
+
+    assert len(matches) == 1
+    assert len(unmatched_searches) == 0
+
+
+def test_stable_marriage_does_not_match_new_and_old_players_with_big_rating_difference(player_factory):
+    new = Search([player_factory(1500, 500, name="new", ladder_games=0)])
+    old = Search([player_factory(1000, 75, name="old", ladder_games=100)])
+
+    searches = [new, old]
+
+    for _ in range(100):
+        new.register_failed_matching_attempt()
+        old.register_failed_matching_attempt()
+
+    team_size = 1
+    matchmaker = stable_marriage.StableMarriageMatchmaker()
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
+
+    assert len(matches) == 0
+    assert len(unmatched_searches) == 2
+
+
+def test_newbies_are_matched_with_newbies(player_factory):
+    newbie1 = Search([player_factory(0, 500, ladder_games=9)])
+    newbie2 = Search([player_factory(750, 500, ladder_games=9)])
+    pro = Search([player_factory(1500, 70, ladder_games=100)])
+
+    for _ in range(6):
+        newbie1.register_failed_matching_attempt()
+        newbie2.register_failed_matching_attempt()
+        pro.register_failed_matching_attempt()
+
+    searches = [newbie1, pro, newbie2]
+    team_size = 1
+    matchmaker = stable_marriage.StableMarriageMatchmaker()
+    matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
+    match_sets = [set(pair) for pair in matches]
+
+    assert {newbie1, newbie2} in match_sets
+    assert unmatched_searches == [pro]
+
+
 def test_stable_marriage_better_than_greedy(player_factory):
     s1 = Search([player_factory(2300, 64, name="p1")])
     s2 = Search([player_factory(2000, 64, name="p2")])
@@ -265,193 +352,10 @@ def test_stable_marriage_unmatch(player_factory):
     assert matches[s2] == s3  # quality: 0.96623
 
 
-def test_random_newbie_matching_is_symmetric(player_factory):
-    s1 = Search([player_factory(1000, 500, name="p1", ladder_games=5)])
-    s2 = Search([player_factory(1200, 500, name="p2", ladder_games=5)])
-    s3 = Search([player_factory(900, 500, name="p3", ladder_games=5)])
-    s4 = Search([player_factory(1500, 500, name="p4", ladder_games=5)])
-    s5 = Search([player_factory(1700, 500, name="p5", ladder_games=5)])
-    s6 = Search([player_factory(600, 500, name="p6", ladder_games=5)])
-
-    searches = [s1, s2, s3, s4, s5, s6]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-
-    assert len(matches) == len(searches)
-    assert len(unmatched_searches) == 0
-
-    for search in matches:
-        opponent = matches[search]
-        assert matches[opponent] == search
-
-
-def test_newbies_are_forcefully_matched_with_newbies(player_factory):
-    newbie1 = Search([player_factory(0, 500, ladder_games=9)])
-    newbie2 = Search([player_factory(1500, 500, ladder_games=9)])
-    pro = Search([player_factory(1500, 10, ladder_games=100)])
-    pro.register_failed_matching_attempt()
-
-    searches = [newbie1, pro, newbie2]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-
-    assert matches[newbie1] == newbie2
-    assert matches[newbie2] == newbie1
-    assert unmatched_searches == [pro]
-
-
-def test_newbie_team_matched_with_newbie_team(player_factory):
-    newbie1 = Search([
-        player_factory(0, 500, ladder_games=9),
-        player_factory(0, 500, ladder_games=9)
-    ])
-    newbie2 = Search([
-        player_factory(1500, 500, ladder_games=9),
-        player_factory(1500, 500, ladder_games=9)
-    ])
-
-    searches = [newbie1, newbie2]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-
-    assert matches[newbie1] == newbie2
-    assert matches[newbie2] == newbie1
-    assert len(unmatched_searches) == 0
-
-
-def test_partial_newbie_team_matched_with_newbie_team(player_factory):
-    partial_newbie = Search([
-        player_factory(0, 500, ladder_games=9),
-        player_factory(0, 500, ladder_games=100)
-    ])
-    newbie = Search([
-        player_factory(1500, 500, ladder_games=9),
-        player_factory(1500, 500, ladder_games=9)
-    ])
-
-    searches = [partial_newbie, newbie]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-
-    assert matches[partial_newbie] == newbie
-    assert matches[newbie] == partial_newbie
-    assert len(unmatched_searches) == 0
-
-
-def test_newbie_and_top_rated_team_not_matched_randomly(player_factory):
-    newbie_and_top_rated = Search([
-        player_factory(0, 500, ladder_games=9),
-        player_factory(2500, 10, ladder_games=1000)
-    ])
-    newbie = Search([
-        player_factory(1500, 500, ladder_games=9),
-        player_factory(1500, 500, ladder_games=9)
-    ])
-
-    searches = [newbie_and_top_rated, newbie]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-
-    assert not matches
-    assert len(unmatched_searches) == len(searches)
-
-
-def test_unmatched_newbies_forcefully_match_pros(player_factory):
-    newbie = Search([player_factory(1500, 500, ladder_games=0)])
-    pro = Search([player_factory(1400, 10, ladder_games=100)])
-
-    searches = [newbie, pro]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-    # No match if the pro is on their first attempt
-    assert len(matches) == 0
-    assert len(unmatched_searches) == 2
-
-    pro.register_failed_matching_attempt()
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-    assert len(matches) == 2
-    assert len(unmatched_searches) == 0
-
-
-def test_newbie_team_matched_with_pro_team(player_factory):
-    newbie = Search([
-        player_factory(1500, 500, ladder_games=0),
-        player_factory(1500, 500, ladder_games=0)
-    ])
-    pro = Search([
-        player_factory(1400, 10, ladder_games=100),
-        player_factory(1400, 10, ladder_games=100)
-    ])
-
-    searches = [newbie, pro]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-    # No match if the pros are on their first attempt
-    assert len(matches) == 0
-    assert len(unmatched_searches) == 2
-
-    pro.register_failed_matching_attempt()
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-    assert len(matches) == 2
-    assert len(unmatched_searches) == 0
-
-
-def test_unmatched_newbies_do_not_forcefully_match_top_players(player_factory):
-    newbie = Search([player_factory(1500, 500, ladder_games=0)])
-    top_player = Search([player_factory(2500, 10, ladder_games=100)])
-    top_player.register_failed_matching_attempt()
-
-    searches = [newbie, top_player]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-
-    assert len(matches) == 0
-    assert len(unmatched_searches) == 2
-
-
-def test_newbie_team_dos_not_match_with_top_players_team(player_factory):
-    newbie = Search([
-        player_factory(1500, 500, ladder_games=0),
-        player_factory(1500, 500, ladder_games=0)
-    ])
-    top_player = Search([
-        player_factory(2500, 10, ladder_games=100),
-        player_factory(2500, 10, ladder_games=100)
-    ])
-    top_player.register_failed_matching_attempt()
-
-    searches = [newbie, top_player]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-
-    assert len(matches) == 0
-    assert len(unmatched_searches) == 2
-
-
-def unmatched_newbie_teams_do_not_forcefully_match_pros(player_factory):
-    newbie_team = Search([
-        player_factory(1500, 500, ladder_games=0),
-        player_factory(1500, 500, ladder_games=0)
-    ])
-    pro = Search([player_factory(1800, 10, ladder_games=100)])
-    pro.register_failed_matching_attempt()
-
-    searches = [newbie_team, pro]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-
-    assert len(matches) == 0
-    assert len(unmatched_searches) == 2
-
-
-def test_odd_number_of_unmatched_newbies(player_factory):
-    newbie1 = Search([player_factory(-250, 500, ladder_games=9)])
-    newbie2 = Search([player_factory(750, 500, ladder_games=9)])
-    newbie3 = Search([player_factory(1500, 500, ladder_games=9)])
-    pro = Search([player_factory(1500, 70, ladder_games=100)])
-    pro.register_failed_matching_attempt()
-
-    searches = [newbie1, pro, newbie2, newbie3]
-    matches, unmatched_searches = stable_marriage.RandomlyMatchNewbies().find(searches)
-
-    assert len(matches) == 4
-    assert len(unmatched_searches) == 0
-
-
 def test_matchmaker(player_factory):
     newbie_that_matches1 = Search([player_factory(1450, 500, ladder_games=1)])
     newbie_that_matches2 = Search([player_factory(1550, 500, ladder_games=1)])
-    newbie_force_matched = Search([player_factory(200, 400, ladder_games=9)])
+    newbie_alone = Search([player_factory(200, 400, ladder_games=9)])
 
     pro_that_matches1 = Search([player_factory(1800, 60, ladder_games=101)])
     pro_that_matches1.register_failed_matching_attempt()
@@ -466,7 +370,7 @@ def test_matchmaker(player_factory):
     searches = [
         newbie_that_matches1,
         newbie_that_matches2,
-        newbie_force_matched,
+        newbie_alone,
         pro_that_matches1,
         pro_that_matches2,
         pro_alone,
@@ -479,9 +383,11 @@ def test_matchmaker(player_factory):
 
     assert {newbie_that_matches1, newbie_that_matches2} in match_sets
     assert {pro_that_matches1, pro_that_matches2} in match_sets
-    assert {newbie_force_matched, pro_alone} in match_sets
-    assert unmatched_searches == [top_player]
+    assert {newbie_alone, pro_alone} not in match_sets
+    assert set(unmatched_searches) == {newbie_alone, pro_alone, top_player}
     for match_pair in match_pairs:
+        assert newbie_alone not in match_pair
+        assert pro_alone not in match_pair
         assert top_player not in match_pair
 
 
@@ -500,23 +406,9 @@ def test_matchmaker_performance(player_factory, bench, caplog):
     assert bench.elapsed() < 0.5
 
 
-def test_matchmaker_random_only(player_factory):
-    newbie1 = Search([player_factory(1550, 500, ladder_games=1)])
-    newbie2 = Search([player_factory(200, 400, ladder_games=9)])
-
-    searches = (newbie1, newbie2)
-    team_size = 1
-    matchmaker = stable_marriage.StableMarriageMatchmaker()
-    match_pairs, unmatched_searches = matchmaker.find(searches, team_size, 1000)
-    match_sets = [set(pair) for pair in match_pairs]
-
-    assert {newbie1, newbie2} in match_sets
-    assert len(unmatched_searches) == 0
-
-
 def test_find_will_not_match_low_quality_games(player_factory):
-    s1 = Search([player_factory(100, 64, name="p1")])
-    s2 = Search([player_factory(2000, 64, name="p2")])
+    s1 = Search([player_factory(1000, 64, name="p1")])
+    s2 = Search([player_factory(1300, 64, name="p2")])
 
     searches = [s1, s2]
 
@@ -530,14 +422,14 @@ def test_find_will_not_match_low_quality_games(player_factory):
 
 def test_unmatched_searches_without_newbies(player_factory):
     players = [
-        player_factory(100, 10, name="lowRating_unmatched_1"),
-        player_factory(500, 10, name="lowRating_unmatched_2"),
-        player_factory(1500, 10, name="midRating_matched_1"),
-        player_factory(1500, 10, name="midRating_matched_2"),
-        player_factory(1500, 10, name="midRating_matched_3"),
-        player_factory(1500, 10, name="midRating_matched_4"),
-        player_factory(2000, 10, name="highRating_unmatched_1"),
-        player_factory(2500, 10, name="highRating_unmatched_2"),
+        player_factory(100, 70, name="lowRating_unmatched_1"),
+        player_factory(500, 70, name="lowRating_unmatched_2"),
+        player_factory(1500, 70, name="midRating_matched_1"),
+        player_factory(1500, 70, name="midRating_matched_2"),
+        player_factory(1500, 70, name="midRating_matched_3"),
+        player_factory(1500, 70, name="midRating_matched_4"),
+        player_factory(2000, 70, name="highRating_unmatched_1"),
+        player_factory(2500, 70, name="highRating_unmatched_2"),
     ]
     searches = [Search([player]) for player in players]
 
@@ -552,29 +444,25 @@ def test_unmatched_searches_without_newbies(player_factory):
 
 def test_unmatched_searches_with_newbies(player_factory):
     players = [
-        player_factory(100, 10, name="newbie1", ladder_games=1),
-        player_factory(200, 10, name="newbie2", ladder_games=1),
-        player_factory(300, 10, name="newbie3", ladder_games=1),
-        player_factory(400, 10, name="newbie4", ladder_games=1),
-        player_factory(500, 10, name="newbie5", ladder_games=1),
-        player_factory(1500, 10, name="midRating_matched_1"),
-        player_factory(1500, 10, name="midRating_matched_2"),
-        player_factory(1500, 10, name="midRating_matched_3"),
-        player_factory(1500, 10, name="midRating_matched_4"),
-        player_factory(2000, 10, name="highRating_unmatched_1"),
-        player_factory(2500, 10, name="highRating_unmatched_2"),
+        player_factory(100, 70, name="newbie1", ladder_games=1),
+        player_factory(200, 70, name="newbie2", ladder_games=1),
+        player_factory(300, 70, name="newbie3", ladder_games=1),
+        player_factory(400, 70, name="newbie4", ladder_games=1),
+        player_factory(500, 70, name="newbie5", ladder_games=1),
+        player_factory(750, 70, name="lowRating_unmatched_1"),
+        player_factory(1500, 70, name="midRating_matched_1"),
+        player_factory(1500, 70, name="midRating_matched_2"),
+        player_factory(1500, 70, name="midRating_matched_3"),
+        player_factory(1500, 70, name="midRating_matched_4"),
+        player_factory(2000, 70, name="highRating_unmatched_1"),
+        player_factory(2500, 70, name="highRating_unmatched_2"),
     ]
     searches = [Search([player]) for player in players]
-
-    force_matched_player = player_factory(750, 10, name="lowRating_unmatched_1")
-    force_matched_search = Search([force_matched_player])
-    force_matched_search.register_failed_matching_attempt()
-    searches.append(force_matched_search)
 
     team_size = 1
     matchmaker = stable_marriage.StableMarriageMatchmaker()
     matches, unmatched_searches = matchmaker.find(searches, team_size, 1000)
 
-    expected_number_of_matches = 5
+    expected_number_of_matches = 4
     assert len(matches) == expected_number_of_matches
     assert len(unmatched_searches) == len(searches) - 2 * team_size * expected_number_of_matches

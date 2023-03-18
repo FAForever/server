@@ -6,7 +6,6 @@ from typing import Iterable
 from ...decorators import with_logger
 from ..search import Match, Search
 from .matchmaker import Matchmaker, MatchmakingPolicy1v1
-from .random_newbies import RandomlyMatchNewbies
 
 WeightedGraph = dict[Search, list[tuple[Search, float]]]
 
@@ -100,13 +99,9 @@ class StableMarriageMatchmaker(Matchmaker):
         _MatchingGraph.remove_isolated(ranks)
         matches.update(StableMarriage().find(ranks))
 
-        remaining_searches = [
+        unmatched_searches = [
             search for search in searches if search not in matches
         ]
-        self._logger.debug("Matching randomly for remaining newbies...")
-
-        randomly_matched_newbies, unmatched_searches = RandomlyMatchNewbies().find(remaining_searches)
-        matches.update(randomly_matched_newbies)
 
         return self._remove_duplicates(matches), unmatched_searches
 

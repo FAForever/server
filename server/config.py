@@ -137,6 +137,8 @@ class ConfigurationStore:
         self.LADDER_SEARCH_EXPANSION_STEP = 0.05
         self.LADDER_TOP_PLAYER_SEARCH_EXPANSION_MAX = 0.3
         self.LADDER_TOP_PLAYER_SEARCH_EXPANSION_STEP = 0.15
+        self.LADDER_NEWBIE_SEARCH_EXPANSION_MAX = 0.6
+        self.LADDER_NEWBIE_SEARCH_EXPANSION_STEP = 0.1
         # The method for choosing map pool rating
         # Can be "mean", "min", or "max"
         self.MAP_POOL_RATING_SELECTION = "mean"
