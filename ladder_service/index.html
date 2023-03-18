@@ -452,26 +452,15 @@ class LadderService(Service):
                     &#34;command&#34;: &#34;notice&#34;,
                     &#34;style&#34;: &#34;info&#34;,
                     &#34;text&#34;: (
-                        &#34;&lt;i&gt;Welcome to the matchmaker&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Until &#34;
-                        &#34;you&#39;ve played enough games for the system to learn &#34;
-                        &#34;your skill level, you&#39;ll be matched randomly.&lt;/b&gt;&lt;br&gt;&#34;
+                        &#34;&lt;i&gt;Welcome to the matchmaker&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;The &#34;
+                        &#34;matchmaking system needs to calibrate your skill level; &#34;
+                        &#34;your first few games may be more imbalanced as the &#34;
+                        &#34;system attempts to learn your capability as a player.&#34;
+                        &#34;&lt;/b&gt;&lt;br&gt;&lt;b&gt;&#34;
                         &#34;Afterwards, you&#39;ll be more reliably matched up with &#34;
                         &#34;people of your skill level: so don&#39;t worry if your &#34;
                         &#34;first few games are uneven. This will improve as you &#34;
                         &#34;play!&lt;/b&gt;&#34;
-                    )
-                })
-            elif deviation &gt; 250:
-                progress = (500.0 - deviation) / 2.5
-                player.write_message({
-                    &#34;command&#34;: &#34;notice&#34;,
-                    &#34;style&#34;: &#34;info&#34;,
-                    &#34;text&#34;: (
-                        &#34;The matchmaking system is calibrating your skill level; &#34;
-                        &#34;your first few games may be slightly more imbalanced &#34;
-                        &#34;as the system attempts to learn your capability as a player.&#34;
-                        &#34;&lt;br&gt;&lt;br&gt;&#34;
-                        f&#34;&lt;b&gt;The learning phase is {progress:.0f}% completed&lt;/b&gt;&#34;
                     )
                 })
 
@@ -1309,26 +1298,15 @@ so it should only perform fast operations.</p></div>
                 &#34;command&#34;: &#34;notice&#34;,
                 &#34;style&#34;: &#34;info&#34;,
                 &#34;text&#34;: (
-                    &#34;&lt;i&gt;Welcome to the matchmaker&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Until &#34;
-                    &#34;you&#39;ve played enough games for the system to learn &#34;
-                    &#34;your skill level, you&#39;ll be matched randomly.&lt;/b&gt;&lt;br&gt;&#34;
+                    &#34;&lt;i&gt;Welcome to the matchmaker&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;The &#34;
+                    &#34;matchmaking system needs to calibrate your skill level; &#34;
+                    &#34;your first few games may be more imbalanced as the &#34;
+                    &#34;system attempts to learn your capability as a player.&#34;
+                    &#34;&lt;/b&gt;&lt;br&gt;&lt;b&gt;&#34;
                     &#34;Afterwards, you&#39;ll be more reliably matched up with &#34;
                     &#34;people of your skill level: so don&#39;t worry if your &#34;
                     &#34;first few games are uneven. This will improve as you &#34;
                     &#34;play!&lt;/b&gt;&#34;
-                )
-            })
-        elif deviation &gt; 250:
-            progress = (500.0 - deviation) / 2.5
-            player.write_message({
-                &#34;command&#34;: &#34;notice&#34;,
-                &#34;style&#34;: &#34;info&#34;,
-                &#34;text&#34;: (
-                    &#34;The matchmaking system is calibrating your skill level; &#34;
-                    &#34;your first few games may be slightly more imbalanced &#34;
-                    &#34;as the system attempts to learn your capability as a player.&#34;
-                    &#34;&lt;br&gt;&lt;br&gt;&#34;
-                    f&#34;&lt;b&gt;The learning phase is {progress:.0f}% completed&lt;/b&gt;&#34;
                 )
             })</code></pre>
 </details>
