@@ -170,7 +170,7 @@ async def lobby_server_factory(
             context.__connected_client_protos = []
         player_service.is_uniqueid_exempt = lambda id: True
 
-        return contexts
+        return instance, contexts
 
     mock_policy = mock.patch(
         "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
@@ -190,7 +190,7 @@ async def lobby_server_factory(
 
 
 @pytest.fixture
-async def lobby_contexts(lobby_server_factory):
+async def lobby_setup(lobby_server_factory):
     return await lobby_server_factory({
         "qstream": {
             "ADDRESS": "127.0.0.1",
@@ -206,7 +206,7 @@ async def lobby_contexts(lobby_server_factory):
 
 
 @pytest.fixture
-async def lobby_contexts_proxy(lobby_server_factory):
+async def lobby_setup_proxy(lobby_server_factory):
     return await lobby_server_factory({
         "qstream": {
             "ADDRESS": "127.0.0.1",
@@ -223,8 +223,28 @@ async def lobby_contexts_proxy(lobby_server_factory):
     })
 
 
+@pytest.fixture
+def lobby_instance(lobby_setup):
+    instance, _ = lobby_setup
+    return instance
+
+
+@pytest.fixture
+def lobby_contexts(lobby_setup):
+    _, contexts = lobby_setup
+    return contexts
+
+
+@pytest.fixture
+def lobby_contexts_proxy(lobby_setup_proxy):
+    _, contexts = lobby_setup_proxy
+    return contexts
+
+
+# TODO: This fixture is poorly named since it returns a ServerContext, however,
+# it is used in almost every tests, so renaming it is a large task.
 @pytest.fixture(params=("qstream", "json"))
-def lobby_server(request, lobby_contexts):
+def lobby_server(request, lobby_contexts) -> ServerContext:
     yield lobby_contexts[request.param]
 
 
@@ -234,10 +254,9 @@ def lobby_server_proxy(request, lobby_contexts_proxy):
 
 
 @pytest.fixture
-async def control_server(player_service, game_service):
+async def control_server(lobby_instance):
     server = ControlServer(
-        game_service,
-        player_service,
+        lobby_instance,
         "127.0.0.1",
         config.CONTROL_SERVER_PORT
     )

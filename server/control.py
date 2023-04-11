@@ -2,6 +2,7 @@
 Tiny http server for introspecting state
 """
 
+import http
 import socket
 from json import dumps
 
@@ -9,21 +10,19 @@ from aiohttp import web
 
 from .config import config
 from .decorators import with_logger
-from .game_service import GameService
-from .player_service import PlayerService
 
 
 @with_logger
 class ControlServer:
     def __init__(
         self,
-        game_service: GameService,
-        player_service: PlayerService,
+        lobby_server: "ServerInstance",
         host: str,
         port: int
     ):
-        self.game_service = game_service
-        self.player_service = player_service
+        self.lobby_server = lobby_server
+        self.game_service = lobby_server.services["game_service"]
+        self.player_service = lobby_server.services["player_service"]
         self.host = host
         self.port = port
 
@@ -32,7 +31,9 @@ class ControlServer:
 
         self.app.add_routes([
             web.get("/games", self.games),
-            web.get("/players", self.players)
+            web.get("/players", self.players),
+            # Healthcheck endpoints
+            web.get("/ready", self.ready)
         ])
 
     async def start(self) -> None:
@@ -54,18 +55,25 @@ class ControlServer:
         body = dumps(to_dict_list(self.player_service.all_players))
         return web.Response(body=body.encode(), content_type="application/json")
 
+    async def ready(self, request):
+        code_map = {
+            True: http.HTTPStatus.OK.value,
+            False: http.HTTPStatus.SERVICE_UNAVAILABLE.value
+        }
 
-async def run_control_server(
-    player_service: PlayerService,
-    game_service: GameService
-) -> ControlServer:
+        return web.Response(
+            status=code_map[self.lobby_server.started]
+        )
+
+
+async def run_control_server(lobby_server: "ServerInstance") -> ControlServer:
     """
     Initialize the http control server
     """
     host = socket.gethostbyname(socket.gethostname())
     port = config.CONTROL_SERVER_PORT
 
-    ctrl_server = ControlServer(game_service, player_service, host, port)
+    ctrl_server = ControlServer(lobby_server, host, port)
     await ctrl_server.start()
 
     return ctrl_server

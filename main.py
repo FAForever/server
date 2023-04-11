@@ -98,18 +98,15 @@ async def main():
     config.register_callback("PROFILING_DURATION", profiler.refresh)
     config.register_callback("PROFILING_INTERVAL", profiler.refresh)
 
-    await instance.start_services()
+    ctrl_server = await server.run_control_server(instance)
 
-    ctrl_server = await server.run_control_server(player_service, game_service)
+    await instance.start_services()
 
     async def restart_control_server():
         nonlocal ctrl_server
 
         await ctrl_server.shutdown()
-        ctrl_server = await server.run_control_server(
-            player_service,
-            game_service
-        )
+        ctrl_server = await server.run_control_server(instance)
     config.register_callback("CONTROL_SERVER_PORT", restart_control_server)
 
     PROTO_CLASSES = {
