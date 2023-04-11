@@ -94,7 +94,7 @@ from prometheus_client import start_http_server
 
 import server.metrics as metrics
 
-from .asyncio_extensions import synchronizedmethod
+from .asyncio_extensions import map_suppress, synchronizedmethod
 from .broadcast_service import BroadcastService
 from .config import TRACE, config
 from .configuration_service import ConfigurationService
@@ -274,39 +274,40 @@ class ServerInstance(object):
         return ctx
 
     async def shutdown(self):
-        results = await asyncio.gather(
-            *(ctx.stop() for ctx in self.contexts),
-            return_exceptions=True
-        )
-        for result, ctx in zip(results, self.contexts):
-            if isinstance(result, BaseException):
-                self._logger.exception(
-                    "Unexpected error when stopping context %s",
-                    ctx,
-                    exc_info=result
-                )
+        """
+        Immediately shutdown the server.
 
-        results = await asyncio.gather(
-            *(service.shutdown() for service in self.services.values()),
-            return_exceptions=True
-        )
-        for result, service in zip(results, self.services.values()):
-            if isinstance(result, BaseException):
-                self._logger.error(
-                    "Unexpected error when shutting down service %s",
-                    service
-                )
-
-        results = await asyncio.gather(
-            *(ctx.shutdown() for ctx in self.contexts),
-            return_exceptions=True
-        )
-        for result, ctx in zip(results, self.contexts):
-            if isinstance(result, BaseException):
-                self._logger.error(
-                    "Unexpected error when shutting down context %s",
-                    ctx
-                )
+        1. Stop accepting new connections
+        2. Stop all services and notify players of shutdown
+        3. Close all existing connections
+        """
+        await self._stop_contexts()
+        await self._shutdown_services()
+        await self._shutdown_contexts()
 
         self.contexts.clear()
         self.started = False
+
+    async def _shutdown_services(self):
+        await map_suppress(
+            lambda service: service.shutdown(),
+            self.services.values(),
+            logger=self._logger,
+            msg="when shutting down service "
+        )
+
+    async def _stop_contexts(self):
+        await map_suppress(
+            lambda ctx: ctx.stop(),
+            self.contexts,
+            logger=self._logger,
+            msg="when stopping context "
+        )
+
+    async def _shutdown_contexts(self):
+        await map_suppress(
+            lambda ctx: ctx.shutdown(),
+            self.contexts,
+            logger=self._logger,
+            msg="when shutting down context "
+        )

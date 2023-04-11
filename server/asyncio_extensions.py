@@ -12,8 +12,10 @@ from typing import (
     AsyncContextManager,
     Callable,
     Coroutine,
+    Iterable,
     Optional,
     Protocol,
+    TypeVar,
     cast,
     overload
 )
@@ -22,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 AsyncFunc = Callable[..., Coroutine[Any, Any, Any]]
 AsyncDecorator = Callable[[AsyncFunc], AsyncFunc]
+T = TypeVar("T")
 
 
 class AsyncLock(Protocol, AsyncContextManager["AsyncLock"]):
@@ -30,23 +33,24 @@ class AsyncLock(Protocol, AsyncContextManager["AsyncLock"]):
     def release(self) -> None: ...
 
 
-async def gather_without_exceptions(
-    tasks: list[asyncio.Task],
-    *exceptions: type[BaseException],
-) -> list[Any]:
-    """
-    Run coroutines in parallel, raising the first exception that dosen't
-    match any of the specified exception classes.
-    """
-    results = []
-    for fut in asyncio.as_completed(tasks):
-        try:
-            results.append(await fut)
-        except exceptions:
-            logger.debug(
-                "Ignoring error in gather_without_exceptions", exc_info=True
+async def map_suppress(
+    func: Callable[[T], Coroutine[Any, Any, Any]],
+    iterable: Iterable[T],
+    logger: logging.Logger = logger,
+    msg: str = ""
+):
+    results = await asyncio.gather(
+        *(func(item) for item in iterable),
+        return_exceptions=True
+    )
+    for result, item in zip(results, iterable):
+        if isinstance(result, BaseException):
+            logger.exception(
+                "Unexpected error %s%s",
+                msg,
+                item,
+                exc_info=result
             )
-    return results
 
 
 # Based on python3.8 asyncio.Lock
