@@ -41,6 +41,7 @@ class ServerContext:
         super().__init__()
         self.name = name
         self._server = None
+        self._drain_event = None
         self._connection_factory = connection_factory
         self._services = services
         self.connections: dict[LobbyConnection, Protocol] = {}
@@ -115,6 +116,18 @@ class ServerContext:
         if self._server:
             self._server.close()
             await self._server.wait_closed()
+
+    async def drain_connections(self):
+        """
+        Wait for all connections to terminate.
+        """
+        if not self.connections:
+            return
+
+        if not self._drain_event:
+            self._drain_event = asyncio.Event()
+
+        await self._drain_event.wait()
 
     def write_broadcast(self, message, validate_fn=lambda _: True):
         self.write_broadcast_raw(
@@ -233,6 +246,14 @@ class ServerContext:
                 self.name,
                 connection.get_user_identifier()
             )
+
+            if (
+                self._drain_event is not None
+                and not self._drain_event.is_set()
+                and not self.connections
+            ):
+                self._drain_event.set()
+
             metrics.user_connections.labels(
                 connection.user_agent,
                 connection.version

@@ -307,7 +307,12 @@ class ServerInstance(object):
         """
         Wait for all connections to close.
         """
-        pass
+        await asyncio.wait_for(
+            asyncio.gather(
+                *(ctx.drain_connections() for ctx in self.contexts)
+            ),
+            timeout=config.SHUTDOWN_GRACE_PERIOD
+        )
 
     async def _shutdown_services(self):
         await map_suppress(

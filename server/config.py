@@ -67,6 +67,11 @@ class ConfigurationStore:
 
         self.DIRTY_REPORT_INTERVAL = 1
         self.PING_INTERVAL = 45
+        # How many seconds to wait for games to end before doing a hard shutdown.
+        # If using kubernetes, you must set terminationGracePeriodSeconds
+        # on the pod to be larger than this value. With docker compose, use
+        # --timeout (-t) to set a longer timeout.
+        self.SHUTDOWN_GRACE_PERIOD = 30 * 60
 
         self.CONTROL_SERVER_PORT = 4000
         self.METRICS_PORT = 8011
