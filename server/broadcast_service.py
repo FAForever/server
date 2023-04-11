@@ -116,3 +116,15 @@ class BroadcastService(Service):
 
     def broadcast_ping(self):
         self.server.write_broadcast({"command": "ping"})
+
+    async def shutdown(self):
+        self.server.write_broadcast({
+            "command": "notice",
+            "style": "info",
+            "text": (
+                "The server has been shut down for maintenance "
+                "but should be back online soon. If you experience any "
+                "problems, please restart your client. <br/><br/>"
+                "We apologize for this interruption."
+            )
+        })

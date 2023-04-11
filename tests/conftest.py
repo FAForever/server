@@ -16,6 +16,8 @@ from unittest import mock
 import hypothesis
 import pytest
 
+from server import ServerInstance
+from server.broadcast_service import BroadcastService
 from server.config import TRACE, config
 from server.db import FAFDatabase
 from server.game_service import GameService
@@ -307,6 +309,18 @@ async def player_service(database):
     player_service = PlayerService(database)
     await player_service.initialize()
     return player_service
+
+
+@pytest.fixture
+async def broadcast_service(game_service, message_queue_service, player_service):
+    broadcast_service = BroadcastService(
+        mock.create_autospec(ServerInstance),
+        message_queue_service,
+        game_service,
+        player_service
+    )
+    await broadcast_service.initialize()
+    return broadcast_service
 
 
 @pytest.fixture

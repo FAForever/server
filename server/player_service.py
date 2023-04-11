@@ -2,7 +2,6 @@
 Manages connected and authenticated players
 """
 
-import contextlib
 from typing import Optional, ValuesView
 
 import aiocron
@@ -264,17 +263,6 @@ class PlayerService(Service):
                 "SELECT `user_id` FROM uniqueid_exempt"
             )
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
-
-    async def shutdown(self):
-        for player in self:
-            if player.lobby_connection is not None:
-                with contextlib.suppress(Exception):
-                    player.lobby_connection.write_warning(
-                        "The server has been shut down for maintenance, "
-                        "but should be back online soon. If you experience any "
-                        "problems, please restart your client. <br/><br/>"
-                        "We apologize for this interruption."
-                    )
 
     def on_connection_lost(self, conn: "LobbyConnection") -> None:
         if not conn.player:

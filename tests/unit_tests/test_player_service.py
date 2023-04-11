@@ -1,7 +1,5 @@
 from unittest import mock
 
-from server.lobbyconnection import LobbyConnection
-from server.protocol import DisconnectedError
 from server.rating import RatingType
 
 
@@ -112,27 +110,3 @@ async def test_mark_dirty(player_factory, player_service):
 async def test_update_data(player_service):
     await player_service.update_data()
     assert player_service.is_uniqueid_exempt(1) is True
-
-
-async def test_broadcast_shutdown(player_factory, player_service):
-    player = player_factory()
-    lconn = mock.create_autospec(LobbyConnection)
-    player.lobby_connection = lconn
-    player_service[0] = player
-
-    await player_service.shutdown()
-
-    player.lobby_connection.write_warning.assert_called_once()
-
-
-async def test_broadcast_shutdown_error(player_factory, player_service):
-    player = player_factory()
-    lconn = mock.create_autospec(LobbyConnection)
-    lconn.write_warning.side_effect = DisconnectedError
-    player.lobby_connection = lconn
-
-    player_service[0] = player
-
-    await player_service.shutdown()
-
-    player.lobby_connection.write_warning.assert_called_once()
