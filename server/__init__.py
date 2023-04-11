@@ -273,12 +273,27 @@ class ServerInstance(object):
 
         return ctx
 
+    async def graceful_shutdown(self):
+        """
+        Start a graceful shut down of the server.
+
+        1. Notify all services of graceful shutdown
+        """
+        self._logger.info("Initiating graceful shutdown")
+
+        await map_suppress(
+            lambda service: service.graceful_shutdown(),
+            self.services.values(),
+            logger=self._logger,
+            msg="when starting graceful shutdown of service "
+        )
+
     async def shutdown(self):
         """
         Immediately shutdown the server.
 
         1. Stop accepting new connections
-        2. Stop all services and notify players of shutdown
+        2. Stop all services
         3. Close all existing connections
         """
         await self._stop_contexts()
@@ -287,6 +302,12 @@ class ServerInstance(object):
 
         self.contexts.clear()
         self.started = False
+
+    async def drain(self):
+        """
+        Wait for all connections to close.
+        """
+        pass
 
     async def _shutdown_services(self):
         await map_suppress(

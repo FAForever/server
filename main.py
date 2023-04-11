@@ -150,7 +150,10 @@ async def main():
     shutdown_time = time.perf_counter()
 
     # Cleanup
+    await instance.graceful_shutdown()
+    await instance.drain()
     await instance.shutdown()
+
     await ctrl_server.shutdown()
 
     # Close DB connections
