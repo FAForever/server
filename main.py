@@ -15,6 +15,7 @@ import signal
 import sys
 import time
 from datetime import datetime
+from functools import wraps
 
 import humanize
 from docopt import docopt
@@ -26,6 +27,15 @@ from server.ice_servers.nts import TwilioNTS
 from server.player_service import PlayerService
 from server.profiler import Profiler
 from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
+
+
+def log_signal(func):
+    @wraps(func)
+    def wrapped(sig, frame):
+        logger.info("Received signal %s", signal.Signals(sig))
+        return func(sig, frame)
+
+    return wrapped
 
 
 async def main():
@@ -46,17 +56,14 @@ async def main():
 
     logger.info("Event loop: %s", loop)
 
-    def signal_handler(sig: int, _frame):
-        logger.info(
-            "Received signal %s, shutting down",
-            signal.Signals(sig)
-        )
+    @log_signal
+    def done_handler(sig: int, frame):
         if not done.done():
             done.set_result(0)
 
     # Make sure we can shutdown gracefully
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, done_handler)
+    signal.signal(signal.SIGINT, done_handler)
 
     database = server.db.FAFDatabase(
         host=config.DB_SERVER,
@@ -151,7 +158,19 @@ async def main():
 
     # Cleanup
     await instance.graceful_shutdown()
-    await instance.drain()
+
+    drain_task = asyncio.create_task(instance.drain())
+
+    @log_signal
+    def drain_handler(sig: int, frame):
+        if not drain_task.done():
+            drain_task.cancel()
+
+    # Allow us to force shut down by skipping the drain
+    signal.signal(signal.SIGTERM, drain_handler)
+    signal.signal(signal.SIGINT, drain_handler)
+
+    await drain_task
     await instance.shutdown()
 
     await ctrl_server.shutdown()

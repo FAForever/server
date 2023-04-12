@@ -86,6 +86,7 @@ Distributed under GPLv3, see license.txt
 """
 
 import asyncio
+import contextlib
 import logging
 import time
 from typing import Optional
@@ -296,6 +297,8 @@ class ServerInstance(object):
         2. Stop all services
         3. Close all existing connections
         """
+        self._logger.info("Initiating full shutdown")
+
         await self._stop_contexts()
         await self._shutdown_services()
         await self._shutdown_contexts()
@@ -307,12 +310,20 @@ class ServerInstance(object):
         """
         Wait for all connections to close.
         """
-        await asyncio.wait_for(
-            asyncio.gather(
-                *(ctx.drain_connections() for ctx in self.contexts)
-            ),
-            timeout=config.SHUTDOWN_GRACE_PERIOD
+        gather_task = asyncio.gather(
+            *(ctx.drain_connections() for ctx in self.contexts),
         )
+
+        with contextlib.suppress(asyncio.CancelledError):
+            await asyncio.wait_for(
+                gather_task,
+                timeout=config.SHUTDOWN_GRACE_PERIOD
+            )
+
+        # If the task was cancelled, we need to await the _GatheringFuture to
+        # swallow the propagated CancelledError
+        with contextlib.suppress(asyncio.CancelledError):
+            await gather_task
 
     async def _shutdown_services(self):
         await map_suppress(
