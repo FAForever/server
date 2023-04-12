@@ -2,6 +2,7 @@
 Manages connected and authenticated players
 """
 
+import asyncio
 from typing import Optional, ValuesView
 
 import aiocron
@@ -9,10 +10,12 @@ from sqlalchemy import and_, select
 from trueskill import Rating
 
 import server.metrics as metrics
+from server.config import config
 from server.db import FAFDatabase
 from server.decorators import with_logger
-from server.players import Player
+from server.players import Player, PlayerState
 from server.rating import RatingType
+from server.timing import at_interval
 
 from .core import Service
 from .db.models import (
@@ -264,6 +267,21 @@ class PlayerService(Service):
             )
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
+    async def kick_idle_players(self):
+        for fut in asyncio.as_completed([
+            player.lobby_connection.abort("Graceful shutdown.")
+            for player in self.all_players
+            if player.state == PlayerState.IDLE
+            if player.lobby_connection is not None
+        ]):
+            try:
+                await fut
+            except Exception:
+                self._logger.debug(
+                    "Error while aborting connection",
+                    exc_info=True
+                )
+
     def on_connection_lost(self, conn: "LobbyConnection") -> None:
         if not conn.player:
             return
@@ -276,3 +294,7 @@ class PlayerService(Service):
             conn.player.login,
             conn.session
         )
+
+    async def graceful_shutdown(self):
+        if config.SHUTDOWN_KICK_IDLE_PLAYERS:
+            self._kick_idle_task = at_interval(1, self.kick_idle_players)
