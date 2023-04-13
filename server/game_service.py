@@ -15,6 +15,7 @@ from .core import Service
 from .db import FAFDatabase
 from .db.models import game_featuredMods
 from .decorators import with_logger
+from .exceptions import DisabledError
 from .games import (
     CustomGame,
     FeaturedMod,
@@ -52,6 +53,7 @@ class GameService(Service):
         self._rating_service = rating_service
         self._message_queue_service = message_queue_service
         self.game_id_counter = 0
+        self._allow_new_games = False
 
         # Populated below in really_update_static_ish_data.
         self.featured_mods = dict()
@@ -68,6 +70,7 @@ class GameService(Service):
         self._update_cron = aiocron.crontab(
             "*/10 * * * *", func=self.update_data
         )
+        self._allow_new_games = True
 
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:
@@ -153,6 +156,9 @@ class GameService(Service):
         """
         Main entrypoint for creating new games
         """
+        if not self._allow_new_games:
+            raise DisabledError()
+
         game_id = self.create_uid()
         game_args = {
             "database": self._db,
@@ -262,3 +268,6 @@ class GameService(Service):
             metrics.rated_games.labels(game_results.rating_type).inc()
             # TODO: Remove when rating service starts listening to message queue
             await self._rating_service.enqueue(result_dict)
+
+    async def graceful_shutdown(self):
+        self._allow_new_games = False

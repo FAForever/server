@@ -1,4 +1,7 @@
+import pytest
+
 from server.db.models import game_stats
+from server.exceptions import DisabledError
 from server.games import CustomGame, Game, LadderGame, VisibilityState
 from server.players import PlayerState
 
@@ -16,6 +19,15 @@ async def test_initialize_game_counter_empty(game_service, database):
     await game_service.initialise_game_counter()
 
     assert game_service.game_id_counter == 0
+
+
+async def test_graceful_shutdown(game_service):
+    await game_service.graceful_shutdown()
+
+    with pytest.raises(DisabledError):
+        game_service.create_game(
+            game_mode="faf",
+        )
 
 
 async def test_create_game(players, game_service):

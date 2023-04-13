@@ -30,7 +30,12 @@ from .db.models import (
 )
 from .db.models import login as t_login
 from .decorators import timed, with_logger
-from .exceptions import AuthenticationError, BanError, ClientError
+from .exceptions import (
+    AuthenticationError,
+    BanError,
+    ClientError,
+    DisabledError
+)
 from .factions import Faction
 from .game_service import GameService
 from .gameconnection import GameConnection
@@ -203,6 +208,10 @@ class LobbyConnection:
         except ConnectionError as e:
             # Propagate connection errors to the ServerContext error handler.
             raise e
+        except DisabledError:
+            # TODO: Respond with correlation uid for original message
+            await self.send({"command": "disabled", "request": cmd})
+            self._logger.info("Ignoring disabled command: %s", cmd)
         except Exception as ex:  # pragma: no cover
             await self.send({"command": "invalid"})
             self._logger.exception(ex)
