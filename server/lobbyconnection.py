@@ -257,7 +257,11 @@ class LobbyConnection:
     async def command_matchmaker_info(self, message):
         await self.send({
             "command": "matchmaker_info",
-            "queues": [queue.to_dict() for queue in self.ladder_service.queues.values()]
+            "queues": [
+                queue.to_dict()
+                for queue in self.ladder_service.queues.values()
+                if queue.is_running
+            ]
         })
 
     async def send_game_list(self):

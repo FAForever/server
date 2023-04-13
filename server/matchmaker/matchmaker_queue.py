@@ -70,6 +70,10 @@ class MatchmakerQueue:
 
         self.matchmaker = TeamMatchMaker()
 
+    @property
+    def is_running(self) -> bool:
+        return self._is_running
+
     def add_map_pool(
         self,
         map_pool: MapPool,
@@ -102,7 +106,7 @@ class MatchmakerQueue:
         in the queue.
         """
         self._logger.debug("MatchmakerQueue initialized for %s", self.name)
-        while self._is_running:
+        while self.is_running:
             try:
                 await self.timer.next_pop()
 
@@ -268,6 +272,7 @@ class MatchmakerQueue:
 
     def shutdown(self):
         self._is_running = False
+        self.timer.cancel()
 
     def to_dict(self):
         """

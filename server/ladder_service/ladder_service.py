@@ -34,6 +34,7 @@ from server.db.models import (
     matchmaker_queue_map_pool
 )
 from server.decorators import with_logger
+from server.exceptions import DisabledError
 from server.game_service import GameService
 from server.games import InitMode, LadderGame
 from server.games.ladder_game import GameClosedError
@@ -70,6 +71,7 @@ class LadderService(Service):
         self.violation_service = violation_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
+        self._allow_new_searches = True
 
     async def initialize(self) -> None:
         await self.update_data()
@@ -274,6 +276,9 @@ class LadderService(Service):
         queue_name: str,
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
+        if not self._allow_new_searches:
+            raise DisabledError()
+
         timeouts = self.violation_service.get_violations(players)
         if timeouts:
             self._logger.debug("timeouts: %s", timeouts)
@@ -715,9 +720,15 @@ class LadderService(Service):
         if player in self._informed_players:
             self._informed_players.remove(player)
 
-    async def shutdown(self):
+    async def graceful_shutdown(self):
+        self._allow_new_searches = False
+
         for queue in self.queues.values():
             queue.shutdown()
+
+        for player, searches in self._searches.items():
+            for queue_name in list(searches.keys()):
+                self._cancel_search(player, queue_name)
 
 
 class NotConnectedError(asyncio.TimeoutError):

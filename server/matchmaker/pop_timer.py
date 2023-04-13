@@ -34,6 +34,7 @@ class PopTimer(object):
         self._last_queue_pop = time()
         # Optimistically schedule first pop for half of the max pop time
         self.next_queue_pop = self._last_queue_pop + (config.QUEUE_POP_TIME_MAX / 2)
+        self._wait_task = None
 
     async def next_pop(self):
         """ Wait for the timer to pop. """
@@ -41,7 +42,10 @@ class PopTimer(object):
         time_remaining = self.next_queue_pop - time()
         self._logger.info("Next %s wave happening in %is", self.queue.name, time_remaining)
         metrics.matchmaker_queue_pop.labels(self.queue.name).set(int(time_remaining))
-        await asyncio.sleep(time_remaining)
+
+        self._wait_task = asyncio.create_task(asyncio.sleep(time_remaining))
+        await self._wait_task
+
         num_players = self.queue.num_players
         metrics.matchmaker_players.labels(self.queue.name).set(num_players)
 
@@ -81,3 +85,7 @@ class PopTimer(object):
             )
             return config.QUEUE_POP_TIME_MAX
         return next_pop_time
+
+    def cancel(self):
+        if self._wait_task:
+            self._wait_task.cancel()
