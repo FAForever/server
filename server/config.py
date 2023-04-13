@@ -107,6 +107,8 @@ class ConfigurationStore:
         self.FORCE_STEAM_LINK = False
 
         self.ALLOW_PASSWORD_LOGIN = True
+        # How many seconds a connection has to authenticate before being killed
+        self.LOGIN_TIMEOUT = 5 * 60
 
         self.NEWBIE_BASE_MEAN = 500
         self.NEWBIE_MIN_GAMES = 10

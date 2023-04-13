@@ -51,6 +51,41 @@ async def test_server_proxy_mode_direct(lobby_server_proxy, caplog):
     assert "this may indicate a misconfiguration" in caplog.text
 
 
+@fast_forward(10)
+async def test_login_timeout(lobby_server, monkeypatch, caplog):
+    monkeypatch.setattr(config, "LOGIN_TIMEOUT", 5)
+
+    proto = await connect_client(lobby_server)
+
+    await asyncio.sleep(5)
+
+    with pytest.raises(DisconnectedError), caplog.at_level("TRACE"):
+        await proto.read_message()
+
+    assert "Client took too long to log in" in caplog.text
+
+
+@fast_forward(10)
+async def test_disconnect_before_login_timeout(
+    lobby_server,
+    monkeypatch,
+    caplog
+):
+    monkeypatch.setattr(config, "LOGIN_TIMEOUT", 5)
+
+    proto = await connect_client(lobby_server)
+
+    await asyncio.sleep(1)
+
+    with pytest.raises(DisconnectedError), caplog.at_level("TRACE"):
+        await proto.close()
+        await asyncio.sleep(4)
+        await proto.read_message()
+
+    assert "Client disconnected" in caplog.text
+    assert "Client took too long to log in" not in caplog.text
+
+
 async def test_server_deprecated_client(lobby_server):
     proto = await connect_client(lobby_server)
 

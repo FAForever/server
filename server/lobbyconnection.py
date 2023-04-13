@@ -92,6 +92,7 @@ class LobbyConnection:
         self.user_agent = None
         self.version = None
 
+        self._timeout_task = None
         self._attempted_connectivity_test = False
 
         self._logger.debug("LobbyConnection initialized for '%s'", self.session)
@@ -110,7 +111,14 @@ class LobbyConnection:
     async def on_connection_made(self, protocol: Protocol, peername: Address):
         self.protocol = protocol
         self.peer_address = peername
+        self._timeout_task = asyncio.create_task(self.timeout_login())
         metrics.server_connections.inc()
+
+    async def timeout_login(self):
+        with contextlib.suppress(asyncio.CancelledError):
+            await asyncio.sleep(config.LOGIN_TIMEOUT)
+            if not self._authenticated:
+                await self.abort("Client took too long to log in.")
 
     async def abort(self, logspam=""):
         self._authenticated = False
@@ -1230,6 +1238,9 @@ class LobbyConnection:
         async def nop(*args, **kwargs):
             return
         self.send = nop
+
+        if self._timeout_task and not self._timeout_task.done():
+            self._timeout_task.cancel()
 
         if self.game_connection:
             self._logger.debug(
