@@ -1,9 +1,12 @@
+import asyncio
+
 import pytest
 
 from server.db.models import game_stats
 from server.exceptions import DisabledError
 from server.games import CustomGame, Game, LadderGame, VisibilityState
 from server.players import PlayerState
+from tests.utils import fast_forward
 
 
 async def test_initialization(game_service):
@@ -28,6 +31,25 @@ async def test_graceful_shutdown(game_service):
         game_service.create_game(
             game_mode="faf",
         )
+
+
+@fast_forward(2)
+async def test_drain_games(game_service):
+    game = game_service.create_game(
+        game_mode="faf",
+        name="TestGame"
+    )
+
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(game_service.drain_games(), 1)
+
+    game_service.remove_game(game)
+
+    await asyncio.wait_for(game_service.drain_games(), 1)
+    assert len(game_service.all_games) == 0
+
+    # Calling drain_games again should return immediately
+    await asyncio.wait_for(game_service.drain_games(), 1)
 
 
 async def test_create_game(players, game_service):

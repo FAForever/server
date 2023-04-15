@@ -86,7 +86,6 @@ Distributed under GPLv3, see license.txt
 """
 
 import asyncio
-import contextlib
 import logging
 import time
 from typing import Optional
@@ -305,22 +304,23 @@ class ServerInstance(object):
 
     async def drain(self):
         """
-        Wait for all connections to close.
+        Wait for all games to end.
         """
-        gather_task = asyncio.gather(
-            *(ctx.drain_connections() for ctx in self.contexts),
-        )
-
-        with contextlib.suppress(asyncio.CancelledError):
+        game_service: GameService = self.services["game_service"]
+        try:
             await asyncio.wait_for(
-                gather_task,
+                game_service.drain_games(),
                 timeout=config.SHUTDOWN_GRACE_PERIOD
             )
-
-        # If the task was cancelled, we need to await the _GatheringFuture to
-        # swallow the propagated CancelledError
-        with contextlib.suppress(asyncio.CancelledError):
-            await gather_task
+        except asyncio.CancelledError:
+            self._logger.debug(
+                "Stopped waiting for games to end due to forced shutdown"
+            )
+        except asyncio.TimeoutError:
+            self._logger.warning(
+                "Graceful shutdown period ended! %s games are still live!",
+                len(game_service.live_games)
+            )
 
     async def _shutdown_services(self):
         await map_suppress(

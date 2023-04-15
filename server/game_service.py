@@ -2,6 +2,7 @@
 Manages the lifecycle of active games
 """
 
+import asyncio
 from collections import Counter
 from typing import Optional, Union, ValuesView
 
@@ -54,6 +55,7 @@ class GameService(Service):
         self._message_queue_service = message_queue_service
         self.game_id_counter = 0
         self._allow_new_games = False
+        self._drain_event = None
 
         # Populated below in really_update_static_ish_data.
         self.featured_mods = dict()
@@ -245,7 +247,15 @@ class GameService(Service):
 
     def remove_game(self, game: Game):
         if game.id in self._games:
+            self._logger.debug("Removing game %s", game)
             del self._games[game.id]
+
+        if (
+            self._drain_event is not None
+            and not self._drain_event.is_set()
+            and not self._games
+        ):
+            self._drain_event.set()
 
     def __getitem__(self, item: int) -> Game:
         return self._games[item]
@@ -268,6 +278,18 @@ class GameService(Service):
             metrics.rated_games.labels(game_results.rating_type).inc()
             # TODO: Remove when rating service starts listening to message queue
             await self._rating_service.enqueue(result_dict)
+
+    async def drain_games(self):
+        """
+        Wait for all games to finish.
+        """
+        if not self._games:
+            return
+
+        if not self._drain_event:
+            self._drain_event = asyncio.Event()
+
+        await self._drain_event.wait()
 
     async def graceful_shutdown(self):
         self._allow_new_games = False

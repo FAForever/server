@@ -5,6 +5,7 @@ import re
 import pytest
 from sqlalchemy import and_, select
 
+from server.config import config
 from server.db.models import avatars, avatars_list, ban
 from server.protocol import DisconnectedError
 from tests.utils import fast_forward
@@ -161,6 +162,36 @@ async def test_ping_message(lobby_server):
 
     # We should receive the message every 45 seconds
     await read_until_command(proto, "ping", timeout=46)
+
+
+@fast_forward(60)
+async def test_drain(
+    lobby_instance,
+    lobby_server,
+    tmp_user,
+    monkeypatch,
+    caplog,
+):
+    monkeypatch.setattr(config, "SHUTDOWN_GRACE_PERIOD", 10)
+
+    player1_id, _, player1_proto = await connect_and_sign_in(
+        await tmp_user("Player"),
+        lobby_server
+    )
+    player2_id, _, player2_proto = await connect_and_sign_in(
+        await tmp_user("Player"),
+        lobby_server
+    )
+    await setup_game_1v1(
+        player1_proto,
+        player1_id,
+        player2_proto,
+        player2_id
+    )
+
+    await lobby_instance.drain()
+
+    assert "Graceful shutdown period ended! 1 games are still live!" in caplog.messages
 
 
 @fast_forward(5)
