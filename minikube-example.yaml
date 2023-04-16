@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: faf-lobby
+  labels:
+    app: faf-lobby
+spec:
+  type: NodePort
+  selector:
+    app: faf-lobby
+  ports:
+  - port: 8001
+    name: qstream
+  - port: 8002
+    name: simplejson
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: faf-lobby
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: faf-lobby
+  template:
+    metadata:
+      labels:
+        app: faf-lobby
+    spec:
+      terminationGracePeriodSeconds: 310
+      containers:
+      - name: faf-python-server
+        image: faf-python-server:graceful
+        imagePullPolicy: Never
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: health
+          initialDelaySeconds: 4
+          periodSeconds: 1
+        ports:
+        - containerPort: 4000
+          name: control
+        - containerPort: 2000
+          name: health
+        - containerPort: 8001
+          name: qstream
+        - containerPort: 8002
+          name: simplejson
+        env:
+          - name: CONFIGURATION_FILE
+            value: /config/config.yaml
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: minikube-dev-config
+          items:
+            - key: config.yaml
+              path: config.yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minikube-dev-config
+data:
+  config.yaml: |
+    LOG_LEVEL: TRACE
+    USE_POLICY_SERVER: false
+    QUEUE_POP_TIME_MAX: 30
+    SHUTDOWN_GRACE_PERIOD: 300
+    SHUTDOWN_KICK_IDLE_PLAYERS: true
+
+    DB_SERVER: host.minikube.internal
+    MQ_SERVER: host.minikube.internal
