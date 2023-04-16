@@ -307,6 +307,7 @@ class ServerInstance(object):
         Wait for all games to end.
         """
         game_service: GameService = self.services["game_service"]
+        broadcast_service: BroadcastService = self.services["broadcast_service"]
         try:
             await asyncio.wait_for(
                 game_service.drain_games(),
@@ -321,6 +322,13 @@ class ServerInstance(object):
                 "Graceful shutdown period ended! %s games are still live!",
                 len(game_service.live_games)
             )
+        finally:
+            # The report_dirties loop is responsible for clearing dirty games
+            # and broadcasting the update messages to players and to RabbitMQ.
+            # We need to wait here for that loop to complete otherwise it is
+            # possible for the services to be shut down inbetween clearing the
+            # games and posting the messages, causing the posts to fail.
+            await broadcast_service.wait_report_dirtes()
 
     async def _shutdown_services(self):
         await map_suppress(

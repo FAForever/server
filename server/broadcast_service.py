@@ -1,3 +1,5 @@
+import asyncio
+
 from aio_pika import DeliveryMode
 
 from .config import config
@@ -27,13 +29,14 @@ class BroadcastService(Service):
         self.message_queue_service = message_queue_service
         self.game_service = game_service
         self.player_service = player_service
+        self._report_dirties_event = None
 
     async def initialize(self):
         # Using a lazy interval timer so that the intervals can be changed
         # without restarting the server.
         self._broadcast_dirties_timer = LazyIntervalTimer(
             lambda: config.DIRTY_REPORT_INTERVAL,
-            self.report_dirties,
+            self._monitored_report_dirties,
             start=True
         )
         self._broadcast_ping_timer = LazyIntervalTimer(
@@ -41,6 +44,14 @@ class BroadcastService(Service):
             self.broadcast_ping,
             start=True
         )
+
+    async def _monitored_report_dirties(self):
+        event = asyncio.Event()
+        self._report_dirties_event = event
+        try:
+            await self.report_dirties()
+        finally:
+            event.set()
 
     async def report_dirties(self):
         """
@@ -116,6 +127,15 @@ class BroadcastService(Service):
 
     def broadcast_ping(self):
         self.server.write_broadcast({"command": "ping"})
+
+    async def wait_report_dirtes(self):
+        """
+        Wait for the current report_dirties task to complete.
+        """
+        if self._report_dirties_event is None:
+            return
+
+        await self._report_dirties_event.wait()
 
     async def shutdown(self):
         self.server.write_broadcast({

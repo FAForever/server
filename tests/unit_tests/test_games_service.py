@@ -4,8 +4,15 @@ import pytest
 
 from server.db.models import game_stats
 from server.exceptions import DisabledError
-from server.games import CustomGame, Game, LadderGame, VisibilityState
+from server.games import (
+    CustomGame,
+    Game,
+    GameState,
+    LadderGame,
+    VisibilityState
+)
 from server.players import PlayerState
+from tests.unit_tests.conftest import add_connected_player
 from tests.utils import fast_forward
 
 
@@ -80,6 +87,7 @@ async def test_all_games(players, game_service):
         password=None
     )
     assert game in game_service.pending_games
+    assert game in game_service.all_games
     assert isinstance(game, CustomGame)
 
 
@@ -109,3 +117,21 @@ async def test_create_game_other_gamemode(players, game_service):
     assert game in game_service.pop_dirty_games()
     assert isinstance(game, Game)
     assert game.game_mode == "labwars"
+
+
+async def test_close_lobby_games(players, game_service):
+    game = game_service.create_game(
+        visibility=VisibilityState.PUBLIC,
+        game_mode="faf",
+        host=players.hosting,
+        name="Test",
+        mapname="SCMP_007",
+        password=None
+    )
+    game.state = GameState.LOBBY
+    conn = add_connected_player(game, players.hosting)
+    assert conn in game.connections
+
+    await game_service.close_lobby_games()
+
+    conn.abort.assert_called_once()

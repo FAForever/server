@@ -293,3 +293,16 @@ class GameService(Service):
 
     async def graceful_shutdown(self):
         self._allow_new_games = False
+
+        await self.close_lobby_games()
+
+    async def close_lobby_games(self):
+        self._logger.info("Closing all games currently in lobby")
+        for game in self.pending_games:
+            for game_connection in list(game.connections):
+                # Tell the client to kill the FA process
+                game_connection.player.write_message({
+                    "command": "notice",
+                    "style": "kill"
+                })
+                await game_connection.abort()
