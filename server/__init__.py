@@ -99,7 +99,6 @@ from .asyncio_extensions import map_suppress, synchronizedmethod
 from .broadcast_service import BroadcastService
 from .config import TRACE, config
 from .configuration_service import ConfigurationService
-from .control import run_control_server
 from .core import Service, create_services
 from .db import FAFDatabase
 from .game_service import GameService
@@ -139,10 +138,8 @@ __all__ = (
     "RatingService",
     "ServerInstance",
     "ViolationService",
-    "control",
     "game_service",
     "protocol",
-    "run_control_server",
 )
 
 logger = logging.getLogger("server")

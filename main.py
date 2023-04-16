@@ -22,7 +22,9 @@ from docopt import docopt
 
 import server
 from server.config import config
+from server.control import ControlServer
 from server.game_service import GameService
+from server.health import HealthServer
 from server.ice_servers.nts import TwilioNTS
 from server.player_service import PlayerService
 from server.profiler import Profiler
@@ -98,16 +100,21 @@ async def main():
     config.register_callback("PROFILING_DURATION", profiler.refresh)
     config.register_callback("PROFILING_INTERVAL", profiler.refresh)
 
-    ctrl_server = await server.run_control_server(instance)
+    health_server = HealthServer(instance)
+    await health_server.run_from_config()
+    config.register_callback(
+        "HEALTH_SERVER_PORT",
+        health_server.run_from_config
+    )
+
+    control_server = ControlServer(instance)
+    await control_server.run_from_config()
+    config.register_callback(
+        "CONTROL_SERVER_PORT",
+        control_server.run_from_config
+    )
 
     await instance.start_services()
-
-    async def restart_control_server():
-        nonlocal ctrl_server
-
-        await ctrl_server.shutdown()
-        ctrl_server = await server.run_control_server(instance)
-    config.register_callback("CONTROL_SERVER_PORT", restart_control_server)
 
     PROTO_CLASSES = {
         QDataStreamProtocol.__name__: QDataStreamProtocol,
@@ -169,11 +176,11 @@ async def main():
 
     await drain_task
     await instance.shutdown()
-
-    await ctrl_server.shutdown()
-
-    # Close DB connections
+    await control_server.shutdown()
     await database.close()
+
+    # Health server should be the last thing to shut down
+    await health_server.shutdown()
 
     return exit_code
 

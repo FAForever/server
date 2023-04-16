@@ -26,6 +26,7 @@ from server import (
 from server.config import config
 from server.control import ControlServer
 from server.db.models import login
+from server.health import HealthServer
 from server.protocol import Protocol, QDataStreamProtocol, SimpleJsonProtocol
 from server.servercontext import ServerContext
 from tests.utils import exhaust_callbacks
@@ -255,12 +256,24 @@ def lobby_server_proxy(request, lobby_contexts_proxy):
 
 @pytest.fixture
 async def control_server(lobby_instance):
-    server = ControlServer(
-        lobby_instance,
+    server = ControlServer(lobby_instance)
+    await server.start(
         "127.0.0.1",
         config.CONTROL_SERVER_PORT
     )
-    await server.start()
+
+    yield server
+
+    await server.shutdown()
+
+
+@pytest.fixture
+async def health_server(lobby_instance):
+    server = HealthServer(lobby_instance)
+    await server.start(
+        "127.0.0.1",
+        config.HEALTH_SERVER_PORT
+    )
 
     yield server
 

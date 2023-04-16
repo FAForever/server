@@ -75,6 +75,7 @@ class ConfigurationStore:
         self.SHUTDOWN_KICK_IDLE_PLAYERS = False
 
         self.CONTROL_SERVER_PORT = 4000
+        self.HEALTH_SERVER_PORT = 2000
         self.METRICS_PORT = 8011
         self.ENABLE_METRICS = False
 

@@ -58,16 +58,3 @@ async def test_games(control_server, lobby_server, game_service):
             data = await resp.json()
 
             assert data == [listify(game_service[msg["uid"]].to_dict())]
-
-
-@fast_forward(2)
-async def test_ready(control_server, lobby_instance):
-    url = f"http://{control_server.host}:{control_server.port}/ready"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            assert resp.status == 200
-
-        await lobby_instance.shutdown()
-
-        async with session.get(url) as resp:
-            assert resp.status == 503
