@@ -1,5 +1,6 @@
 import asyncio
 
+import humanize
 from aio_pika import DeliveryMode
 
 from .config import config
@@ -136,6 +137,30 @@ class BroadcastService(Service):
             return
 
         await self._report_dirties_event.wait()
+
+    async def graceful_shutdown(self):
+        if config.SHUTDOWN_KICK_IDLE_PLAYERS:
+            message = (
+                "If you're in a game you can continue to play, otherwise you "
+                "will be disconnected. If you aren't reconnected automatically "
+                "please wait a few minutes and try to connect again."
+            )
+        else:
+            message = (
+                "If you're in a game you can continue to play, however, you "
+                "will not be able to create any new games until the server has "
+                "been restarted."
+            )
+
+        delta = humanize.precisedelta(config.SHUTDOWN_GRACE_PERIOD)
+        self.server.write_broadcast({
+            "command": "notice",
+            "style": "info",
+            "text": (
+                f"The server will be shutting down for maintenance in {delta}! "
+                f"{message}"
+            )
+        })
 
     async def shutdown(self):
         self.server.write_broadcast({
