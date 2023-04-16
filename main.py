@@ -19,6 +19,7 @@ from functools import wraps
 
 import humanize
 from docopt import docopt
+from prometheus_client import start_http_server
 
 import server
 from server.config import config
@@ -52,6 +53,10 @@ async def main():
         python_version,
         sys.platform
     )
+
+    if config.ENABLE_METRICS:
+        logger.info("Using prometheus on port: %i", config.METRICS_PORT)
+        start_http_server(config.METRICS_PORT)
 
     loop = asyncio.get_running_loop()
     done = loop.create_future()
@@ -217,7 +222,7 @@ if __name__ == "__main__":
     stop_time = time.perf_counter()
     logger.info(
         "Total server uptime: %s",
-        humanize.naturaldelta(stop_time - startup_time)
+        humanize.precisedelta(stop_time - startup_time)
     )
 
     if shutdown_time is not None:

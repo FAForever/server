@@ -90,8 +90,6 @@ import logging
 import time
 from typing import Optional
 
-from prometheus_client import start_http_server
-
 import server.metrics as metrics
 
 from .asyncio_extensions import map_suppress, synchronizedmethod
@@ -142,10 +140,6 @@ __all__ = (
 )
 
 logger = logging.getLogger("server")
-
-if config.ENABLE_METRICS:
-    logger.info("Using prometheus on port: %i", config.METRICS_PORT)
-    start_http_server(config.METRICS_PORT)
 
 
 class ServerInstance(object):

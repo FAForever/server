@@ -104,9 +104,6 @@ class ConfigurationStore:
         self.FAF_POLICY_SERVER_BASE_URL = "http://faf-policy-server"
         self.USE_POLICY_SERVER = True
 
-        self.FORCE_STEAM_LINK_AFTER_DATE = 1536105599  # 5 september 2018 by default
-        self.FORCE_STEAM_LINK = False
-
         self.ALLOW_PASSWORD_LOGIN = True
         # How many seconds a connection has to authenticate before being killed
         self.LOGIN_TIMEOUT = 5 * 60
@@ -180,10 +177,14 @@ class ConfigurationStore:
                 with open(config_file) as f:
                     new_values.update(yaml.safe_load(f))
             except FileNotFoundError:
-                self._logger.info("No configuration file found at %s", config_file)
+                self._logger.warning(
+                    "No configuration file found at %s",
+                    config_file
+                )
             except TypeError:
                 self._logger.info(
-                    "Configuration file at %s appears to be empty", config_file
+                    "Configuration file at %s appears to be empty",
+                    config_file
                 )
 
         triggered_callback_keys = tuple(

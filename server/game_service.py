@@ -216,9 +216,16 @@ class GameService(Service):
                 )
 
     @property
+    def all_games(self) -> ValuesView[Game]:
+        return self._games.values()
+
+    @property
     def live_games(self) -> list[Game]:
-        return [game for game in self._games.values()
-                if game.state is GameState.LIVE]
+        return [
+            game
+            for game in self.all_games
+            if game.state is GameState.LIVE
+        ]
 
     @property
     def open_games(self) -> list[Game]:
@@ -233,17 +240,19 @@ class GameService(Service):
 
         The client ignores everything "closed". This property fetches all such not-closed games.
         """
-        return [game for game in self._games.values()
-                if game.state is GameState.LOBBY or game.state is GameState.LIVE]
-
-    @property
-    def all_games(self) -> ValuesView[Game]:
-        return self._games.values()
+        return [
+            game
+            for game in self.all_games
+            if game.state in (GameState.LOBBY, GameState.LIVE)
+        ]
 
     @property
     def pending_games(self) -> list[Game]:
-        return [game for game in self._games.values()
-                if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]
+        return [
+            game
+            for game in self.all_games
+            if game.state in (GameState.LOBBY, GameState.INITIALIZING)
+        ]
 
     def remove_game(self, game: Game):
         if game.id in self._games:

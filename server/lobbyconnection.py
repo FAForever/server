@@ -180,30 +180,30 @@ class LobbyConnection:
             handler = getattr(self, f"command_{cmd}")
             await handler(message)
 
-        except AuthenticationError as ex:
-            metrics.user_logins.labels("failure", ex.method).inc()
+        except AuthenticationError as e:
+            metrics.user_logins.labels("failure", e.method).inc()
             await self.send({
                 "command": "authentication_failed",
-                "text": ex.message
+                "text": e.message
             })
-        except BanError as ex:
+        except BanError as e:
             await self.send({
                 "command": "notice",
                 "style": "error",
-                "text": ex.message()
+                "text": e.message()
             })
-            await self.abort(ex.message())
-        except ClientError as ex:
-            self._logger.warning("Client error: %s", ex.message)
+            await self.abort(e.message())
+        except ClientError as e:
+            self._logger.warning("Client error: %s", e.message)
             await self.send({
                 "command": "notice",
                 "style": "error",
-                "text": ex.message
+                "text": e.message
             })
-            if not ex.recoverable:
-                await self.abort(ex.message)
-        except (KeyError, ValueError) as ex:
-            self._logger.exception(ex)
+            if not e.recoverable:
+                await self.abort(e.message)
+        except (KeyError, ValueError) as e:
+            self._logger.exception(e)
             await self.abort(f"Garbage command: {message}")
         except ConnectionError as e:
             # Propagate connection errors to the ServerContext error handler.
@@ -211,10 +211,14 @@ class LobbyConnection:
         except DisabledError:
             # TODO: Respond with correlation uid for original message
             await self.send({"command": "disabled", "request": cmd})
-            self._logger.info("Ignoring disabled command: %s", cmd)
-        except Exception as ex:  # pragma: no cover
+            self._logger.info(
+                "Ignoring disabled command for %s: %s",
+                self.get_user_identifier(),
+                cmd
+            )
+        except Exception as e:  # pragma: no cover
             await self.send({"command": "invalid"})
-            self._logger.exception(ex)
+            self._logger.exception(e)
             await self.abort("Error processing command")
 
     async def command_ping(self, msg):
@@ -340,11 +344,10 @@ class LobbyConnection:
                         "Administrative action: %s closed game for %s",
                         self.player, player
                     )
-                    with contextlib.suppress(DisconnectedError):
-                        await player.send_message({
-                            "command": "notice",
-                            "style": "kill",
-                        })
+                    player.write_message({
+                        "command": "notice",
+                        "style": "kill",
+                    })
 
         elif action == "closelobby":
             if await self.player_service.has_permission_role(
