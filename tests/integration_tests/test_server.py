@@ -19,7 +19,13 @@ from .conftest import (
     read_until,
     read_until_command
 )
-from .test_game import host_game, join_game, open_fa, send_player_options
+from .test_game import (
+    host_game,
+    join_game,
+    open_fa,
+    send_player_options,
+    setup_game_1v1
+)
 
 
 @fast_forward(10)
@@ -162,6 +168,147 @@ async def test_ping_message(lobby_server):
 
     # We should receive the message every 45 seconds
     await read_until_command(proto, "ping", timeout=46)
+
+
+@fast_forward(10)
+async def test_graceful_shutdown(
+    lobby_instance,
+    lobby_server,
+    tmp_user,
+    monkeypatch
+):
+    _, _, proto = await connect_and_sign_in(
+        await tmp_user("Player"),
+        lobby_server
+    )
+    await read_until_command(proto, "game_info")
+
+    await proto.send_message({
+        "command": "matchmaker_info"
+    })
+    msg = await read_until_command(proto, "matchmaker_info", timeout=5)
+    assert msg["queues"]
+
+    await proto.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "queue_name": "ladder1v1"
+    })
+    await read_until_command(proto, "search_info", state="start", timeout=5)
+
+    await lobby_instance.graceful_shutdown()
+
+    # First we get the notice message
+    msg = await read_until_command(proto, "notice", timeout=5)
+    assert "The server will be shutting down" in msg["text"]
+
+    # Then the queues are shut down
+    await read_until_command(proto, "search_info", state="stop", timeout=5)
+
+    # Matchmaker info should not include any queues
+    await proto.send_message({
+        "command": "matchmaker_info"
+    })
+    msg = await read_until_command(proto, "matchmaker_info", timeout=5)
+    assert msg == {
+        "command": "matchmaker_info",
+        "queues": []
+    }
+
+    # Hosting custom games should be disabled
+    await proto.send_message({
+        "command": "game_host",
+        "visibility": "public",
+    })
+    msg = await read_until_command(proto, "disabled", timeout=5)
+    assert msg == {
+        "command": "disabled",
+        "request": "game_host"
+    }
+
+    # Joining matchmaker queues should be disabled
+    await proto.send_message({
+        "command": "game_host",
+        "visibility": "public",
+    })
+    msg = await read_until_command(proto, "disabled", timeout=5)
+    assert msg == {
+        "command": "disabled",
+        "request": "game_host"
+    }
+
+
+@fast_forward(10)
+async def test_graceful_shutdown_kick(
+    lobby_instance,
+    lobby_server,
+    tmp_user,
+    monkeypatch
+):
+    monkeypatch.setattr(config, "SHUTDOWN_KICK_IDLE_PLAYERS", True)
+
+    async def test_connected(proto) -> bool:
+        try:
+            await proto.send_message({"command": "ping"})
+            await read_until_command(proto, "pong", timeout=5)
+            return True
+        except (DisconnectedError, ConnectionError, asyncio.TimeoutError):
+            return False
+
+    _, _, idle_proto = await connect_and_sign_in(
+        await tmp_user("Idle"),
+        lobby_server
+    )
+    _, _, host_proto = await connect_and_sign_in(
+        await tmp_user("Host"),
+        lobby_server
+    )
+    player1_id, _, player1_proto = await connect_and_sign_in(
+        await tmp_user("Player"),
+        lobby_server
+    )
+    player2_id, _, player2_proto = await connect_and_sign_in(
+        await tmp_user("Player"),
+        lobby_server
+    )
+    protos = (
+        idle_proto,
+        host_proto,
+        player1_proto,
+        player2_proto
+    )
+    for proto in protos:
+        await read_until_command(proto, "game_info")
+
+    # Host is in lobby, not playing a game
+    await host_game(host_proto, visibility="public")
+
+    # Player1 and Player2 are playing a game
+    await setup_game_1v1(
+        player1_proto,
+        player1_id,
+        player2_proto,
+        player2_id
+    )
+
+    await lobby_instance.graceful_shutdown()
+
+    # Check that everyone is notified
+    for proto in protos:
+        msg = await read_until_command(proto, "notice")
+        assert "The server will be shutting down" in msg["text"]
+
+    # Players in lobby should be told to close their games
+    await read_until_command(host_proto, "notice", style="kill")
+
+    # Idle players are kicked every 1 second
+    await asyncio.sleep(1)
+
+    assert await test_connected(idle_proto) is False
+    assert await test_connected(host_proto) is False
+
+    assert await test_connected(player1_proto) is True
+    assert await test_connected(player2_proto) is True
 
 
 @fast_forward(60)

@@ -36,6 +36,7 @@ async def host_game(
     game_id = int(msg["uid"])
 
     await open_fa(proto)
+    await read_until_command(proto, "HostGame", target="game")
 
     return game_id
 
