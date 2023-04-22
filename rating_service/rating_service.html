@@ -95,11 +95,11 @@ class RatingService(Service):
     async def update_data(self):
         async with self._db.acquire() as conn:
             initializer = leaderboard.alias()
-            sql = select([
+            sql = select(
                 leaderboard.c.id,
                 leaderboard.c.technical_name,
                 initializer.c.technical_name.label(&#34;initializer&#34;)
-            ]).select_from(
+            ).select_from(
                 leaderboard.outerjoin(
                     initializer,
                     leaderboard.c.initializer_id == initializer.c.id
@@ -312,12 +312,12 @@ class RatingService(Service):
     async def _get_all_player_ratings(
         self, conn, player_ids: list[PlayerID]
     ) -&gt; dict[PlayerID, PlayerRatings]:
-        sql = select([
+        sql = select(
             leaderboard_rating.c.login_id,
             leaderboard.c.technical_name,
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation
-        ]).join(leaderboard).where(
+        ).join(leaderboard).where(
             leaderboard_rating.c.login_id.in_(player_ids)
         )
         result = await conn.execute(sql)
@@ -419,7 +419,7 @@ class RatingService(Service):
             rating_deviation_before=bindparam(&#34;rating_deviation_before&#34;),
             rating_mean_after=bindparam(&#34;rating_mean_after&#34;),
             rating_deviation_after=bindparam(&#34;rating_deviation_after&#34;),
-            game_player_stats_id=select([game_player_stats.c.id]).where(
+            game_player_stats_id=select(game_player_stats.c.id).where(
                 and_(
                     game_player_stats.c.playerId == bindparam(&#34;player_id&#34;),
                     game_player_stats.c.gameId == game_id,
@@ -603,11 +603,11 @@ class RatingService(Service):
     async def update_data(self):
         async with self._db.acquire() as conn:
             initializer = leaderboard.alias()
-            sql = select([
+            sql = select(
                 leaderboard.c.id,
                 leaderboard.c.technical_name,
                 initializer.c.technical_name.label(&#34;initializer&#34;)
-            ]).select_from(
+            ).select_from(
                 leaderboard.outerjoin(
                     initializer,
                     leaderboard.c.initializer_id == initializer.c.id
@@ -820,12 +820,12 @@ class RatingService(Service):
     async def _get_all_player_ratings(
         self, conn, player_ids: list[PlayerID]
     ) -&gt; dict[PlayerID, PlayerRatings]:
-        sql = select([
+        sql = select(
             leaderboard_rating.c.login_id,
             leaderboard.c.technical_name,
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation
-        ]).join(leaderboard).where(
+        ).join(leaderboard).where(
             leaderboard_rating.c.login_id.in_(player_ids)
         )
         result = await conn.execute(sql)
@@ -927,7 +927,7 @@ class RatingService(Service):
             rating_deviation_before=bindparam(&#34;rating_deviation_before&#34;),
             rating_mean_after=bindparam(&#34;rating_mean_after&#34;),
             rating_deviation_after=bindparam(&#34;rating_deviation_after&#34;),
-            game_player_stats_id=select([game_player_stats.c.id]).where(
+            game_player_stats_id=select(game_player_stats.c.id).where(
                 and_(
                     game_player_stats.c.playerId == bindparam(&#34;player_id&#34;),
                     game_player_stats.c.gameId == game_id,
@@ -1136,11 +1136,11 @@ class RatingService(Service):
 <pre><code class="python">async def update_data(self):
     async with self._db.acquire() as conn:
         initializer = leaderboard.alias()
-        sql = select([
+        sql = select(
             leaderboard.c.id,
             leaderboard.c.technical_name,
             initializer.c.technical_name.label(&#34;initializer&#34;)
-        ]).select_from(
+        ).select_from(
             leaderboard.outerjoin(
                 initializer,
                 leaderboard.c.initializer_id == initializer.c.id

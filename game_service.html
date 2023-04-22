@@ -120,14 +120,14 @@ class GameService(Service):
         time we need, but which can in principle change over time.
         &#34;&#34;&#34;
         async with self._db.acquire() as conn:
-            rows = await conn.execute(select([
+            rows = await conn.execute(select(
                 game_featuredMods.c.id,
                 game_featuredMods.c.gamemod,
                 game_featuredMods.c.name,
                 game_featuredMods.c.description,
                 game_featuredMods.c.publish,
                 game_featuredMods.c.order
-            ]).select_from(game_featuredMods))
+            ).select_from(game_featuredMods))
 
             for row in rows:
                 self.featured_mods[row.gamemod] = FeaturedMod(
@@ -373,14 +373,14 @@ class GameService(Service):
         time we need, but which can in principle change over time.
         &#34;&#34;&#34;
         async with self._db.acquire() as conn:
-            rows = await conn.execute(select([
+            rows = await conn.execute(select(
                 game_featuredMods.c.id,
                 game_featuredMods.c.gamemod,
                 game_featuredMods.c.name,
                 game_featuredMods.c.description,
                 game_featuredMods.c.publish,
                 game_featuredMods.c.order
-            ]).select_from(game_featuredMods))
+            ).select_from(game_featuredMods))
 
             for row in rows:
                 self.featured_mods[row.gamemod] = FeaturedMod(
@@ -857,14 +857,14 @@ time we need, but which can in principle change over time.</p></div>
     time we need, but which can in principle change over time.
     &#34;&#34;&#34;
     async with self._db.acquire() as conn:
-        rows = await conn.execute(select([
+        rows = await conn.execute(select(
             game_featuredMods.c.id,
             game_featuredMods.c.gamemod,
             game_featuredMods.c.name,
             game_featuredMods.c.description,
             game_featuredMods.c.publish,
             game_featuredMods.c.order
-        ]).select_from(game_featuredMods))
+        ).select_from(game_featuredMods))
 
         for row in rows:
             self.featured_mods[row.gamemod] = FeaturedMod(

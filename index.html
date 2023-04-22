@@ -1187,7 +1187,7 @@ class ConfigurationService(Service):
         secondary, delta = secondary, str(delta)
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([coop_map.c.id]).where(
+                select(coop_map.c.id).where(
                     coop_map.c.filename == self.game.map_file_path
                 )
             )
@@ -2105,7 +2105,7 @@ to start due to players using differing game settings.</p></div>
     secondary, delta = secondary, str(delta)
     async with self._db.acquire() as conn:
         result = await conn.execute(
-            select([coop_map.c.id]).where(
+            select(coop_map.c.id).where(
                 coop_map.c.filename == self.game.map_file_path
             )
         )
@@ -2414,14 +2414,14 @@ class GameService(Service):
         time we need, but which can in principle change over time.
         &#34;&#34;&#34;
         async with self._db.acquire() as conn:
-            rows = await conn.execute(select([
+            rows = await conn.execute(select(
                 game_featuredMods.c.id,
                 game_featuredMods.c.gamemod,
                 game_featuredMods.c.name,
                 game_featuredMods.c.description,
                 game_featuredMods.c.publish,
                 game_featuredMods.c.order
-            ]).select_from(game_featuredMods))
+            ).select_from(game_featuredMods))
 
             for row in rows:
                 self.featured_mods[row.gamemod] = FeaturedMod(
@@ -2898,14 +2898,14 @@ time we need, but which can in principle change over time.</p></div>
     time we need, but which can in principle change over time.
     &#34;&#34;&#34;
     async with self._db.acquire() as conn:
-        rows = await conn.execute(select([
+        rows = await conn.execute(select(
             game_featuredMods.c.id,
             game_featuredMods.c.gamemod,
             game_featuredMods.c.name,
             game_featuredMods.c.description,
             game_featuredMods.c.publish,
             game_featuredMods.c.order
-        ]).select_from(game_featuredMods))
+        ).select_from(game_featuredMods))
 
         for row in rows:
             self.featured_mods[row.gamemod] = FeaturedMod(
@@ -3794,7 +3794,7 @@ class LadderService(Service):
 
     async def fetch_map_pools(self, conn) -&gt; dict[int, tuple[str, list[Map]]]:
         result = await conn.execute(
-            select([
+            select(
                 map_pool.c.id,
                 map_pool.c.name,
                 map_pool_map_version.c.weight,
@@ -3802,7 +3802,7 @@ class LadderService(Service):
                 map_version.c.id.label(&#34;map_id&#34;),
                 map_version.c.filename,
                 t_map.c.display_name
-            ]).select_from(
+            ).select_from(
                 map_pool.outerjoin(map_pool_map_version)
                 .outerjoin(map_version)
                 .outerjoin(t_map)
@@ -3847,7 +3847,7 @@ class LadderService(Service):
 
     async def fetch_matchmaker_queues(self, conn):
         result = await conn.execute(
-            select([
+            select(
                 matchmaker_queue.c.id,
                 matchmaker_queue.c.technical_name,
                 matchmaker_queue.c.team_size,
@@ -3857,7 +3857,7 @@ class LadderService(Service):
                 matchmaker_queue_map_pool.c.max_rating,
                 game_featuredMods.c.gamemod,
                 leaderboard.c.technical_name.label(&#34;rating_type&#34;)
-            ])
+            )
             .select_from(
                 matchmaker_queue
                 .join(matchmaker_queue_map_pool)
@@ -3898,10 +3898,10 @@ class LadderService(Service):
     async def fetch_rating_peak(self, rating_type):
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([
+                select(
                     leaderboard_rating_journal.c.rating_mean_before,
                     leaderboard_rating_journal.c.rating_deviation_before
-                ])
+                )
                 .select_from(leaderboard_rating_journal.join(leaderboard))
                 .where(leaderboard.c.technical_name == rating_type)
                 .order_by(leaderboard_rating_journal.c.id.desc())
@@ -4349,9 +4349,9 @@ class LadderService(Service):
         async with self._db.acquire() as conn:
             result = []
             for player in players:
-                query = select([
+                query = select(
                     game_stats.c.mapId,
-                ]).select_from(
+                ).select_from(
                     game_player_stats
                     .join(game_stats)
                     .join(matchmaker_queue_game)
@@ -4430,7 +4430,7 @@ class LadderService(Service):
 </summary>
 <pre><code class="python">async def fetch_map_pools(self, conn) -&gt; dict[int, tuple[str, list[Map]]]:
     result = await conn.execute(
-        select([
+        select(
             map_pool.c.id,
             map_pool.c.name,
             map_pool_map_version.c.weight,
@@ -4438,7 +4438,7 @@ class LadderService(Service):
             map_version.c.id.label(&#34;map_id&#34;),
             map_version.c.filename,
             t_map.c.display_name
-        ]).select_from(
+        ).select_from(
             map_pool.outerjoin(map_pool_map_version)
             .outerjoin(map_version)
             .outerjoin(t_map)
@@ -4493,7 +4493,7 @@ class LadderService(Service):
 </summary>
 <pre><code class="python">async def fetch_matchmaker_queues(self, conn):
     result = await conn.execute(
-        select([
+        select(
             matchmaker_queue.c.id,
             matchmaker_queue.c.technical_name,
             matchmaker_queue.c.team_size,
@@ -4503,7 +4503,7 @@ class LadderService(Service):
             matchmaker_queue_map_pool.c.max_rating,
             game_featuredMods.c.gamemod,
             leaderboard.c.technical_name.label(&#34;rating_type&#34;)
-        ])
+        )
         .select_from(
             matchmaker_queue
             .join(matchmaker_queue_map_pool)
@@ -4554,10 +4554,10 @@ class LadderService(Service):
 <pre><code class="python">async def fetch_rating_peak(self, rating_type):
     async with self._db.acquire() as conn:
         result = await conn.execute(
-            select([
+            select(
                 leaderboard_rating_journal.c.rating_mean_before,
                 leaderboard_rating_journal.c.rating_deviation_before
-            ])
+            )
             .select_from(leaderboard_rating_journal.join(leaderboard))
             .where(leaderboard.c.technical_name == rating_type)
             .order_by(leaderboard_rating_journal.c.id.desc())
@@ -4614,9 +4614,9 @@ class LadderService(Service):
     async with self._db.acquire() as conn:
         result = []
         for player in players:
-            query = select([
+            query = select(
                 game_stats.c.mapId,
-            ]).select_from(
+            ).select_from(
                 game_player_stats
                 .join(game_stats)
                 .join(matchmaker_queue_game)
@@ -5995,17 +5995,17 @@ class PlayerService(Service):
     async def fetch_player_data(self, player):
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([user_group.c.technical_name])
+                select(user_group.c.technical_name)
                 .select_from(user_group_assignment.join(user_group))
                 .where(user_group_assignment.c.user_id == player.id)
             )
             player.user_groups = {row.technical_name for row in result}
 
-            sql = select([
+            sql = select(
                 avatars_list.c.url,
                 avatars_list.c.tooltip,
                 clan.c.tag
-            ], use_labels=True).select_from(
+            ).select_from(
                 login
                 .outerjoin(clan_membership)
                 .outerjoin(clan)
@@ -6041,12 +6041,12 @@ class PlayerService(Service):
             await self._fetch_player_ratings(player, conn)
 
     async def _fetch_player_ratings(self, player, conn):
-        sql = select([
+        sql = select(
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation,
             leaderboard_rating.c.total_games,
             leaderboard.c.technical_name,
-        ]).select_from(
+        ).select_from(
             leaderboard.join(leaderboard_rating)
         ).where(
             leaderboard_rating.c.login_id == player.id
@@ -6077,12 +6077,12 @@ class PlayerService(Service):
             return
 
         sql = select(
-            [
-                global_rating.c.mean, global_rating.c.deviation,
-                global_rating.c.numGames,
-                ladder1v1_rating.c.mean, ladder1v1_rating.c.deviation,
-                ladder1v1_rating.c.numGames,
-            ], use_labels=True
+            global_rating.c.mean,
+            global_rating.c.deviation,
+            global_rating.c.numGames,
+            ladder1v1_rating.c.mean,
+            ladder1v1_rating.c.deviation,
+            ladder1v1_rating.c.numGames,
         ).select_from(
             login.outerjoin(ladder1v1_rating).outerjoin(global_rating)
         ).where(
@@ -6098,15 +6098,15 @@ class PlayerService(Service):
         row = row._mapping
 
         table_map = {
-            RatingType.GLOBAL: &#34;global_rating_{}&#34;,
-            RatingType.LADDER_1V1: &#34;ladder1v1_rating_{}&#34;,
+            RatingType.GLOBAL: global_rating,
+            RatingType.LADDER_1V1: ladder1v1_rating,
         }
         for rating_type in rating_types:
             if rating_type not in table_map:
                 raise ValueError(f&#34;Unknown rating type {rating_type}.&#34;)
 
             table = table_map[rating_type]
-            if row[table.format(&#34;mean&#34;)] is None:
+            if row[table.c.mean] is None:
                 self._logger.info(
                     &#34;Found no %s ratings for Player with id %i&#34;,
                     rating_type, player.id
@@ -6114,10 +6114,10 @@ class PlayerService(Service):
                 continue
 
             player.ratings[rating_type] = (
-                row[table.format(&#34;mean&#34;)],
-                row[table.format(&#34;deviation&#34;)]
+                row[table.c.mean],
+                row[table.c.deviation]
             )
-            player.game_count[rating_type] = row[table.format(&#34;numGames&#34;)]
+            player.game_count[rating_type] = row[table.c.numGames]
 
     def remove_player(self, player: Player):
         if player.id in self._players:
@@ -6127,7 +6127,7 @@ class PlayerService(Service):
     async def has_permission_role(self, player: Player, role_name: str) -&gt; bool:
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([group_permission.c.id])
+                select(group_permission.c.id)
                 .select_from(
                     user_group_assignment
                     .join(group_permission_assignment, onclause=(
@@ -6239,17 +6239,17 @@ def all_players(self) -&gt; ValuesView[Player]:
 <pre><code class="python">async def fetch_player_data(self, player):
     async with self._db.acquire() as conn:
         result = await conn.execute(
-            select([user_group.c.technical_name])
+            select(user_group.c.technical_name)
             .select_from(user_group_assignment.join(user_group))
             .where(user_group_assignment.c.user_id == player.id)
         )
         player.user_groups = {row.technical_name for row in result}
 
-        sql = select([
+        sql = select(
             avatars_list.c.url,
             avatars_list.c.tooltip,
             clan.c.tag
-        ], use_labels=True).select_from(
+        ).select_from(
             login
             .outerjoin(clan_membership)
             .outerjoin(clan)
@@ -6310,7 +6310,7 @@ def all_players(self) -&gt; ValuesView[Player]:
 <pre><code class="python">async def has_permission_role(self, player: Player, role_name: str) -&gt; bool:
     async with self._db.acquire() as conn:
         result = await conn.execute(
-            select([group_permission.c.id])
+            select(group_permission.c.id)
             .select_from(
                 user_group_assignment
                 .join(group_permission_assignment, onclause=(
@@ -6498,11 +6498,11 @@ class RatingService(Service):
     async def update_data(self):
         async with self._db.acquire() as conn:
             initializer = leaderboard.alias()
-            sql = select([
+            sql = select(
                 leaderboard.c.id,
                 leaderboard.c.technical_name,
                 initializer.c.technical_name.label(&#34;initializer&#34;)
-            ]).select_from(
+            ).select_from(
                 leaderboard.outerjoin(
                     initializer,
                     leaderboard.c.initializer_id == initializer.c.id
@@ -6715,12 +6715,12 @@ class RatingService(Service):
     async def _get_all_player_ratings(
         self, conn, player_ids: list[PlayerID]
     ) -&gt; dict[PlayerID, PlayerRatings]:
-        sql = select([
+        sql = select(
             leaderboard_rating.c.login_id,
             leaderboard.c.technical_name,
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation
-        ]).join(leaderboard).where(
+        ).join(leaderboard).where(
             leaderboard_rating.c.login_id.in_(player_ids)
         )
         result = await conn.execute(sql)
@@ -6822,7 +6822,7 @@ class RatingService(Service):
             rating_deviation_before=bindparam(&#34;rating_deviation_before&#34;),
             rating_mean_after=bindparam(&#34;rating_mean_after&#34;),
             rating_deviation_after=bindparam(&#34;rating_deviation_after&#34;),
-            game_player_stats_id=select([game_player_stats.c.id]).where(
+            game_player_stats_id=select(game_player_stats.c.id).where(
                 and_(
                     game_player_stats.c.playerId == bindparam(&#34;player_id&#34;),
                     game_player_stats.c.gameId == game_id,
@@ -7031,11 +7031,11 @@ class RatingService(Service):
 <pre><code class="python">async def update_data(self):
     async with self._db.acquire() as conn:
         initializer = leaderboard.alias()
-        sql = select([
+        sql = select(
             leaderboard.c.id,
             leaderboard.c.technical_name,
             initializer.c.technical_name.label(&#34;initializer&#34;)
-        ]).select_from(
+        ).select_from(
             leaderboard.outerjoin(
                 initializer,
                 leaderboard.c.initializer_id == initializer.c.id

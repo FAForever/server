@@ -275,7 +275,7 @@ def stat_db_errors():
 <dl>
 <dt id="server.db.AsyncConnection"><code class="flex name class">
 <span>class <span class="ident">AsyncConnection</span></span>
-<span>(</span><span>async_engine, sync_connection=None)</span>
+<span>(</span><span>async_engine: <a title="server.db.AsyncEngine" href="#server.db.AsyncEngine">AsyncEngine</a>, sync_connection: Optional[Connection] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>An asyncio proxy for a :class:<code>_engine.Connection</code>.</p>
@@ -434,16 +434,18 @@ async with engine.connect() as conn:
 <li>sqlalchemy.ext.asyncio.base.ProxyComparable</li>
 <li>sqlalchemy.ext.asyncio.base.ReversibleProxy</li>
 <li>sqlalchemy.ext.asyncio.base.StartableContext</li>
+<li>collections.abc.Awaitable</li>
+<li>typing.Generic</li>
 <li>abc.ABC</li>
 <li>sqlalchemy.ext.asyncio.engine.AsyncConnectable</li>
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="server.db.AsyncConnection.sync_connection"><code class="name">var <span class="ident">sync_connection</span> : sqlalchemy.future.engine.Connection</code></dt>
+<dt id="server.db.AsyncConnection.sync_connection"><code class="name">var <span class="ident">sync_connection</span> : Optional[sqlalchemy.engine.base.Connection]</code></dt>
 <dd>
 <div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
 </dd>
-<dt id="server.db.AsyncConnection.sync_engine"><code class="name">var <span class="ident">sync_engine</span> : sqlalchemy.future.engine.Engine</code></dt>
+<dt id="server.db.AsyncConnection.sync_engine"><code class="name">var <span class="ident">sync_engine</span> : sqlalchemy.engine.base.Engine</code></dt>
 <dd>
 <div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
 </dd>
@@ -494,7 +496,7 @@ an object that is in both the :class:<code>_expression.ClauseElement</code> and
 <li>:class:<code>_expression.TextClause</code> and
 :class:<code>_expression.TextualSelect</code></li>
 <li>:class:<code>_schema.DDL</code> and objects which inherit from
-:class:<code>_schema.DDLElement</code></li>
+:class:<code>_schema.ExecutableDDLElement</code></li>
 </ul>
 <p>:param parameters: parameters which will be bound into the statement.
 This may be either a dictionary of parameter names to values,
@@ -508,7 +510,7 @@ method will be used.</p>
 which will be associated with the statement execution.
 This
 dictionary can provide a subset of the options that are accepted
-by :meth:<code>_future.Connection.execution_options</code>.</p>
+by :meth:<code>_engine.Connection.execution_options</code>.</p>
 <p>:return: a :class:<code>_engine.Result</code> object.</p></div>
 <details class="source">
 <summary>
@@ -534,8 +536,35 @@ by :meth:<code>_future.Connection.execution_options</code>.</p>
 <span>async def <span class="ident">stream</span></span>(<span>self, statement, parameters=None, execution_options=immutabledict({}), **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Execute a statement and return a streaming
-:class:<code>_asyncio.AsyncResult</code> object.</p></div>
+<div class="desc"><p>Execute a statement and return an awaitable yielding a
+:class:<code>_asyncio.AsyncResult</code> object.</p>
+<p>E.g.::</p>
+<pre><code>result = await conn.stream(stmt):
+async for row in result:
+    print(f"{row}")
+</code></pre>
+<p>The :meth:<code>.<a title="server.db.AsyncConnection.stream" href="#server.db.AsyncConnection.stream">AsyncConnection.stream()</a></code>
+method supports optional context manager use against the
+:class:<code>.AsyncResult</code> object, as in::</p>
+<pre><code>async with conn.stream(stmt) as result:
+    async for row in result:
+        print(f"{row}")
+</code></pre>
+<p>In the above pattern, the :meth:<code>.AsyncResult.close</code> method is
+invoked unconditionally, even if the iterator is interrupted by an
+exception throw.
+Context manager use remains optional, however,
+and the function may be called in either an <code>async with fn():</code> or
+<code>await fn()</code> style.</p>
+<div class="admonition versionadded">
+<p class="admonition-title">Added in version:&ensp;2.0.0b3 added context manager support</p>
+</div>
+<p>:return: an awaitable object that will yield an
+:class:<code>_asyncio.AsyncResult</code> object.</p>
+<div class="admonition seealso">
+<p class="admonition-title">Seealso</p>
+<p>:meth:<code>.AsyncConnection.stream_scalars</code></p>
+</div></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -560,7 +589,7 @@ by :meth:<code>_future.Connection.execution_options</code>.</p>
 </dd>
 <dt id="server.db.AsyncEngine"><code class="flex name class">
 <span>class <span class="ident">AsyncEngine</span></span>
-<span>(</span><span>sync_engine)</span>
+<span>(</span><span>sync_engine: Engine)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>For overriding the connection class used to execute statements.</p>
@@ -586,11 +615,12 @@ is undocumented and probably more fragile so we subclass instead.</p></div>
 <li>sqlalchemy.ext.asyncio.engine.AsyncEngine</li>
 <li>sqlalchemy.ext.asyncio.base.ProxyComparable</li>
 <li>sqlalchemy.ext.asyncio.base.ReversibleProxy</li>
+<li>typing.Generic</li>
 <li>sqlalchemy.ext.asyncio.engine.AsyncConnectable</li>
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="server.db.AsyncEngine.sync_engine"><code class="name">var <span class="ident">sync_engine</span> : sqlalchemy.future.engine.Engine</code></dt>
+<dt id="server.db.AsyncEngine.sync_engine"><code class="name">var <span class="ident">sync_engine</span> : sqlalchemy.engine.base.Engine</code></dt>
 <dd>
 <div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
 </dd>
