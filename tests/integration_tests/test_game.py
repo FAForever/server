@@ -677,7 +677,7 @@ async def test_ladder_game_draw_bug(lobby_server, database):
 
     async with database.acquire() as conn:
         result = await conn.execute(
-            select([game_player_stats]).where(
+            select(game_player_stats).where(
                 game_player_stats.c.gameId == game_id
             )
         )

@@ -142,23 +142,23 @@ async def test_game_matchmaking_start(lobby_server, database):
     await read_until_launched(guest, game_id)
 
     async with database.acquire() as conn:
-        result = await conn.execute(select([
+        result = await conn.execute(select(
             game_player_stats.c.faction,
             game_player_stats.c.color,
             game_player_stats.c.team,
             game_player_stats.c.place,
-        ]).where(game_player_stats.c.gameId == game_id))
+        ).where(game_player_stats.c.gameId == game_id))
         rows = result.fetchall()
         assert len(rows) == 2
         for row in rows:
-            assert row["faction"] == 1
-            assert row["color"] in (1, 2)
-            assert row["team"] is not None
-            assert row["place"] is not None
+            assert row.faction == 1
+            assert row.color in (1, 2)
+            assert row.team is not None
+            assert row.place is not None
 
-        result = await conn.execute(select([
+        result = await conn.execute(select(
             matchmaker_queue.c.technical_name,
-        ]).select_from(
+        ).select_from(
             matchmaker_queue_game.outerjoin(matchmaker_queue)
         ).where(matchmaker_queue_game.c.game_stats_id == game_id))
         row = result.fetchone()

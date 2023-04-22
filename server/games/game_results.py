@@ -213,11 +213,11 @@ class GameResultReports(Mapping):
         results = cls(game_id)
         async with database.acquire() as conn:
             result = await conn.execute(
-                select([
+                select(
                     game_player_stats.c.place,
                     game_player_stats.c.score,
                     game_player_stats.c.result
-                ]).where(game_player_stats.c.gameId == game_id)
+                ).where(game_player_stats.c.gameId == game_id)
             )
 
             for row in result:

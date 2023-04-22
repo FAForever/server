@@ -733,7 +733,7 @@ async def test_ratings_initialized_based_on_global_persisted(
 
     async with database.acquire() as conn:
         result = await conn.execute(
-            select([leaderboard_rating]).select_from(
+            select(leaderboard_rating).select_from(
                 leaderboard.join(leaderboard_rating)
             ).where(and_(
                 leaderboard.c.technical_name == "tmm_2v2",
@@ -744,7 +744,7 @@ async def test_ratings_initialized_based_on_global_persisted(
         assert row.mean > 2000
 
         result = await conn.execute(
-            select([leaderboard_rating_journal]).select_from(
+            select(leaderboard_rating_journal).select_from(
                 leaderboard
                 .join(leaderboard_rating_journal)
                 .join(game_player_stats)

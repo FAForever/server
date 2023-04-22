@@ -67,11 +67,11 @@ class RatingService(Service):
     async def update_data(self):
         async with self._db.acquire() as conn:
             initializer = leaderboard.alias()
-            sql = select([
+            sql = select(
                 leaderboard.c.id,
                 leaderboard.c.technical_name,
                 initializer.c.technical_name.label("initializer")
-            ]).select_from(
+            ).select_from(
                 leaderboard.outerjoin(
                     initializer,
                     leaderboard.c.initializer_id == initializer.c.id
@@ -284,12 +284,12 @@ class RatingService(Service):
     async def _get_all_player_ratings(
         self, conn, player_ids: list[PlayerID]
     ) -> dict[PlayerID, PlayerRatings]:
-        sql = select([
+        sql = select(
             leaderboard_rating.c.login_id,
             leaderboard.c.technical_name,
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation
-        ]).join(leaderboard).where(
+        ).join(leaderboard).where(
             leaderboard_rating.c.login_id.in_(player_ids)
         )
         result = await conn.execute(sql)
@@ -391,7 +391,7 @@ class RatingService(Service):
             rating_deviation_before=bindparam("rating_deviation_before"),
             rating_mean_after=bindparam("rating_mean_after"),
             rating_deviation_after=bindparam("rating_deviation_after"),
-            game_player_stats_id=select([game_player_stats.c.id]).where(
+            game_player_stats_id=select(game_player_stats.c.id).where(
                 and_(
                     game_player_stats.c.playerId == bindparam("player_id"),
                     game_player_stats.c.gameId == game_id,

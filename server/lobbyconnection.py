@@ -215,7 +215,7 @@ class LobbyConnection:
     async def command_coop_list(self, message):
         """Request for coop map list"""
         async with self._db.acquire() as conn:
-            result = await conn.stream(select([coop_map]))
+            result = await conn.stream(select(coop_map))
 
             campaigns = [
                 "FA Campaign",
@@ -377,13 +377,13 @@ class LobbyConnection:
     async def check_user_login(self, conn, username, password):
         # TODO: Hash passwords server-side so the hashing actually *does* something.
         result = await conn.execute(
-            select([
+            select(
                 t_login.c.id,
                 t_login.c.login,
                 t_login.c.password,
                 lobby_ban.c.reason,
                 lobby_ban.c.expires_at
-            ]).select_from(t_login.outerjoin(lobby_ban))
+            ).select_from(t_login.outerjoin(lobby_ban))
             .where(t_login.c.login == username)
             .order_by(lobby_ban.c.expires_at.desc())
         )
@@ -500,7 +500,7 @@ class LobbyConnection:
 
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([t_login.c.login])
+                select(t_login.c.login)
                 .where(t_login.c.id == player_id)
             )
             row = result.fetchone()
@@ -643,20 +643,19 @@ class LobbyConnection:
         foes = []
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([
+                select(
                     friends_and_foes.c.subject_id,
                     friends_and_foes.c.status
-                ]).where(
+                ).where(
                     friends_and_foes.c.user_id == self.player.id
                 )
             )
 
             for row in result:
-                target_id, status = row["subject_id"], row["status"]
-                if status == "FRIEND":
-                    friends.append(target_id)
+                if row.status == "FRIEND":
+                    friends.append(row.subject_id)
                 else:
-                    foes.append(target_id)
+                    foes.append(row.subject_id)
 
         self.player.friends = set(friends)
         self.player.foes = set(foes)
@@ -739,10 +738,10 @@ class LobbyConnection:
         if action == "list_avatar":
             async with self._db.acquire() as conn:
                 result = await conn.execute(
-                    select([
+                    select(
                         avatars_list.c.url,
                         avatars_list.c.tooltip
-                    ]).select_from(
+                    ).select_from(
                         avatars.outerjoin(
                             avatars_list
                         )
@@ -765,9 +764,10 @@ class LobbyConnection:
             async with self._db.acquire() as conn:
                 if avatar_url is not None:
                     result = await conn.execute(
-                        select([
-                            avatars_list.c.id, avatars_list.c.tooltip
-                        ]).select_from(
+                        select(
+                            avatars_list.c.id,
+                            avatars_list.c.tooltip
+                        ).select_from(
                             avatars.join(avatars_list)
                         ).where(
                             and_(
@@ -1261,7 +1261,7 @@ class LobbyConnection:
         async with self._db.acquire() as conn:
             now = datetime.utcnow()
             result = await conn.execute(
-                select([lobby_ban.c.reason, lobby_ban.c.expires_at])
+                select(lobby_ban.c.reason, lobby_ban.c.expires_at)
                 .where(lobby_ban.c.idUser == self.player.id)
                 .order_by(lobby_ban.c.expires_at.desc())
             )

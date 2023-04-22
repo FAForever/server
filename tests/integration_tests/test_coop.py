@@ -86,7 +86,7 @@ async def test_single_player_game_recorded(lobby_server, database):
 
     async with database.acquire() as conn:
         result = await conn.execute(
-            select([coop_leaderboard]).where(
+            select(coop_leaderboard).where(
                 coop_leaderboard.c.gameuid == game_id
             )
         )
