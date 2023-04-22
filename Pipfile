@@ -23,7 +23,7 @@ prometheus_client = "*"
 pyjwt = {version = ">=2.4.0", extras = ["crypto"]}
 pyyaml = "*"
 sortedcontainers = "*"
-sqlalchemy = "~=1.4"
+sqlalchemy = ">=2.0.0"
 trueskill = "*"
 twilio = ">=7.0.0"
 uvloop = {version = "*", markers = "sys_platform != 'win32'"}
