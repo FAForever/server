@@ -638,7 +638,7 @@ async def test_command_avatar_select(mocker, database, lobbyconnection: LobbyCon
 async def get_friends(player_id, database):
     async with database.acquire() as conn:
         result = await conn.execute(
-            select([friends_and_foes.c.subject_id]).where(
+            select(friends_and_foes.c.subject_id).where(
                 and_(
                     friends_and_foes.c.user_id == player_id,
                     friends_and_foes.c.status == "FRIEND"
@@ -646,7 +646,7 @@ async def get_friends(player_id, database):
             )
         )
 
-        return [row["subject_id"] for row in result]
+        return [row.subject_id for row in result]
 
 
 async def test_command_social_add_friend(lobbyconnection, database):
@@ -1055,12 +1055,12 @@ async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server
 
     # Check that the user has a ban entry in the database
     async with database.acquire() as conn:
-        result = await conn.execute(select([ban.c.reason]).where(
+        result = await conn.execute(select(ban.c.reason).where(
             ban.c.player_id == player_id
         ))
         rows = result.fetchall()
         assert rows is not None
-        assert rows[-1][ban.c.reason] == "Auto-banned because of fraudulent login attempt"
+        assert rows[-1].reason == "Auto-banned because of fraudulent login attempt"
 
 
 async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):

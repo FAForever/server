@@ -338,7 +338,7 @@ class GameConnection(GpgNetServerProtocol):
         secondary, delta = secondary, str(delta)
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([coop_map.c.id]).where(
+                select(coop_map.c.id).where(
                     coop_map.c.filename == self.game.map_file_path
                 )
             )

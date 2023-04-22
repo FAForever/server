@@ -123,7 +123,7 @@ class LadderService(Service):
 
     async def fetch_map_pools(self, conn) -> dict[int, tuple[str, list[Map]]]:
         result = await conn.execute(
-            select([
+            select(
                 map_pool.c.id,
                 map_pool.c.name,
                 map_pool_map_version.c.weight,
@@ -131,7 +131,7 @@ class LadderService(Service):
                 map_version.c.id.label("map_id"),
                 map_version.c.filename,
                 t_map.c.display_name
-            ]).select_from(
+            ).select_from(
                 map_pool.outerjoin(map_pool_map_version)
                 .outerjoin(map_version)
                 .outerjoin(t_map)
@@ -176,7 +176,7 @@ class LadderService(Service):
 
     async def fetch_matchmaker_queues(self, conn):
         result = await conn.execute(
-            select([
+            select(
                 matchmaker_queue.c.id,
                 matchmaker_queue.c.technical_name,
                 matchmaker_queue.c.team_size,
@@ -186,7 +186,7 @@ class LadderService(Service):
                 matchmaker_queue_map_pool.c.max_rating,
                 game_featuredMods.c.gamemod,
                 leaderboard.c.technical_name.label("rating_type")
-            ])
+            )
             .select_from(
                 matchmaker_queue
                 .join(matchmaker_queue_map_pool)
@@ -227,10 +227,10 @@ class LadderService(Service):
     async def fetch_rating_peak(self, rating_type):
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([
+                select(
                     leaderboard_rating_journal.c.rating_mean_before,
                     leaderboard_rating_journal.c.rating_deviation_before
-                ])
+                )
                 .select_from(leaderboard_rating_journal.join(leaderboard))
                 .where(leaderboard.c.technical_name == rating_type)
                 .order_by(leaderboard_rating_journal.c.id.desc())
@@ -678,9 +678,9 @@ class LadderService(Service):
         async with self._db.acquire() as conn:
             result = []
             for player in players:
-                query = select([
+                query = select(
                     game_stats.c.mapId,
-                ]).select_from(
+                ).select_from(
                     game_player_stats
                     .join(game_stats)
                     .join(matchmaker_queue_game)

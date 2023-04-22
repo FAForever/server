@@ -165,7 +165,7 @@ async def test_load_from_database(uninitialized_service):
 
 
 async def get_all_ratings(db: FAFDatabase, player_id: int):
-    rating_sql = select([leaderboard_rating]).where(
+    rating_sql = select(leaderboard_rating).where(
         and_(leaderboard_rating.c.login_id == player_id)
     )
 
@@ -218,8 +218,8 @@ async def test_new_player_rating_created(semiinitialized_service):
 
     db_ratings = await get_all_ratings(service._db, player_id)
     assert len(db_ratings) == 1  # Rating has been created
-    assert db_ratings[0]["mean"] == 1500
-    assert db_ratings[0]["deviation"] == 500
+    assert db_ratings[0].mean == 1500
+    assert db_ratings[0].deviation == 500
 
 
 async def test_rating(semiinitialized_service, game_rating_summary):
@@ -248,7 +248,10 @@ async def test_rating_persistence(semiinitialized_service):
             conn, game_id, rating_type, old_ratings, new_ratings, outcomes
         )
 
-        sql = select([game_player_stats.c.id, game_player_stats.c.after_mean]).where(
+        sql = select(
+            game_player_stats.c.id,
+            game_player_stats.c.after_mean
+        ).where(
             and_(
                 game_player_stats.c.gameId == game_id,
                 game_player_stats.c.playerId == player_id,
@@ -257,7 +260,7 @@ async def test_rating_persistence(semiinitialized_service):
         result = await conn.execute(sql)
         gps_row = result.fetchone()
 
-        sql = select([leaderboard_rating.c.mean]).where(
+        sql = select(leaderboard_rating.c.mean).where(
             and_(
                 leaderboard_rating.c.login_id == player_id,
                 leaderboard_rating.c.leaderboard_id == rating_type_id,
@@ -266,16 +269,15 @@ async def test_rating_persistence(semiinitialized_service):
         result = await conn.execute(sql)
         rating_row = result.fetchone()
 
-        sql = select([leaderboard_rating_journal.c.rating_mean_after]).where(
-            leaderboard_rating_journal.c.game_player_stats_id
-            == gps_row[game_player_stats.c.id]
+        sql = select(leaderboard_rating_journal.c.rating_mean_after).where(
+            leaderboard_rating_journal.c.game_player_stats_id == gps_row.id
         )
         result = await conn.execute(sql)
         journal_row = result.fetchone()
 
-    assert gps_row[game_player_stats.c.after_mean] == after_mean
-    assert rating_row[leaderboard_rating.c.mean] == after_mean
-    assert journal_row[leaderboard_rating_journal.c.rating_mean_after] == after_mean
+    assert gps_row.after_mean == after_mean
+    assert rating_row.mean == after_mean
+    assert journal_row.rating_mean_after == after_mean
 
 
 async def test_update_player_service(uninitialized_service, player_service):

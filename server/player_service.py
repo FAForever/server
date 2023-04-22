@@ -78,17 +78,17 @@ class PlayerService(Service):
     async def fetch_player_data(self, player):
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([user_group.c.technical_name])
+                select(user_group.c.technical_name)
                 .select_from(user_group_assignment.join(user_group))
                 .where(user_group_assignment.c.user_id == player.id)
             )
             player.user_groups = {row.technical_name for row in result}
 
-            sql = select([
+            sql = select(
                 avatars_list.c.url,
                 avatars_list.c.tooltip,
                 clan.c.tag
-            ], use_labels=True).select_from(
+            ).select_from(
                 login
                 .outerjoin(clan_membership)
                 .outerjoin(clan)
@@ -124,12 +124,12 @@ class PlayerService(Service):
             await self._fetch_player_ratings(player, conn)
 
     async def _fetch_player_ratings(self, player, conn):
-        sql = select([
+        sql = select(
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation,
             leaderboard_rating.c.total_games,
             leaderboard.c.technical_name,
-        ]).select_from(
+        ).select_from(
             leaderboard.join(leaderboard_rating)
         ).where(
             leaderboard_rating.c.login_id == player.id
@@ -160,12 +160,12 @@ class PlayerService(Service):
             return
 
         sql = select(
-            [
-                global_rating.c.mean, global_rating.c.deviation,
-                global_rating.c.numGames,
-                ladder1v1_rating.c.mean, ladder1v1_rating.c.deviation,
-                ladder1v1_rating.c.numGames,
-            ], use_labels=True
+            global_rating.c.mean,
+            global_rating.c.deviation,
+            global_rating.c.numGames,
+            ladder1v1_rating.c.mean,
+            ladder1v1_rating.c.deviation,
+            ladder1v1_rating.c.numGames,
         ).select_from(
             login.outerjoin(ladder1v1_rating).outerjoin(global_rating)
         ).where(
@@ -181,15 +181,15 @@ class PlayerService(Service):
         row = row._mapping
 
         table_map = {
-            RatingType.GLOBAL: "global_rating_{}",
-            RatingType.LADDER_1V1: "ladder1v1_rating_{}",
+            RatingType.GLOBAL: global_rating,
+            RatingType.LADDER_1V1: ladder1v1_rating,
         }
         for rating_type in rating_types:
             if rating_type not in table_map:
                 raise ValueError(f"Unknown rating type {rating_type}.")
 
             table = table_map[rating_type]
-            if row[table.format("mean")] is None:
+            if row[table.c.mean] is None:
                 self._logger.info(
                     "Found no %s ratings for Player with id %i",
                     rating_type, player.id
@@ -197,10 +197,10 @@ class PlayerService(Service):
                 continue
 
             player.ratings[rating_type] = (
-                row[table.format("mean")],
-                row[table.format("deviation")]
+                row[table.c.mean],
+                row[table.c.deviation]
             )
-            player.game_count[rating_type] = row[table.format("numGames")]
+            player.game_count[rating_type] = row[table.c.numGames]
 
     def remove_player(self, player: Player):
         if player.id in self._players:
@@ -210,7 +210,7 @@ class PlayerService(Service):
     async def has_permission_role(self, player: Player, role_name: str) -> bool:
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select([group_permission.c.id])
+                select(group_permission.c.id)
                 .select_from(
                     user_group_assignment
                     .join(group_permission_assignment, onclause=(

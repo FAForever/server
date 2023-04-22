@@ -523,7 +523,7 @@ async def test_ice_servers_empty(lobby_server):
 
 async def get_player_selected_avatars(conn, player_id):
     return await conn.execute(
-        select([avatars.c.id, avatars_list.c.url])
+        select(avatars.c.id, avatars_list.c.url)
         .select_from(avatars_list.join(avatars))
         .where(
             and_(

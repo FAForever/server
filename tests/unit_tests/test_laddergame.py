@@ -134,20 +134,20 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
 
     async with database.acquire() as conn:
         result = await conn.execute(
-            select([game_player_stats])
+            select(game_player_stats)
             .where(game_player_stats.c.gameId == laddergame.id)
         )
         rows = list(result.fetchall())
 
-    assert rows[0]["mean"] == before_mean[players[0].id]
-    assert rows[0]["deviation"] == before_deviation[players[0].id]
-    assert rows[0]["after_mean"] > rows[0]["mean"]
-    assert rows[0]["after_deviation"] < rows[0]["deviation"]
+    assert rows[0].mean == before_mean[players[0].id]
+    assert rows[0].deviation == before_deviation[players[0].id]
+    assert rows[0].after_mean > rows[0].mean
+    assert rows[0].after_deviation < rows[0].deviation
 
-    assert rows[1]["mean"] == before_mean[players[1].id]
-    assert rows[1]["deviation"] == before_deviation[players[1].id]
-    assert rows[1]["after_mean"] < rows[0]["mean"]
-    assert rows[1]["after_deviation"] < rows[0]["deviation"]
+    assert rows[1].mean == before_mean[players[1].id]
+    assert rows[1].deviation == before_deviation[players[1].id]
+    assert rows[1].after_mean < rows[0].mean
+    assert rows[1].after_deviation < rows[0].deviation
 
 
 async def test_persist_rating_victory(laddergame: LadderGame, database,
@@ -157,10 +157,10 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
     laddergame.set_player_option(players[0].id, "Team", 2)
     laddergame.set_player_option(players[1].id, "Team", 3)
 
-    rating_sql = select([
+    rating_sql = select(
         leaderboard_rating.c.total_games,
         leaderboard_rating.c.won_games
-    ]).where(
+    ).where(
         and_(
             leaderboard_rating.c.login_id.in_([players[0].id, players[1].id]),
             leaderboard_rating.c.leaderboard_id == 2,
@@ -184,7 +184,7 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
     async with database.acquire() as conn:
         result_after = list(await conn.execute(str(compiled)))
 
-    assert result_after[0]["total_games"] == result_before[0]["total_games"] + 1
-    assert result_after[1]["total_games"] == result_before[1]["total_games"] + 1
-    assert result_after[0]["won_games"] == result_before[0]["won_games"] + 1
-    assert result_after[1]["won_games"] == result_before[1]["won_games"]
+    assert result_after[0].total_games == result_before[0].total_games + 1
+    assert result_after[1].total_games == result_before[1].total_games + 1
+    assert result_after[0].won_games == result_before[0].won_games + 1
+    assert result_after[1].won_games == result_before[1].won_games

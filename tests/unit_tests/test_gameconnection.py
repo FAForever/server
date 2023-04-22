@@ -536,7 +536,8 @@ async def test_handle_action_OperationComplete(
     async with database.acquire() as conn:
         result = await conn.execute(
             select(
-                [coop_leaderboard.c.secondary, coop_leaderboard.c.gameuid]
+                coop_leaderboard.c.secondary,
+                coop_leaderboard.c.gameuid
             ).where(coop_leaderboard.c.gameuid == coop_game.id),
         )
 
@@ -559,7 +560,8 @@ async def test_handle_action_OperationComplete_primary_incomplete(
     async with database.acquire() as conn:
         result = await conn.execute(
             select(
-                [coop_leaderboard.c.secondary, coop_leaderboard.c.gameuid]
+                coop_leaderboard.c.secondary,
+                coop_leaderboard.c.gameuid
             ).where(coop_leaderboard.c.gameuid == coop_game.id),
         )
 
@@ -581,7 +583,8 @@ async def test_handle_action_OperationComplete_non_coop_game(
     async with database.acquire() as conn:
         result = await conn.execute(
             select(
-                [coop_leaderboard.c.secondary, coop_leaderboard.c.gameuid]
+                coop_leaderboard.c.secondary,
+                coop_leaderboard.c.gameuid
             ).where(coop_leaderboard.c.gameuid == ugame.id),
         )
 
@@ -604,7 +607,8 @@ async def test_handle_action_OperationComplete_invalid(
     async with database.acquire() as conn:
         result = await conn.execute(
             select(
-                [coop_leaderboard.c.secondary, coop_leaderboard.c.gameuid]
+                coop_leaderboard.c.secondary,
+                coop_leaderboard.c.gameuid
             ).where(coop_leaderboard.c.gameuid == coop_game.id),
         )
 
