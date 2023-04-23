@@ -7,7 +7,7 @@ FROM python:3.9-slim as builder
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends git
 
-RUN pip install pipenv==2023.2.18
+RUN pip install pipenv==2023.4.20
 
 WORKDIR /code/
 
