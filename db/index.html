@@ -439,17 +439,6 @@ async with engine.connect() as conn:
 <li>abc.ABC</li>
 <li>sqlalchemy.ext.asyncio.engine.AsyncConnectable</li>
 </ul>
-<h3>Instance variables</h3>
-<dl>
-<dt id="server.db.AsyncConnection.sync_connection"><code class="name">var <span class="ident">sync_connection</span> : Optional[sqlalchemy.engine.base.Connection]</code></dt>
-<dd>
-<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
-</dd>
-<dt id="server.db.AsyncConnection.sync_engine"><code class="name">var <span class="ident">sync_engine</span> : sqlalchemy.engine.base.Engine</code></dt>
-<dd>
-<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="server.db.AsyncConnection.deadlock_retry_execute"><code class="name flex">
@@ -618,13 +607,6 @@ is undocumented and probably more fragile so we subclass instead.</p></div>
 <li>typing.Generic</li>
 <li>sqlalchemy.ext.asyncio.engine.AsyncConnectable</li>
 </ul>
-<h3>Instance variables</h3>
-<dl>
-<dt id="server.db.AsyncEngine.sync_engine"><code class="name">var <span class="ident">sync_engine</span> : sqlalchemy.engine.base.Engine</code></dt>
-<dd>
-<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="server.db.AsyncEngine.connect"><code class="name flex">
@@ -748,15 +730,12 @@ method.</p></div>
 <li><code><a title="server.db.AsyncConnection.deadlock_retry_execute" href="#server.db.AsyncConnection.deadlock_retry_execute">deadlock_retry_execute</a></code></li>
 <li><code><a title="server.db.AsyncConnection.execute" href="#server.db.AsyncConnection.execute">execute</a></code></li>
 <li><code><a title="server.db.AsyncConnection.stream" href="#server.db.AsyncConnection.stream">stream</a></code></li>
-<li><code><a title="server.db.AsyncConnection.sync_connection" href="#server.db.AsyncConnection.sync_connection">sync_connection</a></code></li>
-<li><code><a title="server.db.AsyncConnection.sync_engine" href="#server.db.AsyncConnection.sync_engine">sync_engine</a></code></li>
 </ul>
 </li>
 <li>
 <h4><code><a title="server.db.AsyncEngine" href="#server.db.AsyncEngine">AsyncEngine</a></code></h4>
 <ul class="">
 <li><code><a title="server.db.AsyncEngine.connect" href="#server.db.AsyncEngine.connect">connect</a></code></li>
-<li><code><a title="server.db.AsyncEngine.sync_engine" href="#server.db.AsyncEngine.sync_engine">sync_engine</a></code></li>
 </ul>
 </li>
 <li>
