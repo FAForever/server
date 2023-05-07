@@ -9,7 +9,7 @@ project to build on Windows using the WSL.*
 You will need the following software installed on your system:
 -   [Docker](https://docs.docker.com/engine/)
 -   [Docker Compose](https://github.com/docker/compose)
--   [Python 3.9](https://www.python.org/downloads/)
+-   [Python 3.10](https://www.python.org/downloads/)
 -   [Pipenv](https://github.com/pypa/pipenv/)
 
 Once you have Docker installed, make sure to add yourself to the `docker` group

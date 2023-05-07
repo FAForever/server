@@ -4,7 +4,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/ada42f6e09a341a88f3dae262a43e86e)](https://www.codacy.com/gh/FAForever/server/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=FAForever/server&amp;utm_campaign=Badge_Grade)
 [![docs](https://img.shields.io/badge/docs-latest-purple)](https://faforever.github.io/server/)
 [![license](https://img.shields.io/badge/license-GPLv3-blue)](license.txt)
-![python](https://img.shields.io/badge/python-3.9-3776AB)
+![python](https://img.shields.io/badge/python-3.10-3776AB)
 
 This is the source code for the
 [Forged Alliance Forever](https://www.faforever.com/) lobby server.
