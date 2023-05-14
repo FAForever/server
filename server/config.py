@@ -45,12 +45,14 @@ class ConfigurationStore:
             {
                 "ADDRESS": "",
                 "PORT": 8001,
+                "NAME": None,
                 "PROTOCOL": "QDataStreamProtocol",
                 "PROXY": False,
             },
             {
                 "ADDRESS": "",
                 "PORT": 8002,
+                "NAME": None,
                 "PROTOCOL": "SimpleJsonProtocol",
                 "PROXY": False
             }

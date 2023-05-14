@@ -114,11 +114,14 @@ async def main():
             host = cfg["ADDRESS"]
             port = cfg["PORT"]
             proto_class_name = cfg["PROTOCOL"]
+            name = cfg.get("NAME")
             proxy = cfg.get("PROXY", False)
+
             proto_class = PROTO_CLASSES[proto_class_name]
 
             await instance.listen(
                 address=(host, port),
+                name=name,
                 protocol_class=proto_class,
                 proxy=proxy
             )
