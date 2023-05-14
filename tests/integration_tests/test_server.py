@@ -1,29 +1,64 @@
 import asyncio
 import contextlib
+import re
 
 import pytest
 from sqlalchemy import and_, select
 
 from server.db.models import avatars, avatars_list, ban
+from server.protocol import DisconnectedError
 from tests.utils import fast_forward
 
 from .conftest import (
     connect_and_sign_in,
     connect_client,
     connect_mq_consumer,
+    get_session,
     perform_login,
     read_until,
     read_until_command
 )
 from .test_game import host_game, join_game, open_fa, send_player_options
 
-TEST_ADDRESS = ("127.0.0.1", None)
+
+@fast_forward(10)
+async def test_server_proxy_mode(lobby_server_proxy, proxy_server, caplog):
+    with caplog.at_level("TRACE"):
+        _, _, proto = await connect_and_sign_in(
+            ("test", "test_password"),
+            lobby_server_proxy,
+            address=proxy_server.sockets[0].getsockname()
+        )
+        await read_until_command(proto, "game_info", timeout=5)
+
+    matches = [
+        re.search(
+            r"Client connected from \d+\.\d+\.\d+\.\d+:\d+ via proxy \d+\.\d+\.\d+\.\d+:\d+",
+            message
+        )
+        for message in caplog.messages
+        if "Client connected from" in message
+    ]
+    assert matches and matches[0]
+
+
+async def test_server_proxy_mode_direct(lobby_server_proxy, caplog):
+    with caplog.at_level("TRACE"):
+        proto = await connect_client(lobby_server_proxy)
+        with pytest.raises(DisconnectedError):
+            await get_session(proto)
+
+    assert "this may indicate a misconfiguration" in caplog.text
 
 
 async def test_server_deprecated_client(lobby_server):
     proto = await connect_client(lobby_server)
 
-    await proto.send_message({"command": "ask_session", "user_agent": "faf-client", "version": "0.0.0"})
+    await proto.send_message({
+        "command": "ask_session",
+        "user_agent": "faf-client",
+        "version": "0.0.0"
+    })
     msg = await proto.read_message()
 
     assert msg["command"] == "notice"
