@@ -205,7 +205,7 @@ def transport():
 
 
 @pytest.fixture
-def game(database, players):
+async def game(database, players):
     return make_game(database, 1, players)
 
 
@@ -214,7 +214,7 @@ COOP_GAME_UID = 1
 
 
 @pytest.fixture
-def ugame(database, players):
+async def ugame(database, players):
     global GAME_UID
     game = make_game(database, GAME_UID, players)
     GAME_UID += 1
@@ -222,7 +222,7 @@ def ugame(database, players):
 
 
 @pytest.fixture
-def coop_game(database, players):
+async def coop_game(database, players):
     global COOP_GAME_UID
     game = make_game(database, COOP_GAME_UID, players, game_type=CoopGame)
     game.validity = ValidityState.COOP_NOT_RANKED

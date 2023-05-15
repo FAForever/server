@@ -12,7 +12,7 @@ from tests.unit_tests.test_game import add_connected_players
 
 
 @pytest.fixture()
-def laddergame(database, game_service, game_stats_service):
+async def laddergame(database, game_service, game_stats_service):
     return LadderGame(
         id_=465312,
         database=database,
