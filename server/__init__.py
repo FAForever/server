@@ -243,21 +243,31 @@ class ServerInstance(object):
     async def listen(
         self,
         address: tuple[str, int],
-        protocol_class: type[Protocol] = QDataStreamProtocol
+        name: Optional[str] = None,
+        protocol_class: type[Protocol] = QDataStreamProtocol,
+        proxy: bool = False,
     ) -> ServerContext:
         """
         Start listening on a new address.
+
+        # Params
+        - `address`: Tuple indicating the host, port to listen on.
+        - `name`: String used to identify this context in log messages. The
+            default is to use the `protocol_class` name.
+        - `protocol_class`: The protocol class implementation to use.
+        - `proxy`: Boolean indicating whether or not to use the PROXY protocol.
+            See: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
         """
         if not self.started:
             await self.start_services()
 
         ctx = ServerContext(
-            f"{self.name}[{protocol_class.__name__}]",
+            f"{self.name}[{name or protocol_class.__name__}]",
             self.connection_factory,
             list(self.services.values()),
             protocol_class
         )
-        await ctx.listen(*address)
+        await ctx.listen(*address, proxy=proxy)
 
         self.contexts.add(ctx)
 

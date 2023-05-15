@@ -20,6 +20,7 @@ humanize = ">=2.6.0"
 maxminddb = "*"
 oauthlib = "*"
 prometheus_client = "*"
+proxy-protocol = "*"
 pyjwt = {version = ">=2.4.0", extras = ["crypto"]}
 pyyaml = "*"
 sortedcontainers = "*"

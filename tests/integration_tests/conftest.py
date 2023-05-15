@@ -4,10 +4,13 @@ import json
 import logging
 import textwrap
 from collections import defaultdict
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 from unittest import mock
 
 import aio_pika
+import proxyprotocol.dnsbl
+import proxyprotocol.server
+import proxyprotocol.server.protocol
 import pytest
 from aiohttp import web
 
@@ -115,7 +118,7 @@ def jwk_kid():
 
 
 @pytest.fixture
-async def lobby_contexts(
+async def lobby_server_factory(
     event_loop,
     database,
     broadcast_service,
@@ -131,11 +134,9 @@ async def lobby_contexts(
     policy_server,
     jwks_server
 ):
-    mock_policy = mock.patch(
-        "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
-        f"http://{policy_server.host}:{policy_server.port}"
-    )
-    with mock_policy:
+    all_contexts = []
+
+    async def make_lobby_server(config):
         instance = ServerInstance(
             "UnitTestServer",
             database,
@@ -157,34 +158,79 @@ async def lobby_contexts(
         broadcast_service.server = instance
 
         contexts = {
-            "qstream": await instance.listen(
-                ("127.0.0.1", None),
-                protocol_class=QDataStreamProtocol
-            ),
-            "json": await instance.listen(
-                ("127.0.0.1", None),
-                protocol_class=SimpleJsonProtocol
+            name: await instance.listen(
+                (cfg["ADDRESS"], cfg["PORT"]),
+                protocol_class=cfg["PROTOCOL"],
+                proxy=cfg.get("PROXY", False)
             )
+            for name, cfg in config.items()
         }
+        all_contexts.extend(contexts.values())
         for context in contexts.values():
             context.__connected_client_protos = []
         player_service.is_uniqueid_exempt = lambda id: True
 
-        yield contexts
+        return contexts
 
-        for context in contexts.values():
-            await context.stop()
-            await context.shutdown()
-            # Close connected protocol objects
-            # https://github.com/FAForever/server/issues/717
-            for proto in context.__connected_client_protos:
-                proto.abort()
-        await exhaust_callbacks(event_loop)
+    mock_policy = mock.patch(
+        "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
+        f"http://{policy_server.host}:{policy_server.port}"
+    )
+    with mock_policy:
+        yield make_lobby_server
+
+    for context in all_contexts:
+        await context.stop()
+        await context.shutdown()
+        # Close connected protocol objects
+        # https://github.com/FAForever/server/issues/717
+        for proto in context.__connected_client_protos:
+            proto.abort()
+    await exhaust_callbacks(event_loop)
+
+
+@pytest.fixture
+async def lobby_contexts(lobby_server_factory):
+    return await lobby_server_factory({
+        "qstream": {
+            "ADDRESS": "127.0.0.1",
+            "PORT": None,
+            "PROTOCOL": QDataStreamProtocol
+        },
+        "json": {
+            "ADDRESS": "127.0.0.1",
+            "PORT": None,
+            "PROTOCOL": SimpleJsonProtocol
+        }
+    })
+
+
+@pytest.fixture
+async def lobby_contexts_proxy(lobby_server_factory):
+    return await lobby_server_factory({
+        "qstream": {
+            "ADDRESS": "127.0.0.1",
+            "PORT": None,
+            "PROTOCOL": QDataStreamProtocol,
+            "PROXY": True
+        },
+        "json": {
+            "ADDRESS": "127.0.0.1",
+            "PORT": None,
+            "PROTOCOL": SimpleJsonProtocol,
+            "PROXY": True
+        }
+    })
 
 
 @pytest.fixture(params=("qstream", "json"))
 def lobby_server(request, lobby_contexts):
     yield lobby_contexts[request.param]
+
+
+@pytest.fixture(params=("qstream", "json"))
+def lobby_server_proxy(request, lobby_contexts_proxy):
+    yield lobby_contexts_proxy[request.param]
 
 
 @pytest.fixture
@@ -287,6 +333,33 @@ async def jwks_server(jwk_kid):
 
 
 @pytest.fixture
+async def proxy_server(lobby_server_proxy, event_loop):
+    buf_len = 262144
+    dnsbl = proxyprotocol.dnsbl.NoopDnsbl()
+
+    host, port = lobby_server_proxy.sockets[0].getsockname()
+    dest = proxyprotocol.server.Address(f"{host}:{port}")
+
+    server = await event_loop.create_server(
+        lambda: proxyprotocol.server.protocol.DownstreamProtocol(
+            proxyprotocol.server.protocol.UpstreamProtocol,
+            event_loop,
+            buf_len,
+            dnsbl,
+            dest
+        ),
+        "127.0.0.1",
+        None,
+    )
+    await server.start_serving()
+
+    yield server
+
+    server.close()
+    await server.wait_closed()
+
+
+@pytest.fixture
 def tmp_user(database):
     user_ids = defaultdict(lambda: 1)
     password_plain = "foo"
@@ -307,9 +380,13 @@ def tmp_user(database):
     return make_user
 
 
-async def connect_client(server: ServerContext) -> Protocol:
+async def connect_client(
+    server: ServerContext,
+    address: Optional[tuple[str, int]] = None
+) -> Protocol:
+    address = address or server.sockets[0].getsockname()
     proto = server.protocol_class(
-        *(await asyncio.open_connection(*server.sockets[0].getsockname()))
+        *(await asyncio.open_connection(*address))
     )
     if hasattr(server, "__connected_client_protos"):
         server.__connected_client_protos.append(proto)
@@ -388,8 +465,9 @@ async def get_session(proto):
 async def connect_and_sign_in(
     credentials,
     lobby_server: ServerContext,
+    address: Optional[tuple[str, int]] = None
 ):
-    proto = await connect_client(lobby_server)
+    proto = await connect_client(lobby_server, address)
     session = await get_session(proto)
     await perform_login(proto, credentials)
     hello = await read_until_command(proto, "welcome", timeout=120)

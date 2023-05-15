@@ -4,10 +4,14 @@ Manages a group of connections using the same protocol over the same port
 
 import asyncio
 import socket
+from asyncio import StreamReader, StreamWriter
 from contextlib import contextmanager
 from typing import Callable, Iterable, Optional
 
 import humanize
+from proxyprotocol.detect import ProxyProtocolDetect
+from proxyprotocol.reader import ProxyProtocolReader
+from proxyprotocol.sock import SocketInfo
 
 import server.metrics as metrics
 
@@ -45,11 +49,28 @@ class ServerContext:
     def __repr__(self):
         return f"ServerContext({self.name})"
 
-    async def listen(self, host, port):
-        self._logger.debug("%s: listen(%r, %r)", self.name, host, port)
+    async def listen(
+        self,
+        host: str,
+        port: Optional[int],
+        proxy: bool = False
+    ):
+        self._logger.debug(
+            "%s: listen(%r, %r, proxy=%r)",
+            self.name,
+            host,
+            port,
+            proxy
+        )
+
+        callback = self.client_connected_callback
+        if proxy:
+            pp_detect = ProxyProtocolDetect()
+            pp_reader = ProxyProtocolReader(pp_detect)
+            callback = pp_reader.get_callback(callback)
 
         self._server = await asyncio.start_server(
-            self.client_connected,
+            callback,
             host=host,
             port=port,
             limit=LIMIT,
@@ -113,15 +134,56 @@ class ServerContext:
                     conn
                 )
 
-    async def client_connected(self, stream_reader, stream_writer):
-        peername = Address(*stream_writer.get_extra_info("peername"))
-        self._logger.info(
-            "%s: Client connected from %s:%s",
-            self.name,
-            peername.host,
-            peername.port
-        )
-        protocol = self.protocol_class(stream_reader, stream_writer)
+    async def client_connected_callback(
+        self,
+        reader: StreamReader,
+        writer: StreamWriter,
+        proxy_info: Optional[SocketInfo] = None,
+    ):
+        if proxy_info:
+            peername_writer = Address(*writer.get_extra_info("peername"))
+
+            if not proxy_info.peername:
+                # See security considerations:
+                # https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+                self._logger.warning(
+                    "%s: Client connected from %s:%s to a context in proxy "
+                    "mode! The connection will be ignored, however this may "
+                    "indicate a misconfiguration in your firewall.",
+                    self.name,
+                    peername_writer.host,
+                    peername_writer.port
+                )
+                writer.close()
+                return
+
+            peername = Address(*proxy_info.peername)
+            self._logger.info(
+                "%s: Client connected from %s:%s via proxy %s:%s",
+                self.name,
+                peername.host,
+                peername.port,
+                peername_writer.host,
+                peername_writer.port
+            )
+        else:
+            peername = Address(*writer.get_extra_info("peername"))
+            self._logger.info(
+                "%s: Client connected from %s:%s",
+                self.name,
+                peername.host,
+                peername.port
+            )
+
+        await self.handle_client_connected(reader, writer, peername)
+
+    async def handle_client_connected(
+        self,
+        reader: StreamReader,
+        writer: StreamWriter,
+        peername: Address,
+    ):
+        protocol = self.protocol_class(reader, writer)
         connection = self._connection_factory()
         self.connections[connection] = protocol
 

@@ -45,12 +45,16 @@ class ConfigurationStore:
             {
                 "ADDRESS": "",
                 "PORT": 8001,
+                "NAME": None,
                 "PROTOCOL": "QDataStreamProtocol",
+                "PROXY": False,
             },
             {
                 "ADDRESS": "",
                 "PORT": 8002,
-                "PROTOCOL": "SimpleJsonProtocol"
+                "NAME": None,
+                "PROTOCOL": "SimpleJsonProtocol",
+                "PROXY": False
             }
         ]
         self.LOG_LEVEL = "DEBUG"
