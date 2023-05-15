@@ -1,5 +1,7 @@
 """
-Handles requests from connected clients
+Handles requests from connected clients.
+
+Message type definitions can be found at `server.types.messages`.
 """
 
 import asyncio
@@ -61,6 +63,7 @@ from .protocol import DisconnectedError, Protocol
 from .rating import InclusiveRange, RatingType
 from .rating_service import RatingService
 from .types import Address, GameLaunchOptions
+from .types.messages import client
 
 
 def ice_only(func):
@@ -270,16 +273,16 @@ class LobbyConnection:
             self._logger.exception(e)
             await self.abort("Error processing command")
 
-    async def command_ping(self, msg):
+    async def command_ping(self, msg: client.Ping):
         await self.send({"command": "pong"})
 
-    async def command_pong(self, msg):
+    async def command_pong(self, msg: client.Pong):
         pass
 
-    async def command_create_account(self, message):
+    async def command_create_account(self, message: dict):
         raise ClientError("FAF no longer supports direct registration. Please use the website to register.", recoverable=True)
 
-    async def command_coop_list(self, message):
+    async def command_coop_list(self, message: client.CoopList):
         """Request for coop map list"""
         async with self._db.acquire() as conn:
             result = await conn.stream(select(coop_map))
@@ -307,7 +310,7 @@ class LobbyConnection:
                     "featured_mod": "coop"
                 })
 
-    async def command_matchmaker_info(self, message):
+    async def command_matchmaker_info(self, message: client.MatchmakerInfo):
         await self.send({
             "command": "matchmaker_info",
             "queues": [
@@ -328,7 +331,7 @@ class LobbyConnection:
             ]
         })
 
-    async def command_social_remove(self, message):
+    async def command_social_remove(self, message: client.SocialRemove):
         assert self.player is not None
 
         if "friend" in message:
@@ -350,7 +353,7 @@ class LobbyConnection:
         with self._get_visibility_context_manager(subject_id):
             player_attr.discard(subject_id)
 
-    async def command_social_add(self, message):
+    async def command_social_add(self, message: client.SocialAdd):
         assert self.player is not None
 
         if "friend" in message:
@@ -437,12 +440,13 @@ class LobbyConnection:
             "updated_achievements": updated_achievements
         })
 
-    async def command_admin(self, message):
+    async def command_admin(self, message: client.Admin):
         assert self.player is not None
 
-        action = message["action"]
+        # Mypy does not understand the tagged union if we assign
+        # message["action"] to a variable
 
-        if action == "closeFA":
+        if message["action"] == "closeFA":
             if await self.player_service.has_permission_role(
                 self.player, "ADMIN_KICK_SERVER"
             ):
@@ -457,7 +461,7 @@ class LobbyConnection:
                         "style": "kill",
                     })
 
-        elif action == "closelobby":
+        elif message["action"] == "closelobby":
             if await self.player_service.has_permission_role(
                 self.player, "ADMIN_KICK_SERVER"
             ):
@@ -470,7 +474,7 @@ class LobbyConnection:
                     with contextlib.suppress(DisconnectedError):
                         await player.lobby_connection.kick()
 
-        elif action == "broadcast":
+        elif message["action"] == "broadcast":
             message_text = message.get("message")
             if not message_text:
                 return
@@ -488,7 +492,7 @@ class LobbyConnection:
                     "%s broadcasting message to all players: %s",
                     self.player.login, message_text
                 )
-        elif action == "join_channel":
+        elif message["action"] == "join_channel":
             if await self.player_service.has_permission_role(
                 self.player, "ADMIN_JOIN_CHANNEL"
             ):
@@ -627,7 +631,7 @@ class LobbyConnection:
 
         return response.get("result", "") == "honest"
 
-    async def command_auth(self, message):
+    async def command_auth(self, message: client.Auth):
         token = message["token"]
         unique_id = message["unique_id"]
         player_id = await self.oauth_service.get_player_id_from_token(token)
@@ -679,7 +683,7 @@ class LobbyConnection:
             player_id, username, unique_id, auth_method
         )
 
-    async def command_hello(self, message):
+    async def command_hello(self, message: client.Hello):
         login = message["login"].strip()
         password = message["password"]
         unique_id = message["unique_id"]
@@ -846,7 +850,10 @@ class LobbyConnection:
 
     @ice_only
     @player_idle("reconnect to a game")
-    async def command_restore_game_session(self, message):
+    async def command_restore_game_session(
+        self,
+        message: client.RestoreGameSession
+    ):
         assert self.player is not None
         assert self.protocol is not None
 
@@ -888,19 +895,20 @@ class LobbyConnection:
         self.player.state = PlayerState.PLAYING
         self.player.game = game
 
-    async def command_ask_session(self, message):
+    async def command_ask_session(self, message: client.AskSession):
         user_agent = message.get("user_agent")
         version = message.get("version")
         self._set_user_agent_and_version(user_agent, version)
         await self._check_user_agent()
         await self.send({"command": "session", "session": self.session})
 
-    async def command_avatar(self, message):
+    async def command_avatar(self, message: client.Avatar):
         assert self.player is not None
 
-        action = message["action"]
+        # Mypy does not understand the tagged union if we assign
+        # message["action"] to a variable
 
-        if action == "list_avatar":
+        if message["action"] == "list_avatar":
             async with self._db.acquire() as conn:
                 result = await conn.execute(
                     select(
@@ -923,7 +931,7 @@ class LobbyConnection:
                     ]
                 })
 
-        elif action == "select":
+        elif message["action"] == "select":
             avatar_url = message["avatar"]
 
             async with self._db.acquire() as conn:
@@ -975,7 +983,7 @@ class LobbyConnection:
 
     @ice_only
     @player_idle("join a game")
-    async def command_game_join(self, message):
+    async def command_game_join(self, message: client.GameJoin):
         """
         We are going to join a game.
         """
@@ -1041,7 +1049,7 @@ class LobbyConnection:
         await self.launch_game(game, is_host=False)
 
     @ice_only
-    async def command_game_matchmaking(self, message):
+    async def command_game_matchmaking(self, message: client.GameMatchmaking):
         assert self.player is not None
 
         queue_name = str(
@@ -1096,7 +1104,7 @@ class LobbyConnection:
 
     @ice_only
     @player_idle("host a game")
-    async def command_game_host(self, message):
+    async def command_game_host(self, message: client.GameHost):
         assert self.player is not None
 
         await self.abort_connection_if_banned()
@@ -1137,7 +1145,7 @@ class LobbyConnection:
         )
         await self.launch_game(game, is_host=True)
 
-    async def command_match_ready(self, message):
+    async def command_match_ready(self, message: client.MatchReady):
         """
         Replace with full implementation when implemented in client, see:
         https://github.com/FAForever/downlords-faf-client/issues/1783
@@ -1232,7 +1240,7 @@ class LobbyConnection:
         return {k: v for k, v in cmd.items() if v is not None}
 
     # DEPRECATED: Use the FAF API instead
-    async def command_modvault(self, message):
+    async def command_modvault(self, message: client.Modvault):
         assert self.player is not None
 
         type = message["type"]
@@ -1311,7 +1319,7 @@ class LobbyConnection:
     # DEPRECATED: ICE servers are handled outside of the lobby server.
     # This message remains here for backwards compatibility, but the list
     # of servers will always be empty.
-    async def command_ice_servers(self, message):
+    async def command_ice_servers(self, message: client.IceServers):
         if not self.player:
             return
 
@@ -1321,7 +1329,7 @@ class LobbyConnection:
         })
 
     @player_idle("invite a player")
-    async def command_invite_to_party(self, message):
+    async def command_invite_to_party(self, message: client.InviteToParty):
         assert self.player is not None
 
         recipient = self.player_service.get_player(message["recipient_id"])
@@ -1335,7 +1343,10 @@ class LobbyConnection:
         self.party_service.invite_player_to_party(self.player, recipient)
 
     @player_idle("join a party")
-    async def command_accept_party_invite(self, message):
+    async def command_accept_party_invite(
+        self,
+        message: client.AcceptPartyInvite
+    ):
         assert self.player is not None
 
         sender = self.player_service.get_player(message["sender_id"])
@@ -1346,7 +1357,10 @@ class LobbyConnection:
         await self.party_service.accept_invite(self.player, sender)
 
     @player_idle("kick a player")
-    async def command_kick_player_from_party(self, message):
+    async def command_kick_player_from_party(
+        self,
+        message: client.KickPlayerFromParty
+    ):
         assert self.player is not None
 
         kicked_player = self.player_service.get_player(message["kicked_player_id"])
@@ -1356,13 +1370,16 @@ class LobbyConnection:
 
         await self.party_service.kick_player_from_party(self.player, kicked_player)
 
-    async def command_leave_party(self, _message):
+    async def command_leave_party(self, message: client.LeaveParty):
         assert self.player is not None
 
         self.ladder_service.cancel_search(self.player)
         await self.party_service.leave_party(self.player)
 
-    async def command_set_party_factions(self, message):
+    async def command_set_party_factions(
+        self,
+        message: client.SetPartyFactions
+    ):
         assert self.player is not None
 
         factions = set(Faction.from_value(v) for v in message["factions"])

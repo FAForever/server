@@ -1,0 +1,3 @@
+"""
+Protocol message type definitions
+"""
