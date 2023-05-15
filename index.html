@@ -348,21 +348,31 @@ class ServerInstance(object):
     async def listen(
         self,
         address: tuple[str, int],
-        protocol_class: type[Protocol] = QDataStreamProtocol
+        name: Optional[str] = None,
+        protocol_class: type[Protocol] = QDataStreamProtocol,
+        proxy: bool = False,
     ) -&gt; ServerContext:
         &#34;&#34;&#34;
         Start listening on a new address.
+
+        # Params
+        - `address`: Tuple indicating the host, port to listen on.
+        - `name`: String used to identify this context in log messages. The
+            default is to use the `protocol_class` name.
+        - `protocol_class`: The protocol class implementation to use.
+        - `proxy`: Boolean indicating whether or not to use the PROXY protocol.
+            See: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
         &#34;&#34;&#34;
         if not self.started:
             await self.start_services()
 
         ctx = ServerContext(
-            f&#34;{self.name}[{protocol_class.__name__}]&#34;,
+            f&#34;{self.name}[{name or protocol_class.__name__}]&#34;,
             self.connection_factory,
             list(self.services.values()),
             protocol_class
         )
-        await ctx.listen(*address)
+        await ctx.listen(*address, proxy=proxy)
 
         self.contexts.add(ctx)
 
@@ -7176,21 +7186,31 @@ state, i.e. the same players, games, etc.</p></div>
     async def listen(
         self,
         address: tuple[str, int],
-        protocol_class: type[Protocol] = QDataStreamProtocol
+        name: Optional[str] = None,
+        protocol_class: type[Protocol] = QDataStreamProtocol,
+        proxy: bool = False,
     ) -&gt; ServerContext:
         &#34;&#34;&#34;
         Start listening on a new address.
+
+        # Params
+        - `address`: Tuple indicating the host, port to listen on.
+        - `name`: String used to identify this context in log messages. The
+            default is to use the `protocol_class` name.
+        - `protocol_class`: The protocol class implementation to use.
+        - `proxy`: Boolean indicating whether or not to use the PROXY protocol.
+            See: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
         &#34;&#34;&#34;
         if not self.started:
             await self.start_services()
 
         ctx = ServerContext(
-            f&#34;{self.name}[{protocol_class.__name__}]&#34;,
+            f&#34;{self.name}[{name or protocol_class.__name__}]&#34;,
             self.connection_factory,
             list(self.services.values()),
             protocol_class
         )
-        await ctx.listen(*address)
+        await ctx.listen(*address, proxy=proxy)
 
         self.contexts.add(ctx)
 
@@ -7237,10 +7257,19 @@ state, i.e. the same players, games, etc.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.ServerInstance.listen"><code class="name flex">
-<span>async def <span class="ident">listen</span></span>(<span>self, address: tuple[str, int], protocol_class: type[<a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>] = server.protocol.qdatastream.QDataStreamProtocol) ‑> <a title="server.servercontext.ServerContext" href="servercontext.html#server.servercontext.ServerContext">ServerContext</a></span>
+<span>async def <span class="ident">listen</span></span>(<span>self, address: tuple[str, int], name: Optional[str] = None, protocol_class: type[<a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>] = server.protocol.qdatastream.QDataStreamProtocol, proxy: bool = False) ‑> <a title="server.servercontext.ServerContext" href="servercontext.html#server.servercontext.ServerContext">ServerContext</a></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Start listening on a new address.</p></div>
+<div class="desc"><p>Start listening on a new address.</p>
+<h1 id="params">Params</h1>
+<ul>
+<li><code>address</code>: Tuple indicating the host, port to listen on.</li>
+<li><code>name</code>: String used to identify this context in log messages. The
+default is to use the <code>protocol_class</code> name.</li>
+<li><code>protocol_class</code>: The protocol class implementation to use.</li>
+<li><code>proxy</code>: Boolean indicating whether or not to use the PROXY protocol.
+See: <a href="https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt</a></li>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -7248,21 +7277,31 @@ state, i.e. the same players, games, etc.</p></div>
 <pre><code class="python">async def listen(
     self,
     address: tuple[str, int],
-    protocol_class: type[Protocol] = QDataStreamProtocol
+    name: Optional[str] = None,
+    protocol_class: type[Protocol] = QDataStreamProtocol,
+    proxy: bool = False,
 ) -&gt; ServerContext:
     &#34;&#34;&#34;
     Start listening on a new address.
+
+    # Params
+    - `address`: Tuple indicating the host, port to listen on.
+    - `name`: String used to identify this context in log messages. The
+        default is to use the `protocol_class` name.
+    - `protocol_class`: The protocol class implementation to use.
+    - `proxy`: Boolean indicating whether or not to use the PROXY protocol.
+        See: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
     &#34;&#34;&#34;
     if not self.started:
         await self.start_services()
 
     ctx = ServerContext(
-        f&#34;{self.name}[{protocol_class.__name__}]&#34;,
+        f&#34;{self.name}[{name or protocol_class.__name__}]&#34;,
         self.connection_factory,
         list(self.services.values()),
         protocol_class
     )
-    await ctx.listen(*address)
+    await ctx.listen(*address, proxy=proxy)
 
     self.contexts.add(ctx)
 
