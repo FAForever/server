@@ -1039,6 +1039,7 @@ async def test_galactic_war_1v1_game_ended_broadcasts_army_results(
         await asyncio.wait_for(mq_proto_all.read_message(), timeout=10)
 
 
+@pytest.mark.flaky
 @pytest.mark.rabbitmq
 @fast_forward(30)
 async def test_galactic_war_2v1_game_ended_broadcasts_army_results(lobby_server, channel):

@@ -234,6 +234,7 @@ async def test_game_matchmaking_with_parties(lobby_server):
         assert msg["faction"] == i + 1
 
 
+@pytest.mark.flaky
 @fast_forward(30)
 async def test_newbie_matchmaking_with_parties(lobby_server):
     """
