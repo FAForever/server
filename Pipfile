@@ -28,6 +28,7 @@ sqlalchemy = ">=2.0.0"
 trueskill = "*"
 twilio = ">=7.0.0"
 uvloop = {version = "*", markers = "sys_platform != 'win32'"}
+typing-extensions = "*"
 
 [dev-packages]
 hypothesis = "*"  # Versions between 6.47.1 and 6.56.4 added a prerelease dependency. See https://github.com/pypa/pipenv/issues/1760

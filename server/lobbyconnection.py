@@ -56,6 +56,7 @@ from .party_service import PartyService
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, Protocol
+from .protocol.types import client
 from .rating import InclusiveRange, RatingType
 from .rating_service import RatingService
 from .types import Address, GameLaunchOptions
@@ -203,16 +204,16 @@ class LobbyConnection:
             self._logger.exception(ex)
             await self.abort("Error processing command")
 
-    async def command_ping(self, msg):
+    async def command_ping(self, msg: client.Ping):
         await self.send({"command": "pong"})
 
-    async def command_pong(self, msg):
+    async def command_pong(self, msg: client.Pong):
         pass
 
-    async def command_create_account(self, message):
+    async def command_create_account(self, message: dict):
         raise ClientError("FAF no longer supports direct registration. Please use the website to register.", recoverable=True)
 
-    async def command_coop_list(self, message):
+    async def command_coop_list(self, message: client.CoopList):
         """Request for coop map list"""
         async with self._db.acquire() as conn:
             result = await conn.stream(select(coop_map))
@@ -240,10 +241,13 @@ class LobbyConnection:
                     "featured_mod": "coop"
                 })
 
-    async def command_matchmaker_info(self, message):
+    async def command_matchmaker_info(self, message: client.MatchmakerInfo):
         await self.send({
             "command": "matchmaker_info",
-            "queues": [queue.to_dict() for queue in self.ladder_service.queues.values()]
+            "queues": [
+                queue.to_dict()
+                for queue in self.ladder_service.queues.values()
+            ]
         })
 
     async def send_game_list(self):
@@ -255,7 +259,7 @@ class LobbyConnection:
             ]
         })
 
-    async def command_social_remove(self, message):
+    async def command_social_remove(self, message: client.SocialRemove):
         if "friend" in message:
             subject_id = message["friend"]
             player_attr = self.player.friends
@@ -275,7 +279,7 @@ class LobbyConnection:
         with contextlib.suppress(KeyError):
             player_attr.remove(subject_id)
 
-    async def command_social_add(self, message):
+    async def command_social_add(self, message: client.SocialAdd):
         if "friend" in message:
             status = "FRIEND"
             subject_id = message["friend"]
@@ -309,7 +313,7 @@ class LobbyConnection:
             "updated_achievements": updated_achievements
         })
 
-    async def command_admin(self, message):
+    async def command_admin(self, message: client.Admin):
         action = message["action"]
 
         if action == "closeFA":
@@ -492,7 +496,7 @@ class LobbyConnection:
 
         return response.get("result", "") == "honest"
 
-    async def command_auth(self, message):
+    async def command_auth(self, message: client.Auth):
         token = message["token"]
         unique_id = message["unique_id"]
         player_id = await self.oauth_service.get_player_id_from_token(token)
@@ -521,7 +525,7 @@ class LobbyConnection:
             player_id, username, new_irc_password, unique_id, auth_method
         )
 
-    async def command_hello(self, message):
+    async def command_hello(self, message: client.Hello):
         login = message["login"].strip()
         password = message["password"]
         unique_id = message["unique_id"]
@@ -695,19 +699,27 @@ class LobbyConnection:
         except (OperationalError, ProgrammingError):
             self._logger.error("Failure updating NickServ password for %s", login)
 
-    async def command_restore_game_session(self, message):
+    async def command_restore_game_session(
+        self,
+        message: client.RestoreGameSession
+    ):
         assert self.player is not None
 
-        game_id = int(message.get("game_id"))
+        game_id = int(message["game_id"])
 
         # Restore the player's game connection, if the game still exists and is live
         if not game_id or game_id not in self.game_service:
-            await self.send_warning("The game you were connected to does no longer exist")
+            await self.send_warning("The game you were connected to no longer exists")
             return
 
-        game = self.game_service[game_id]  # type: Game
+        game: Game = self.game_service[game_id]
         if game.state is not GameState.LOBBY and game.state is not GameState.LIVE:
             await self.send_warning("The game you were connected to is no longer available")
+            return
+
+        if self.player.id not in game._players_at_launch:
+            await self.send_warning("You are not part of this game")
+            # TODO: Implement me
             return
 
         self._logger.debug("Restoring game session of player %s to game %s", self.player, game)
@@ -725,14 +737,14 @@ class LobbyConnection:
         self.player.state = PlayerState.PLAYING
         self.player.game = game
 
-    async def command_ask_session(self, message):
+    async def command_ask_session(self, message: client.AskSession):
         user_agent = message.get("user_agent")
         version = message.get("version")
         self._set_user_agent_and_version(user_agent, version)
         await self._check_user_agent()
         await self.send({"command": "session", "session": self.session})
 
-    async def command_avatar(self, message):
+    async def command_avatar(self, message: client.Avatar):
         action = message["action"]
 
         if action == "list_avatar":
@@ -839,7 +851,7 @@ class LobbyConnection:
 
     @ice_only
     @player_idle("join a game")
-    async def command_game_join(self, message):
+    async def command_game_join(self, message: client.GameJoin):
         """
         We are going to join a game.
         """
@@ -887,7 +899,7 @@ class LobbyConnection:
         await self.launch_game(game, is_host=False)
 
     @ice_only
-    async def command_game_matchmaking(self, message):
+    async def command_game_matchmaking(self, message: client.GameMatchmaking):
         queue_name = str(
             message.get("queue_name") or message.get("mod", "ladder1v1")
         )
@@ -940,7 +952,7 @@ class LobbyConnection:
 
     @ice_only
     @player_idle("host a game")
-    async def command_game_host(self, message):
+    async def command_game_host(self, message: client.GameHost):
         assert isinstance(self.player, Player)
 
         await self.abort_connection_if_banned()
@@ -978,7 +990,7 @@ class LobbyConnection:
         )
         await self.launch_game(game, is_host=True)
 
-    async def command_match_ready(self, message):
+    async def command_match_ready(self, message: client.MatchReady):
         """
         Replace with full implementation when implemented in client, see:
         https://github.com/FAForever/downlords-faf-client/issues/1783
@@ -1063,7 +1075,7 @@ class LobbyConnection:
 
         return {k: v for k, v in cmd.items() if v is not None}
 
-    async def command_modvault(self, message):
+    async def command_modvault(self, message: client.ModVault):
         type = message["type"]
 
         async with self._db.acquire() as conn:
@@ -1137,7 +1149,7 @@ class LobbyConnection:
             else:
                 raise ValueError("invalid type argument")
 
-    async def command_ice_servers(self, message):
+    async def command_ice_servers(self, message: client.IceServers):
         if not self.player:
             return
 
@@ -1157,7 +1169,7 @@ class LobbyConnection:
         })
 
     @player_idle("invite a player")
-    async def command_invite_to_party(self, message):
+    async def command_invite_to_party(self, message: client.InviteToParty):
         recipient = self.player_service.get_player(message["recipient_id"])
         if recipient is None:
             # TODO: Client localized message
@@ -1169,7 +1181,10 @@ class LobbyConnection:
         self.party_service.invite_player_to_party(self.player, recipient)
 
     @player_idle("join a party")
-    async def command_accept_party_invite(self, message):
+    async def command_accept_party_invite(
+        self,
+        message: client.AcceptPartyInvite
+    ):
         sender = self.player_service.get_player(message["sender_id"])
         if sender is None:
             # TODO: Client localized message
@@ -1178,7 +1193,10 @@ class LobbyConnection:
         await self.party_service.accept_invite(self.player, sender)
 
     @player_idle("kick a player")
-    async def command_kick_player_from_party(self, message):
+    async def command_kick_player_from_party(
+        self,
+        message: client.KickPlayerFromParty
+    ):
         kicked_player = self.player_service.get_player(message["kicked_player_id"])
         if kicked_player is None:
             # TODO: Client localized message
@@ -1186,11 +1204,14 @@ class LobbyConnection:
 
         await self.party_service.kick_player_from_party(self.player, kicked_player)
 
-    async def command_leave_party(self, _message):
+    async def command_leave_party(self, message: client.LeaveParty):
         self.ladder_service.cancel_search(self.player)
         await self.party_service.leave_party(self.player)
 
-    async def command_set_party_factions(self, message):
+    async def command_set_party_factions(
+        self,
+        message: client.SetPartyFactions
+    ):
         factions = set(Faction.from_value(v) for v in message["factions"])
 
         if not factions:
