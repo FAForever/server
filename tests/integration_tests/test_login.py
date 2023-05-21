@@ -3,6 +3,8 @@ from time import time
 import jwt
 import pytest
 
+from tests.utils import fast_forward
+
 from .conftest import (
     connect_and_sign_in,
     connect_client,
@@ -244,23 +246,38 @@ async def test_policy_server_contacted(lobby_server, policy_server, player_servi
     policy_server.verify.assert_called_once()
 
 
+@fast_forward(15)
 async def test_server_login_double(lobby_server):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ("test", "test_password"))
-    msg = await proto.read_message()
-    msg["command"] == "welcome"
+    await read_until_command(proto, "game_info", timeout=5)
 
     # Sign in again with a new protocol object
     proto2 = await connect_client(lobby_server)
     await perform_login(proto2, ("test", "test_password"))
-    msg = await proto2.read_message()
-    msg["command"] == "welcome"
+    await read_until_command(proto2, "welcome", timeout=5)
 
-    msg = await read_until_command(proto, "notice")
+    msg = await read_until_command(proto, "notice", timeout=10)
     assert msg == {
         "command": "notice",
         "style": "kick",
         "text": "You have been signed out because you signed in elsewhere."
+    }
+
+
+@fast_forward(20)
+async def test_server_login_double_message(lobby_server):
+    proto = await connect_client(lobby_server)
+    await perform_login(proto, ("test", "test_password"))
+    await read_until_command(proto, "game_info", timeout=5)
+
+    # Sign in again with the same connection
+    await perform_login(proto, ("test", "test_password"))
+    msg = await read_until_command(proto, "notice", timeout=10)
+    assert msg == {
+        "command": "notice",
+        "style": "info",
+        "text": "You are already signed in from this location!"
     }
 
 

@@ -648,6 +648,26 @@ class LobbyConnection:
         if not conforms_policy:
             return
 
+        old_player = self.player_service.get_player(player_id)
+        if old_player:
+            self._logger.debug(
+                "player %s already signed in: %s",
+                player_id, old_player
+            )
+            if old_player.lobby_connection is self:
+                await self.send_warning(
+                    "You are already signed in from this location!"
+                )
+                return
+            elif old_player.lobby_connection is not None:
+                with contextlib.suppress(DisconnectedError):
+                    old_player.lobby_connection.write_warning(
+                        "You have been signed out because you signed in "
+                        "elsewhere.",
+                        fatal=True,
+                        style="kick"
+                    )
+
         self._logger.info(
             "Login from: %s(id=%s), using method '%s' for session %s",
             username,
@@ -675,22 +695,6 @@ class LobbyConnection:
             lobby_connection=self,
             leaderboards=self.rating_service.leaderboards
         )
-
-        old_player = self.player_service.get_player(self.player.id)
-        if old_player:
-            self._logger.debug(
-                "player %s already signed in: %s",
-                self.player.id, old_player
-            )
-            if old_player.lobby_connection is not None:
-                with contextlib.suppress(DisconnectedError):
-                    old_player.lobby_connection.write_warning(
-                        "You have been signed out because you signed in "
-                        "elsewhere.",
-                        fatal=True,
-                        style="kick"
-                    )
-
         await self.player_service.fetch_player_data(self.player)
 
         self.player_service[self.player.id] = self.player
