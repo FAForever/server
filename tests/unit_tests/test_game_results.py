@@ -134,7 +134,7 @@ def test_conflicting_simple_metadata(game_results, caplog):
 
     with caplog.at_level(logging.INFO):
         assert game_results.metadata(1) == ["recall"]
-        assert "Conflicting metadata" in caplog.records[0].message
+        assert "Conflicting metadata" in caplog.messages[0]
 
 
 def test_conflicting_complex_metadata(game_results, caplog):
@@ -157,4 +157,4 @@ def test_conflicting_complex_metadata(game_results, caplog):
 
     with caplog.at_level(logging.INFO):
         assert game_results.metadata(1) == []
-        assert "unable to resolve" in caplog.records[0].message
+        assert "unable to resolve" in caplog.messages[0]

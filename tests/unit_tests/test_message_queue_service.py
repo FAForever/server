@@ -41,7 +41,7 @@ async def test_incorrect_port(mocker, caplog):
     await service.initialize()
 
     expected_warning = "Unable to connect to RabbitMQ. Is it running?"
-    assert expected_warning in [rec.message for rec in caplog.records]
+    assert expected_warning in caplog.messages
 
 
 async def test_several_initializations_connect_only_once():

@@ -111,13 +111,13 @@ async def test_incorrect_credentials(mocker, caplog):
 
     await service.initialize()
     expected_warning = "Unable to connect to RabbitMQ. Incorrect credentials?"
-    assert expected_warning in [rec.message for rec in caplog.records]
+    assert expected_warning in caplog.messages
     assert service._is_ready is False
     caplog.clear()
 
     await service.declare_exchange("test_exchange")
     expected_warning = "Not connected to RabbitMQ, unable to declare exchange."
-    assert expected_warning in [rec.message for rec in caplog.records]
+    assert expected_warning in caplog.messages
     caplog.clear()
 
     payload = {"msg": "test message"}
@@ -126,7 +126,7 @@ async def test_incorrect_credentials(mocker, caplog):
     delivery_mode = aio_pika.DeliveryMode.NOT_PERSISTENT
     await service.publish(exchange_name, routing_key, payload, delivery_mode)
     expected_warning = "Not connected to RabbitMQ, unable to publish message."
-    assert expected_warning in [rec.message for rec in caplog.records]
+    assert expected_warning in caplog.messages
 
     await service.shutdown()
 
@@ -138,7 +138,7 @@ async def test_incorrect_username(mocker, caplog):
     await service.initialize()
 
     expected_warning = "Unable to connect to RabbitMQ. Incorrect credentials?"
-    assert expected_warning in [rec.message for rec in caplog.records]
+    assert expected_warning in caplog.messages
 
 
 async def test_incorrect_vhost(mocker, caplog):
@@ -147,7 +147,7 @@ async def test_incorrect_vhost(mocker, caplog):
 
     await service.initialize()
 
-    assert any("Incorrect vhost?" in rec.message for rec in caplog.records)
+    assert any("Incorrect vhost?" in msg for msg in caplog.messages)
 
 
 async def test_initialize_declare_exchange_race_condition(mq_uninit_service):
