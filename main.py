@@ -10,7 +10,6 @@ Options:
 import asyncio
 import logging
 import os
-import platform
 import signal
 import sys
 import time
@@ -22,6 +21,7 @@ from docopt import docopt
 from prometheus_client import start_http_server
 
 import server
+from server import info
 from server.config import config
 from server.control import ControlServer
 from server.game_service import GameService
@@ -44,14 +44,12 @@ def log_signal(func):
 async def main():
     global startup_time, shutdown_time
 
-    version = os.environ.get("VERSION") or "dev"
-    python_version = platform.python_version()
-
     logger.info(
-        "Lobby %s (Python %s) on %s",
-        version,
-        python_version,
-        sys.platform
+        "Lobby %s (Python %s) on %s named %s",
+        info.VERSION,
+        info.PYTHON_VERSION,
+        sys.platform,
+        info.CONTAINER_NAME,
     )
 
     if config.ENABLE_METRICS:
@@ -151,8 +149,8 @@ async def main():
         )
 
     server.metrics.info.info({
-        "version": version,
-        "python_version": python_version,
+        "version": info.VERSION,
+        "python_version": info.PYTHON_VERSION,
         "start_time": datetime.utcnow().strftime("%m-%d %H:%M"),
         "game_uid": str(game_service.game_id_counter)
     })

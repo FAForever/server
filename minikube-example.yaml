@@ -51,6 +51,10 @@ spec:
         env:
           - name: CONFIGURATION_FILE
             value: /config/config.yaml
+          - name: CONTAINER_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
         volumeMounts:
         - name: config
           mountPath: /config
