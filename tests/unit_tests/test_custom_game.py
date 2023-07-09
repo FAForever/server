@@ -8,7 +8,7 @@ from tests.unit_tests.conftest import add_connected_players
 
 
 @pytest.fixture
-def custom_game(event_loop, database, game_service, game_stats_service):
+async def custom_game(event_loop, database, game_service, game_stats_service):
     return CustomGame(42, database, game_service, game_stats_service)
 
 

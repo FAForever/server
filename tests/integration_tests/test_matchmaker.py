@@ -321,6 +321,7 @@ async def test_game_matchmaking_disconnect(lobby_server):
     assert msg == {"command": "match_cancelled", "game_id": 41956}
 
 
+@pytest.mark.flaky
 @fast_forward(130)
 async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)

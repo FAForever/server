@@ -23,7 +23,7 @@ from tests.utils import exhaust_callbacks
 
 
 @pytest.fixture
-def real_game(event_loop, database, game_service, game_stats_service):
+async def real_game(event_loop, database, game_service, game_stats_service):
     return Game(42, database, game_service, game_stats_service)
 
 
@@ -399,7 +399,7 @@ async def test_cannot_parse_game_results(
     with caplog.at_level(logging.WARNING):
         await game_connection.handle_action("GameResult", [0, ""])
         game.add_result.assert_not_called()
-        assert "Invalid result" in caplog.records[0].message
+        assert "Invalid result" in caplog.messages[0]
 
 
 async def test_handle_action_GameOption(

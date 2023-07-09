@@ -109,22 +109,22 @@ async def test_connection_broken_external(context):
     assert len(ctx.connections) == 0
 
 
-async def test_unexpected_exception(context, caplog):
+async def test_unexpected_exception(event_loop, context, caplog, mocker):
     srv, ctx = context
 
-    def make_protocol(_1, _2):
-        proto = mock.create_autospec(QDataStreamProtocol)
-        proto.read_message = mock.AsyncMock(
+    mocker.patch.object(
+        ctx.protocol_class,
+        "read_message",
+        mock.AsyncMock(
             side_effect=RuntimeError("test")
         )
-        return proto
-
-    ctx.protocol_class = make_protocol
+    )
 
     with caplog.at_level("TRACE"):
-        _, _ = await asyncio.open_connection(*srv.sockets[0].getsockname())
+        _, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())
 
-    assert "Exception in protocol" in caplog.text
+    with closing(writer):
+        assert "Exception in protocol" in caplog.text
 
 
 async def test_unexpected_exception_in_connection_lost(context, caplog):
