@@ -187,6 +187,7 @@ class RatingService(Service):
 
         for rating_result in rating_results:
             await self._publish_rating_changes(
+                rating_result.game_id,
                 rating_result.rating_type,
                 rating_result.old_ratings,
                 rating_result.new_ratings,
@@ -248,6 +249,7 @@ class RatingService(Service):
         )
 
         return GameRatingResult(
+            game_id,
             rating_type,
             old_ratings,
             new_ratings,
@@ -456,6 +458,7 @@ class RatingService(Service):
 
     async def _publish_rating_changes(
         self,
+        game_id: int,
         rating_type: str,
         old_ratings: RatingDict,
         new_ratings: RatingDict,
@@ -472,6 +475,7 @@ class RatingService(Service):
             old_rating = old_ratings[player_id]
 
             rating_change_dict = {
+                "game_id": game_id,
                 "player_id": player_id,
                 "rating_type": rating_type,
                 "new_rating_mean": new_rating.mean,
