@@ -366,6 +366,7 @@ async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
     new_persisted_ratings = await get_player_ratings(host_proto, "test", "Rhiza")
 
     rhiza_message = {
+        "game_id": 41956,
         "player_id": 3,  # Rhiza
         "rating_type": "global",
         "new_rating_mean": new_persisted_ratings["Rhiza"][0],
@@ -376,6 +377,7 @@ async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
     }
 
     test_message = {
+        "game_id": 41956,
         "player_id": 1,  # test
         "rating_type": "global",
         "new_rating_mean": new_persisted_ratings["test"][0],
