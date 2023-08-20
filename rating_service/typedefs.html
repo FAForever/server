@@ -69,6 +69,7 @@ class GameRatingSummary(NamedTuple):
 
 
 class GameRatingResult(NamedTuple):
+    game_id: int
     rating_type: str
     old_ratings: RatingDict
     new_ratings: RatingDict
@@ -94,15 +95,16 @@ class ServiceNotReadyError(RatingServiceError):
 <dl>
 <dt id="server.rating_service.typedefs.GameRatingResult"><code class="flex name class">
 <span>class <span class="ident">GameRatingResult</span></span>
-<span>(</span><span>rating_type: str, old_ratings: dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>], new_ratings: dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>], outcome_map: dict[int, <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>])</span>
+<span>(</span><span>game_id: int, rating_type: str, old_ratings: dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>], new_ratings: dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>], outcome_map: dict[int, <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>GameRatingResult(rating_type, old_ratings, new_ratings, outcome_map)</p></div>
+<div class="desc"><p>GameRatingResult(game_id, rating_type, old_ratings, new_ratings, outcome_map)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class GameRatingResult(NamedTuple):
+    game_id: int
     rating_type: str
     old_ratings: RatingDict
     new_ratings: RatingDict
@@ -114,21 +116,25 @@ class ServiceNotReadyError(RatingServiceError):
 </ul>
 <h3>Instance variables</h3>
 <dl>
+<dt id="server.rating_service.typedefs.GameRatingResult.game_id"><code class="name">var <span class="ident">game_id</span> : int</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 0</p></div>
+</dd>
 <dt id="server.rating_service.typedefs.GameRatingResult.new_ratings"><code class="name">var <span class="ident">new_ratings</span> : dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
-<dd>
-<div class="desc"><p>Alias for field number 2</p></div>
-</dd>
-<dt id="server.rating_service.typedefs.GameRatingResult.old_ratings"><code class="name">var <span class="ident">old_ratings</span> : dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
-<dd>
-<div class="desc"><p>Alias for field number 1</p></div>
-</dd>
-<dt id="server.rating_service.typedefs.GameRatingResult.outcome_map"><code class="name">var <span class="ident">outcome_map</span> : dict[int, <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>]</code></dt>
 <dd>
 <div class="desc"><p>Alias for field number 3</p></div>
 </dd>
+<dt id="server.rating_service.typedefs.GameRatingResult.old_ratings"><code class="name">var <span class="ident">old_ratings</span> : dict[int, <a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 2</p></div>
+</dd>
+<dt id="server.rating_service.typedefs.GameRatingResult.outcome_map"><code class="name">var <span class="ident">outcome_map</span> : dict[int, <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>]</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 4</p></div>
+</dd>
 <dt id="server.rating_service.typedefs.GameRatingResult.rating_type"><code class="name">var <span class="ident">rating_type</span> : str</code></dt>
 <dd>
-<div class="desc"><p>Alias for field number 0</p></div>
+<div class="desc"><p>Alias for field number 1</p></div>
 </dd>
 </dl>
 </dd>
@@ -290,6 +296,7 @@ def from_game_info_dict(cls, game_info: dict[str]) -&gt; &#34;GameRatingSummary&
 <li>
 <h4><code><a title="server.rating_service.typedefs.GameRatingResult" href="#server.rating_service.typedefs.GameRatingResult">GameRatingResult</a></code></h4>
 <ul class="">
+<li><code><a title="server.rating_service.typedefs.GameRatingResult.game_id" href="#server.rating_service.typedefs.GameRatingResult.game_id">game_id</a></code></li>
 <li><code><a title="server.rating_service.typedefs.GameRatingResult.new_ratings" href="#server.rating_service.typedefs.GameRatingResult.new_ratings">new_ratings</a></code></li>
 <li><code><a title="server.rating_service.typedefs.GameRatingResult.old_ratings" href="#server.rating_service.typedefs.GameRatingResult.old_ratings">old_ratings</a></code></li>
 <li><code><a title="server.rating_service.typedefs.GameRatingResult.outcome_map" href="#server.rating_service.typedefs.GameRatingResult.outcome_map">outcome_map</a></code></li>
