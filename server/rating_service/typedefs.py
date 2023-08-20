@@ -41,6 +41,7 @@ class GameRatingSummary(NamedTuple):
 
 
 class GameRatingResult(NamedTuple):
+    game_id: int
     rating_type: str
     old_ratings: RatingDict
     new_ratings: RatingDict
