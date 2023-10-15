@@ -87,7 +87,6 @@ WARNING  GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!
 WARNING  Unable to connect to RabbitMQ. Is it running?
 ConnectionError: [Errno 111] Connect call failed ('127.0.0.1', 5672)
 WARNING  Not connected to RabbitMQ, unable to declare exchange.
-ERROR    Failure updating NickServ password for test
 ```
 
 **Note:** *The pipenv scripts are NOT meant for production deployment. For
