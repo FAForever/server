@@ -5,19 +5,16 @@ Handles requests from connected clients
 import asyncio
 import contextlib
 import json
-import os
 import random
 import urllib.parse
 import urllib.request
-from binascii import hexlify
 from datetime import datetime
 from functools import wraps
-from hashlib import md5
 from typing import Optional
 
 import aiohttp
 from sqlalchemy import and_, func, select
-from sqlalchemy.exc import DBAPIError, OperationalError, ProgrammingError
+from sqlalchemy.exc import DBAPIError
 
 import server.metrics as metrics
 from server.db import FAFDatabase
@@ -511,14 +508,16 @@ class LobbyConnection:
 
             username = row.login
 
-        new_irc_password = hexlify(os.urandom(16)).decode()
+        # DEPRECATED: IRC passwords are handled outside of the lobby server.
+        # This message remains here for backwards compatibility, but the data
+        # sent is meaningless and can be ignored by clients.
         await self.send({
             "command": "irc_password",
-            "password": new_irc_password
+            "password": "deprecated"
         })
 
         await self.on_player_login(
-            player_id, username, new_irc_password, unique_id, auth_method
+            player_id, username, unique_id, auth_method
         )
 
     async def command_hello(self, message):
@@ -543,14 +542,13 @@ class LobbyConnection:
             )
 
         await self.on_player_login(
-            player_id, username, password, unique_id, "password"
+            player_id, username, unique_id, "password"
         )
 
     async def on_player_login(
         self,
         player_id: int,
         username: str,
-        password: str,
         unique_id: str,
         method: str
     ):
@@ -582,7 +580,6 @@ class LobbyConnection:
                     last_login=func.now()
                 )
             )
-            await self.update_irc_password(conn, username, password)
 
         self.player = Player(
             login=username,
@@ -678,22 +675,6 @@ class LobbyConnection:
         await self.send(json_to_send)
 
         await self.send_game_list()
-
-    async def update_irc_password(self, conn, login, password):
-        # Since the password is hashed on the client, what we get at this point
-        # is really md5(md5(sha256(password))). This is entirely insane.
-        temp = md5(password.encode()).hexdigest()
-        irc_pass = "md5:" + md5(temp.encode()).hexdigest()
-
-        try:
-            await conn.execute(
-                "UPDATE anope.anope_db_NickCore "
-                "SET pass = :passwd WHERE display = :display",
-                passwd=irc_pass,
-                display=login
-            )
-        except (OperationalError, ProgrammingError):
-            self._logger.error("Failure updating NickServ password for %s", login)
 
     async def command_restore_game_session(self, message):
         assert self.player is not None
