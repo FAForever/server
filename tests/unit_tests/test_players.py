@@ -101,9 +101,6 @@ def test_serialize():
                 "number_of_games": 0
             }
         },
-        "global_rating": (1234, 68),
-        "ladder_rating": (1500, 230),
-        "number_of_games": 542,
     }
 
 
