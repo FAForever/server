@@ -5,7 +5,7 @@ import pytest
 
 from server.asyncio_extensions import (
     SpinLock,
-    gather_without_exceptions,
+    map_suppress,
     synchronized,
     synchronizedmethod
 )
@@ -16,41 +16,37 @@ class CustomError(Exception):
     pass
 
 
-async def raises_connection_error():
-    raise ConnectionError("Test ConnectionError")
+async def test_map_suppress(caplog):
+    obj1 = mock.AsyncMock()
+    obj2 = mock.AsyncMock()
+    obj2.test.side_effect = CustomError("Test Exception")
+    obj2.__str__.side_effect = lambda: "TestObject"
+
+    with caplog.at_level("TRACE"):
+        await map_suppress(
+            lambda x: x.test(),
+            [obj1, obj2]
+        )
+
+    obj1.test.assert_called_once()
+    obj2.test.assert_called_once()
+    assert "Unexpected error TestObject" in caplog.messages
 
 
-async def raises_connection_reset_error():
-    raise ConnectionResetError("Test ConnectionResetError")
+async def test_map_suppress_message(caplog):
+    obj1 = mock.AsyncMock()
+    obj1.test.side_effect = CustomError("Test Exception")
+    obj1.__str__.side_effect = lambda: "TestObject"
 
+    with caplog.at_level("TRACE"):
+        await map_suppress(
+            lambda x: x.test(),
+            [obj1],
+            msg="when testing "
+        )
 
-async def raises_custom_error():
-    raise CustomError("Test Exception")
-
-
-async def test_gather_without_exceptions():
-    completes_correctly = mock.AsyncMock()
-
-    with pytest.raises(CustomError):
-        await gather_without_exceptions([
-            raises_connection_error(),
-            raises_custom_error(),
-            completes_correctly()
-        ], ConnectionError)
-
-    completes_correctly.assert_called_once()
-
-
-async def test_gather_without_exceptions_subclass():
-    completes_correctly = mock.AsyncMock()
-
-    await gather_without_exceptions([
-        raises_connection_error(),
-        raises_connection_reset_error(),
-        completes_correctly()
-    ], ConnectionError)
-
-    completes_correctly.assert_called_once()
+    obj1.test.assert_called_once()
+    assert "Unexpected error when testing TestObject" in caplog.messages
 
 
 @fast_forward(15)

@@ -127,7 +127,10 @@ def game_stats_service():
 
 def add_connected_player(game: Game, player):
     game.game_service.player_service[player.id] = player
-    gc = make_mock_game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=player)
+    gc = make_mock_game_connection(
+        state=GameConnectionState.CONNECTED_TO_HOST,
+        player=player
+    )
     game.set_player_option(player.id, "Army", 0)
     game.set_player_option(player.id, "StartSpot", 0)
     game.set_player_option(player.id, "Team", 0)

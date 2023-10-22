@@ -91,7 +91,7 @@ class ViolationService(Service):
             })
             extra_text = ""
             if violation.count > 1:
-                delta_text = humanize.naturaldelta(
+                delta_text = humanize.precisedelta(
                     violation.get_ban_expiration() - now
                 )
                 extra_text = f" You can queue again in {delta_text}"

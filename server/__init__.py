@@ -90,15 +90,12 @@ import logging
 import time
 from typing import Optional
 
-from prometheus_client import start_http_server
-
 import server.metrics as metrics
 
-from .asyncio_extensions import synchronizedmethod
+from .asyncio_extensions import map_suppress, synchronizedmethod
 from .broadcast_service import BroadcastService
 from .config import TRACE, config
 from .configuration_service import ConfigurationService
-from .control import run_control_server
 from .core import Service, create_services
 from .db import FAFDatabase
 from .game_service import GameService
@@ -138,17 +135,11 @@ __all__ = (
     "RatingService",
     "ServerInstance",
     "ViolationService",
-    "control",
     "game_service",
     "protocol",
-    "run_control_server",
 )
 
 logger = logging.getLogger("server")
-
-if config.ENABLE_METRICS:
-    logger.info("Using prometheus on port: %i", config.METRICS_PORT)
-    start_http_server(config.METRICS_PORT)
 
 
 class ServerInstance(object):
@@ -273,40 +264,86 @@ class ServerInstance(object):
 
         return ctx
 
+    async def graceful_shutdown(self):
+        """
+        Start a graceful shut down of the server.
+
+        1. Notify all services of graceful shutdown
+        """
+        self._logger.info("Initiating graceful shutdown")
+
+        await map_suppress(
+            lambda service: service.graceful_shutdown(),
+            self.services.values(),
+            logger=self._logger,
+            msg="when starting graceful shutdown of service "
+        )
+
     async def shutdown(self):
-        results = await asyncio.gather(
-            *(ctx.stop() for ctx in self.contexts),
-            return_exceptions=True
-        )
-        for result, ctx in zip(results, self.contexts):
-            if isinstance(result, BaseException):
-                self._logger.exception(
-                    "Unexpected error when stopping context %s",
-                    ctx,
-                    exc_info=result
-                )
+        """
+        Immediately shutdown the server.
 
-        results = await asyncio.gather(
-            *(service.shutdown() for service in self.services.values()),
-            return_exceptions=True
-        )
-        for result, service in zip(results, self.services.values()):
-            if isinstance(result, BaseException):
-                self._logger.error(
-                    "Unexpected error when shutting down service %s",
-                    service
-                )
+        1. Stop accepting new connections
+        2. Stop all services
+        3. Close all existing connections
+        """
+        self._logger.info("Initiating full shutdown")
 
-        results = await asyncio.gather(
-            *(ctx.shutdown() for ctx in self.contexts),
-            return_exceptions=True
-        )
-        for result, ctx in zip(results, self.contexts):
-            if isinstance(result, BaseException):
-                self._logger.error(
-                    "Unexpected error when shutting down context %s",
-                    ctx
-                )
+        await self._stop_contexts()
+        await self._shutdown_services()
+        await self._shutdown_contexts()
 
         self.contexts.clear()
         self.started = False
+
+    async def drain(self):
+        """
+        Wait for all games to end.
+        """
+        game_service: GameService = self.services["game_service"]
+        broadcast_service: BroadcastService = self.services["broadcast_service"]
+        try:
+            await asyncio.wait_for(
+                game_service.drain_games(),
+                timeout=config.SHUTDOWN_GRACE_PERIOD
+            )
+        except asyncio.CancelledError:
+            self._logger.debug(
+                "Stopped waiting for games to end due to forced shutdown"
+            )
+        except asyncio.TimeoutError:
+            self._logger.warning(
+                "Graceful shutdown period ended! %s games are still live!",
+                len(game_service.live_games)
+            )
+        finally:
+            # The report_dirties loop is responsible for clearing dirty games
+            # and broadcasting the update messages to players and to RabbitMQ.
+            # We need to wait here for that loop to complete otherwise it is
+            # possible for the services to be shut down inbetween clearing the
+            # games and posting the messages, causing the posts to fail.
+            await broadcast_service.wait_report_dirtes()
+
+    async def _shutdown_services(self):
+        await map_suppress(
+            lambda service: service.shutdown(),
+            self.services.values(),
+            logger=self._logger,
+            msg="when shutting down service "
+        )
+
+    async def _stop_contexts(self):
+        await map_suppress(
+            lambda ctx: ctx.stop(),
+            self.contexts,
+            logger=self._logger,
+            msg="when stopping context "
+        )
+
+    async def _shutdown_contexts(self):
+        await map_suppress(
+            lambda ctx: ctx.shutdown(),
+            self.contexts,
+            logger=self._logger,
+            msg="when shutting down context "
+        )

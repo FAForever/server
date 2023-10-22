@@ -67,8 +67,15 @@ class ConfigurationStore:
 
         self.DIRTY_REPORT_INTERVAL = 1
         self.PING_INTERVAL = 45
+        # How many seconds to wait for games to end before doing a hard shutdown.
+        # If using kubernetes, you must set terminationGracePeriodSeconds
+        # on the pod to be larger than this value. With docker compose, use
+        # --timeout (-t) to set a longer timeout.
+        self.SHUTDOWN_GRACE_PERIOD = 30 * 60
+        self.SHUTDOWN_KICK_IDLE_PLAYERS = False
 
         self.CONTROL_SERVER_PORT = 4000
+        self.HEALTH_SERVER_PORT = 2000
         self.METRICS_PORT = 8011
         self.ENABLE_METRICS = False
 
@@ -97,10 +104,9 @@ class ConfigurationStore:
         self.FAF_POLICY_SERVER_BASE_URL = "http://faf-policy-server"
         self.USE_POLICY_SERVER = True
 
-        self.FORCE_STEAM_LINK_AFTER_DATE = 1536105599  # 5 september 2018 by default
-        self.FORCE_STEAM_LINK = False
-
         self.ALLOW_PASSWORD_LOGIN = True
+        # How many seconds a connection has to authenticate before being killed
+        self.LOGIN_TIMEOUT = 5 * 60
 
         self.NEWBIE_BASE_MEAN = 500
         self.NEWBIE_MIN_GAMES = 10
@@ -171,10 +177,14 @@ class ConfigurationStore:
                 with open(config_file) as f:
                     new_values.update(yaml.safe_load(f))
             except FileNotFoundError:
-                self._logger.info("No configuration file found at %s", config_file)
+                self._logger.warning(
+                    "No configuration file found at %s",
+                    config_file
+                )
             except TypeError:
                 self._logger.info(
-                    "Configuration file at %s appears to be empty", config_file
+                    "Configuration file at %s appears to be empty",
+                    config_file
                 )
 
         triggered_callback_keys = tuple(

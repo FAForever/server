@@ -57,3 +57,9 @@ class AuthenticationError(Exception):
         super().__init__(*args, **kwargs)
         self.message = message
         self.method = method
+
+
+class DisabledError(Exception):
+    """
+    The operation is disabled due to an impending server shutdown.
+    """

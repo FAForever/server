@@ -30,6 +30,17 @@ class Service():
         """
         pass  # pragma: no cover
 
+    async def graceful_shutdown(self) -> None:
+        """
+        Called once after the graceful shutdown period is initiated.
+
+        This signals that the service should stop accepting new events but
+        continue to wait for existing ones to complete normally. The hook
+        funciton `shutdown` will be called after the grace period has ended to
+        fully shutdown the service.
+        """
+        pass  # pragma: no cover
+
     async def shutdown(self) -> None:
         """
         Called once after the server received the shutdown signal.

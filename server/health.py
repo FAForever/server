@@ -1,7 +1,8 @@
 """
-Tiny http server for introspecting state
+Kubernetes compatible HTTP health check server.
 """
 
+import http
 import socket
 
 from aiohttp import web
@@ -11,31 +12,28 @@ from .decorators import with_logger
 
 
 @with_logger
-class ControlServer:
+class HealthServer:
     def __init__(
         self,
         lobby_server: "ServerInstance",
     ):
         self.lobby_server = lobby_server
-        self.game_service = lobby_server.services["game_service"]
-        self.player_service = lobby_server.services["player_service"]
         self.host = None
         self.port = None
 
         self.app = web.Application()
-        self.runner = web.AppRunner(self.app)
+        self.runner = web.AppRunner(self.app, access_log=None)
 
         self.app.add_routes([
-            web.get("/games", self.games),
-            web.get("/players", self.players),
+            web.get("/ready", self.ready)
         ])
 
     async def run_from_config(self) -> None:
         """
-        Initialize the http control server
+        Initialize the http health server
         """
         host = socket.gethostbyname(socket.gethostname())
-        port = config.CONTROL_SERVER_PORT
+        port = config.HEALTH_SERVER_PORT
 
         await self.shutdown()
         await self.start(host, port)
@@ -47,7 +45,7 @@ class ControlServer:
         self.site = web.TCPSite(self.runner, host, port)
         await self.site.start()
         self._logger.info(
-            "Control server listening on http://%s:%s", host, port
+            "Health server listening on http://%s:%s", host, port
         )
 
     async def shutdown(self) -> None:
@@ -55,14 +53,13 @@ class ControlServer:
         self.host = None
         self.port = None
 
-    async def games(self, request) -> web.Response:
-        return web.json_response([
-            game.to_dict()
-            for game in self.game_service.all_games
-        ])
+    async def ready(self, request):
+        code_map = {
+            True: http.HTTPStatus.OK.value,
+            False: http.HTTPStatus.SERVICE_UNAVAILABLE.value
+        }
 
-    async def players(self, request) -> web.Response:
-        return web.json_response([
-            player.to_dict()
-            for player in self.player_service.all_players
-        ])
+        return web.Response(
+            status=code_map[self.lobby_server.started],
+            content_type="text/plain"
+        )

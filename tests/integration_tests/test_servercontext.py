@@ -9,7 +9,7 @@ from server import ServerContext
 from server.core import Service
 from server.lobbyconnection import LobbyConnection
 from server.protocol import DisconnectedError, QDataStreamProtocol
-from tests.utils import exhaust_callbacks
+from tests.utils import exhaust_callbacks, fast_forward
 
 
 class MockConnection:
@@ -141,3 +141,22 @@ async def test_unexpected_exception_in_connection_lost(context, caplog):
         await asyncio.sleep(0.1)
 
     assert "Unexpected exception in on_connection_lost" in caplog.text
+
+
+@fast_forward(20)
+async def test_drain_connections(context):
+    srv, ctx = context
+    _, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())
+
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(
+            ctx.drain_connections(),
+            timeout=10
+        )
+
+    writer.close()
+
+    await asyncio.wait_for(
+        ctx.drain_connections(),
+        timeout=3
+    )

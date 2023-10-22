@@ -7,6 +7,7 @@ from hypothesis import strategies as st
 
 from server import LadderService
 from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
+from server.exceptions import DisabledError
 from server.games import LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service import game_name
@@ -1072,3 +1073,73 @@ async def test_write_rating_progress_other_rating(
     ladder_service.write_rating_progress(player, RatingType.GLOBAL)
 
     player.write_message.assert_not_called()
+
+
+async def test_graceful_shutdown_disables_searching(
+    ladder_service: LadderService,
+    player_factory
+):
+    p1 = player_factory(
+        "Dostya",
+        player_id=1,
+        ladder_rating=(1000, 10)
+    )
+
+    await ladder_service.graceful_shutdown()
+
+    with pytest.raises(DisabledError):
+        ladder_service.start_search([p1], "ladder1v1")
+
+
+async def test_graceful_shutdown_clears_queues(
+    ladder_service: LadderService,
+    player_factory
+):
+    p1 = player_factory(
+        "Dostya",
+        player_id=1,
+        ladder_rating=(1000, 10)
+    )
+    p1.write_message = mock.Mock()
+
+    p2 = player_factory(
+        "QAI",
+        player_id=2,
+        ladder_rating=(2350, 125),
+    )
+    p2.write_message = mock.Mock()
+
+    p3 = player_factory(
+        "Brackman",
+        player_id=3,
+        ladder_rating=(1000, 10)
+    )
+    p3.write_message = mock.Mock()
+
+    ladder_service.start_search([p1], "ladder1v1")
+    p1.write_message.reset_mock()
+
+    ladder_service.start_search([p2, p3], "tmm2v2")
+    p2.write_message.reset_mock()
+    p3.write_message.reset_mock()
+
+    await ladder_service.graceful_shutdown()
+
+    p1.write_message.assert_called_once_with({
+        "command": "search_info",
+        "state": "stop",
+        "queue_name": "ladder1v1"
+    })
+    p2.write_message.assert_called_once_with({
+        "command": "search_info",
+        "state": "stop",
+        "queue_name": "tmm2v2"
+    })
+    p3.write_message.assert_called_once_with({
+        "command": "search_info",
+        "state": "stop",
+        "queue_name": "tmm2v2"
+    })
+
+    assert ladder_service.queues["ladder1v1"]._is_running is False
+    assert ladder_service.queues["tmm2v2"]._is_running is False

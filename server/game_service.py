@@ -2,6 +2,7 @@
 Manages the lifecycle of active games
 """
 
+import asyncio
 from collections import Counter
 from typing import Optional, Union, ValuesView
 
@@ -15,6 +16,7 @@ from .core import Service
 from .db import FAFDatabase
 from .db.models import game_featuredMods
 from .decorators import with_logger
+from .exceptions import DisabledError
 from .games import (
     CustomGame,
     FeaturedMod,
@@ -52,6 +54,8 @@ class GameService(Service):
         self._rating_service = rating_service
         self._message_queue_service = message_queue_service
         self.game_id_counter = 0
+        self._allow_new_games = False
+        self._drain_event = None
 
         # Populated below in really_update_static_ish_data.
         self.featured_mods = dict()
@@ -68,6 +72,7 @@ class GameService(Service):
         self._update_cron = aiocron.crontab(
             "*/10 * * * *", func=self.update_data
         )
+        self._allow_new_games = True
 
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:
@@ -153,6 +158,9 @@ class GameService(Service):
         """
         Main entrypoint for creating new games
         """
+        if not self._allow_new_games:
+            raise DisabledError()
+
         game_id = self.create_uid()
         game_args = {
             "database": self._db,
@@ -208,9 +216,16 @@ class GameService(Service):
                 )
 
     @property
+    def all_games(self) -> ValuesView[Game]:
+        return self._games.values()
+
+    @property
     def live_games(self) -> list[Game]:
-        return [game for game in self._games.values()
-                if game.state is GameState.LIVE]
+        return [
+            game
+            for game in self.all_games
+            if game.state is GameState.LIVE
+        ]
 
     @property
     def open_games(self) -> list[Game]:
@@ -225,21 +240,31 @@ class GameService(Service):
 
         The client ignores everything "closed". This property fetches all such not-closed games.
         """
-        return [game for game in self._games.values()
-                if game.state is GameState.LOBBY or game.state is GameState.LIVE]
-
-    @property
-    def all_games(self) -> ValuesView[Game]:
-        return self._games.values()
+        return [
+            game
+            for game in self.all_games
+            if game.state in (GameState.LOBBY, GameState.LIVE)
+        ]
 
     @property
     def pending_games(self) -> list[Game]:
-        return [game for game in self._games.values()
-                if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]
+        return [
+            game
+            for game in self.all_games
+            if game.state in (GameState.LOBBY, GameState.INITIALIZING)
+        ]
 
     def remove_game(self, game: Game):
         if game.id in self._games:
+            self._logger.debug("Removing game %s", game)
             del self._games[game.id]
+
+        if (
+            self._drain_event is not None
+            and not self._drain_event.is_set()
+            and not self._games
+        ):
+            self._drain_event.set()
 
     def __getitem__(self, item: int) -> Game:
         return self._games[item]
@@ -262,3 +287,31 @@ class GameService(Service):
             metrics.rated_games.labels(game_results.rating_type).inc()
             # TODO: Remove when rating service starts listening to message queue
             await self._rating_service.enqueue(result_dict)
+
+    async def drain_games(self):
+        """
+        Wait for all games to finish.
+        """
+        if not self._games:
+            return
+
+        if not self._drain_event:
+            self._drain_event = asyncio.Event()
+
+        await self._drain_event.wait()
+
+    async def graceful_shutdown(self):
+        self._allow_new_games = False
+
+        await self.close_lobby_games()
+
+    async def close_lobby_games(self):
+        self._logger.info("Closing all games currently in lobby")
+        for game in self.pending_games:
+            for game_connection in list(game.connections):
+                # Tell the client to kill the FA process
+                game_connection.player.write_message({
+                    "command": "notice",
+                    "style": "kill"
+                })
+                await game_connection.abort()

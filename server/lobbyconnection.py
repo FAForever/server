@@ -30,7 +30,12 @@ from .db.models import (
 )
 from .db.models import login as t_login
 from .decorators import timed, with_logger
-from .exceptions import AuthenticationError, BanError, ClientError
+from .exceptions import (
+    AuthenticationError,
+    BanError,
+    ClientError,
+    DisabledError
+)
 from .factions import Faction
 from .game_service import GameService
 from .gameconnection import GameConnection
@@ -92,6 +97,7 @@ class LobbyConnection:
         self.user_agent = None
         self.version = None
 
+        self._timeout_task = None
         self._attempted_connectivity_test = False
 
         self._logger.debug("LobbyConnection initialized for '%s'", self.session)
@@ -110,7 +116,14 @@ class LobbyConnection:
     async def on_connection_made(self, protocol: Protocol, peername: Address):
         self.protocol = protocol
         self.peer_address = peername
+        self._timeout_task = asyncio.create_task(self.timeout_login())
         metrics.server_connections.inc()
+
+    async def timeout_login(self):
+        with contextlib.suppress(asyncio.CancelledError):
+            await asyncio.sleep(config.LOGIN_TIMEOUT)
+            if not self._authenticated:
+                await self.abort("Client took too long to log in.")
 
     async def abort(self, logspam=""):
         self._authenticated = False
@@ -167,37 +180,45 @@ class LobbyConnection:
             handler = getattr(self, f"command_{cmd}")
             await handler(message)
 
-        except AuthenticationError as ex:
-            metrics.user_logins.labels("failure", ex.method).inc()
+        except AuthenticationError as e:
+            metrics.user_logins.labels("failure", e.method).inc()
             await self.send({
                 "command": "authentication_failed",
-                "text": ex.message
+                "text": e.message
             })
-        except BanError as ex:
+        except BanError as e:
             await self.send({
                 "command": "notice",
                 "style": "error",
-                "text": ex.message()
+                "text": e.message()
             })
-            await self.abort(ex.message())
-        except ClientError as ex:
-            self._logger.warning("Client error: %s", ex.message)
+            await self.abort(e.message())
+        except ClientError as e:
+            self._logger.warning("Client error: %s", e.message)
             await self.send({
                 "command": "notice",
                 "style": "error",
-                "text": ex.message
+                "text": e.message
             })
-            if not ex.recoverable:
-                await self.abort(ex.message)
-        except (KeyError, ValueError) as ex:
-            self._logger.exception(ex)
+            if not e.recoverable:
+                await self.abort(e.message)
+        except (KeyError, ValueError) as e:
+            self._logger.exception(e)
             await self.abort(f"Garbage command: {message}")
         except ConnectionError as e:
             # Propagate connection errors to the ServerContext error handler.
             raise e
-        except Exception as ex:  # pragma: no cover
+        except DisabledError:
+            # TODO: Respond with correlation uid for original message
+            await self.send({"command": "disabled", "request": cmd})
+            self._logger.info(
+                "Ignoring disabled command for %s: %s",
+                self.get_user_identifier(),
+                cmd
+            )
+        except Exception as e:  # pragma: no cover
             await self.send({"command": "invalid"})
-            self._logger.exception(ex)
+            self._logger.exception(e)
             await self.abort("Error processing command")
 
     async def command_ping(self, msg):
@@ -240,7 +261,11 @@ class LobbyConnection:
     async def command_matchmaker_info(self, message):
         await self.send({
             "command": "matchmaker_info",
-            "queues": [queue.to_dict() for queue in self.ladder_service.queues.values()]
+            "queues": [
+                queue.to_dict()
+                for queue in self.ladder_service.queues.values()
+                if queue.is_running
+            ]
         })
 
     async def send_game_list(self):
@@ -319,11 +344,10 @@ class LobbyConnection:
                         "Administrative action: %s closed game for %s",
                         self.player, player
                     )
-                    with contextlib.suppress(DisconnectedError):
-                        await player.send_message({
-                            "command": "notice",
-                            "style": "kill",
-                        })
+                    player.write_message({
+                        "command": "notice",
+                        "style": "kill",
+                    })
 
         elif action == "closelobby":
             if await self.player_service.has_permission_role(
@@ -1230,6 +1254,9 @@ class LobbyConnection:
         async def nop(*args, **kwargs):
             return
         self.send = nop
+
+        if self._timeout_task and not self._timeout_task.done():
+            self._timeout_task.cancel()
 
         if self.game_connection:
             self._logger.debug(

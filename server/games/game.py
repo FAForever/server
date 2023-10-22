@@ -168,7 +168,6 @@ class Game:
         Depending on the state, it is either:
           - (LOBBY) The currently connected players
           - (LIVE) Players who participated in the game
-          - Empty list
         """
         if self.state is GameState.LOBBY:
             return self.get_connected_players()

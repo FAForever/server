@@ -10,53 +10,65 @@ Options:
 import asyncio
 import logging
 import os
-import platform
 import signal
 import sys
 import time
 from datetime import datetime
+from functools import wraps
 
 import humanize
 from docopt import docopt
+from prometheus_client import start_http_server
 
 import server
+from server import info
 from server.config import config
+from server.control import ControlServer
 from server.game_service import GameService
+from server.health import HealthServer
 from server.ice_servers.nts import TwilioNTS
 from server.player_service import PlayerService
 from server.profiler import Profiler
 from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
 
 
+def log_signal(func):
+    @wraps(func)
+    def wrapped(sig, frame):
+        logger.info("Received signal %s", signal.Signals(sig))
+        return func(sig, frame)
+
+    return wrapped
+
+
 async def main():
     global startup_time, shutdown_time
 
-    version = os.environ.get("VERSION") or "dev"
-    python_version = platform.python_version()
-
     logger.info(
-        "Lobby %s (Python %s) on %s",
-        version,
-        python_version,
-        sys.platform
+        "Lobby %s (Python %s) on %s named %s",
+        info.VERSION,
+        info.PYTHON_VERSION,
+        sys.platform,
+        info.CONTAINER_NAME,
     )
+
+    if config.ENABLE_METRICS:
+        logger.info("Using prometheus on port: %i", config.METRICS_PORT)
+        start_http_server(config.METRICS_PORT)
 
     loop = asyncio.get_running_loop()
     done = loop.create_future()
 
     logger.info("Event loop: %s", loop)
 
-    def signal_handler(sig: int, _frame):
-        logger.info(
-            "Received signal %s, shutting down",
-            signal.Signals(sig)
-        )
+    @log_signal
+    def done_handler(sig: int, frame):
         if not done.done():
             done.set_result(0)
 
     # Make sure we can shutdown gracefully
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, done_handler)
+    signal.signal(signal.SIGINT, done_handler)
 
     database = server.db.FAFDatabase(
         host=config.DB_SERVER,
@@ -91,19 +103,21 @@ async def main():
     config.register_callback("PROFILING_DURATION", profiler.refresh)
     config.register_callback("PROFILING_INTERVAL", profiler.refresh)
 
+    health_server = HealthServer(instance)
+    await health_server.run_from_config()
+    config.register_callback(
+        "HEALTH_SERVER_PORT",
+        health_server.run_from_config
+    )
+
+    control_server = ControlServer(instance)
+    await control_server.run_from_config()
+    config.register_callback(
+        "CONTROL_SERVER_PORT",
+        control_server.run_from_config
+    )
+
     await instance.start_services()
-
-    ctrl_server = await server.run_control_server(player_service, game_service)
-
-    async def restart_control_server():
-        nonlocal ctrl_server
-
-        await ctrl_server.shutdown()
-        ctrl_server = await server.run_control_server(
-            player_service,
-            game_service
-        )
-    config.register_callback("CONTROL_SERVER_PORT", restart_control_server)
 
     PROTO_CLASSES = {
         QDataStreamProtocol.__name__: QDataStreamProtocol,
@@ -135,8 +149,8 @@ async def main():
         )
 
     server.metrics.info.info({
-        "version": version,
-        "python_version": python_version,
+        "version": info.VERSION,
+        "python_version": info.PYTHON_VERSION,
         "start_time": datetime.utcnow().strftime("%m-%d %H:%M"),
         "game_uid": str(game_service.game_id_counter)
     })
@@ -150,11 +164,26 @@ async def main():
     shutdown_time = time.perf_counter()
 
     # Cleanup
-    await instance.shutdown()
-    await ctrl_server.shutdown()
+    await instance.graceful_shutdown()
 
-    # Close DB connections
+    drain_task = asyncio.create_task(instance.drain())
+
+    @log_signal
+    def drain_handler(sig: int, frame):
+        if not drain_task.done():
+            drain_task.cancel()
+
+    # Allow us to force shut down by skipping the drain
+    signal.signal(signal.SIGTERM, drain_handler)
+    signal.signal(signal.SIGINT, drain_handler)
+
+    await drain_task
+    await instance.shutdown()
+    await control_server.shutdown()
     await database.close()
+
+    # Health server should be the last thing to shut down
+    await health_server.shutdown()
 
     return exit_code
 
@@ -191,7 +220,7 @@ if __name__ == "__main__":
     stop_time = time.perf_counter()
     logger.info(
         "Total server uptime: %s",
-        humanize.naturaldelta(stop_time - startup_time)
+        humanize.precisedelta(stop_time - startup_time)
     )
 
     if shutdown_time is not None:

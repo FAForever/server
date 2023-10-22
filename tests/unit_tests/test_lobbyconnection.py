@@ -585,7 +585,7 @@ async def test_command_admin_closeFA(lobbyconnection, player_factory):
         "user_id": tuna.id
     })
 
-    tuna.lobby_connection.send.assert_any_call({
+    tuna.lobby_connection.write.assert_any_call({
         "command": "notice",
         "style": "kill",
     })
