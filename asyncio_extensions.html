@@ -41,8 +41,10 @@ from typing import (
     AsyncContextManager,
     Callable,
     Coroutine,
+    Iterable,
     Optional,
     Protocol,
+    TypeVar,
     cast,
     overload
 )
@@ -51,6 +53,7 @@ logger = logging.getLogger(__name__)
 
 AsyncFunc = Callable[..., Coroutine[Any, Any, Any]]
 AsyncDecorator = Callable[[AsyncFunc], AsyncFunc]
+T = TypeVar(&#34;T&#34;)
 
 
 class AsyncLock(Protocol, AsyncContextManager[&#34;AsyncLock&#34;]):
@@ -59,23 +62,24 @@ class AsyncLock(Protocol, AsyncContextManager[&#34;AsyncLock&#34;]):
     def release(self) -&gt; None: ...
 
 
-async def gather_without_exceptions(
-    tasks: list[asyncio.Task],
-    *exceptions: type[BaseException],
-) -&gt; list[Any]:
-    &#34;&#34;&#34;
-    Run coroutines in parallel, raising the first exception that dosen&#39;t
-    match any of the specified exception classes.
-    &#34;&#34;&#34;
-    results = []
-    for fut in asyncio.as_completed(tasks):
-        try:
-            results.append(await fut)
-        except exceptions:
-            logger.debug(
-                &#34;Ignoring error in gather_without_exceptions&#34;, exc_info=True
+async def map_suppress(
+    func: Callable[[T], Coroutine[Any, Any, Any]],
+    iterable: Iterable[T],
+    logger: logging.Logger = logger,
+    msg: str = &#34;&#34;
+):
+    results = await asyncio.gather(
+        *(func(item) for item in iterable),
+        return_exceptions=True
+    )
+    for result, item in zip(results, iterable):
+        if isinstance(result, BaseException):
+            logger.exception(
+                &#34;Unexpected error %s%s&#34;,
+                msg,
+                item,
+                exc_info=result
             )
-    return results
 
 
 # Based on python3.8 asyncio.Lock
@@ -239,33 +243,33 @@ def _synchronize_method(
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="server.asyncio_extensions.gather_without_exceptions"><code class="name flex">
-<span>async def <span class="ident">gather_without_exceptions</span></span>(<span>tasks: list[_asyncio.Task], *exceptions: type[BaseException]) ‑> list[typing.Any]</span>
+<dt id="server.asyncio_extensions.map_suppress"><code class="name flex">
+<span>async def <span class="ident">map_suppress</span></span>(<span>func: Callable[[~T], Coroutine[Any, Any, Any]], iterable: Iterable[~T], logger: logging.Logger = &lt;Logger server.asyncio_extensions (WARNING)&gt;, msg: str = '')</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Run coroutines in parallel, raising the first exception that dosen't
-match any of the specified exception classes.</p></div>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def gather_without_exceptions(
-    tasks: list[asyncio.Task],
-    *exceptions: type[BaseException],
-) -&gt; list[Any]:
-    &#34;&#34;&#34;
-    Run coroutines in parallel, raising the first exception that dosen&#39;t
-    match any of the specified exception classes.
-    &#34;&#34;&#34;
-    results = []
-    for fut in asyncio.as_completed(tasks):
-        try:
-            results.append(await fut)
-        except exceptions:
-            logger.debug(
-                &#34;Ignoring error in gather_without_exceptions&#34;, exc_info=True
-            )
-    return results</code></pre>
+<pre><code class="python">async def map_suppress(
+    func: Callable[[T], Coroutine[Any, Any, Any]],
+    iterable: Iterable[T],
+    logger: logging.Logger = logger,
+    msg: str = &#34;&#34;
+):
+    results = await asyncio.gather(
+        *(func(item) for item in iterable),
+        return_exceptions=True
+    )
+    for result, item in zip(results, iterable):
+        if isinstance(result, BaseException):
+            logger.exception(
+                &#34;Unexpected error %s%s&#34;,
+                msg,
+                item,
+                exc_info=result
+            )</code></pre>
 </details>
 </dd>
 <dt id="server.asyncio_extensions.synchronized"><code class="name flex">
@@ -552,7 +556,7 @@ sets it to locked and returns True.</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="server.asyncio_extensions.gather_without_exceptions" href="#server.asyncio_extensions.gather_without_exceptions">gather_without_exceptions</a></code></li>
+<li><code><a title="server.asyncio_extensions.map_suppress" href="#server.asyncio_extensions.map_suppress">map_suppress</a></code></li>
 <li><code><a title="server.asyncio_extensions.synchronized" href="#server.asyncio_extensions.synchronized">synchronized</a></code></li>
 <li><code><a title="server.asyncio_extensions.synchronizedmethod" href="#server.asyncio_extensions.synchronizedmethod">synchronizedmethod</a></code></li>
 </ul>

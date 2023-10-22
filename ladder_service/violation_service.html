@@ -119,7 +119,7 @@ class ViolationService(Service):
             })
             extra_text = &#34;&#34;
             if violation.count &gt; 1:
-                delta_text = humanize.naturaldelta(
+                delta_text = humanize.precisedelta(
                     violation.get_ban_expiration() - now
                 )
                 extra_text = f&#34; You can queue again in {delta_text}&#34;
@@ -375,7 +375,7 @@ class ViolationService(Service):
             })
             extra_text = &#34;&#34;
             if violation.count &gt; 1:
-                delta_text = humanize.naturaldelta(
+                delta_text = humanize.precisedelta(
                     violation.get_ban_expiration() - now
                 )
                 extra_text = f&#34; You can queue again in {delta_text}&#34;
@@ -505,7 +505,7 @@ class ViolationService(Service):
         })
         extra_text = &#34;&#34;
         if violation.count &gt; 1:
-            delta_text = humanize.naturaldelta(
+            delta_text = humanize.precisedelta(
                 violation.get_ban_expiration() - now
             )
             extra_text = f&#34; You can queue again in {delta_text}&#34;
@@ -539,6 +539,7 @@ class ViolationService(Service):
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="../core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="../core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="../core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="../core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="../core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>

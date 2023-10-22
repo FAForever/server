@@ -196,7 +196,6 @@ class Game:
         Depending on the state, it is either:
           - (LOBBY) The currently connected players
           - (LIVE) Players who participated in the game
-          - Empty list
         &#34;&#34;&#34;
         if self.state is GameState.LOBBY:
             return self.get_connected_players()
@@ -1116,7 +1115,6 @@ class Game:
         Depending on the state, it is either:
           - (LOBBY) The currently connected players
           - (LIVE) Players who participated in the game
-          - Empty list
         &#34;&#34;&#34;
         if self.state is GameState.LOBBY:
             return self.get_connected_players()
@@ -2057,8 +2055,7 @@ def name(self):
 <div class="desc"><p>Players in the game</p>
 <p>Depending on the state, it is either:
 - (LOBBY) The currently connected players
-- (LIVE) Players who participated in the game
-- Empty list</p></div>
+- (LIVE) Players who participated in the game</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2071,7 +2068,6 @@ def players(self) -&gt; list[Player]:
     Depending on the state, it is either:
       - (LOBBY) The currently connected players
       - (LIVE) Players who participated in the game
-      - Empty list
     &#34;&#34;&#34;
     if self.state is GameState.LOBBY:
         return self.get_connected_players()

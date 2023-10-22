@@ -195,15 +195,12 @@ import logging
 import time
 from typing import Optional
 
-from prometheus_client import start_http_server
-
 import server.metrics as metrics
 
-from .asyncio_extensions import synchronizedmethod
+from .asyncio_extensions import map_suppress, synchronizedmethod
 from .broadcast_service import BroadcastService
 from .config import TRACE, config
 from .configuration_service import ConfigurationService
-from .control import run_control_server
 from .core import Service, create_services
 from .db import FAFDatabase
 from .game_service import GameService
@@ -243,17 +240,11 @@ __all__ = (
     &#34;RatingService&#34;,
     &#34;ServerInstance&#34;,
     &#34;ViolationService&#34;,
-    &#34;control&#34;,
     &#34;game_service&#34;,
     &#34;protocol&#34;,
-    &#34;run_control_server&#34;,
 )
 
 logger = logging.getLogger(&#34;server&#34;)
-
-if config.ENABLE_METRICS:
-    logger.info(&#34;Using prometheus on port: %i&#34;, config.METRICS_PORT)
-    start_http_server(config.METRICS_PORT)
 
 
 class ServerInstance(object):
@@ -378,43 +369,89 @@ class ServerInstance(object):
 
         return ctx
 
+    async def graceful_shutdown(self):
+        &#34;&#34;&#34;
+        Start a graceful shut down of the server.
+
+        1. Notify all services of graceful shutdown
+        &#34;&#34;&#34;
+        self._logger.info(&#34;Initiating graceful shutdown&#34;)
+
+        await map_suppress(
+            lambda service: service.graceful_shutdown(),
+            self.services.values(),
+            logger=self._logger,
+            msg=&#34;when starting graceful shutdown of service &#34;
+        )
+
     async def shutdown(self):
-        results = await asyncio.gather(
-            *(ctx.stop() for ctx in self.contexts),
-            return_exceptions=True
-        )
-        for result, ctx in zip(results, self.contexts):
-            if isinstance(result, BaseException):
-                self._logger.exception(
-                    &#34;Unexpected error when stopping context %s&#34;,
-                    ctx,
-                    exc_info=result
-                )
+        &#34;&#34;&#34;
+        Immediately shutdown the server.
 
-        results = await asyncio.gather(
-            *(service.shutdown() for service in self.services.values()),
-            return_exceptions=True
-        )
-        for result, service in zip(results, self.services.values()):
-            if isinstance(result, BaseException):
-                self._logger.error(
-                    &#34;Unexpected error when shutting down service %s&#34;,
-                    service
-                )
+        1. Stop accepting new connections
+        2. Stop all services
+        3. Close all existing connections
+        &#34;&#34;&#34;
+        self._logger.info(&#34;Initiating full shutdown&#34;)
 
-        results = await asyncio.gather(
-            *(ctx.shutdown() for ctx in self.contexts),
-            return_exceptions=True
-        )
-        for result, ctx in zip(results, self.contexts):
-            if isinstance(result, BaseException):
-                self._logger.error(
-                    &#34;Unexpected error when shutting down context %s&#34;,
-                    ctx
-                )
+        await self._stop_contexts()
+        await self._shutdown_services()
+        await self._shutdown_contexts()
 
         self.contexts.clear()
-        self.started = False</code></pre>
+        self.started = False
+
+    async def drain(self):
+        &#34;&#34;&#34;
+        Wait for all games to end.
+        &#34;&#34;&#34;
+        game_service: GameService = self.services[&#34;game_service&#34;]
+        broadcast_service: BroadcastService = self.services[&#34;broadcast_service&#34;]
+        try:
+            await asyncio.wait_for(
+                game_service.drain_games(),
+                timeout=config.SHUTDOWN_GRACE_PERIOD
+            )
+        except asyncio.CancelledError:
+            self._logger.debug(
+                &#34;Stopped waiting for games to end due to forced shutdown&#34;
+            )
+        except asyncio.TimeoutError:
+            self._logger.warning(
+                &#34;Graceful shutdown period ended! %s games are still live!&#34;,
+                len(game_service.live_games)
+            )
+        finally:
+            # The report_dirties loop is responsible for clearing dirty games
+            # and broadcasting the update messages to players and to RabbitMQ.
+            # We need to wait here for that loop to complete otherwise it is
+            # possible for the services to be shut down inbetween clearing the
+            # games and posting the messages, causing the posts to fail.
+            await broadcast_service.wait_report_dirtes()
+
+    async def _shutdown_services(self):
+        await map_suppress(
+            lambda service: service.shutdown(),
+            self.services.values(),
+            logger=self._logger,
+            msg=&#34;when shutting down service &#34;
+        )
+
+    async def _stop_contexts(self):
+        await map_suppress(
+            lambda ctx: ctx.stop(),
+            self.contexts,
+            logger=self._logger,
+            msg=&#34;when stopping context &#34;
+        )
+
+    async def _shutdown_contexts(self):
+        await map_suppress(
+            lambda ctx: ctx.shutdown(),
+            self.contexts,
+            logger=self._logger,
+            msg=&#34;when shutting down context &#34;
+        )</code></pre>
 </details>
 </section>
 <section>
@@ -476,9 +513,17 @@ class ServerInstance(object):
 <dd>
 <div class="desc"><p>Manages the GeoIP database</p></div>
 </dd>
+<dt><code class="name"><a title="server.health" href="health.html">server.health</a></code></dt>
+<dd>
+<div class="desc"><p>Kubernetes compatible HTTP health check server.</p></div>
+</dd>
 <dt><code class="name"><a title="server.ice_servers" href="ice_servers/index.html">server.ice_servers</a></code></dt>
 <dd>
 <div class="desc"><p>ICE server configuration</p></div>
+</dd>
+<dt><code class="name"><a title="server.info" href="info.html">server.info</a></code></dt>
+<dd>
+<div class="desc"><p>Static meta information about the container/process</p></div>
 </dd>
 <dt><code class="name"><a title="server.ladder_service" href="ladder_service/index.html">server.ladder_service</a></code></dt>
 <dd>
@@ -561,34 +606,6 @@ class ServerInstance(object):
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-functions">Functions</h2>
-<dl>
-<dt id="server.run_control_server"><code class="name flex">
-<span>async def <span class="ident">run_control_server</span></span>(<span>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>) ‑> <a title="server.control.ControlServer" href="control.html#server.control.ControlServer">ControlServer</a></span>
-</code></dt>
-<dd>
-<div class="desc"><p>Initialize the http control server</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def run_control_server(
-    player_service: PlayerService,
-    game_service: GameService
-) -&gt; ControlServer:
-    &#34;&#34;&#34;
-    Initialize the http control server
-    &#34;&#34;&#34;
-    host = socket.gethostbyname(socket.gethostname())
-    port = config.CONTROL_SERVER_PORT
-
-    ctrl_server = ControlServer(game_service, player_service, host, port)
-    await ctrl_server.start()
-
-    return ctrl_server</code></pre>
-</details>
-</dd>
-</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -620,13 +637,14 @@ class BroadcastService(Service):
         self.message_queue_service = message_queue_service
         self.game_service = game_service
         self.player_service = player_service
+        self._report_dirties_event = None
 
     async def initialize(self):
         # Using a lazy interval timer so that the intervals can be changed
         # without restarting the server.
         self._broadcast_dirties_timer = LazyIntervalTimer(
             lambda: config.DIRTY_REPORT_INTERVAL,
-            self.report_dirties,
+            self._monitored_report_dirties,
             start=True
         )
         self._broadcast_ping_timer = LazyIntervalTimer(
@@ -634,6 +652,14 @@ class BroadcastService(Service):
             self.broadcast_ping,
             start=True
         )
+
+    async def _monitored_report_dirties(self):
+        event = asyncio.Event()
+        self._report_dirties_event = event
+        try:
+            await self.report_dirties()
+        finally:
+            event.set()
 
     async def report_dirties(self):
         &#34;&#34;&#34;
@@ -708,7 +734,52 @@ class BroadcastService(Service):
             )
 
     def broadcast_ping(self):
-        self.server.write_broadcast({&#34;command&#34;: &#34;ping&#34;})</code></pre>
+        self.server.write_broadcast({&#34;command&#34;: &#34;ping&#34;})
+
+    async def wait_report_dirtes(self):
+        &#34;&#34;&#34;
+        Wait for the current report_dirties task to complete.
+        &#34;&#34;&#34;
+        if self._report_dirties_event is None:
+            return
+
+        await self._report_dirties_event.wait()
+
+    async def graceful_shutdown(self):
+        if config.SHUTDOWN_KICK_IDLE_PLAYERS:
+            message = (
+                &#34;If you&#39;re in a game you can continue to play, otherwise you &#34;
+                &#34;will be disconnected. If you aren&#39;t reconnected automatically &#34;
+                &#34;please wait a few minutes and try to connect again.&#34;
+            )
+        else:
+            message = (
+                &#34;If you&#39;re in a game you can continue to play, however, you &#34;
+                &#34;will not be able to create any new games until the server has &#34;
+                &#34;been restarted.&#34;
+            )
+
+        delta = humanize.precisedelta(config.SHUTDOWN_GRACE_PERIOD)
+        self.server.write_broadcast({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34;,
+            &#34;text&#34;: (
+                f&#34;The server will be shutting down for maintenance in {delta}! &#34;
+                f&#34;{message}&#34;
+            )
+        })
+
+    async def shutdown(self):
+        self.server.write_broadcast({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34;,
+            &#34;text&#34;: (
+                &#34;The server has been shut down for maintenance &#34;
+                &#34;but should be back online soon. If you experience any &#34;
+                &#34;problems, please restart your client. &lt;br/&gt;&lt;br/&gt;&#34;
+                &#34;We apologize for this interruption.&#34;
+            )
+        })</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -814,11 +885,31 @@ interval.</p></div>
         )</code></pre>
 </details>
 </dd>
+<dt id="server.BroadcastService.wait_report_dirtes"><code class="name flex">
+<span>async def <span class="ident">wait_report_dirtes</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wait for the current report_dirties task to complete.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def wait_report_dirtes(self):
+    &#34;&#34;&#34;
+    Wait for the current report_dirties task to complete.
+    &#34;&#34;&#34;
+    if self._report_dirties_event is None:
+        return
+
+    await self._report_dirties_event.wait()</code></pre>
+</details>
+</dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -871,6 +962,7 @@ class ConfigurationService(Service):
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -2385,6 +2477,8 @@ class GameService(Service):
         self._rating_service = rating_service
         self._message_queue_service = message_queue_service
         self.game_id_counter = 0
+        self._allow_new_games = False
+        self._drain_event = None
 
         # Populated below in really_update_static_ish_data.
         self.featured_mods = dict()
@@ -2401,6 +2495,7 @@ class GameService(Service):
         self._update_cron = aiocron.crontab(
             &#34;*/10 * * * *&#34;, func=self.update_data
         )
+        self._allow_new_games = True
 
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:
@@ -2486,6 +2581,9 @@ class GameService(Service):
         &#34;&#34;&#34;
         Main entrypoint for creating new games
         &#34;&#34;&#34;
+        if not self._allow_new_games:
+            raise DisabledError()
+
         game_id = self.create_uid()
         game_args = {
             &#34;database&#34;: self._db,
@@ -2541,9 +2639,16 @@ class GameService(Service):
                 )
 
     @property
+    def all_games(self) -&gt; ValuesView[Game]:
+        return self._games.values()
+
+    @property
     def live_games(self) -&gt; list[Game]:
-        return [game for game in self._games.values()
-                if game.state is GameState.LIVE]
+        return [
+            game
+            for game in self.all_games
+            if game.state is GameState.LIVE
+        ]
 
     @property
     def open_games(self) -&gt; list[Game]:
@@ -2558,21 +2663,31 @@ class GameService(Service):
 
         The client ignores everything &#34;closed&#34;. This property fetches all such not-closed games.
         &#34;&#34;&#34;
-        return [game for game in self._games.values()
-                if game.state is GameState.LOBBY or game.state is GameState.LIVE]
-
-    @property
-    def all_games(self) -&gt; ValuesView[Game]:
-        return self._games.values()
+        return [
+            game
+            for game in self.all_games
+            if game.state in (GameState.LOBBY, GameState.LIVE)
+        ]
 
     @property
     def pending_games(self) -&gt; list[Game]:
-        return [game for game in self._games.values()
-                if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]
+        return [
+            game
+            for game in self.all_games
+            if game.state in (GameState.LOBBY, GameState.INITIALIZING)
+        ]
 
     def remove_game(self, game: Game):
         if game.id in self._games:
+            self._logger.debug(&#34;Removing game %s&#34;, game)
             del self._games[game.id]
+
+        if (
+            self._drain_event is not None
+            and not self._drain_event.is_set()
+            and not self._games
+        ):
+            self._drain_event.set()
 
     def __getitem__(self, item: int) -&gt; Game:
         return self._games[item]
@@ -2594,7 +2709,35 @@ class GameService(Service):
         ):
             metrics.rated_games.labels(game_results.rating_type).inc()
             # TODO: Remove when rating service starts listening to message queue
-            await self._rating_service.enqueue(result_dict)</code></pre>
+            await self._rating_service.enqueue(result_dict)
+
+    async def drain_games(self):
+        &#34;&#34;&#34;
+        Wait for all games to finish.
+        &#34;&#34;&#34;
+        if not self._games:
+            return
+
+        if not self._drain_event:
+            self._drain_event = asyncio.Event()
+
+        await self._drain_event.wait()
+
+    async def graceful_shutdown(self):
+        self._allow_new_games = False
+
+        await self.close_lobby_games()
+
+    async def close_lobby_games(self):
+        self._logger.info(&#34;Closing all games currently in lobby&#34;)
+        for game in self.pending_games:
+            for game_connection in list(game.connections):
+                # Tell the client to kill the FA process
+                game_connection.player.write_message({
+                    &#34;command&#34;: &#34;notice&#34;,
+                    &#34;style&#34;: &#34;kill&#34;
+                })
+                await game_connection.abort()</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -2623,8 +2766,11 @@ def all_games(self) -&gt; ValuesView[Game]:
 </summary>
 <pre><code class="python">@property
 def live_games(self) -&gt; list[Game]:
-    return [game for game in self._games.values()
-            if game.state is GameState.LIVE]</code></pre>
+    return [
+        game
+        for game in self.all_games
+        if game.state is GameState.LIVE
+    ]</code></pre>
 </details>
 </dd>
 <dt id="server.GameService.open_games"><code class="name">var <span class="ident">open_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
@@ -2654,8 +2800,11 @@ def open_games(self) -&gt; list[Game]:
 
     The client ignores everything &#34;closed&#34;. This property fetches all such not-closed games.
     &#34;&#34;&#34;
-    return [game for game in self._games.values()
-            if game.state is GameState.LOBBY or game.state is GameState.LIVE]</code></pre>
+    return [
+        game
+        for game in self.all_games
+        if game.state in (GameState.LOBBY, GameState.LIVE)
+    ]</code></pre>
 </details>
 </dd>
 <dt id="server.GameService.pending_games"><code class="name">var <span class="ident">pending_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
@@ -2667,13 +2816,37 @@ def open_games(self) -&gt; list[Game]:
 </summary>
 <pre><code class="python">@property
 def pending_games(self) -&gt; list[Game]:
-    return [game for game in self._games.values()
-            if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]</code></pre>
+    return [
+        game
+        for game in self.all_games
+        if game.state in (GameState.LOBBY, GameState.INITIALIZING)
+    ]</code></pre>
 </details>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="server.GameService.close_lobby_games"><code class="name flex">
+<span>async def <span class="ident">close_lobby_games</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def close_lobby_games(self):
+    self._logger.info(&#34;Closing all games currently in lobby&#34;)
+    for game in self.pending_games:
+        for game_connection in list(game.connections):
+            # Tell the client to kill the FA process
+            game_connection.player.write_message({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;kill&#34;
+            })
+            await game_connection.abort()</code></pre>
+</details>
+</dd>
 <dt id="server.GameService.create_game"><code class="name flex">
 <span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame, visibility=VisibilityState.PUBLIC, host: Optional[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>] = None, name: Optional[str] = None, mapname: Optional[str] = None, password: Optional[str] = None, matchmaker_queue_id: Optional[int] = None, **kwargs)</span>
 </code></dt>
@@ -2698,6 +2871,9 @@ def pending_games(self) -&gt; list[Game]:
     &#34;&#34;&#34;
     Main entrypoint for creating new games
     &#34;&#34;&#34;
+    if not self._allow_new_games:
+        raise DisabledError()
+
     game_id = self.create_uid()
     game_args = {
         &#34;database&#34;: self._db,
@@ -2735,6 +2911,28 @@ def pending_games(self) -&gt; list[Game]:
     self.game_id_counter += 1
 
     return self.game_id_counter</code></pre>
+</details>
+</dd>
+<dt id="server.GameService.drain_games"><code class="name flex">
+<span>async def <span class="ident">drain_games</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wait for all games to finish.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def drain_games(self):
+    &#34;&#34;&#34;
+    Wait for all games to finish.
+    &#34;&#34;&#34;
+    if not self._games:
+        return
+
+    if not self._drain_event:
+        self._drain_event = asyncio.Event()
+
+    await self._drain_event.wait()</code></pre>
 </details>
 </dd>
 <dt id="server.GameService.initialise_game_counter"><code class="name flex">
@@ -2848,7 +3046,15 @@ def pending_games(self) -&gt; list[Game]:
 </summary>
 <pre><code class="python">def remove_game(self, game: Game):
     if game.id in self._games:
-        del self._games[game.id]</code></pre>
+        self._logger.debug(&#34;Removing game %s&#34;, game)
+        del self._games[game.id]
+
+    if (
+        self._drain_event is not None
+        and not self._drain_event.is_set()
+        and not self._games
+    ):
+        self._drain_event.set()</code></pre>
 </details>
 </dd>
 <dt id="server.GameService.update_active_game_metrics"><code class="name flex">
@@ -2938,6 +3144,7 @@ time we need, but which can in principle change over time.</p></div>
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -3287,6 +3494,7 @@ class GameStatsService(Service):
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -3713,6 +3921,7 @@ a valid gzip file, then it does NOT overwrite the old file.</p></div>
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -3751,6 +3960,7 @@ class LadderService(Service):
         self.violation_service = violation_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
+        self._allow_new_searches = True
 
     async def initialize(self) -&gt; None:
         await self.update_data()
@@ -3955,6 +4165,9 @@ class LadderService(Service):
         queue_name: str,
         on_matched: OnMatchedCallback = lambda _1, _2: None
     ):
+        if not self._allow_new_searches:
+            raise DisabledError()
+
         timeouts = self.violation_service.get_violations(players)
         if timeouts:
             self._logger.debug(&#34;timeouts: %s&#34;, timeouts)
@@ -4396,9 +4609,15 @@ class LadderService(Service):
         if player in self._informed_players:
             self._informed_players.remove(player)
 
-    async def shutdown(self):
+    async def graceful_shutdown(self):
+        self._allow_new_searches = False
+
         for queue in self.queues.values():
-            queue.shutdown()</code></pre>
+            queue.shutdown()
+
+        for player, searches in self._searches.items():
+            for queue_name in list(searches.keys()):
+                self._cancel_search(player, queue_name)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -4800,6 +5019,9 @@ so it should only perform fast operations.</p></div>
     queue_name: str,
     on_matched: OnMatchedCallback = lambda _1, _2: None
 ):
+    if not self._allow_new_searches:
+        raise DisabledError()
+
     timeouts = self.violation_service.get_violations(players)
     if timeouts:
         self._logger.debug(&#34;timeouts: %s&#34;, timeouts)
@@ -4965,6 +5187,7 @@ so it should only perform fast operations.</p></div>
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -5285,6 +5508,7 @@ async def reconnect(self) -&gt; None:
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -5490,6 +5714,7 @@ async def get_public_keys(self) -&gt; dict:
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -5942,6 +6167,7 @@ class PartyService(Service):
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -6192,16 +6418,20 @@ class PlayerService(Service):
             )
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
-    async def shutdown(self):
-        for player in self:
-            if player.lobby_connection is not None:
-                with contextlib.suppress(Exception):
-                    player.lobby_connection.write_warning(
-                        &#34;The server has been shut down for maintenance, &#34;
-                        &#34;but should be back online soon. If you experience any &#34;
-                        &#34;problems, please restart your client. &lt;br/&gt;&lt;br/&gt;&#34;
-                        &#34;We apologize for this interruption.&#34;
-                    )
+    async def kick_idle_players(self):
+        for fut in asyncio.as_completed([
+            player.lobby_connection.abort(&#34;Graceful shutdown.&#34;)
+            for player in self.all_players
+            if player.state == PlayerState.IDLE
+            if player.lobby_connection is not None
+        ]):
+            try:
+                await fut
+            except Exception:
+                self._logger.debug(
+                    &#34;Error while aborting connection&#34;,
+                    exc_info=True
+                )
 
     def on_connection_lost(self, conn: &#34;LobbyConnection&#34;) -&gt; None:
         if not conn.player:
@@ -6214,7 +6444,11 @@ class PlayerService(Service):
             conn.player.id,
             conn.player.login,
             conn.session
-        )</code></pre>
+        )
+
+    async def graceful_shutdown(self):
+        if config.SHUTDOWN_KICK_IDLE_PLAYERS:
+            self._kick_idle_task = at_interval(1, self.kick_idle_players)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -6353,6 +6587,31 @@ def all_players(self) -&gt; ValuesView[Player]:
     return user_id in self.uniqueid_exempt</code></pre>
 </details>
 </dd>
+<dt id="server.PlayerService.kick_idle_players"><code class="name flex">
+<span>async def <span class="ident">kick_idle_players</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def kick_idle_players(self):
+    for fut in asyncio.as_completed([
+        player.lobby_connection.abort(&#34;Graceful shutdown.&#34;)
+        for player in self.all_players
+        if player.state == PlayerState.IDLE
+        if player.lobby_connection is not None
+    ]):
+        try:
+            await fut
+        except Exception:
+            self._logger.debug(
+                &#34;Error while aborting connection&#34;,
+                exc_info=True
+            )</code></pre>
+</details>
+</dd>
 <dt id="server.PlayerService.mark_dirty"><code class="name flex">
 <span>def <span class="ident">mark_dirty</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
 </code></dt>
@@ -6453,6 +6712,7 @@ uniqueid check.</p></div>
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -7080,6 +7340,7 @@ class RatingService(Service):
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 </ul>
@@ -7220,46 +7481,158 @@ state, i.e. the same players, games, etc.</p></div>
 
         return ctx
 
+    async def graceful_shutdown(self):
+        &#34;&#34;&#34;
+        Start a graceful shut down of the server.
+
+        1. Notify all services of graceful shutdown
+        &#34;&#34;&#34;
+        self._logger.info(&#34;Initiating graceful shutdown&#34;)
+
+        await map_suppress(
+            lambda service: service.graceful_shutdown(),
+            self.services.values(),
+            logger=self._logger,
+            msg=&#34;when starting graceful shutdown of service &#34;
+        )
+
     async def shutdown(self):
-        results = await asyncio.gather(
-            *(ctx.stop() for ctx in self.contexts),
-            return_exceptions=True
-        )
-        for result, ctx in zip(results, self.contexts):
-            if isinstance(result, BaseException):
-                self._logger.exception(
-                    &#34;Unexpected error when stopping context %s&#34;,
-                    ctx,
-                    exc_info=result
-                )
+        &#34;&#34;&#34;
+        Immediately shutdown the server.
 
-        results = await asyncio.gather(
-            *(service.shutdown() for service in self.services.values()),
-            return_exceptions=True
-        )
-        for result, service in zip(results, self.services.values()):
-            if isinstance(result, BaseException):
-                self._logger.error(
-                    &#34;Unexpected error when shutting down service %s&#34;,
-                    service
-                )
+        1. Stop accepting new connections
+        2. Stop all services
+        3. Close all existing connections
+        &#34;&#34;&#34;
+        self._logger.info(&#34;Initiating full shutdown&#34;)
 
-        results = await asyncio.gather(
-            *(ctx.shutdown() for ctx in self.contexts),
-            return_exceptions=True
-        )
-        for result, ctx in zip(results, self.contexts):
-            if isinstance(result, BaseException):
-                self._logger.error(
-                    &#34;Unexpected error when shutting down context %s&#34;,
-                    ctx
-                )
+        await self._stop_contexts()
+        await self._shutdown_services()
+        await self._shutdown_contexts()
 
         self.contexts.clear()
-        self.started = False</code></pre>
+        self.started = False
+
+    async def drain(self):
+        &#34;&#34;&#34;
+        Wait for all games to end.
+        &#34;&#34;&#34;
+        game_service: GameService = self.services[&#34;game_service&#34;]
+        broadcast_service: BroadcastService = self.services[&#34;broadcast_service&#34;]
+        try:
+            await asyncio.wait_for(
+                game_service.drain_games(),
+                timeout=config.SHUTDOWN_GRACE_PERIOD
+            )
+        except asyncio.CancelledError:
+            self._logger.debug(
+                &#34;Stopped waiting for games to end due to forced shutdown&#34;
+            )
+        except asyncio.TimeoutError:
+            self._logger.warning(
+                &#34;Graceful shutdown period ended! %s games are still live!&#34;,
+                len(game_service.live_games)
+            )
+        finally:
+            # The report_dirties loop is responsible for clearing dirty games
+            # and broadcasting the update messages to players and to RabbitMQ.
+            # We need to wait here for that loop to complete otherwise it is
+            # possible for the services to be shut down inbetween clearing the
+            # games and posting the messages, causing the posts to fail.
+            await broadcast_service.wait_report_dirtes()
+
+    async def _shutdown_services(self):
+        await map_suppress(
+            lambda service: service.shutdown(),
+            self.services.values(),
+            logger=self._logger,
+            msg=&#34;when shutting down service &#34;
+        )
+
+    async def _stop_contexts(self):
+        await map_suppress(
+            lambda ctx: ctx.stop(),
+            self.contexts,
+            logger=self._logger,
+            msg=&#34;when stopping context &#34;
+        )
+
+    async def _shutdown_contexts(self):
+        await map_suppress(
+            lambda ctx: ctx.shutdown(),
+            self.contexts,
+            logger=self._logger,
+            msg=&#34;when shutting down context &#34;
+        )</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
+<dt id="server.ServerInstance.drain"><code class="name flex">
+<span>async def <span class="ident">drain</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wait for all games to end.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def drain(self):
+    &#34;&#34;&#34;
+    Wait for all games to end.
+    &#34;&#34;&#34;
+    game_service: GameService = self.services[&#34;game_service&#34;]
+    broadcast_service: BroadcastService = self.services[&#34;broadcast_service&#34;]
+    try:
+        await asyncio.wait_for(
+            game_service.drain_games(),
+            timeout=config.SHUTDOWN_GRACE_PERIOD
+        )
+    except asyncio.CancelledError:
+        self._logger.debug(
+            &#34;Stopped waiting for games to end due to forced shutdown&#34;
+        )
+    except asyncio.TimeoutError:
+        self._logger.warning(
+            &#34;Graceful shutdown period ended! %s games are still live!&#34;,
+            len(game_service.live_games)
+        )
+    finally:
+        # The report_dirties loop is responsible for clearing dirty games
+        # and broadcasting the update messages to players and to RabbitMQ.
+        # We need to wait here for that loop to complete otherwise it is
+        # possible for the services to be shut down inbetween clearing the
+        # games and posting the messages, causing the posts to fail.
+        await broadcast_service.wait_report_dirtes()</code></pre>
+</details>
+</dd>
+<dt id="server.ServerInstance.graceful_shutdown"><code class="name flex">
+<span>async def <span class="ident">graceful_shutdown</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Start a graceful shut down of the server.</p>
+<ol>
+<li>Notify all services of graceful shutdown</li>
+</ol></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def graceful_shutdown(self):
+    &#34;&#34;&#34;
+    Start a graceful shut down of the server.
+
+    1. Notify all services of graceful shutdown
+    &#34;&#34;&#34;
+    self._logger.info(&#34;Initiating graceful shutdown&#34;)
+
+    await map_suppress(
+        lambda service: service.graceful_shutdown(),
+        self.services.values(),
+        logger=self._logger,
+        msg=&#34;when starting graceful shutdown of service &#34;
+    )</code></pre>
+</details>
+</dd>
 <dt id="server.ServerInstance.listen"><code class="name flex">
 <span>async def <span class="ident">listen</span></span>(<span>self, address: tuple[str, int], name: Optional[str] = None, protocol_class: type[<a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>] = server.protocol.qdatastream.QDataStreamProtocol, proxy: bool = False) ‑> <a title="server.servercontext.ServerContext" href="servercontext.html#server.servercontext.ServerContext">ServerContext</a></span>
 </code></dt>
@@ -7316,45 +7689,29 @@ See: <a href="https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">https
 <span>async def <span class="ident">shutdown</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Immediately shutdown the server.</p>
+<ol>
+<li>Stop accepting new connections</li>
+<li>Stop all services</li>
+<li>Close all existing connections</li>
+</ol></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def shutdown(self):
-    results = await asyncio.gather(
-        *(ctx.stop() for ctx in self.contexts),
-        return_exceptions=True
-    )
-    for result, ctx in zip(results, self.contexts):
-        if isinstance(result, BaseException):
-            self._logger.exception(
-                &#34;Unexpected error when stopping context %s&#34;,
-                ctx,
-                exc_info=result
-            )
+    &#34;&#34;&#34;
+    Immediately shutdown the server.
 
-    results = await asyncio.gather(
-        *(service.shutdown() for service in self.services.values()),
-        return_exceptions=True
-    )
-    for result, service in zip(results, self.services.values()):
-        if isinstance(result, BaseException):
-            self._logger.error(
-                &#34;Unexpected error when shutting down service %s&#34;,
-                service
-            )
+    1. Stop accepting new connections
+    2. Stop all services
+    3. Close all existing connections
+    &#34;&#34;&#34;
+    self._logger.info(&#34;Initiating full shutdown&#34;)
 
-    results = await asyncio.gather(
-        *(ctx.shutdown() for ctx in self.contexts),
-        return_exceptions=True
-    )
-    for result, ctx in zip(results, self.contexts):
-        if isinstance(result, BaseException):
-            self._logger.error(
-                &#34;Unexpected error when shutting down context %s&#34;,
-                ctx
-            )
+    await self._stop_contexts()
+    await self._shutdown_services()
+    await self._shutdown_contexts()
 
     self.contexts.clear()
     self.started = False</code></pre>
@@ -7478,7 +7835,7 @@ class ViolationService(Service):
             })
             extra_text = &#34;&#34;
             if violation.count &gt; 1:
-                delta_text = humanize.naturaldelta(
+                delta_text = humanize.precisedelta(
                     violation.get_ban_expiration() - now
                 )
                 extra_text = f&#34; You can queue again in {delta_text}&#34;
@@ -7608,7 +7965,7 @@ class ViolationService(Service):
         })
         extra_text = &#34;&#34;
         if violation.count &gt; 1:
-            delta_text = humanize.naturaldelta(
+            delta_text = humanize.precisedelta(
                 violation.get_ban_expiration() - now
             )
             extra_text = f&#34; You can queue again in {delta_text}&#34;
@@ -7642,6 +7999,7 @@ class ViolationService(Service):
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -7691,7 +8049,9 @@ class ViolationService(Service):
 <li><code><a title="server.gameconnection" href="gameconnection.html">server.gameconnection</a></code></li>
 <li><code><a title="server.games" href="games/index.html">server.games</a></code></li>
 <li><code><a title="server.geoip_service" href="geoip_service.html">server.geoip_service</a></code></li>
+<li><code><a title="server.health" href="health.html">server.health</a></code></li>
 <li><code><a title="server.ice_servers" href="ice_servers/index.html">server.ice_servers</a></code></li>
+<li><code><a title="server.info" href="info.html">server.info</a></code></li>
 <li><code><a title="server.ladder_service" href="ladder_service/index.html">server.ladder_service</a></code></li>
 <li><code><a title="server.lobbyconnection" href="lobbyconnection.html">server.lobbyconnection</a></code></li>
 <li><code><a title="server.matchmaker" href="matchmaker/index.html">server.matchmaker</a></code></li>
@@ -7713,11 +8073,6 @@ class ViolationService(Service):
 <li><code><a title="server.weakattr" href="weakattr.html">server.weakattr</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="server.run_control_server" href="#server.run_control_server">run_control_server</a></code></li>
-</ul>
-</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
@@ -7725,6 +8080,7 @@ class ViolationService(Service):
 <ul class="">
 <li><code><a title="server.BroadcastService.broadcast_ping" href="#server.BroadcastService.broadcast_ping">broadcast_ping</a></code></li>
 <li><code><a title="server.BroadcastService.report_dirties" href="#server.BroadcastService.report_dirties">report_dirties</a></code></li>
+<li><code><a title="server.BroadcastService.wait_report_dirtes" href="#server.BroadcastService.wait_report_dirtes">wait_report_dirtes</a></code></li>
 </ul>
 </li>
 <li>
@@ -7772,8 +8128,10 @@ class ViolationService(Service):
 <h4><code><a title="server.GameService" href="#server.GameService">GameService</a></code></h4>
 <ul class="">
 <li><code><a title="server.GameService.all_games" href="#server.GameService.all_games">all_games</a></code></li>
+<li><code><a title="server.GameService.close_lobby_games" href="#server.GameService.close_lobby_games">close_lobby_games</a></code></li>
 <li><code><a title="server.GameService.create_game" href="#server.GameService.create_game">create_game</a></code></li>
 <li><code><a title="server.GameService.create_uid" href="#server.GameService.create_uid">create_uid</a></code></li>
+<li><code><a title="server.GameService.drain_games" href="#server.GameService.drain_games">drain_games</a></code></li>
 <li><code><a title="server.GameService.initialise_game_counter" href="#server.GameService.initialise_game_counter">initialise_game_counter</a></code></li>
 <li><code><a title="server.GameService.live_games" href="#server.GameService.live_games">live_games</a></code></li>
 <li><code><a title="server.GameService.mark_dirty" href="#server.GameService.mark_dirty">mark_dirty</a></code></li>
@@ -7860,6 +8218,7 @@ class ViolationService(Service):
 <li><code><a title="server.PlayerService.get_player" href="#server.PlayerService.get_player">get_player</a></code></li>
 <li><code><a title="server.PlayerService.has_permission_role" href="#server.PlayerService.has_permission_role">has_permission_role</a></code></li>
 <li><code><a title="server.PlayerService.is_uniqueid_exempt" href="#server.PlayerService.is_uniqueid_exempt">is_uniqueid_exempt</a></code></li>
+<li><code><a title="server.PlayerService.kick_idle_players" href="#server.PlayerService.kick_idle_players">kick_idle_players</a></code></li>
 <li><code><a title="server.PlayerService.mark_dirty" href="#server.PlayerService.mark_dirty">mark_dirty</a></code></li>
 <li><code><a title="server.PlayerService.pop_dirty_players" href="#server.PlayerService.pop_dirty_players">pop_dirty_players</a></code></li>
 <li><code><a title="server.PlayerService.remove_player" href="#server.PlayerService.remove_player">remove_player</a></code></li>
@@ -7878,7 +8237,9 @@ class ViolationService(Service):
 </li>
 <li>
 <h4><code><a title="server.ServerInstance" href="#server.ServerInstance">ServerInstance</a></code></h4>
-<ul class="">
+<ul class="two-column">
+<li><code><a title="server.ServerInstance.drain" href="#server.ServerInstance.drain">drain</a></code></li>
+<li><code><a title="server.ServerInstance.graceful_shutdown" href="#server.ServerInstance.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.ServerInstance.listen" href="#server.ServerInstance.listen">listen</a></code></li>
 <li><code><a title="server.ServerInstance.shutdown" href="#server.ServerInstance.shutdown">shutdown</a></code></li>
 <li><code><a title="server.ServerInstance.start_services" href="#server.ServerInstance.start_services">start_services</a></code></li>

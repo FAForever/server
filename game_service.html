@@ -31,6 +31,7 @@
 Manages the lifecycle of active games
 &#34;&#34;&#34;
 
+import asyncio
 from collections import Counter
 from typing import Optional, Union, ValuesView
 
@@ -44,6 +45,7 @@ from .core import Service
 from .db import FAFDatabase
 from .db.models import game_featuredMods
 from .decorators import with_logger
+from .exceptions import DisabledError
 from .games import (
     CustomGame,
     FeaturedMod,
@@ -81,6 +83,8 @@ class GameService(Service):
         self._rating_service = rating_service
         self._message_queue_service = message_queue_service
         self.game_id_counter = 0
+        self._allow_new_games = False
+        self._drain_event = None
 
         # Populated below in really_update_static_ish_data.
         self.featured_mods = dict()
@@ -97,6 +101,7 @@ class GameService(Service):
         self._update_cron = aiocron.crontab(
             &#34;*/10 * * * *&#34;, func=self.update_data
         )
+        self._allow_new_games = True
 
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:
@@ -182,6 +187,9 @@ class GameService(Service):
         &#34;&#34;&#34;
         Main entrypoint for creating new games
         &#34;&#34;&#34;
+        if not self._allow_new_games:
+            raise DisabledError()
+
         game_id = self.create_uid()
         game_args = {
             &#34;database&#34;: self._db,
@@ -237,9 +245,16 @@ class GameService(Service):
                 )
 
     @property
+    def all_games(self) -&gt; ValuesView[Game]:
+        return self._games.values()
+
+    @property
     def live_games(self) -&gt; list[Game]:
-        return [game for game in self._games.values()
-                if game.state is GameState.LIVE]
+        return [
+            game
+            for game in self.all_games
+            if game.state is GameState.LIVE
+        ]
 
     @property
     def open_games(self) -&gt; list[Game]:
@@ -254,21 +269,31 @@ class GameService(Service):
 
         The client ignores everything &#34;closed&#34;. This property fetches all such not-closed games.
         &#34;&#34;&#34;
-        return [game for game in self._games.values()
-                if game.state is GameState.LOBBY or game.state is GameState.LIVE]
-
-    @property
-    def all_games(self) -&gt; ValuesView[Game]:
-        return self._games.values()
+        return [
+            game
+            for game in self.all_games
+            if game.state in (GameState.LOBBY, GameState.LIVE)
+        ]
 
     @property
     def pending_games(self) -&gt; list[Game]:
-        return [game for game in self._games.values()
-                if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]
+        return [
+            game
+            for game in self.all_games
+            if game.state in (GameState.LOBBY, GameState.INITIALIZING)
+        ]
 
     def remove_game(self, game: Game):
         if game.id in self._games:
+            self._logger.debug(&#34;Removing game %s&#34;, game)
             del self._games[game.id]
+
+        if (
+            self._drain_event is not None
+            and not self._drain_event.is_set()
+            and not self._games
+        ):
+            self._drain_event.set()
 
     def __getitem__(self, item: int) -&gt; Game:
         return self._games[item]
@@ -290,7 +315,35 @@ class GameService(Service):
         ):
             metrics.rated_games.labels(game_results.rating_type).inc()
             # TODO: Remove when rating service starts listening to message queue
-            await self._rating_service.enqueue(result_dict)</code></pre>
+            await self._rating_service.enqueue(result_dict)
+
+    async def drain_games(self):
+        &#34;&#34;&#34;
+        Wait for all games to finish.
+        &#34;&#34;&#34;
+        if not self._games:
+            return
+
+        if not self._drain_event:
+            self._drain_event = asyncio.Event()
+
+        await self._drain_event.wait()
+
+    async def graceful_shutdown(self):
+        self._allow_new_games = False
+
+        await self.close_lobby_games()
+
+    async def close_lobby_games(self):
+        self._logger.info(&#34;Closing all games currently in lobby&#34;)
+        for game in self.pending_games:
+            for game_connection in list(game.connections):
+                # Tell the client to kill the FA process
+                game_connection.player.write_message({
+                    &#34;command&#34;: &#34;notice&#34;,
+                    &#34;style&#34;: &#34;kill&#34;
+                })
+                await game_connection.abort()</code></pre>
 </details>
 </section>
 <section>
@@ -334,6 +387,8 @@ class GameService(Service):
         self._rating_service = rating_service
         self._message_queue_service = message_queue_service
         self.game_id_counter = 0
+        self._allow_new_games = False
+        self._drain_event = None
 
         # Populated below in really_update_static_ish_data.
         self.featured_mods = dict()
@@ -350,6 +405,7 @@ class GameService(Service):
         self._update_cron = aiocron.crontab(
             &#34;*/10 * * * *&#34;, func=self.update_data
         )
+        self._allow_new_games = True
 
     async def initialise_game_counter(self):
         async with self._db.acquire() as conn:
@@ -435,6 +491,9 @@ class GameService(Service):
         &#34;&#34;&#34;
         Main entrypoint for creating new games
         &#34;&#34;&#34;
+        if not self._allow_new_games:
+            raise DisabledError()
+
         game_id = self.create_uid()
         game_args = {
             &#34;database&#34;: self._db,
@@ -490,9 +549,16 @@ class GameService(Service):
                 )
 
     @property
+    def all_games(self) -&gt; ValuesView[Game]:
+        return self._games.values()
+
+    @property
     def live_games(self) -&gt; list[Game]:
-        return [game for game in self._games.values()
-                if game.state is GameState.LIVE]
+        return [
+            game
+            for game in self.all_games
+            if game.state is GameState.LIVE
+        ]
 
     @property
     def open_games(self) -&gt; list[Game]:
@@ -507,21 +573,31 @@ class GameService(Service):
 
         The client ignores everything &#34;closed&#34;. This property fetches all such not-closed games.
         &#34;&#34;&#34;
-        return [game for game in self._games.values()
-                if game.state is GameState.LOBBY or game.state is GameState.LIVE]
-
-    @property
-    def all_games(self) -&gt; ValuesView[Game]:
-        return self._games.values()
+        return [
+            game
+            for game in self.all_games
+            if game.state in (GameState.LOBBY, GameState.LIVE)
+        ]
 
     @property
     def pending_games(self) -&gt; list[Game]:
-        return [game for game in self._games.values()
-                if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]
+        return [
+            game
+            for game in self.all_games
+            if game.state in (GameState.LOBBY, GameState.INITIALIZING)
+        ]
 
     def remove_game(self, game: Game):
         if game.id in self._games:
+            self._logger.debug(&#34;Removing game %s&#34;, game)
             del self._games[game.id]
+
+        if (
+            self._drain_event is not None
+            and not self._drain_event.is_set()
+            and not self._games
+        ):
+            self._drain_event.set()
 
     def __getitem__(self, item: int) -&gt; Game:
         return self._games[item]
@@ -543,7 +619,35 @@ class GameService(Service):
         ):
             metrics.rated_games.labels(game_results.rating_type).inc()
             # TODO: Remove when rating service starts listening to message queue
-            await self._rating_service.enqueue(result_dict)</code></pre>
+            await self._rating_service.enqueue(result_dict)
+
+    async def drain_games(self):
+        &#34;&#34;&#34;
+        Wait for all games to finish.
+        &#34;&#34;&#34;
+        if not self._games:
+            return
+
+        if not self._drain_event:
+            self._drain_event = asyncio.Event()
+
+        await self._drain_event.wait()
+
+    async def graceful_shutdown(self):
+        self._allow_new_games = False
+
+        await self.close_lobby_games()
+
+    async def close_lobby_games(self):
+        self._logger.info(&#34;Closing all games currently in lobby&#34;)
+        for game in self.pending_games:
+            for game_connection in list(game.connections):
+                # Tell the client to kill the FA process
+                game_connection.player.write_message({
+                    &#34;command&#34;: &#34;notice&#34;,
+                    &#34;style&#34;: &#34;kill&#34;
+                })
+                await game_connection.abort()</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -572,8 +676,11 @@ def all_games(self) -&gt; ValuesView[Game]:
 </summary>
 <pre><code class="python">@property
 def live_games(self) -&gt; list[Game]:
-    return [game for game in self._games.values()
-            if game.state is GameState.LIVE]</code></pre>
+    return [
+        game
+        for game in self.all_games
+        if game.state is GameState.LIVE
+    ]</code></pre>
 </details>
 </dd>
 <dt id="server.game_service.GameService.open_games"><code class="name">var <span class="ident">open_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
@@ -603,8 +710,11 @@ def open_games(self) -&gt; list[Game]:
 
     The client ignores everything &#34;closed&#34;. This property fetches all such not-closed games.
     &#34;&#34;&#34;
-    return [game for game in self._games.values()
-            if game.state is GameState.LOBBY or game.state is GameState.LIVE]</code></pre>
+    return [
+        game
+        for game in self.all_games
+        if game.state in (GameState.LOBBY, GameState.LIVE)
+    ]</code></pre>
 </details>
 </dd>
 <dt id="server.game_service.GameService.pending_games"><code class="name">var <span class="ident">pending_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
@@ -616,13 +726,37 @@ def open_games(self) -&gt; list[Game]:
 </summary>
 <pre><code class="python">@property
 def pending_games(self) -&gt; list[Game]:
-    return [game for game in self._games.values()
-            if game.state is GameState.LOBBY or game.state is GameState.INITIALIZING]</code></pre>
+    return [
+        game
+        for game in self.all_games
+        if game.state in (GameState.LOBBY, GameState.INITIALIZING)
+    ]</code></pre>
 </details>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="server.game_service.GameService.close_lobby_games"><code class="name flex">
+<span>async def <span class="ident">close_lobby_games</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def close_lobby_games(self):
+    self._logger.info(&#34;Closing all games currently in lobby&#34;)
+    for game in self.pending_games:
+        for game_connection in list(game.connections):
+            # Tell the client to kill the FA process
+            game_connection.player.write_message({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;kill&#34;
+            })
+            await game_connection.abort()</code></pre>
+</details>
+</dd>
 <dt id="server.game_service.GameService.create_game"><code class="name flex">
 <span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame, visibility=VisibilityState.PUBLIC, host: Optional[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>] = None, name: Optional[str] = None, mapname: Optional[str] = None, password: Optional[str] = None, matchmaker_queue_id: Optional[int] = None, **kwargs)</span>
 </code></dt>
@@ -647,6 +781,9 @@ def pending_games(self) -&gt; list[Game]:
     &#34;&#34;&#34;
     Main entrypoint for creating new games
     &#34;&#34;&#34;
+    if not self._allow_new_games:
+        raise DisabledError()
+
     game_id = self.create_uid()
     game_args = {
         &#34;database&#34;: self._db,
@@ -684,6 +821,28 @@ def pending_games(self) -&gt; list[Game]:
     self.game_id_counter += 1
 
     return self.game_id_counter</code></pre>
+</details>
+</dd>
+<dt id="server.game_service.GameService.drain_games"><code class="name flex">
+<span>async def <span class="ident">drain_games</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wait for all games to finish.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def drain_games(self):
+    &#34;&#34;&#34;
+    Wait for all games to finish.
+    &#34;&#34;&#34;
+    if not self._games:
+        return
+
+    if not self._drain_event:
+        self._drain_event = asyncio.Event()
+
+    await self._drain_event.wait()</code></pre>
 </details>
 </dd>
 <dt id="server.game_service.GameService.initialise_game_counter"><code class="name flex">
@@ -797,7 +956,15 @@ def pending_games(self) -&gt; list[Game]:
 </summary>
 <pre><code class="python">def remove_game(self, game: Game):
     if game.id in self._games:
-        del self._games[game.id]</code></pre>
+        self._logger.debug(&#34;Removing game %s&#34;, game)
+        del self._games[game.id]
+
+    if (
+        self._drain_event is not None
+        and not self._drain_event.is_set()
+        and not self._games
+    ):
+        self._drain_event.set()</code></pre>
 </details>
 </dd>
 <dt id="server.game_service.GameService.update_active_game_metrics"><code class="name flex">
@@ -887,6 +1054,7 @@ time we need, but which can in principle change over time.</p></div>
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -914,8 +1082,10 @@ time we need, but which can in principle change over time.</p></div>
 <h4><code><a title="server.game_service.GameService" href="#server.game_service.GameService">GameService</a></code></h4>
 <ul class="">
 <li><code><a title="server.game_service.GameService.all_games" href="#server.game_service.GameService.all_games">all_games</a></code></li>
+<li><code><a title="server.game_service.GameService.close_lobby_games" href="#server.game_service.GameService.close_lobby_games">close_lobby_games</a></code></li>
 <li><code><a title="server.game_service.GameService.create_game" href="#server.game_service.GameService.create_game">create_game</a></code></li>
 <li><code><a title="server.game_service.GameService.create_uid" href="#server.game_service.GameService.create_uid">create_uid</a></code></li>
+<li><code><a title="server.game_service.GameService.drain_games" href="#server.game_service.GameService.drain_games">drain_games</a></code></li>
 <li><code><a title="server.game_service.GameService.initialise_game_counter" href="#server.game_service.GameService.initialise_game_counter">initialise_game_counter</a></code></li>
 <li><code><a title="server.game_service.GameService.live_games" href="#server.game_service.GameService.live_games">live_games</a></code></li>
 <li><code><a title="server.game_service.GameService.mark_dirty" href="#server.game_service.GameService.mark_dirty">mark_dirty</a></code></li>

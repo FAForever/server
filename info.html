@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>server.configuration_service API documentation</title>
-<meta name="description" content="Manages periodic reloading of config variables" />
+<title>server.info API documentation</title>
+<meta name="description" content="Static meta information about the container/process" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -19,51 +19,26 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>server.configuration_service</code></h1>
+<h1 class="title">Module <code>server.info</code></h1>
 </header>
 <section id="section-intro">
-<p>Manages periodic reloading of config variables</p>
+<p>Static meta information about the container/process</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">&#34;&#34;&#34;
-Manages periodic reloading of config variables
+Static meta information about the container/process
 &#34;&#34;&#34;
 
-import asyncio
+import os
+import platform
 
-from .config import config
-from .core import Service
-from .decorators import with_logger
+PYTHON_VERSION = platform.python_version()
 
-
-@with_logger
-class ConfigurationService(Service):
-    def __init__(self) -&gt; None:
-        self._store = config
-        self._task = None
-
-    async def initialize(self) -&gt; None:
-        self._task = asyncio.create_task(self._worker_loop())
-        self._logger.info(&#34;Configuration service initialized&#34;)
-
-    async def _worker_loop(self) -&gt; None:
-        while True:
-            try:
-                self._logger.debug(&#34;Refreshing configuration variables&#34;)
-                self._store.refresh()
-                await asyncio.sleep(self._store.CONFIGURATION_REFRESH_TIME)
-            except Exception:
-                self._logger.exception(&#34;Error while refreshing config&#34;)
-                # To prevent a busy loop
-                await asyncio.sleep(60)
-
-    async def shutdown(self) -&gt; None:
-        if self._task is not None:
-            self._logger.info(&#34;Configuration service stopping.&#34;)
-            self._task.cancel()
-        self._task = None</code></pre>
+# Environment variables
+VERSION = os.getenv(&#34;VERSION&#34;) or &#34;dev&#34;
+CONTAINER_NAME = os.getenv(&#34;CONTAINER_NAME&#34;) or &#34;faf-python-server&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -73,62 +48,6 @@ class ConfigurationService(Service):
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-classes">Classes</h2>
-<dl>
-<dt id="server.configuration_service.ConfigurationService"><code class="flex name class">
-<span>class <span class="ident">ConfigurationService</span></span>
-</code></dt>
-<dd>
-<div class="desc"><p>All services should inherit from this class.</p>
-<p>Services are singleton objects which manage some server task.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@with_logger
-class ConfigurationService(Service):
-    def __init__(self) -&gt; None:
-        self._store = config
-        self._task = None
-
-    async def initialize(self) -&gt; None:
-        self._task = asyncio.create_task(self._worker_loop())
-        self._logger.info(&#34;Configuration service initialized&#34;)
-
-    async def _worker_loop(self) -&gt; None:
-        while True:
-            try:
-                self._logger.debug(&#34;Refreshing configuration variables&#34;)
-                self._store.refresh()
-                await asyncio.sleep(self._store.CONFIGURATION_REFRESH_TIME)
-            except Exception:
-                self._logger.exception(&#34;Error while refreshing config&#34;)
-                # To prevent a busy loop
-                await asyncio.sleep(60)
-
-    async def shutdown(self) -&gt; None:
-        if self._task is not None:
-            self._logger.info(&#34;Configuration service stopping.&#34;)
-            self._task.cancel()
-        self._task = None</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
-</ul>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
-<ul class="hlist">
-<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
-<li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
-<li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
-<li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
-</dl>
 </section>
 </article>
 <nav id="sidebar">
@@ -140,13 +59,6 @@ class ConfigurationService(Service):
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="server" href="index.html">server</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-classes">Classes</a></h3>
-<ul>
-<li>
-<h4><code><a title="server.configuration_service.ConfigurationService" href="#server.configuration_service.ConfigurationService">ConfigurationService</a></code></h4>
-</li>
 </ul>
 </li>
 </ul>

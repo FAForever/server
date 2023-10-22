@@ -26,7 +26,10 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from aio_pika import DeliveryMode
+<pre><code class="python">import asyncio
+
+import humanize
+from aio_pika import DeliveryMode
 
 from .config import config
 from .core import Service
@@ -55,13 +58,14 @@ class BroadcastService(Service):
         self.message_queue_service = message_queue_service
         self.game_service = game_service
         self.player_service = player_service
+        self._report_dirties_event = None
 
     async def initialize(self):
         # Using a lazy interval timer so that the intervals can be changed
         # without restarting the server.
         self._broadcast_dirties_timer = LazyIntervalTimer(
             lambda: config.DIRTY_REPORT_INTERVAL,
-            self.report_dirties,
+            self._monitored_report_dirties,
             start=True
         )
         self._broadcast_ping_timer = LazyIntervalTimer(
@@ -69,6 +73,14 @@ class BroadcastService(Service):
             self.broadcast_ping,
             start=True
         )
+
+    async def _monitored_report_dirties(self):
+        event = asyncio.Event()
+        self._report_dirties_event = event
+        try:
+            await self.report_dirties()
+        finally:
+            event.set()
 
     async def report_dirties(self):
         &#34;&#34;&#34;
@@ -143,7 +155,52 @@ class BroadcastService(Service):
             )
 
     def broadcast_ping(self):
-        self.server.write_broadcast({&#34;command&#34;: &#34;ping&#34;})</code></pre>
+        self.server.write_broadcast({&#34;command&#34;: &#34;ping&#34;})
+
+    async def wait_report_dirtes(self):
+        &#34;&#34;&#34;
+        Wait for the current report_dirties task to complete.
+        &#34;&#34;&#34;
+        if self._report_dirties_event is None:
+            return
+
+        await self._report_dirties_event.wait()
+
+    async def graceful_shutdown(self):
+        if config.SHUTDOWN_KICK_IDLE_PLAYERS:
+            message = (
+                &#34;If you&#39;re in a game you can continue to play, otherwise you &#34;
+                &#34;will be disconnected. If you aren&#39;t reconnected automatically &#34;
+                &#34;please wait a few minutes and try to connect again.&#34;
+            )
+        else:
+            message = (
+                &#34;If you&#39;re in a game you can continue to play, however, you &#34;
+                &#34;will not be able to create any new games until the server has &#34;
+                &#34;been restarted.&#34;
+            )
+
+        delta = humanize.precisedelta(config.SHUTDOWN_GRACE_PERIOD)
+        self.server.write_broadcast({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34;,
+            &#34;text&#34;: (
+                f&#34;The server will be shutting down for maintenance in {delta}! &#34;
+                f&#34;{message}&#34;
+            )
+        })
+
+    async def shutdown(self):
+        self.server.write_broadcast({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34;,
+            &#34;text&#34;: (
+                &#34;The server has been shut down for maintenance &#34;
+                &#34;but should be back online soon. If you experience any &#34;
+                &#34;problems, please restart your client. &lt;br/&gt;&lt;br/&gt;&#34;
+                &#34;We apologize for this interruption.&#34;
+            )
+        })</code></pre>
 </details>
 </section>
 <section>
@@ -182,13 +239,14 @@ class BroadcastService(Service):
         self.message_queue_service = message_queue_service
         self.game_service = game_service
         self.player_service = player_service
+        self._report_dirties_event = None
 
     async def initialize(self):
         # Using a lazy interval timer so that the intervals can be changed
         # without restarting the server.
         self._broadcast_dirties_timer = LazyIntervalTimer(
             lambda: config.DIRTY_REPORT_INTERVAL,
-            self.report_dirties,
+            self._monitored_report_dirties,
             start=True
         )
         self._broadcast_ping_timer = LazyIntervalTimer(
@@ -196,6 +254,14 @@ class BroadcastService(Service):
             self.broadcast_ping,
             start=True
         )
+
+    async def _monitored_report_dirties(self):
+        event = asyncio.Event()
+        self._report_dirties_event = event
+        try:
+            await self.report_dirties()
+        finally:
+            event.set()
 
     async def report_dirties(self):
         &#34;&#34;&#34;
@@ -270,7 +336,52 @@ class BroadcastService(Service):
             )
 
     def broadcast_ping(self):
-        self.server.write_broadcast({&#34;command&#34;: &#34;ping&#34;})</code></pre>
+        self.server.write_broadcast({&#34;command&#34;: &#34;ping&#34;})
+
+    async def wait_report_dirtes(self):
+        &#34;&#34;&#34;
+        Wait for the current report_dirties task to complete.
+        &#34;&#34;&#34;
+        if self._report_dirties_event is None:
+            return
+
+        await self._report_dirties_event.wait()
+
+    async def graceful_shutdown(self):
+        if config.SHUTDOWN_KICK_IDLE_PLAYERS:
+            message = (
+                &#34;If you&#39;re in a game you can continue to play, otherwise you &#34;
+                &#34;will be disconnected. If you aren&#39;t reconnected automatically &#34;
+                &#34;please wait a few minutes and try to connect again.&#34;
+            )
+        else:
+            message = (
+                &#34;If you&#39;re in a game you can continue to play, however, you &#34;
+                &#34;will not be able to create any new games until the server has &#34;
+                &#34;been restarted.&#34;
+            )
+
+        delta = humanize.precisedelta(config.SHUTDOWN_GRACE_PERIOD)
+        self.server.write_broadcast({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34;,
+            &#34;text&#34;: (
+                f&#34;The server will be shutting down for maintenance in {delta}! &#34;
+                f&#34;{message}&#34;
+            )
+        })
+
+    async def shutdown(self):
+        self.server.write_broadcast({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34;,
+            &#34;text&#34;: (
+                &#34;The server has been shut down for maintenance &#34;
+                &#34;but should be back online soon. If you experience any &#34;
+                &#34;problems, please restart your client. &lt;br/&gt;&lt;br/&gt;&#34;
+                &#34;We apologize for this interruption.&#34;
+            )
+        })</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -376,11 +487,31 @@ interval.</p></div>
         )</code></pre>
 </details>
 </dd>
+<dt id="server.broadcast_service.BroadcastService.wait_report_dirtes"><code class="name flex">
+<span>async def <span class="ident">wait_report_dirtes</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wait for the current report_dirties task to complete.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def wait_report_dirtes(self):
+    &#34;&#34;&#34;
+    Wait for the current report_dirties task to complete.
+    &#34;&#34;&#34;
+    if self._report_dirties_event is None:
+        return
+
+    await self._report_dirties_event.wait()</code></pre>
+</details>
+</dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -409,6 +540,7 @@ interval.</p></div>
 <ul class="">
 <li><code><a title="server.broadcast_service.BroadcastService.broadcast_ping" href="#server.broadcast_service.BroadcastService.broadcast_ping">broadcast_ping</a></code></li>
 <li><code><a title="server.broadcast_service.BroadcastService.report_dirties" href="#server.broadcast_service.BroadcastService.report_dirties">report_dirties</a></code></li>
+<li><code><a title="server.broadcast_service.BroadcastService.wait_report_dirtes" href="#server.broadcast_service.BroadcastService.wait_report_dirtes">wait_report_dirtes</a></code></li>
 </ul>
 </li>
 </ul>

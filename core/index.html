@@ -366,6 +366,17 @@ another class in the class list).</p>
         &#34;&#34;&#34;
         pass  # pragma: no cover
 
+    async def graceful_shutdown(self) -&gt; None:
+        &#34;&#34;&#34;
+        Called once after the graceful shutdown period is initiated.
+
+        This signals that the service should stop accepting new events but
+        continue to wait for existing ones to complete normally. The hook
+        funciton `shutdown` will be called after the grace period has ended to
+        fully shutdown the service.
+        &#34;&#34;&#34;
+        pass  # pragma: no cover
+
     async def shutdown(self) -&gt; None:
         &#34;&#34;&#34;
         Called once after the server received the shutdown signal.
@@ -397,6 +408,31 @@ another class in the class list).</p>
 </ul>
 <h3>Methods</h3>
 <dl>
+<dt id="server.core.Service.graceful_shutdown"><code class="name flex">
+<span>async def <span class="ident">graceful_shutdown</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Called once after the graceful shutdown period is initiated.</p>
+<p>This signals that the service should stop accepting new events but
+continue to wait for existing ones to complete normally. The hook
+funciton <code>shutdown</code> will be called after the grace period has ended to
+fully shutdown the service.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def graceful_shutdown(self) -&gt; None:
+    &#34;&#34;&#34;
+    Called once after the graceful shutdown period is initiated.
+
+    This signals that the service should stop accepting new events but
+    continue to wait for existing ones to complete normally. The hook
+    funciton `shutdown` will be called after the grace period has ended to
+    fully shutdown the service.
+    &#34;&#34;&#34;
+    pass  # pragma: no cover</code></pre>
+</details>
+</dd>
 <dt id="server.core.Service.initialize"><code class="name flex">
 <span>async def <span class="ident">initialize</span></span>(<span>self) ‑> None</span>
 </code></dt>
@@ -484,6 +520,7 @@ another class in the class list).</p>
 <li>
 <h4><code><a title="server.core.Service" href="#server.core.Service">Service</a></code></h4>
 <ul class="">
+<li><code><a title="server.core.Service.graceful_shutdown" href="#server.core.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.Service.initialize" href="#server.core.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.Service.on_connection_lost" href="#server.core.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.Service.shutdown" href="#server.core.Service.shutdown">shutdown</a></code></li>

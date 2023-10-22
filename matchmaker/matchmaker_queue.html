@@ -98,6 +98,10 @@ class MatchmakerQueue:
 
         self.matchmaker = TeamMatchMaker()
 
+    @property
+    def is_running(self) -&gt; bool:
+        return self._is_running
+
     def add_map_pool(
         self,
         map_pool: MapPool,
@@ -130,7 +134,7 @@ class MatchmakerQueue:
         in the queue.
         &#34;&#34;&#34;
         self._logger.debug(&#34;MatchmakerQueue initialized for %s&#34;, self.name)
-        while self._is_running:
+        while self.is_running:
             try:
                 await self.timer.next_pop()
 
@@ -296,6 +300,7 @@ class MatchmakerQueue:
 
     def shutdown(self):
         self._is_running = False
+        self.timer.cancel()
 
     def to_dict(self):
         &#34;&#34;&#34;
@@ -306,7 +311,10 @@ class MatchmakerQueue:
             &#34;queue_pop_time&#34;: datetime.fromtimestamp(
                 self.timer.next_queue_pop, timezone.utc
             ).isoformat(),
-            &#34;queue_pop_time_delta&#34;: self.timer.next_queue_pop - time.time(),
+            &#34;queue_pop_time_delta&#34;: round(
+                self.timer.next_queue_pop - time.time(),
+                ndigits=2
+            ),
             &#34;num_players&#34;: self.num_players,
             &#34;boundary_80s&#34;: [search.boundary_80 for search in self._queue.keys()],
             &#34;boundary_75s&#34;: [search.boundary_75 for search in self._queue.keys()],
@@ -369,6 +377,10 @@ class MatchmakerQueue:
 
         self.matchmaker = TeamMatchMaker()
 
+    @property
+    def is_running(self) -&gt; bool:
+        return self._is_running
+
     def add_map_pool(
         self,
         map_pool: MapPool,
@@ -401,7 +413,7 @@ class MatchmakerQueue:
         in the queue.
         &#34;&#34;&#34;
         self._logger.debug(&#34;MatchmakerQueue initialized for %s&#34;, self.name)
-        while self._is_running:
+        while self.is_running:
             try:
                 await self.timer.next_pop()
 
@@ -567,6 +579,7 @@ class MatchmakerQueue:
 
     def shutdown(self):
         self._is_running = False
+        self.timer.cancel()
 
     def to_dict(self):
         &#34;&#34;&#34;
@@ -577,7 +590,10 @@ class MatchmakerQueue:
             &#34;queue_pop_time&#34;: datetime.fromtimestamp(
                 self.timer.next_queue_pop, timezone.utc
             ).isoformat(),
-            &#34;queue_pop_time_delta&#34;: self.timer.next_queue_pop - time.time(),
+            &#34;queue_pop_time_delta&#34;: round(
+                self.timer.next_queue_pop - time.time(),
+                ndigits=2
+            ),
             &#34;num_players&#34;: self.num_players,
             &#34;boundary_80s&#34;: [search.boundary_80 for search in self._queue.keys()],
             &#34;boundary_75s&#34;: [search.boundary_75 for search in self._queue.keys()],
@@ -590,6 +606,18 @@ class MatchmakerQueue:
 </details>
 <h3>Instance variables</h3>
 <dl>
+<dt id="server.matchmaker.matchmaker_queue.MatchmakerQueue.is_running"><code class="name">var <span class="ident">is_running</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def is_running(self) -&gt; bool:
+    return self._is_running</code></pre>
+</details>
+</dd>
 <dt id="server.matchmaker.matchmaker_queue.MatchmakerQueue.num_players"><code class="name">var <span class="ident">num_players</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
@@ -815,7 +843,7 @@ in the queue.</p></div>
     in the queue.
     &#34;&#34;&#34;
     self._logger.debug(&#34;MatchmakerQueue initialized for %s&#34;, self.name)
-    while self._is_running:
+    while self.is_running:
         try:
             await self.timer.next_pop()
 
@@ -884,7 +912,8 @@ in the queue.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def shutdown(self):
-    self._is_running = False</code></pre>
+    self._is_running = False
+    self.timer.cancel()</code></pre>
 </details>
 </dd>
 <dt id="server.matchmaker.matchmaker_queue.MatchmakerQueue.to_dict"><code class="name flex">
@@ -905,7 +934,10 @@ in the queue.</p></div>
         &#34;queue_pop_time&#34;: datetime.fromtimestamp(
             self.timer.next_queue_pop, timezone.utc
         ).isoformat(),
-        &#34;queue_pop_time_delta&#34;: self.timer.next_queue_pop - time.time(),
+        &#34;queue_pop_time_delta&#34;: round(
+            self.timer.next_queue_pop - time.time(),
+            ndigits=2
+        ),
         &#34;num_players&#34;: self.num_players,
         &#34;boundary_80s&#34;: [search.boundary_80 for search in self._queue.keys()],
         &#34;boundary_75s&#34;: [search.boundary_75 for search in self._queue.keys()],
@@ -970,6 +1002,7 @@ in the queue.</p></div>
 <li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.get_game_options" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.get_game_options">get_game_options</a></code></li>
 <li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.get_map_pool_for_rating" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.get_map_pool_for_rating">get_map_pool_for_rating</a></code></li>
 <li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.initialize" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.initialize">initialize</a></code></li>
+<li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.is_running" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.is_running">is_running</a></code></li>
 <li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.match" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.match">match</a></code></li>
 <li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.num_players" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.num_players">num_players</a></code></li>
 <li><code><a title="server.matchmaker.matchmaker_queue.MatchmakerQueue.push" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue.push">push</a></code></li>

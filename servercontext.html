@@ -70,6 +70,7 @@ class ServerContext:
         super().__init__()
         self.name = name
         self._server = None
+        self._drain_event = None
         self._connection_factory = connection_factory
         self._services = services
         self.connections: dict[LobbyConnection, Protocol] = {}
@@ -144,6 +145,18 @@ class ServerContext:
         if self._server:
             self._server.close()
             await self._server.wait_closed()
+
+    async def drain_connections(self):
+        &#34;&#34;&#34;
+        Wait for all connections to terminate.
+        &#34;&#34;&#34;
+        if not self.connections:
+            return
+
+        if not self._drain_event:
+            self._drain_event = asyncio.Event()
+
+        await self._drain_event.wait()
 
     def write_broadcast(self, message, validate_fn=lambda _: True):
         self.write_broadcast_raw(
@@ -262,6 +275,14 @@ class ServerContext:
                 self.name,
                 connection.get_user_identifier()
             )
+
+            if (
+                self._drain_event is not None
+                and not self._drain_event.is_set()
+                and not self.connections
+            ):
+                self._drain_event.set()
+
             metrics.user_connections.labels(
                 connection.user_agent,
                 connection.version
@@ -318,6 +339,7 @@ class ServerContext:
         super().__init__()
         self.name = name
         self._server = None
+        self._drain_event = None
         self._connection_factory = connection_factory
         self._services = services
         self.connections: dict[LobbyConnection, Protocol] = {}
@@ -392,6 +414,18 @@ class ServerContext:
         if self._server:
             self._server.close()
             await self._server.wait_closed()
+
+    async def drain_connections(self):
+        &#34;&#34;&#34;
+        Wait for all connections to terminate.
+        &#34;&#34;&#34;
+        if not self.connections:
+            return
+
+        if not self._drain_event:
+            self._drain_event = asyncio.Event()
+
+        await self._drain_event.wait()
 
     def write_broadcast(self, message, validate_fn=lambda _: True):
         self.write_broadcast_raw(
@@ -510,6 +544,14 @@ class ServerContext:
                 self.name,
                 connection.get_user_identifier()
             )
+
+            if (
+                self._drain_event is not None
+                and not self._drain_event.is_set()
+                and not self.connections
+            ):
+                self._drain_event.set()
+
             metrics.user_connections.labels(
                 connection.user_agent,
                 connection.version
@@ -600,6 +642,28 @@ def sockets(self):
     await self.handle_client_connected(reader, writer, peername)</code></pre>
 </details>
 </dd>
+<dt id="server.servercontext.ServerContext.drain_connections"><code class="name flex">
+<span>async def <span class="ident">drain_connections</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Wait for all connections to terminate.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def drain_connections(self):
+    &#34;&#34;&#34;
+    Wait for all connections to terminate.
+    &#34;&#34;&#34;
+    if not self.connections:
+        return
+
+    if not self._drain_event:
+        self._drain_event = asyncio.Event()
+
+    await self._drain_event.wait()</code></pre>
+</details>
+</dd>
 <dt id="server.servercontext.ServerContext.handle_client_connected"><code class="name flex">
 <span>async def <span class="ident">handle_client_connected</span></span>(<span>self, reader: asyncio.streams.StreamReader, writer: asyncio.streams.StreamWriter, peername: <a title="server.types.Address" href="types.html#server.types.Address">Address</a>)</span>
 </code></dt>
@@ -665,6 +729,14 @@ def sockets(self):
             self.name,
             connection.get_user_identifier()
         )
+
+        if (
+            self._drain_event is not None
+            and not self._drain_event.is_set()
+            and not self.connections
+        ):
+            self._drain_event.set()
+
         metrics.user_connections.labels(
             connection.user_agent,
             connection.version
@@ -849,6 +921,7 @@ def suppress_and_log(self, func, *exceptions: type[BaseException]):
 <h4><code><a title="server.servercontext.ServerContext" href="#server.servercontext.ServerContext">ServerContext</a></code></h4>
 <ul class="">
 <li><code><a title="server.servercontext.ServerContext.client_connected_callback" href="#server.servercontext.ServerContext.client_connected_callback">client_connected_callback</a></code></li>
+<li><code><a title="server.servercontext.ServerContext.drain_connections" href="#server.servercontext.ServerContext.drain_connections">drain_connections</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.handle_client_connected" href="#server.servercontext.ServerContext.handle_client_connected">handle_client_connected</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.listen" href="#server.servercontext.ServerContext.listen">listen</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.shutdown" href="#server.servercontext.ServerContext.shutdown">shutdown</a></code></li>

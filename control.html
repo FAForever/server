@@ -32,76 +32,69 @@ Tiny http server for introspecting state
 &#34;&#34;&#34;
 
 import socket
-from json import dumps
 
 from aiohttp import web
 
 from .config import config
 from .decorators import with_logger
-from .game_service import GameService
-from .player_service import PlayerService
 
 
 @with_logger
 class ControlServer:
     def __init__(
         self,
-        game_service: GameService,
-        player_service: PlayerService,
-        host: str,
-        port: int
+        lobby_server: &#34;ServerInstance&#34;,
     ):
-        self.game_service = game_service
-        self.player_service = player_service
-        self.host = host
-        self.port = port
+        self.lobby_server = lobby_server
+        self.game_service = lobby_server.services[&#34;game_service&#34;]
+        self.player_service = lobby_server.services[&#34;player_service&#34;]
+        self.host = None
+        self.port = None
 
         self.app = web.Application()
         self.runner = web.AppRunner(self.app)
 
         self.app.add_routes([
             web.get(&#34;/games&#34;, self.games),
-            web.get(&#34;/players&#34;, self.players)
+            web.get(&#34;/players&#34;, self.players),
         ])
 
-    async def start(self) -&gt; None:
+    async def run_from_config(self) -&gt; None:
+        &#34;&#34;&#34;
+        Initialize the http control server
+        &#34;&#34;&#34;
+        host = socket.gethostbyname(socket.gethostname())
+        port = config.CONTROL_SERVER_PORT
+
+        await self.shutdown()
+        await self.start(host, port)
+
+    async def start(self, host: str, port: int) -&gt; None:
+        self.host = host
+        self.port = port
         await self.runner.setup()
-        self.site = web.TCPSite(self.runner, self.host, self.port)
+        self.site = web.TCPSite(self.runner, host, port)
         await self.site.start()
         self._logger.info(
-            &#34;Control server listening on http://%s:%s&#34;, self.host, self.port
+            &#34;Control server listening on http://%s:%s&#34;, host, port
         )
 
     async def shutdown(self) -&gt; None:
         await self.runner.cleanup()
+        self.host = None
+        self.port = None
 
-    async def games(self, request):
-        body = dumps(to_dict_list(self.game_service.all_games))
-        return web.Response(body=body.encode(), content_type=&#34;application/json&#34;)
+    async def games(self, request) -&gt; web.Response:
+        return web.json_response([
+            game.to_dict()
+            for game in self.game_service.all_games
+        ])
 
-    async def players(self, request):
-        body = dumps(to_dict_list(self.player_service.all_players))
-        return web.Response(body=body.encode(), content_type=&#34;application/json&#34;)
-
-
-async def run_control_server(
-    player_service: PlayerService,
-    game_service: GameService
-) -&gt; ControlServer:
-    &#34;&#34;&#34;
-    Initialize the http control server
-    &#34;&#34;&#34;
-    host = socket.gethostbyname(socket.gethostname())
-    port = config.CONTROL_SERVER_PORT
-
-    ctrl_server = ControlServer(game_service, player_service, host, port)
-    await ctrl_server.start()
-
-    return ctrl_server
-
-
-def to_dict_list(list_):
-    return list(map(lambda p: p.to_dict(), list_))</code></pre>
+    async def players(self, request) -&gt; web.Response:
+        return web.json_response([
+            player.to_dict()
+            for player in self.player_service.all_players
+        ])</code></pre>
 </details>
 </section>
 <section>
@@ -109,54 +102,13 @@ def to_dict_list(list_):
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-functions">Functions</h2>
-<dl>
-<dt id="server.control.run_control_server"><code class="name flex">
-<span>async def <span class="ident">run_control_server</span></span>(<span>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>) ‑> <a title="server.control.ControlServer" href="#server.control.ControlServer">ControlServer</a></span>
-</code></dt>
-<dd>
-<div class="desc"><p>Initialize the http control server</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def run_control_server(
-    player_service: PlayerService,
-    game_service: GameService
-) -&gt; ControlServer:
-    &#34;&#34;&#34;
-    Initialize the http control server
-    &#34;&#34;&#34;
-    host = socket.gethostbyname(socket.gethostname())
-    port = config.CONTROL_SERVER_PORT
-
-    ctrl_server = ControlServer(game_service, player_service, host, port)
-    await ctrl_server.start()
-
-    return ctrl_server</code></pre>
-</details>
-</dd>
-<dt id="server.control.to_dict_list"><code class="name flex">
-<span>def <span class="ident">to_dict_list</span></span>(<span>list_)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def to_dict_list(list_):
-    return list(map(lambda p: p.to_dict(), list_))</code></pre>
-</details>
-</dd>
-</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
 <dt id="server.control.ControlServer"><code class="flex name class">
 <span>class <span class="ident">ControlServer</span></span>
-<span>(</span><span>game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>, player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, host: str, port: int)</span>
+<span>(</span><span>lobby_server: ServerInstance)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -168,47 +120,63 @@ def to_dict_list(list_):
 class ControlServer:
     def __init__(
         self,
-        game_service: GameService,
-        player_service: PlayerService,
-        host: str,
-        port: int
+        lobby_server: &#34;ServerInstance&#34;,
     ):
-        self.game_service = game_service
-        self.player_service = player_service
-        self.host = host
-        self.port = port
+        self.lobby_server = lobby_server
+        self.game_service = lobby_server.services[&#34;game_service&#34;]
+        self.player_service = lobby_server.services[&#34;player_service&#34;]
+        self.host = None
+        self.port = None
 
         self.app = web.Application()
         self.runner = web.AppRunner(self.app)
 
         self.app.add_routes([
             web.get(&#34;/games&#34;, self.games),
-            web.get(&#34;/players&#34;, self.players)
+            web.get(&#34;/players&#34;, self.players),
         ])
 
-    async def start(self) -&gt; None:
+    async def run_from_config(self) -&gt; None:
+        &#34;&#34;&#34;
+        Initialize the http control server
+        &#34;&#34;&#34;
+        host = socket.gethostbyname(socket.gethostname())
+        port = config.CONTROL_SERVER_PORT
+
+        await self.shutdown()
+        await self.start(host, port)
+
+    async def start(self, host: str, port: int) -&gt; None:
+        self.host = host
+        self.port = port
         await self.runner.setup()
-        self.site = web.TCPSite(self.runner, self.host, self.port)
+        self.site = web.TCPSite(self.runner, host, port)
         await self.site.start()
         self._logger.info(
-            &#34;Control server listening on http://%s:%s&#34;, self.host, self.port
+            &#34;Control server listening on http://%s:%s&#34;, host, port
         )
 
     async def shutdown(self) -&gt; None:
         await self.runner.cleanup()
+        self.host = None
+        self.port = None
 
-    async def games(self, request):
-        body = dumps(to_dict_list(self.game_service.all_games))
-        return web.Response(body=body.encode(), content_type=&#34;application/json&#34;)
+    async def games(self, request) -&gt; web.Response:
+        return web.json_response([
+            game.to_dict()
+            for game in self.game_service.all_games
+        ])
 
-    async def players(self, request):
-        body = dumps(to_dict_list(self.player_service.all_players))
-        return web.Response(body=body.encode(), content_type=&#34;application/json&#34;)</code></pre>
+    async def players(self, request) -&gt; web.Response:
+        return web.json_response([
+            player.to_dict()
+            for player in self.player_service.all_players
+        ])</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
 <dt id="server.control.ControlServer.games"><code class="name flex">
-<span>async def <span class="ident">games</span></span>(<span>self, request)</span>
+<span>async def <span class="ident">games</span></span>(<span>self, request) ‑> aiohttp.web_response.Response</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -216,13 +184,15 @@ class ControlServer:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def games(self, request):
-    body = dumps(to_dict_list(self.game_service.all_games))
-    return web.Response(body=body.encode(), content_type=&#34;application/json&#34;)</code></pre>
+<pre><code class="python">async def games(self, request) -&gt; web.Response:
+    return web.json_response([
+        game.to_dict()
+        for game in self.game_service.all_games
+    ])</code></pre>
 </details>
 </dd>
 <dt id="server.control.ControlServer.players"><code class="name flex">
-<span>async def <span class="ident">players</span></span>(<span>self, request)</span>
+<span>async def <span class="ident">players</span></span>(<span>self, request) ‑> aiohttp.web_response.Response</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -230,9 +200,31 @@ class ControlServer:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def players(self, request):
-    body = dumps(to_dict_list(self.player_service.all_players))
-    return web.Response(body=body.encode(), content_type=&#34;application/json&#34;)</code></pre>
+<pre><code class="python">async def players(self, request) -&gt; web.Response:
+    return web.json_response([
+        player.to_dict()
+        for player in self.player_service.all_players
+    ])</code></pre>
+</details>
+</dd>
+<dt id="server.control.ControlServer.run_from_config"><code class="name flex">
+<span>async def <span class="ident">run_from_config</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Initialize the http control server</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def run_from_config(self) -&gt; None:
+    &#34;&#34;&#34;
+    Initialize the http control server
+    &#34;&#34;&#34;
+    host = socket.gethostbyname(socket.gethostname())
+    port = config.CONTROL_SERVER_PORT
+
+    await self.shutdown()
+    await self.start(host, port)</code></pre>
 </details>
 </dd>
 <dt id="server.control.ControlServer.shutdown"><code class="name flex">
@@ -245,11 +237,13 @@ class ControlServer:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def shutdown(self) -&gt; None:
-    await self.runner.cleanup()</code></pre>
+    await self.runner.cleanup()
+    self.host = None
+    self.port = None</code></pre>
 </details>
 </dd>
 <dt id="server.control.ControlServer.start"><code class="name flex">
-<span>async def <span class="ident">start</span></span>(<span>self) ‑> None</span>
+<span>async def <span class="ident">start</span></span>(<span>self, host: str, port: int) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -257,12 +251,14 @@ class ControlServer:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def start(self) -&gt; None:
+<pre><code class="python">async def start(self, host: str, port: int) -&gt; None:
+    self.host = host
+    self.port = port
     await self.runner.setup()
-    self.site = web.TCPSite(self.runner, self.host, self.port)
+    self.site = web.TCPSite(self.runner, host, port)
     await self.site.start()
     self._logger.info(
-        &#34;Control server listening on http://%s:%s&#34;, self.host, self.port
+        &#34;Control server listening on http://%s:%s&#34;, host, port
     )</code></pre>
 </details>
 </dd>
@@ -282,12 +278,6 @@ class ControlServer:
 <li><code><a title="server" href="index.html">server</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="server.control.run_control_server" href="#server.control.run_control_server">run_control_server</a></code></li>
-<li><code><a title="server.control.to_dict_list" href="#server.control.to_dict_list">to_dict_list</a></code></li>
-</ul>
-</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
@@ -295,6 +285,7 @@ class ControlServer:
 <ul class="">
 <li><code><a title="server.control.ControlServer.games" href="#server.control.ControlServer.games">games</a></code></li>
 <li><code><a title="server.control.ControlServer.players" href="#server.control.ControlServer.players">players</a></code></li>
+<li><code><a title="server.control.ControlServer.run_from_config" href="#server.control.ControlServer.run_from_config">run_from_config</a></code></li>
 <li><code><a title="server.control.ControlServer.shutdown" href="#server.control.ControlServer.shutdown">shutdown</a></code></li>
 <li><code><a title="server.control.ControlServer.start" href="#server.control.ControlServer.start">start</a></code></li>
 </ul>

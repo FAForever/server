@@ -62,6 +62,7 @@ class PopTimer(object):
         self._last_queue_pop = time()
         # Optimistically schedule first pop for half of the max pop time
         self.next_queue_pop = self._last_queue_pop + (config.QUEUE_POP_TIME_MAX / 2)
+        self._wait_task = None
 
     async def next_pop(self):
         &#34;&#34;&#34; Wait for the timer to pop. &#34;&#34;&#34;
@@ -69,7 +70,10 @@ class PopTimer(object):
         time_remaining = self.next_queue_pop - time()
         self._logger.info(&#34;Next %s wave happening in %is&#34;, self.queue.name, time_remaining)
         metrics.matchmaker_queue_pop.labels(self.queue.name).set(int(time_remaining))
-        await asyncio.sleep(time_remaining)
+
+        self._wait_task = asyncio.create_task(asyncio.sleep(time_remaining))
+        await self._wait_task
+
         num_players = self.queue.num_players
         metrics.matchmaker_players.labels(self.queue.name).set(num_players)
 
@@ -108,7 +112,11 @@ class PopTimer(object):
                 next_pop_time, self.queue.name, config.QUEUE_POP_TIME_MAX
             )
             return config.QUEUE_POP_TIME_MAX
-        return next_pop_time</code></pre>
+        return next_pop_time
+
+    def cancel(self):
+        if self._wait_task:
+            self._wait_task.cancel()</code></pre>
 </details>
 </section>
 <section>
@@ -166,6 +174,7 @@ class PopTimer(object):
         self._last_queue_pop = time()
         # Optimistically schedule first pop for half of the max pop time
         self.next_queue_pop = self._last_queue_pop + (config.QUEUE_POP_TIME_MAX / 2)
+        self._wait_task = None
 
     async def next_pop(self):
         &#34;&#34;&#34; Wait for the timer to pop. &#34;&#34;&#34;
@@ -173,7 +182,10 @@ class PopTimer(object):
         time_remaining = self.next_queue_pop - time()
         self._logger.info(&#34;Next %s wave happening in %is&#34;, self.queue.name, time_remaining)
         metrics.matchmaker_queue_pop.labels(self.queue.name).set(int(time_remaining))
-        await asyncio.sleep(time_remaining)
+
+        self._wait_task = asyncio.create_task(asyncio.sleep(time_remaining))
+        await self._wait_task
+
         num_players = self.queue.num_players
         metrics.matchmaker_players.labels(self.queue.name).set(num_players)
 
@@ -212,10 +224,28 @@ class PopTimer(object):
                 next_pop_time, self.queue.name, config.QUEUE_POP_TIME_MAX
             )
             return config.QUEUE_POP_TIME_MAX
-        return next_pop_time</code></pre>
+        return next_pop_time
+
+    def cancel(self):
+        if self._wait_task:
+            self._wait_task.cancel()</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
+<dt id="server.matchmaker.pop_timer.PopTimer.cancel"><code class="name flex">
+<span>def <span class="ident">cancel</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cancel(self):
+    if self._wait_task:
+        self._wait_task.cancel()</code></pre>
+</details>
+</dd>
 <dt id="server.matchmaker.pop_timer.PopTimer.next_pop"><code class="name flex">
 <span>async def <span class="ident">next_pop</span></span>(<span>self)</span>
 </code></dt>
@@ -231,7 +261,10 @@ class PopTimer(object):
     time_remaining = self.next_queue_pop - time()
     self._logger.info(&#34;Next %s wave happening in %is&#34;, self.queue.name, time_remaining)
     metrics.matchmaker_queue_pop.labels(self.queue.name).set(int(time_remaining))
-    await asyncio.sleep(time_remaining)
+
+    self._wait_task = asyncio.create_task(asyncio.sleep(time_remaining))
+    await self._wait_task
+
     num_players = self.queue.num_players
     metrics.matchmaker_players.labels(self.queue.name).set(num_players)
 
@@ -305,6 +338,7 @@ on the current rate of ladder queues</p></div>
 <li>
 <h4><code><a title="server.matchmaker.pop_timer.PopTimer" href="#server.matchmaker.pop_timer.PopTimer">PopTimer</a></code></h4>
 <ul class="">
+<li><code><a title="server.matchmaker.pop_timer.PopTimer.cancel" href="#server.matchmaker.pop_timer.PopTimer.cancel">cancel</a></code></li>
 <li><code><a title="server.matchmaker.pop_timer.PopTimer.next_pop" href="#server.matchmaker.pop_timer.PopTimer.next_pop">next_pop</a></code></li>
 <li><code><a title="server.matchmaker.pop_timer.PopTimer.time_until_next_pop" href="#server.matchmaker.pop_timer.PopTimer.time_until_next_pop">time_until_next_pop</a></code></li>
 </ul>

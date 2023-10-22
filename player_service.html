@@ -31,7 +31,7 @@
 Manages connected and authenticated players
 &#34;&#34;&#34;
 
-import contextlib
+import asyncio
 from typing import Optional, ValuesView
 
 import aiocron
@@ -39,10 +39,12 @@ from sqlalchemy import and_, select
 from trueskill import Rating
 
 import server.metrics as metrics
+from server.config import config
 from server.db import FAFDatabase
 from server.decorators import with_logger
-from server.players import Player
+from server.players import Player, PlayerState
 from server.rating import RatingType
+from server.timing import at_interval
 
 from .core import Service
 from .db.models import (
@@ -294,16 +296,20 @@ class PlayerService(Service):
             )
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
-    async def shutdown(self):
-        for player in self:
-            if player.lobby_connection is not None:
-                with contextlib.suppress(Exception):
-                    player.lobby_connection.write_warning(
-                        &#34;The server has been shut down for maintenance, &#34;
-                        &#34;but should be back online soon. If you experience any &#34;
-                        &#34;problems, please restart your client. &lt;br/&gt;&lt;br/&gt;&#34;
-                        &#34;We apologize for this interruption.&#34;
-                    )
+    async def kick_idle_players(self):
+        for fut in asyncio.as_completed([
+            player.lobby_connection.abort(&#34;Graceful shutdown.&#34;)
+            for player in self.all_players
+            if player.state == PlayerState.IDLE
+            if player.lobby_connection is not None
+        ]):
+            try:
+                await fut
+            except Exception:
+                self._logger.debug(
+                    &#34;Error while aborting connection&#34;,
+                    exc_info=True
+                )
 
     def on_connection_lost(self, conn: &#34;LobbyConnection&#34;) -&gt; None:
         if not conn.player:
@@ -316,7 +322,11 @@ class PlayerService(Service):
             conn.player.id,
             conn.player.login,
             conn.session
-        )</code></pre>
+        )
+
+    async def graceful_shutdown(self):
+        if config.SHUTDOWN_KICK_IDLE_PLAYERS:
+            self._kick_idle_task = at_interval(1, self.kick_idle_players)</code></pre>
 </details>
 </section>
 <section>
@@ -571,16 +581,20 @@ class PlayerService(Service):
             )
             self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
 
-    async def shutdown(self):
-        for player in self:
-            if player.lobby_connection is not None:
-                with contextlib.suppress(Exception):
-                    player.lobby_connection.write_warning(
-                        &#34;The server has been shut down for maintenance, &#34;
-                        &#34;but should be back online soon. If you experience any &#34;
-                        &#34;problems, please restart your client. &lt;br/&gt;&lt;br/&gt;&#34;
-                        &#34;We apologize for this interruption.&#34;
-                    )
+    async def kick_idle_players(self):
+        for fut in asyncio.as_completed([
+            player.lobby_connection.abort(&#34;Graceful shutdown.&#34;)
+            for player in self.all_players
+            if player.state == PlayerState.IDLE
+            if player.lobby_connection is not None
+        ]):
+            try:
+                await fut
+            except Exception:
+                self._logger.debug(
+                    &#34;Error while aborting connection&#34;,
+                    exc_info=True
+                )
 
     def on_connection_lost(self, conn: &#34;LobbyConnection&#34;) -&gt; None:
         if not conn.player:
@@ -593,7 +607,11 @@ class PlayerService(Service):
             conn.player.id,
             conn.player.login,
             conn.session
-        )</code></pre>
+        )
+
+    async def graceful_shutdown(self):
+        if config.SHUTDOWN_KICK_IDLE_PLAYERS:
+            self._kick_idle_task = at_interval(1, self.kick_idle_players)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -732,6 +750,31 @@ def all_players(self) -&gt; ValuesView[Player]:
     return user_id in self.uniqueid_exempt</code></pre>
 </details>
 </dd>
+<dt id="server.player_service.PlayerService.kick_idle_players"><code class="name flex">
+<span>async def <span class="ident">kick_idle_players</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def kick_idle_players(self):
+    for fut in asyncio.as_completed([
+        player.lobby_connection.abort(&#34;Graceful shutdown.&#34;)
+        for player in self.all_players
+        if player.state == PlayerState.IDLE
+        if player.lobby_connection is not None
+    ]):
+        try:
+            await fut
+        except Exception:
+            self._logger.debug(
+                &#34;Error while aborting connection&#34;,
+                exc_info=True
+            )</code></pre>
+</details>
+</dd>
 <dt id="server.player_service.PlayerService.mark_dirty"><code class="name flex">
 <span>def <span class="ident">mark_dirty</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
 </code></dt>
@@ -832,6 +875,7 @@ uniqueid check.</p></div>
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
 <ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
 <li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
 <li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
@@ -863,6 +907,7 @@ uniqueid check.</p></div>
 <li><code><a title="server.player_service.PlayerService.get_player" href="#server.player_service.PlayerService.get_player">get_player</a></code></li>
 <li><code><a title="server.player_service.PlayerService.has_permission_role" href="#server.player_service.PlayerService.has_permission_role">has_permission_role</a></code></li>
 <li><code><a title="server.player_service.PlayerService.is_uniqueid_exempt" href="#server.player_service.PlayerService.is_uniqueid_exempt">is_uniqueid_exempt</a></code></li>
+<li><code><a title="server.player_service.PlayerService.kick_idle_players" href="#server.player_service.PlayerService.kick_idle_players">kick_idle_players</a></code></li>
 <li><code><a title="server.player_service.PlayerService.mark_dirty" href="#server.player_service.PlayerService.mark_dirty">mark_dirty</a></code></li>
 <li><code><a title="server.player_service.PlayerService.pop_dirty_players" href="#server.player_service.PlayerService.pop_dirty_players">pop_dirty_players</a></code></li>
 <li><code><a title="server.player_service.PlayerService.remove_player" href="#server.player_service.PlayerService.remove_player">remove_player</a></code></li>
