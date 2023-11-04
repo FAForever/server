@@ -13,7 +13,6 @@ from server.game_service import GameService
 from server.gameconnection import GameConnection
 from server.games import CustomGame, Game, GameState, InitMode, VisibilityState
 from server.geoip_service import GeoIpService
-from server.ice_servers.nts import TwilioNTS
 from server.ladder_service import LadderService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import Search
@@ -59,11 +58,6 @@ def mock_player(player_factory):
 
 
 @pytest.fixture
-def mock_nts_client():
-    return mock.create_autospec(TwilioNTS)
-
-
-@pytest.fixture
 def mock_players():
     return mock.create_autospec(PlayerService)
 
@@ -92,7 +86,6 @@ def lobbyconnection(
     mock_players,
     mock_player,
     mock_geoip,
-    mock_nts_client,
     rating_service
 ):
     lc = LobbyConnection(
@@ -100,7 +93,6 @@ def lobbyconnection(
         geoip=mock_geoip,
         game_service=mock_games,
         players=mock_players,
-        nts_client=mock_nts_client,
         ladder_service=mock.create_autospec(LadderService),
         party_service=mock.create_autospec(PartyService),
         oauth_service=mock.create_autospec(OAuthService),
@@ -695,21 +687,18 @@ async def test_command_social_remove_friend(lobbyconnection, database):
 
 async def test_command_ice_servers(
     lobbyconnection: LobbyConnection,
-    mock_nts_client
 ):
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.coturn_generator.server_tokens = mock.Mock(
         return_value=["coturn_tokens"]
     )
-    mock_nts_client.server_tokens.return_value = ["twilio_tokens"]
 
     await lobbyconnection.on_message_received({"command": "ice_servers"})
 
-    mock_nts_client.server_tokens.assert_called_once()
     lobbyconnection.send.assert_called_once_with({
         "command": "ice_servers",
-        "ice_servers": ["coturn_tokens", "twilio_tokens"],
-        "ttl": config.TWILIO_TTL
+        "ice_servers": ["coturn_tokens"],
+        "ttl": 86400,
     })
 
 
@@ -1076,7 +1065,6 @@ async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
 
 async def test_abort_connection_if_banned(
     lobbyconnection: LobbyConnection,
-    mock_nts_client
 ):
     # test user that has never been banned
     lobbyconnection.player.id = 1

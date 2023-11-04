@@ -26,7 +26,6 @@ pyyaml = "*"
 sortedcontainers = "*"
 sqlalchemy = ">=2.0.0"
 trueskill = "*"
-twilio = ">=7.0.0"
 uvloop = {version = "*", markers = "sys_platform != 'win32'"}
 
 [dev-packages]

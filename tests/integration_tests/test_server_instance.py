@@ -38,7 +38,6 @@ async def test_multiple_contexts(
     instance = ServerInstance(
         "TestMultiContext",
         database,
-        twilio_nts=None,
         loop=event_loop,
         _override_services={
             "broadcast_service": broadcast_service,

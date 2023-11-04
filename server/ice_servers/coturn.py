@@ -11,8 +11,6 @@ import hmac
 import time
 from hashlib import sha1
 
-from server.config import config
-
 
 class CoturnHMAC:
     def __init__(self, coturn_hosts=[], coturn_keys=[]):
@@ -21,7 +19,7 @@ class CoturnHMAC:
 
     def server_tokens(self, username="faf-user", ttl=None) -> list[dict[str]]:
         if ttl is None:
-            ttl = config.TWILIO_TTL  # pragma: no cover
+            ttl = 86400  # pragma: no cover
 
         servers = []
 

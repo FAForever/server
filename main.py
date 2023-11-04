@@ -26,7 +26,6 @@ from server.config import config
 from server.control import ControlServer
 from server.game_service import GameService
 from server.health import HealthServer
-from server.ice_servers.nts import TwilioNTS
 from server.player_service import PlayerService
 from server.profiler import Profiler
 from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
@@ -80,18 +79,9 @@ async def main():
 
     # Set up services
 
-    twilio_nts = None
-    if config.TWILIO_ACCOUNT_SID:
-        twilio_nts = TwilioNTS()
-    else:
-        logger.warning(
-            "Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers."
-        )
-
     instance = server.ServerInstance(
         "LobbyServer",
         database,
-        twilio_nts,
         loop
     )
     player_service: PlayerService = instance.services["player_service"]

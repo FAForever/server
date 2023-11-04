@@ -827,14 +827,6 @@
             "index": "pypi",
             "version": "==0.4.5"
         },
-        "twilio": {
-            "hashes": [
-                "sha256:3edc0bcde7320b5ae5f516484af9092bc4df2f5a3b1d4d94a66c29310adb924c",
-                "sha256:7bca5dc476d4d15e89e41d3074f8a265bd61445d1de9e8a697ca96cd8399eda6"
-            ],
-            "index": "pypi",
-            "version": "==8.9.1"
-        },
         "typing-extensions": {
             "hashes": [
                 "sha256:8f92fc8806f9a6b641eaa5318da32b44d401efaac0f6678c9bc448ba3605faa0",

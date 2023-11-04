@@ -51,7 +51,6 @@ from .games import (
 )
 from .geoip_service import GeoIpService
 from .ice_servers.coturn import CoturnHMAC
-from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
 from .oauth_service import OAuthService
 from .party_service import PartyService
@@ -71,7 +70,6 @@ class LobbyConnection:
         database: FAFDatabase,
         game_service: GameService,
         players: PlayerService,
-        nts_client: Optional[TwilioNTS],
         geoip: GeoIpService,
         ladder_service: LadderService,
         party_service: PartyService,
@@ -82,7 +80,6 @@ class LobbyConnection:
         self.geoip_service = geoip
         self.game_service = game_service
         self.player_service = players
-        self.nts_client = nts_client
         self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
         self.party_service = party_service
@@ -1146,14 +1143,11 @@ class LobbyConnection:
         if not self.player:
             return
 
-        ttl = config.TWILIO_TTL
+        ttl = 86400
         ice_servers = self.coturn_generator.server_tokens(
             username=self.player.id,
             ttl=ttl
         )
-
-        if self.nts_client:
-            ice_servers += await self.nts_client.server_tokens(ttl=ttl)
 
         await self.send({
             "command": "ice_servers",
