@@ -82,7 +82,6 @@ is completely normal for a development setup. If you see any of the following,
 they can be safely ignored:
 
 ```
-WARNING  Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers.
 WARNING  GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!
 WARNING  Unable to connect to RabbitMQ. Is it running?
 ConnectionError: [Errno 111] Connect call failed ('127.0.0.1', 5672)

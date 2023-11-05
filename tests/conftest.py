@@ -447,13 +447,3 @@ def coturn_credentials() -> Iterable[str]:
         "I5BcpufNrBb4JDj80KY/7VATNis=",
         "4wYEgoPz2MHf35Fva8NWulI3vVU="
     ]
-
-
-@pytest.fixture
-def twilio_sid():
-    return "a"
-
-
-@pytest.fixture
-def twilio_token():
-    return "token_a"

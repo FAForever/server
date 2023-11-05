@@ -130,9 +130,6 @@ class ConfigurationStore:
         self.MINORITY_BONUS = 1
         self.MINORITY_BONUS_RATING_RANGE = 1250
 
-        self.TWILIO_ACCOUNT_SID = ""
-        self.TWILIO_TOKEN = ""
-        self.TWILIO_TTL = 86400
         self.COTURN_HOSTS = []
         self.COTURN_KEYS = []
 

@@ -101,7 +101,6 @@ from .db import FAFDatabase
 from .game_service import GameService
 from .gameconnection import GameConnection
 from .geoip_service import GeoIpService
-from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
 from .ladder_service.violation_service import ViolationService
 from .lobbyconnection import LobbyConnection
@@ -153,7 +152,6 @@ class ServerInstance(object):
         self,
         name: str,
         database: FAFDatabase,
-        twilio_nts: Optional[TwilioNTS],
         loop: asyncio.BaseEventLoop,
         # For testing
         _override_services: Optional[dict[str, Service]] = None
@@ -161,7 +159,6 @@ class ServerInstance(object):
         self.name = name
         self._logger = logging.getLogger(self.name)
         self.database = database
-        self.twilio_nts = twilio_nts
         self.loop = loop
 
         self.started = False
@@ -178,7 +175,6 @@ class ServerInstance(object):
             database=database,
             geoip=self.services["geo_ip_service"],
             game_service=self.services["game_service"],
-            nts_client=twilio_nts,
             players=self.services["player_service"],
             ladder_service=self.services["ladder_service"],
             party_service=self.services["party_service"],
