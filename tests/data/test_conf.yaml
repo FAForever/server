@@ -27,9 +27,6 @@ NEWBIE_BASE_MEAN: 500
 NEWBIE_MIN_GAMES: 10
 TOP_PLAYER_MIN_RATING: 1600
 
-COTURN_HOSTS: []
-COTURN_KEYS: []
-
 GEO_IP_DATABASE_PATH: "GeoLite2-Country.mmdb"
 GEO_IP_DATABASE_URL: "https://download.maxmind.com/app/geoip_download"
 GEO_IP_LICENSE_KEY: ""

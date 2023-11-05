@@ -59,8 +59,8 @@ player and all other players in the match. Connections are then established
 using the Interactive Connectivity Establishment (ICE) protocol, using the
 lobby server as a medium of exchanging candidate addresses between clients. If
 clients require a relay in order to connect to eachother, they will
-authenticate with a separate coturn server using credentials supplied by the
-lobby server.
+authenticate with a separate sturn or turn server using credentials supplied
+by a separate API service.
 
 ## Achievements
 When a game ends, each client will report a summary of the game in the form of

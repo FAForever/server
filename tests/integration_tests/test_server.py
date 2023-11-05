@@ -764,8 +764,7 @@ async def test_ice_servers_empty(lobby_server):
     # By default the server config should not have any ice servers
     assert msg == {
         "command": "ice_servers",
-        "ice_servers": [],
-        "ttl": 86400
+        "ice_servers": []
     }
 
 

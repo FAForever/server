@@ -50,7 +50,6 @@ from .games import (
     VisibilityState
 )
 from .geoip_service import GeoIpService
-from .ice_servers.coturn import CoturnHMAC
 from .ladder_service import LadderService
 from .oauth_service import OAuthService
 from .party_service import PartyService
@@ -80,7 +79,6 @@ class LobbyConnection:
         self.geoip_service = geoip
         self.game_service = game_service
         self.player_service = players
-        self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
         self.party_service = party_service
         self.rating_service = rating_service
@@ -1139,20 +1137,16 @@ class LobbyConnection:
             else:
                 raise ValueError("invalid type argument")
 
+    # DEPRECATED: ICE servers are handled outside of the lobby server.
+    # This message remains here for backwards compatibility, but the list
+    # of servers will always be empty.
     async def command_ice_servers(self, message):
         if not self.player:
             return
 
-        ttl = 86400
-        ice_servers = self.coturn_generator.server_tokens(
-            username=self.player.id,
-            ttl=ttl
-        )
-
         await self.send({
             "command": "ice_servers",
-            "ice_servers": ice_servers,
-            "ttl": ttl
+            "ice_servers": [],
         })
 
     @player_idle("invite a player")

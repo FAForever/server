@@ -6,20 +6,6 @@ async def test_ping(client_factory):
     await client.read_until_command("pong", timeout=5)
 
 
-async def test_ice_servers(client_factory):
-    client, _ = await client_factory.login("test")
-
-    await client.send_command("ice_servers")
-    msg = await client.read_until_command("ice_servers")
-
-    assert msg["ttl"] > 60
-    assert msg["ice_servers"]
-    for server in msg["ice_servers"]:
-        assert server["urls"]
-        assert server["username"]
-        assert server["credential"]
-
-
 async def test_matchmaker_info(client_factory):
     client, _ = await client_factory.login("test")
 

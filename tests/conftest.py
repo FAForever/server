@@ -10,7 +10,6 @@ import asyncio
 import gc
 import logging
 from contextlib import asynccontextmanager, contextmanager
-from typing import Iterable
 from unittest import mock
 
 import hypothesis
@@ -427,23 +426,3 @@ def oauth_service():
 @pytest.fixture
 def game_stats_service(event_service, achievement_service):
     return GameStatsService(event_service, achievement_service)
-
-
-@pytest.fixture
-def coturn_hosts() -> Iterable[str]:
-    return ["a", "b", "c", "d"]
-
-
-@pytest.fixture
-def coturn_keys(coturn_hosts) -> Iterable[str]:
-    return [f"secret_{host}" for host in coturn_hosts]
-
-
-@pytest.fixture
-def coturn_credentials() -> Iterable[str]:
-    return [
-        "mO/6NHZaG4fwCf7mVuaWNRS7Atw=",
-        "uSjJUafCX3fEQTGK3NI+mUe6UDo=",
-        "I5BcpufNrBb4JDj80KY/7VATNis=",
-        "4wYEgoPz2MHf35Fva8NWulI3vVU="
-    ]
