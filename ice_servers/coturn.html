@@ -42,8 +42,6 @@ import hmac
 import time
 from hashlib import sha1
 
-from server.config import config
-
 
 class CoturnHMAC:
     def __init__(self, coturn_hosts=[], coturn_keys=[]):
@@ -52,7 +50,7 @@ class CoturnHMAC:
 
     def server_tokens(self, username=&#34;faf-user&#34;, ttl=None) -&gt; list[dict[str]]:
         if ttl is None:
-            ttl = config.TWILIO_TTL  # pragma: no cover
+            ttl = 86400  # pragma: no cover
 
         servers = []
 
@@ -110,7 +108,7 @@ class CoturnHMAC:
 
     def server_tokens(self, username=&#34;faf-user&#34;, ttl=None) -&gt; list[dict[str]]:
         if ttl is None:
-            ttl = config.TWILIO_TTL  # pragma: no cover
+            ttl = 86400  # pragma: no cover
 
         servers = []
 
@@ -154,7 +152,7 @@ class CoturnHMAC:
 </summary>
 <pre><code class="python">def server_tokens(self, username=&#34;faf-user&#34;, ttl=None) -&gt; list[dict[str]]:
     if ttl is None:
-        ttl = config.TWILIO_TTL  # pragma: no cover
+        ttl = 86400  # pragma: no cover
 
     servers = []
 

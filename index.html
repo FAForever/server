@@ -206,7 +206,6 @@ from .db import FAFDatabase
 from .game_service import GameService
 from .gameconnection import GameConnection
 from .geoip_service import GeoIpService
-from .ice_servers.nts import TwilioNTS
 from .ladder_service import LadderService
 from .ladder_service.violation_service import ViolationService
 from .lobbyconnection import LobbyConnection
@@ -258,7 +257,6 @@ class ServerInstance(object):
         self,
         name: str,
         database: FAFDatabase,
-        twilio_nts: Optional[TwilioNTS],
         loop: asyncio.BaseEventLoop,
         # For testing
         _override_services: Optional[dict[str, Service]] = None
@@ -266,7 +264,6 @@ class ServerInstance(object):
         self.name = name
         self._logger = logging.getLogger(self.name)
         self.database = database
-        self.twilio_nts = twilio_nts
         self.loop = loop
 
         self.started = False
@@ -283,7 +280,6 @@ class ServerInstance(object):
             database=database,
             geoip=self.services[&#34;geo_ip_service&#34;],
             game_service=self.services[&#34;game_service&#34;],
-            nts_client=twilio_nts,
             players=self.services[&#34;player_service&#34;],
             ladder_service=self.services[&#34;ladder_service&#34;],
             party_service=self.services[&#34;party_service&#34;],
@@ -7349,7 +7345,7 @@ class RatingService(Service):
 </dd>
 <dt id="server.ServerInstance"><code class="flex name class">
 <span>class <span class="ident">ServerInstance</span></span>
-<span>(</span><span>name: str, database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, twilio_nts: Optional[<a title="server.ice_servers.nts.TwilioNTS" href="ice_servers/nts.html#server.ice_servers.nts.TwilioNTS">TwilioNTS</a>], loop: asyncio.base_events.BaseEventLoop)</span>
+<span>(</span><span>name: str, database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, loop: asyncio.base_events.BaseEventLoop)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A class representing a shared server state. Each <code><a title="server.ServerInstance" href="#server.ServerInstance">ServerInstance</a></code> may be
@@ -7370,7 +7366,6 @@ state, i.e. the same players, games, etc.</p></div>
         self,
         name: str,
         database: FAFDatabase,
-        twilio_nts: Optional[TwilioNTS],
         loop: asyncio.BaseEventLoop,
         # For testing
         _override_services: Optional[dict[str, Service]] = None
@@ -7378,7 +7373,6 @@ state, i.e. the same players, games, etc.</p></div>
         self.name = name
         self._logger = logging.getLogger(self.name)
         self.database = database
-        self.twilio_nts = twilio_nts
         self.loop = loop
 
         self.started = False
@@ -7395,7 +7389,6 @@ state, i.e. the same players, games, etc.</p></div>
             database=database,
             geoip=self.services[&#34;geo_ip_service&#34;],
             game_service=self.services[&#34;game_service&#34;],
-            nts_client=twilio_nts,
             players=self.services[&#34;player_service&#34;],
             ladder_service=self.services[&#34;ladder_service&#34;],
             party_service=self.services[&#34;party_service&#34;],
