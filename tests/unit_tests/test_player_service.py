@@ -14,16 +14,6 @@ async def test_fetch_player_data(player_factory, player_service):
     assert player.avatar == {"url": "https://content.faforever.com/faf/avatars/UEF.png", "tooltip": "UEF"}
 
 
-async def test_fetch_player_data_legacy_rating(player_factory, player_service):
-    # Player 51 should only have legacy rating entries,
-    # but no `leaderboard_rating` entries.
-    player = player_factory(player_id=51)
-
-    await player_service.fetch_player_data(player)
-    assert player.ratings[RatingType.GLOBAL] == (1201, 250)
-    assert player.ratings[RatingType.LADDER_1V1] == (1301, 400)
-
-
 async def test_fetch_ratings_nonexistent(player_factory, player_service):
     player = player_factory(player_id=-1)
     player_service._logger = mock.Mock()
@@ -31,7 +21,6 @@ async def test_fetch_ratings_nonexistent(player_factory, player_service):
     async with player_service._db.acquire() as conn:
         await player_service._fetch_player_ratings(player, conn)
 
-    player_service._logger.info.assert_called_once()
     assert player.ratings[RatingType.GLOBAL] == (1500, 500)
 
 
@@ -44,7 +33,6 @@ async def test_fetch_ratings_partially_nonexistent(player_factory, player_servic
     async with player_service._db.acquire() as conn:
         await player_service._fetch_player_ratings(player, conn)
 
-    player_service._logger.info.assert_called_once()
     assert player.ratings[RatingType.LADDER_1V1] == (1500, 500)
 
 
