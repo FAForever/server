@@ -14,7 +14,6 @@ from server.config import config
 from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.players import Player, PlayerState
-from server.rating import RatingType
 from server.timing import at_interval
 
 from .core import Service
