@@ -23,10 +23,8 @@ from .db.models import (
     avatars_list,
     clan,
     clan_membership,
-    global_rating,
     group_permission,
     group_permission_assignment,
-    ladder1v1_rating,
     leaderboard,
     leaderboard_rating,
     login,
@@ -148,61 +146,6 @@ class PlayerService(Service):
         for rating_type, (rating, total_games) in retrieved_ratings.items():
             player.ratings[rating_type] = rating
             player.game_count[rating_type] = total_games
-
-        types_not_found = [
-            rating_type for rating_type in (
-                RatingType.GLOBAL, RatingType.LADDER_1V1
-            )
-            if rating_type not in retrieved_ratings
-        ]
-        await self._fetch_player_legacy_rating(player, types_not_found, conn)
-
-    async def _fetch_player_legacy_rating(self, player, rating_types, conn):
-        if not rating_types:
-            return
-
-        sql = select(
-            global_rating.c.mean,
-            global_rating.c.deviation,
-            global_rating.c.numGames,
-            ladder1v1_rating.c.mean,
-            ladder1v1_rating.c.deviation,
-            ladder1v1_rating.c.numGames,
-        ).select_from(
-            login.outerjoin(ladder1v1_rating).outerjoin(global_rating)
-        ).where(
-            login.c.id == player.id
-        )
-        result = await conn.execute(sql)
-        row = result.fetchone()
-
-        if row is None:
-            self._logger.info("Found no ratings for Player with id %i", player.id)
-            return
-
-        row = row._mapping
-
-        table_map = {
-            RatingType.GLOBAL: global_rating,
-            RatingType.LADDER_1V1: ladder1v1_rating,
-        }
-        for rating_type in rating_types:
-            if rating_type not in table_map:
-                raise ValueError(f"Unknown rating type {rating_type}.")
-
-            table = table_map[rating_type]
-            if row[table.c.mean] is None:
-                self._logger.info(
-                    "Found no %s ratings for Player with id %i",
-                    rating_type, player.id
-                )
-                continue
-
-            player.ratings[rating_type] = (
-                row[table.c.mean],
-                row[table.c.deviation]
-            )
-            player.game_count[rating_type] = row[table.c.numGames]
 
     def remove_player(self, player: Player):
         if player.id in self._players:

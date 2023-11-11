@@ -11,7 +11,7 @@ on:
     - cron: '0 0 * * *'
 
 env:
-  FAF_DB_VERSION: v122
+  FAF_DB_VERSION: v133
   FLYWAY_VERSION: 7.5.4
 
 jobs:
