@@ -78,8 +78,8 @@ player and all other players in the match. Connections are then established
 using the Interactive Connectivity Establishment (ICE) protocol, using the
 lobby server as a medium of exchanging candidate addresses between clients. If
 clients require a relay in order to connect to eachother, they will
-authenticate with a separate coturn server using credentials supplied by the
-lobby server.</p>
+authenticate with a separate sturn or turn server using credentials supplied
+by a separate API service.</p>
 <h2 id="achievements">Achievements</h2>
 <p>When a game ends, each client will report a summary of the game in the form of
 a stat report. These stats are then parsed to extract information about events
@@ -164,8 +164,8 @@ player and all other players in the match. Connections are then established
 using the Interactive Connectivity Establishment (ICE) protocol, using the
 lobby server as a medium of exchanging candidate addresses between clients. If
 clients require a relay in order to connect to eachother, they will
-authenticate with a separate coturn server using credentials supplied by the
-lobby server.
+authenticate with a separate sturn or turn server using credentials supplied
+by a separate API service.
 
 ## Achievements
 When a game ends, each client will report a summary of the game in the form of
@@ -512,10 +512,6 @@ class ServerInstance(object):
 <dt><code class="name"><a title="server.health" href="health.html">server.health</a></code></dt>
 <dd>
 <div class="desc"><p>Kubernetes compatible HTTP health check server.</p></div>
-</dd>
-<dt><code class="name"><a title="server.ice_servers" href="ice_servers/index.html">server.ice_servers</a></code></dt>
-<dd>
-<div class="desc"><p>ICE server configuration</p></div>
 </dd>
 <dt><code class="name"><a title="server.info" href="info.html">server.info</a></code></dt>
 <dd>
@@ -7988,7 +7984,6 @@ class ViolationService(Service):
 <li><code><a title="server.games" href="games/index.html">server.games</a></code></li>
 <li><code><a title="server.geoip_service" href="geoip_service.html">server.geoip_service</a></code></li>
 <li><code><a title="server.health" href="health.html">server.health</a></code></li>
-<li><code><a title="server.ice_servers" href="ice_servers/index.html">server.ice_servers</a></code></li>
 <li><code><a title="server.info" href="info.html">server.info</a></code></li>
 <li><code><a title="server.ladder_service" href="ladder_service/index.html">server.ladder_service</a></code></li>
 <li><code><a title="server.lobbyconnection" href="lobbyconnection.html">server.lobbyconnection</a></code></li>

@@ -79,7 +79,6 @@ from .games import (
     VisibilityState
 )
 from .geoip_service import GeoIpService
-from .ice_servers.coturn import CoturnHMAC
 from .ladder_service import LadderService
 from .oauth_service import OAuthService
 from .party_service import PartyService
@@ -109,7 +108,6 @@ class LobbyConnection:
         self.geoip_service = geoip
         self.game_service = game_service
         self.player_service = players
-        self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
         self.party_service = party_service
         self.rating_service = rating_service
@@ -1168,20 +1166,16 @@ class LobbyConnection:
             else:
                 raise ValueError(&#34;invalid type argument&#34;)
 
+    # DEPRECATED: ICE servers are handled outside of the lobby server.
+    # This message remains here for backwards compatibility, but the list
+    # of servers will always be empty.
     async def command_ice_servers(self, message):
         if not self.player:
             return
 
-        ttl = 86400
-        ice_servers = self.coturn_generator.server_tokens(
-            username=self.player.id,
-            ttl=ttl
-        )
-
         await self.send({
             &#34;command&#34;: &#34;ice_servers&#34;,
-            &#34;ice_servers&#34;: ice_servers,
-            &#34;ttl&#34;: ttl
+            &#34;ice_servers&#34;: [],
         })
 
     @player_idle(&#34;invite a player&#34;)
@@ -1348,7 +1342,6 @@ class LobbyConnection:
         self.geoip_service = geoip
         self.game_service = game_service
         self.player_service = players
-        self.coturn_generator = CoturnHMAC(config.COTURN_HOSTS, config.COTURN_KEYS)
         self.ladder_service = ladder_service
         self.party_service = party_service
         self.rating_service = rating_service
@@ -2407,20 +2400,16 @@ class LobbyConnection:
             else:
                 raise ValueError(&#34;invalid type argument&#34;)
 
+    # DEPRECATED: ICE servers are handled outside of the lobby server.
+    # This message remains here for backwards compatibility, but the list
+    # of servers will always be empty.
     async def command_ice_servers(self, message):
         if not self.player:
             return
 
-        ttl = 86400
-        ice_servers = self.coturn_generator.server_tokens(
-            username=self.player.id,
-            ttl=ttl
-        )
-
         await self.send({
             &#34;command&#34;: &#34;ice_servers&#34;,
-            &#34;ice_servers&#34;: ice_servers,
-            &#34;ttl&#34;: ttl
+            &#34;ice_servers&#34;: [],
         })
 
     @player_idle(&#34;invite a player&#34;)
@@ -3245,16 +3234,9 @@ async def command_game_matchmaking(self, message):
     if not self.player:
         return
 
-    ttl = 86400
-    ice_servers = self.coturn_generator.server_tokens(
-        username=self.player.id,
-        ttl=ttl
-    )
-
     await self.send({
         &#34;command&#34;: &#34;ice_servers&#34;,
-        &#34;ice_servers&#34;: ice_servers,
-        &#34;ttl&#34;: ttl
+        &#34;ice_servers&#34;: [],
     })</code></pre>
 </details>
 </dd>
