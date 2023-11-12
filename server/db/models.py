@@ -148,15 +148,6 @@ game_stats = Table(
     Column("validity",  Integer,        nullable=False),
 )
 
-global_rating = Table(
-    "global_rating", metadata,
-    Column("id",        Integer,    ForeignKey("login.id"), primary_key=True),
-    Column("mean",      Float),
-    Column("deviation", Float),
-    Column("numGames",  Integer,    nullable=False),
-    Column("is_active", Boolean,    nullable=False),
-)
-
 group_permission = Table(
     "group_permission", metadata,
     Column("id",                Integer,        primary_key=True),
@@ -186,16 +177,6 @@ login = Table(
     Column("update_time",   TIMESTAMP,  nullable=False),
     Column("user_agent",    String),
     Column("last_login",    TIMESTAMP)
-)
-
-ladder1v1_rating = Table(
-    "ladder1v1_rating", metadata,
-    Column("id",            Integer,    ForeignKey("login.id"), primary_key=True),
-    Column("mean",          Float),
-    Column("deviation",     Float),
-    Column("numGames",      Integer,    nullable=False),
-    Column("winGames",      Integer,    nullable=False),
-    Column("is_active",     Boolean,    nullable=False)
 )
 
 leaderboard = Table(

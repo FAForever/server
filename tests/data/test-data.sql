@@ -8,11 +8,8 @@ DELETE FROM moderation_report;
 DELETE FROM teamkills;
 DELETE FROM unique_id_users;
 DELETE FROM uniqueid;
-DELETE FROM global_rating;
-DELETE FROM ladder1v1_rating;
 DELETE FROM uniqueid_exempt;
 DELETE FROM friends_and_foes;
-DELETE FROM ladder_map;
 DELETE FROM tutorial;
 DELETE FROM map_version_review;
 DELETE FROM map_version_reviews_summary;
@@ -25,7 +22,6 @@ DELETE FROM mod_version_reviews_summary;
 DELETE FROM mod_version;
 DELETE FROM `mod`;
 DELETE FROM mod_stats;
-DELETE FROM oauth_clients;
 DELETE FROM updates_faf;
 DELETE FROM updates_faf_files;
 DELETE FROM avatars;
@@ -38,8 +34,6 @@ DELETE FROM game_review;
 DELETE FROM game_reviews_summary;
 DELETE FROM game_stats;
 DELETE FROM game_featuredMods;
-DELETE FROM ladder_division_score;
-DELETE FROM ladder_division;
 DELETE FROM name_history;
 DELETE FROM user_group_assignment;
 DELETE FROM login;
@@ -136,31 +130,6 @@ insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderbo
   (106, 900, 75, 20, 3)
 ;
 
--- legacy table for global rating
-insert into global_rating (id, mean, deviation, numGames, is_active) values
-  (1, 2000, 125, 5, 1),
-  (2, 1500, 75, 2, 1),
-  (3, 1650, 62.52, 2, 1),
-  (50,  1201, 250, 42, 1),
-  (51,  1201, 250, 42, 1),
-  (52,  1201, 250, 42, 1),
-  (100, 1501, 500, 0, 1),
-  (101, 1501, 500, 0, 1),
-  (102, 1501, 500, 0, 1)
-;
-
--- legacy ladder rating
-insert into ladder1v1_rating (id, mean, deviation, numGames, is_active) values
-  (1, 2000, 125, 5, 1),
-  (2, 1500, 75, 2, 1),
-  (3, 1650, 62.52, 2, 1),
-  (50,  1301, 400, 12, 1),
-  (51,  1301, 400, 12, 1),
-  (100, 1501, 500, 0, 1),
-  (101, 1501, 500, 0, 1),
-  (102, 1501, 500, 0, 1)
-;
-
 -- UniqueID_exempt
 insert into uniqueid_exempt (user_id, reason) values (1, 'Because test');
 
@@ -175,23 +144,23 @@ insert into unique_id_users (user_id, uniqueid_hash) values (2, 'another_id');
 insert into unique_id_users (user_id, uniqueid_hash) values (3, 'some_id');
 
 -- Sample maps
-insert into map (id, display_name, map_type, battle_type, author) values
-  (1, 'SCMP_001', 'FFA', 'skirmish', 1),
-  (2, 'SCMP_002', 'FFA', 'skirmish', 1),
-  (3, 'SCMP_003', 'FFA', 'skirmish', 1),
-  (4, 'SCMP_004', 'FFA', 'skirmish', 1),
-  (5, 'SCMP_005', 'FFA', 'skirmish', 1),
-  (6, 'SCMP_006', 'FFA', 'skirmish', 2),
-  (7, 'SCMP_007', 'FFA', 'skirmish', 2),
-  (8, 'SCMP_008', 'FFA', 'skirmish', 2),
-  (9, 'SCMP_009', 'FFA', 'skirmish', 2),
-  (10, 'SCMP_010', 'FFA', 'skirmish', 3),
-  (11, 'SCMP_011', 'FFA', 'skirmish', 3),
-  (12, 'SCMP_012', 'FFA', 'skirmish', 3),
-  (13, 'SCMP_013', 'FFA', 'skirmish', 3),
-  (14, 'SCMP_014', 'FFA', 'skirmish', 3),
-  (15, 'SCMP_015', 'FFA', 'skirmish', 3),
-  (16, 'neroxis_map_generator_sneaky_map', 'FFA', 'skirmish', 1);
+insert into map (id, display_name, map_type, battle_type, author, license) values
+  (1, 'SCMP_001', 'FFA', 'skirmish', 1, 1),
+  (2, 'SCMP_002', 'FFA', 'skirmish', 1, 1),
+  (3, 'SCMP_003', 'FFA', 'skirmish', 1, 1),
+  (4, 'SCMP_004', 'FFA', 'skirmish', 1, 1),
+  (5, 'SCMP_005', 'FFA', 'skirmish', 1, 1),
+  (6, 'SCMP_006', 'FFA', 'skirmish', 2, 1),
+  (7, 'SCMP_007', 'FFA', 'skirmish', 2, 1),
+  (8, 'SCMP_008', 'FFA', 'skirmish', 2, 1),
+  (9, 'SCMP_009', 'FFA', 'skirmish', 2, 1),
+  (10, 'SCMP_010', 'FFA', 'skirmish', 3, 1),
+  (11, 'SCMP_011', 'FFA', 'skirmish', 3, 1),
+  (12, 'SCMP_012', 'FFA', 'skirmish', 3, 1),
+  (13, 'SCMP_013', 'FFA', 'skirmish', 3, 1),
+  (14, 'SCMP_014', 'FFA', 'skirmish', 3, 1),
+  (15, 'SCMP_015', 'FFA', 'skirmish', 3, 1),
+  (16, 'neroxis_map_generator_sneaky_map', 'FFA', 'skirmish', 1, 1);
 
 insert into map_version (id, description, max_players, width, height, version, filename, hidden, ranked, map_id) values
   (1, 'SCMP 001', 8, 1024, 1024, 1, 'maps/scmp_001.zip', 0, 1, 1),
@@ -212,10 +181,6 @@ insert into map_version (id, description, max_players, width, height, version, f
   (16, 'SCMP 015', 8, 512, 512, 2, 'maps/scmp_015.v0002.zip', 0, 1, 15),
   (17, 'SCMP 015', 8, 512, 512, 3, 'maps/scmp_015.v0003.zip', 0, 1, 15),
   (18, 'Sneaky_Map', 8, 512, 512, 1, 'maps/neroxis_map_generator_sneaky_map.zip', 0, 0, 16);
-
-insert into ladder_map (id, idmap) values
-  (1,1),
-  (2,2);
 
 INSERT INTO `coop_map` (`type`, `name`, `description`, `version`, `filename`) VALUES
   (0, 'FA Campaign map', 'A map from the FA campaign', 2, 'maps/scmp_coop_123.v0002.zip'),
@@ -351,11 +316,11 @@ insert into friends_and_foes (user_id, subject_id, `status`) values
   (2, 1, 'FRIEND'),
   (10, 1, 'FRIEND');
 
-insert into `mod` (id, display_name, author) VALUES
-  (1, 'test-mod', 'baz'),
-  (2, 'test-mod2', 'baz'),
-  (3, 'test-mod3', 'baz'),
-  (100, 'Mod without icon', 'foo');
+insert into `mod` (id, display_name, author, license) VALUES
+  (1, 'test-mod', 'baz', 1),
+  (2, 'test-mod2', 'baz', 1),
+  (3, 'test-mod3', 'baz', 1),
+  (100, 'Mod without icon', 'foo', 1);
 
 insert into mod_version (id, mod_id, uid, version, description, type, filename, icon) VALUES
   (1, 1, 'foo', 1, '', 'UI', 'foobar.zip', 'foobar.png'),
@@ -411,12 +376,6 @@ insert into clan_membership (clan_id, player_id) values
   (3, 1),
   (1, 50);
 
--- sample oauth_client for Postman
-insert into oauth_clients (id, name, client_secret, redirect_uris, default_redirect_uri, default_scope) VALUES
-  ('3bc8282c-7730-11e5-8bcf-feff819cdc9f ', 'Downlord''s FAF Client', '{noop}6035bd78-7730-11e5-8bcf-feff819cdc9f', '', '', 'read_events read_achievements upload_map'),
-  ('faf-website', 'faf-website', '{noop}banana', 'http://localhost:8020', 'http://localhost:8020', 'public_profile write_account_data create_user'),
-  ('postman', 'postman', '{noop}postman', 'http://localhost https://www.getpostman.com/oauth2/callback', 'https://www.getpostman.com/oauth2/callback', 'read_events read_achievements upload_map upload_mod write_account_data');
-
 insert into updates_faf (id, filename, path) values
   (1, 'ForgedAlliance.exe', 'bin'),
   (11, 'effects.nx2', 'gamedata'),
@@ -446,22 +405,5 @@ insert into mod_version_review (id, text, user_id, score, mod_version_id) VALUES
   (1, 'Great!', 1, 5, 1),
   (2, 'Like it', 2, 4, 1),
   (3, 'Funny', 3, 4, 1);
-
-INSERT INTO ladder_division VALUES
-  (1, 'League 1 - Division A', 1, 10.0),
-  (2, 'League 1 - Division B', 1, 30.0),
-  (3, 'League 1 - Division C', 1, 50.0),
-  (4, 'League 2 - Division D', 2, 20.0),
-  (5, 'League 2 - Division E', 2, 60.0),
-  (6, 'League 2 - Division F', 2, 100.0),
-  (7, 'League 3 - Division D', 3, 100.0),
-  (8, 'League 3 - Division E', 3, 200.0),
-  (9, 'League 3 - Division F', 3, 9999.0);
-
-INSERT INTO ladder_division_score (season, user_id, league, score, games) VALUES
-  (1, 1, 1, 9.5, 4),
-  (1, 2, 1, 49.5, 70),
-  (1, 3, 2, 0.0, 39),
-  (1, 4, 3, 10.0, 121);
 
 INSERT INTO email_domain_blacklist VALUES ('spam.org');
