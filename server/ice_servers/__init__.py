@@ -1,3 +1,0 @@
-"""
-ICE server configuration
-"""

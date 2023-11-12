@@ -130,9 +130,6 @@ class ConfigurationStore:
         self.MINORITY_BONUS = 1
         self.MINORITY_BONUS_RATING_RANGE = 1250
 
-        self.COTURN_HOSTS = []
-        self.COTURN_KEYS = []
-
         self.GEO_IP_DATABASE_PATH = "GeoLite2-Country.mmdb"
         self.GEO_IP_DATABASE_URL = "https://download.maxmind.com/app/geoip_download"
         self.GEO_IP_LICENSE_KEY = ""

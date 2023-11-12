@@ -689,16 +689,12 @@ async def test_command_ice_servers(
     lobbyconnection: LobbyConnection,
 ):
     lobbyconnection.send = mock.AsyncMock()
-    lobbyconnection.coturn_generator.server_tokens = mock.Mock(
-        return_value=["coturn_tokens"]
-    )
 
     await lobbyconnection.on_message_received({"command": "ice_servers"})
 
     lobbyconnection.send.assert_called_once_with({
         "command": "ice_servers",
-        "ice_servers": ["coturn_tokens"],
-        "ttl": 86400,
+        "ice_servers": [],
     })
 
 

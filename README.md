@@ -112,7 +112,7 @@ SESSION: QString
 
 ##### ICE Servers
 
--   `{command: ice_servers}`: Send ICE TURN/STUN servers - Returns: `{command: ice_servers, : <ice servers>, date_created: <date token was created in ISO 8601 format>, ttl: <ttl in seconds>}`
+-   (deprecated) `{command: ice_servers}`: Send ICE TURN/STUN servers - Returns: `{command: ice_servers, : <ice servers>, date_created: <date token was created in ISO 8601 format>, ttl: <ttl in seconds>}`
 
 #### Parties
 -   `{command: invite_to_party, recipient_id: <...>}`: Invite this player to a party
