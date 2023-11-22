@@ -57,6 +57,7 @@ async def test_ladder_1v1_match(client_factory):
         "sim_mods": {},
         "num_players": 0,
         "max_players": 2,
+        "hosted_at": None,
         "launched_at": None,
         "rating_type": "ladder_1v1",
         "rating_min": None,

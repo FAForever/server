@@ -1,7 +1,9 @@
 import asyncio
 import gc
 import json
+import time
 from collections import defaultdict
+from datetime import datetime
 
 import pytest
 from sqlalchemy import select
@@ -9,6 +11,7 @@ from sqlalchemy import select
 from server.db.models import game_player_stats
 from server.games.game_results import GameOutcome
 from server.protocol import Protocol
+from server.timing import datetime_now
 from tests.utils import fast_forward
 
 from .conftest import (
@@ -99,7 +102,7 @@ async def read_until_launched(proto: Protocol, uid=None, timeout=60):
 
         return cmd["launched_at"] is not None
 
-    await read_until(proto, predecate, timeout=timeout)
+    return await read_until(proto, predecate, timeout=timeout)
 
 
 async def client_response(proto, timeout=10):
@@ -259,6 +262,70 @@ async def send_player_options(proto, *options):
             "command": "PlayerOption",
             "args": list(option)
         })
+
+
+@fast_forward(60)
+async def test_game_info_messages(lobby_server):
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(guest_proto, "game_info")
+    await read_until_command(host_proto, "game_info")
+
+    # Host game
+    await host_proto.send_message({
+        "command": "game_host",
+        "mod": "faf",
+        "visibility": "public",
+    })
+    msg = await read_until_command(host_proto, "game_launch")
+    game_id = int(msg["uid"])
+
+    msg = await read_until_command(host_proto, "game_info")
+
+    assert msg["hosted_at"] is None
+    assert msg["launched_at"] is None
+
+    await open_fa(host_proto)
+    await read_until_command(host_proto, "HostGame", target="game")
+
+    msg = await read_until_command(host_proto, "game_info")
+    hosted_at = msg["hosted_at"]
+    assert datetime.fromisoformat(hosted_at) <= datetime_now()
+    assert msg["launched_at"] is None
+
+    # Join a player
+    await join_game(guest_proto, game_id)
+
+    # Set player options
+    await send_player_options(
+        host_proto,
+        [host_id, "Army", 1],
+        [host_id, "Team", 1],
+        [host_id, "StartSpot", 1],
+        [host_id, "Faction", 1],
+        [host_id, "Color", 1],
+        [guest_id, "Army", 2],
+        [guest_id, "Team", 2],
+        [guest_id, "StartSpot", 2],
+        [guest_id, "Faction", 2],
+        [guest_id, "Color", 2],
+    )
+
+    # Launch game
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Launching"]
+    })
+
+    msg = await read_until_launched(host_proto, game_id)
+
+    assert msg["hosted_at"] == hosted_at
+    assert msg["launched_at"] <= time.time()
 
 
 @fast_forward(60)

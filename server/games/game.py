@@ -26,6 +26,7 @@ from server.games.game_results import (
     resolve_game
 )
 from server.rating import InclusiveRange, RatingType
+from server.timing import datetime_now
 
 from ..players import Player, PlayerState
 from .typedefs import (
@@ -78,6 +79,7 @@ class Game:
         self._game_stats_service = game_stats_service
         self.game_service = game_service
         self._player_options: dict[int, dict[str, Any]] = defaultdict(dict)
+        self.hosted_at = None
         self.launched_at = None
         self.finished = False
         self._logger = logging.getLogger(
@@ -264,6 +266,7 @@ class Game:
 
     def set_hosted(self):
         self._hosted_future.set_result(None)
+        self.hosted_at = datetime_now()
 
     async def add_result(
         self,
@@ -894,6 +897,7 @@ class Game:
             "host": self.host.login if self.host else "",
             "num_players": len(connected_players),
             "max_players": self.max_players,
+            "hosted_at": self.hosted_at.isoformat() if self.hosted_at else None,
             "launched_at": self.launched_at,
             "rating_type": self.rating_type,
             "rating_min": self.displayed_rating_range.lo,
