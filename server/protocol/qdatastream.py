@@ -80,6 +80,27 @@ class QDataStreamProtocol(Protocol):
 
         return QDataStreamProtocol.pack_message(json_encoder.encode(message))
 
+    @staticmethod
+    def decode_message(data: bytes) -> dict:
+        _, action = QDataStreamProtocol.read_qstring(data)
+        if action in ("PING", "PONG"):
+            return {"command": action.lower()}
+
+        message = json.loads(action)
+        try:
+            for part in QDataStreamProtocol.read_block(data):
+                try:
+                    message_part = json.loads(part)
+                    if part != action:
+                        message.update(message_part)
+                except (ValueError, TypeError):
+                    if "legacy" not in message:
+                        message["legacy"] = []
+                    message["legacy"].append(part)
+        except (KeyError, ValueError):
+            pass
+        return message
+
     async def read_message(self):
         """
         Read a message from the stream
@@ -96,24 +117,7 @@ class QDataStreamProtocol(Protocol):
             # Otherwise reraise
             raise
 
-        pos, action = self.read_qstring(block)
-        if action in ("PING", "PONG"):
-            return {"command": action.lower()}
-
-        message = json.loads(action)
-        try:
-            for part in self.read_block(block):
-                try:
-                    message_part = json.loads(part)
-                    if part != action:
-                        message.update(message_part)
-                except (ValueError, TypeError):
-                    if "legacy" not in message:
-                        message["legacy"] = []
-                    message["legacy"].append(part)
-        except (KeyError, ValueError):
-            pass
-        return message
+        return QDataStreamProtocol.decode_message(block)
 
 
 PING_MSG = QDataStreamProtocol.pack_message("PING")

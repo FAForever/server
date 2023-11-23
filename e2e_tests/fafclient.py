@@ -2,12 +2,16 @@ import asyncio
 import subprocess
 from hashlib import sha256
 
-from server.protocol import QDataStreamProtocol
+from websockets.client import connect as ws_connect
+
+from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
 from tests.integration_tests.conftest import read_until, read_until_command
 
+from .websocket_protocol import WebsocketProtocol
 
-class FAFClient(object):
-    """docstring for FAFClient."""
+
+class FAFClient:
+    """Simulates a FAF client."""
 
     def __init__(self, user_agent="faf-client", version="1.0.0-dev"):
         self.proto = None
@@ -28,10 +32,14 @@ class FAFClient(object):
 
         await self.proto.close()
 
-    async def connect(self, host, port):
-        self.proto = QDataStreamProtocol(
+    async def connect(self, host, port, protocol_class=QDataStreamProtocol):
+        self.proto = protocol_class(
             *(await asyncio.open_connection(host, port))
         )
+
+    async def ws_connect(self, uri, protocol_class=SimpleJsonProtocol):
+        websocket = await ws_connect(uri, open_timeout=60)
+        self.proto = WebsocketProtocol(websocket, protocol_class)
 
     async def send_message(self, message):
         """Send a message to the server"""

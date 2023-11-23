@@ -554,6 +554,10 @@ class AioQueueProtocol(Protocol):
     def encode_message(message: dict) -> bytes:
         raise NotImplementedError("AioQueueProtocol is read-only")
 
+    @staticmethod
+    def decode_message(data: bytes) -> dict:
+        raise NotImplementedError("AioQueueProtocol doesn't user bytes")
+
     async def read_message(self) -> dict:
         return await self.aio_queue.get()
 

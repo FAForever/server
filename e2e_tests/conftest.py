@@ -16,9 +16,9 @@ async def client_factory():
         def __init__(self):
             self.clients = []
 
-        async def add_client(self, host="test.faforever.com", port=8001):
+        async def add_client(self, uri="wss://ws.faforever.xyz"):
             client = FAFClient()
-            await client.connect(host, port)
+            await client.ws_connect(uri)
             self.clients.append(client)
             return client
 
