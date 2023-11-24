@@ -449,6 +449,7 @@ class CustomGame(Game):
         self._game_stats_service = game_stats_service
         self.game_service = game_service
         self._player_options: dict[int, dict[str, Any]] = defaultdict(dict)
+        self.hosted_at = None
         self.launched_at = None
         self.finished = False
         self._logger = logging.getLogger(
@@ -635,6 +636,7 @@ class CustomGame(Game):
 
     def set_hosted(self):
         self._hosted_future.set_result(None)
+        self.hosted_at = datetime_now()
 
     async def add_result(
         self,
@@ -1265,6 +1267,7 @@ class CustomGame(Game):
             &#34;host&#34;: self.host.login if self.host else &#34;&#34;,
             &#34;num_players&#34;: len(connected_players),
             &#34;max_players&#34;: self.max_players,
+            &#34;hosted_at&#34;: self.hosted_at.isoformat() if self.hosted_at else None,
             &#34;launched_at&#34;: self.launched_at,
             &#34;rating_type&#34;: self.rating_type,
             &#34;rating_min&#34;: self.displayed_rating_range.lo,
@@ -2213,7 +2216,8 @@ game.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def set_hosted(self):
-    self._hosted_future.set_result(None)</code></pre>
+    self._hosted_future.set_result(None)
+    self.hosted_at = datetime_now()</code></pre>
 </details>
 </dd>
 <dt id="server.games.Game.set_name_unchecked"><code class="name flex">
@@ -2301,6 +2305,7 @@ game.</p></div>
         &#34;host&#34;: self.host.login if self.host else &#34;&#34;,
         &#34;num_players&#34;: len(connected_players),
         &#34;max_players&#34;: self.max_players,
+        &#34;hosted_at&#34;: self.hosted_at.isoformat() if self.hosted_at else None,
         &#34;launched_at&#34;: self.launched_at,
         &#34;rating_type&#34;: self.rating_type,
         &#34;rating_min&#34;: self.displayed_rating_range.lo,
