@@ -29,6 +29,14 @@ class Protocol(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    @staticmethod
+    @abstractmethod
+    def decode_message(data: bytes) -> dict:
+        """
+        Decode a message from raw bytes.
+        """
+        pass  # pragma: no cover
+
     def is_connected(self) -> bool:
         """
         Return whether or not the connection is still alive

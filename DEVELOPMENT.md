@@ -124,10 +124,10 @@ For further information on available command line arguments run `pytest --help`
 or see the official
 [pytest documentation](https://docs.pytest.org/en/latest/usage.html).
 
-There are also some integration tests which simulate real traffic to the test
+There are also some end to end tests which simulate real traffic to the test
 server.
 ```
-$ pipenv run integration
+$ pipenv run e2e
 ```
 
 Some of them may fail depending on the configuration deployed on the test
