@@ -103,8 +103,10 @@ async def test_custom_game_1v1_game_stats(client_factory, json_stats_1v1):
     for client in (client1, client2):
         await client.send_gpg_command("GameState", "Ended")
 
-    await client1.read_until_command("updated_achievements", timeout=10)
-    await client2.read_until_command("updated_achievements", timeout=2)
+    # The client no longer gets a `updated_achievements` notification, but we
+    # keep the test in case it could generate an exception on the server side.
+    await client1.get_player_ratings("test", "test2", timeout=10)
+    await client2.get_player_ratings("test", "test2", timeout=2)
 
 
 async def test_custom_game_1v1_extra_gameresults(client_factory):

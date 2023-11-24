@@ -3,6 +3,9 @@ import random
 
 from .test_game import simulate_result_reports
 
+# NOTE: Tests will cause matchmaker violations, so after running them a few
+# times, they may start to fail.
+
 
 async def test_ladder_1v1_match(client_factory):
     """More or less the same as the regression test version"""

@@ -58,8 +58,13 @@ class FAFClient:
             timeout=timeout
         )
 
-    async def read_until_command(self, command, timeout=5):
-        return await read_until_command(self.proto, command, timeout=timeout)
+    async def read_until_command(self, command, timeout=5, **kwargs):
+        return await read_until_command(
+            self.proto,
+            command,
+            timeout=timeout,
+            **kwargs,
+        )
 
     async def read_until_game_launch(self, uid):
         return await self.read_until(
@@ -124,12 +129,14 @@ class FAFClient:
         game_id = int(msg["uid"])
 
         await self.open_fa()
+        await self.read_until_command("HostGame", target="game")
         return game_id
 
     async def join_game(self, game_id, **kwargs):
         await self.send_message({
             "command": "game_join",
-            "uid": game_id
+            "uid": game_id,
+            **kwargs
         })
         await self.read_until_command("game_launch")
 
