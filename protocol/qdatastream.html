@@ -108,6 +108,27 @@ class QDataStreamProtocol(Protocol):
 
         return QDataStreamProtocol.pack_message(json_encoder.encode(message))
 
+    @staticmethod
+    def decode_message(data: bytes) -&gt; dict:
+        _, action = QDataStreamProtocol.read_qstring(data)
+        if action in (&#34;PING&#34;, &#34;PONG&#34;):
+            return {&#34;command&#34;: action.lower()}
+
+        message = json.loads(action)
+        try:
+            for part in QDataStreamProtocol.read_block(data):
+                try:
+                    message_part = json.loads(part)
+                    if part != action:
+                        message.update(message_part)
+                except (ValueError, TypeError):
+                    if &#34;legacy&#34; not in message:
+                        message[&#34;legacy&#34;] = []
+                    message[&#34;legacy&#34;].append(part)
+        except (KeyError, ValueError):
+            pass
+        return message
+
     async def read_message(self):
         &#34;&#34;&#34;
         Read a message from the stream
@@ -124,24 +145,7 @@ class QDataStreamProtocol(Protocol):
             # Otherwise reraise
             raise
 
-        pos, action = self.read_qstring(block)
-        if action in (&#34;PING&#34;, &#34;PONG&#34;):
-            return {&#34;command&#34;: action.lower()}
-
-        message = json.loads(action)
-        try:
-            for part in self.read_block(block):
-                try:
-                    message_part = json.loads(part)
-                    if part != action:
-                        message.update(message_part)
-                except (ValueError, TypeError):
-                    if &#34;legacy&#34; not in message:
-                        message[&#34;legacy&#34;] = []
-                    message[&#34;legacy&#34;].append(part)
-        except (KeyError, ValueError):
-            pass
-        return message
+        return QDataStreamProtocol.decode_message(block)
 
 
 PING_MSG = QDataStreamProtocol.pack_message(&#34;PING&#34;)
@@ -239,6 +243,27 @@ class QDataStreamProtocol(Protocol):
 
         return QDataStreamProtocol.pack_message(json_encoder.encode(message))
 
+    @staticmethod
+    def decode_message(data: bytes) -&gt; dict:
+        _, action = QDataStreamProtocol.read_qstring(data)
+        if action in (&#34;PING&#34;, &#34;PONG&#34;):
+            return {&#34;command&#34;: action.lower()}
+
+        message = json.loads(action)
+        try:
+            for part in QDataStreamProtocol.read_block(data):
+                try:
+                    message_part = json.loads(part)
+                    if part != action:
+                        message.update(message_part)
+                except (ValueError, TypeError):
+                    if &#34;legacy&#34; not in message:
+                        message[&#34;legacy&#34;] = []
+                    message[&#34;legacy&#34;].append(part)
+        except (KeyError, ValueError):
+            pass
+        return message
+
     async def read_message(self):
         &#34;&#34;&#34;
         Read a message from the stream
@@ -255,24 +280,7 @@ class QDataStreamProtocol(Protocol):
             # Otherwise reraise
             raise
 
-        pos, action = self.read_qstring(block)
-        if action in (&#34;PING&#34;, &#34;PONG&#34;):
-            return {&#34;command&#34;: action.lower()}
-
-        message = json.loads(action)
-        try:
-            for part in self.read_block(block):
-                try:
-                    message_part = json.loads(part)
-                    if part != action:
-                        message.update(message_part)
-                except (ValueError, TypeError):
-                    if &#34;legacy&#34; not in message:
-                        message[&#34;legacy&#34;] = []
-                    message[&#34;legacy&#34;].append(part)
-        except (KeyError, ValueError):
-            pass
-        return message</code></pre>
+        return QDataStreamProtocol.decode_message(block)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -441,24 +449,7 @@ def read_qstring(buffer: bytes, pos: int = 0) -&gt; tuple[int, str]:
         # Otherwise reraise
         raise
 
-    pos, action = self.read_qstring(block)
-    if action in (&#34;PING&#34;, &#34;PONG&#34;):
-        return {&#34;command&#34;: action.lower()}
-
-    message = json.loads(action)
-    try:
-        for part in self.read_block(block):
-            try:
-                message_part = json.loads(part)
-                if part != action:
-                    message.update(message_part)
-            except (ValueError, TypeError):
-                if &#34;legacy&#34; not in message:
-                    message[&#34;legacy&#34;] = []
-                message[&#34;legacy&#34;].append(part)
-    except (KeyError, ValueError):
-        pass
-    return message</code></pre>
+    return QDataStreamProtocol.decode_message(block)</code></pre>
 </details>
 </dd>
 </dl>
@@ -467,6 +458,7 @@ def read_qstring(buffer: bytes, pos: int = 0) -&gt; tuple[int, str]:
 <li><code><b><a title="server.protocol.protocol.Protocol" href="protocol.html#server.protocol.protocol.Protocol">Protocol</a></b></code>:
 <ul class="hlist">
 <li><code><a title="server.protocol.protocol.Protocol.close" href="protocol.html#server.protocol.protocol.Protocol.close">close</a></code></li>
+<li><code><a title="server.protocol.protocol.Protocol.decode_message" href="protocol.html#server.protocol.protocol.Protocol.decode_message">decode_message</a></code></li>
 <li><code><a title="server.protocol.protocol.Protocol.drain" href="protocol.html#server.protocol.protocol.Protocol.drain">drain</a></code></li>
 <li><code><a title="server.protocol.protocol.Protocol.is_connected" href="protocol.html#server.protocol.protocol.Protocol.is_connected">is_connected</a></code></li>
 <li><code><a title="server.protocol.protocol.Protocol.send_message" href="protocol.html#server.protocol.protocol.Protocol.send_message">send_message</a></code></li>

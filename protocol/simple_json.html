@@ -36,11 +36,15 @@ class SimpleJsonProtocol(Protocol):
     def encode_message(message: dict) -&gt; bytes:
         return (json_encoder.encode(message) + &#34;\n&#34;).encode()
 
+    @staticmethod
+    def decode_message(data: bytes) -&gt; dict:
+        return json.loads(data.strip())
+
     async def read_message(self) -&gt; dict:
         line = await self.reader.readline()
         if not line:
             raise DisconnectedError()
-        return json.loads(line.strip())</code></pre>
+        return SimpleJsonProtocol.decode_message(line)</code></pre>
 </details>
 </section>
 <section>
@@ -67,11 +71,15 @@ class SimpleJsonProtocol(Protocol):
     def encode_message(message: dict) -&gt; bytes:
         return (json_encoder.encode(message) + &#34;\n&#34;).encode()
 
+    @staticmethod
+    def decode_message(data: bytes) -&gt; dict:
+        return json.loads(data.strip())
+
     async def read_message(self) -&gt; dict:
         line = await self.reader.readline()
         if not line:
             raise DisconnectedError()
-        return json.loads(line.strip())</code></pre>
+        return SimpleJsonProtocol.decode_message(line)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -82,6 +90,7 @@ class SimpleJsonProtocol(Protocol):
 <li><code><b><a title="server.protocol.protocol.Protocol" href="protocol.html#server.protocol.protocol.Protocol">Protocol</a></b></code>:
 <ul class="hlist">
 <li><code><a title="server.protocol.protocol.Protocol.close" href="protocol.html#server.protocol.protocol.Protocol.close">close</a></code></li>
+<li><code><a title="server.protocol.protocol.Protocol.decode_message" href="protocol.html#server.protocol.protocol.Protocol.decode_message">decode_message</a></code></li>
 <li><code><a title="server.protocol.protocol.Protocol.drain" href="protocol.html#server.protocol.protocol.Protocol.drain">drain</a></code></li>
 <li><code><a title="server.protocol.protocol.Protocol.encode_message" href="protocol.html#server.protocol.protocol.Protocol.encode_message">encode_message</a></code></li>
 <li><code><a title="server.protocol.protocol.Protocol.is_connected" href="protocol.html#server.protocol.protocol.Protocol.is_connected">is_connected</a></code></li>

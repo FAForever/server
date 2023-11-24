@@ -57,6 +57,14 @@ class Protocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         pass  # pragma: no cover
 
+    @staticmethod
+    @abstractmethod
+    def decode_message(data: bytes) -&gt; dict:
+        &#34;&#34;&#34;
+        Decode a message from raw bytes.
+        &#34;&#34;&#34;
+        pass  # pragma: no cover
+
     def is_connected(self) -&gt; bool:
         &#34;&#34;&#34;
         Return whether or not the connection is still alive
@@ -238,6 +246,14 @@ class Protocol(metaclass=ABCMeta):
         &#34;&#34;&#34;
         pass  # pragma: no cover
 
+    @staticmethod
+    @abstractmethod
+    def decode_message(data: bytes) -&gt; dict:
+        &#34;&#34;&#34;
+        Decode a message from raw bytes.
+        &#34;&#34;&#34;
+        pass  # pragma: no cover
+
     def is_connected(self) -&gt; bool:
         &#34;&#34;&#34;
         Return whether or not the connection is still alive
@@ -370,6 +386,24 @@ class Protocol(metaclass=ABCMeta):
 </ul>
 <h3>Static methods</h3>
 <dl>
+<dt id="server.protocol.protocol.Protocol.decode_message"><code class="name flex">
+<span>def <span class="ident">decode_message</span></span>(<span>data: bytes) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Decode a message from raw bytes.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+@abstractmethod
+def decode_message(data: bytes) -&gt; dict:
+    &#34;&#34;&#34;
+    Decode a message from raw bytes.
+    &#34;&#34;&#34;
+    pass  # pragma: no cover</code></pre>
+</details>
+</dd>
 <dt id="server.protocol.protocol.Protocol.encode_message"><code class="name flex">
 <span>def <span class="ident">encode_message</span></span>(<span>message: dict) ‑> bytes</span>
 </code></dt>
@@ -678,6 +712,7 @@ incoming messages from other players.</p>
 <ul class="two-column">
 <li><code><a title="server.protocol.protocol.Protocol.abort" href="#server.protocol.protocol.Protocol.abort">abort</a></code></li>
 <li><code><a title="server.protocol.protocol.Protocol.close" href="#server.protocol.protocol.Protocol.close">close</a></code></li>
+<li><code><a title="server.protocol.protocol.Protocol.decode_message" href="#server.protocol.protocol.Protocol.decode_message">decode_message</a></code></li>
 <li><code><a title="server.protocol.protocol.Protocol.drain" href="#server.protocol.protocol.Protocol.drain">drain</a></code></li>
 <li><code><a title="server.protocol.protocol.Protocol.encode_message" href="#server.protocol.protocol.Protocol.encode_message">encode_message</a></code></li>
 <li><code><a title="server.protocol.protocol.Protocol.is_connected" href="#server.protocol.protocol.Protocol.is_connected">is_connected</a></code></li>
