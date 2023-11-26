@@ -1,6 +1,6 @@
 [scripts]
 devserver = "python main.py --configuration-file dev-config.yml"
-tests = "py.test --doctest-modules --doctest-continue-on-failure --cov-report=term-missing --cov-branch --cov=server --mysql_database=faf -o testpaths=tests -m 'not rabbitmq'"
+tests = "py.test --doctest-modules --doctest-continue-on-failure --no-flaky-report --cov-report=term-missing --cov-branch --cov=server --mysql_database=faf -o testpaths=tests -m 'not rabbitmq'"
 e2e = "py.test -o testpaths=e2e_tests"
 vulture = "vulture main.py server/ --sort-by-size"
 doc = "pdoc3 --html --force server"
@@ -29,6 +29,7 @@ trueskill = "*"
 uvloop = {version = "*", markers = "sys_platform != 'win32'"}
 
 [dev-packages]
+flaky = "*"
 hypothesis = "*"  # Versions between 6.47.1 and 6.56.4 added a prerelease dependency. See https://github.com/pypa/pipenv/issues/1760
 pdoc3 = "*"
 pytest = "*"
