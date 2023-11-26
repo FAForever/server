@@ -155,10 +155,6 @@ class Player:
                 }
                 for rating_type in self.ratings
             },
-            # DEPRECATED: Use ratings instead
-            "global_rating": self.ratings[RatingType.GLOBAL],
-            "ladder_rating": self.ratings[RatingType.LADDER_1V1],
-            "number_of_games": self.game_count[RatingType.GLOBAL],
         }
         return {k: v for k, v in cmd.items() if v is not None}
 

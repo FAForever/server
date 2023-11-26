@@ -111,9 +111,6 @@ async def test_server_login_valid(lobby_server):
                 "number_of_games": 2
             }
         },
-        "global_rating": [1650.0, 62.52],
-        "ladder_rating": [1650.0, 62.52],
-        "number_of_games": 2
     }
     assert msg == {
         "command": "welcome",
@@ -154,9 +151,6 @@ async def test_server_login_valid_admin(lobby_server):
                 "number_of_games": 5
             }
         },
-        "global_rating": [2000.0, 125.0],
-        "ladder_rating": [2000.0, 125.0],
-        "number_of_games": 5,
     }
     assert msg == {
         "command": "welcome",
@@ -196,9 +190,6 @@ async def test_server_login_valid_moderator(lobby_server):
                 "number_of_games": 0
             }
         },
-        "global_rating": [1500, 500],
-        "ladder_rating": [1500, 500],
-        "number_of_games": 0
     }
     assert msg == {
         "command": "welcome",
@@ -290,9 +281,6 @@ async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid):
                 "number_of_games": 2
             }
         },
-        "global_rating": [1650.0, 62.52],
-        "ladder_rating": [1650.0, 62.52],
-        "number_of_games": 2
     }
     assert msg == {
         "command": "welcome",
