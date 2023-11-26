@@ -610,9 +610,6 @@ async def test_ratings_initialized_based_on_global(lobby_server):
                         "number_of_games": 5
                     }
                 },
-                "global_rating": [2000.0, 125.0],
-                "ladder_rating": [2000.0, 125.0],
-                "number_of_games": 5,
             }
         ]
     }
@@ -651,9 +648,6 @@ async def test_ratings_initialized_based_on_global(lobby_server):
                 "number_of_games": 0
             }
         },
-        "global_rating": [2000.0, 125.0],
-        "ladder_rating": [2000.0, 125.0],
-        "number_of_games": 5,
     }
 
 
