@@ -84,6 +84,14 @@ class PopTimer(object):
                 next_pop_time, self.queue.name, config.QUEUE_POP_TIME_MAX
             )
             return config.QUEUE_POP_TIME_MAX
+
+        if next_pop_time < config.QUEUE_POP_TIME_MIN:
+            self._logger.warning(
+                "Required time (%.2fs) for %s is lower than min pop time (%ds). ",
+                next_pop_time, self.queue.name, config.QUEUE_POP_TIME_MIN
+            )
+            return config.QUEUE_POP_TIME_MIN
+
         return next_pop_time
 
     def cancel(self):

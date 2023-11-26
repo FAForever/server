@@ -148,6 +148,8 @@ class ConfigurationStore:
         self.MAP_POOL_RATING_SELECTION = "mean"
         # The maximum amount of time in seconds to wait between pops
         self.QUEUE_POP_TIME_MAX = 90
+        # The minimum amount of time in seconds to wait between pops
+        self.QUEUE_POP_TIME_MIN = 15
         # The number of possible matches we would like to have when the queue
         # pops. The queue pop time will be adjusted based on the current rate of
         # players queuing to try and hit this number.

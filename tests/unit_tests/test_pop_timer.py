@@ -36,7 +36,7 @@ def test_queue_pop_time_moving_average_size(queue_factory):
         t1.time_until_next_pop(100, 1)
 
     # The rate should be extremely high, meaning the pop time should be low
-    assert t1.time_until_next_pop(100, 1) < 1
+    assert t1.time_until_next_pop(100, 1) == config.QUEUE_POP_TIME_MIN
 
     for _ in range(config.QUEUE_POP_TIME_MOVING_AVG_SIZE):
         t1.time_until_next_pop(0, 100)
