@@ -226,7 +226,7 @@ class MatchmakerQueue:
         for search in unmatched_searches:
             search.register_failed_matching_attempt()
             self._logger.debug(
-                "Search %s remained unmatched at threshold %f in attempt number %s",
+                "%s remained unmatched at threshold %f in attempt number %s",
                 search, search.match_threshold, search.failed_matching_attempts
             )
 

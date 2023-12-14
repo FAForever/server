@@ -11,7 +11,7 @@ from server.exceptions import DisabledError
 from server.games import LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service import game_name
-from server.matchmaker import MapPool, MatchmakerQueue
+from server.matchmaker import MapPool, MatchmakerQueue, Search
 from server.players import PlayerState
 from server.rating import RatingType
 from server.types import Map, NeroxisGeneratedMap
@@ -133,6 +133,37 @@ async def test_load_from_database_new_data(ladder_service, database):
     await asyncio.sleep(1.5)
 
     test_queue.find_matches.assert_called()
+
+
+@fast_forward(30)
+async def test_confirm_match_timeout(ladder_service, player_factory):
+    p1 = player_factory("Dostya", player_id=1, lobby_connection_spec="auto")
+    p2 = player_factory("Rhiza", player_id=2, lobby_connection_spec="auto")
+    s1 = Search([p1])
+    s2 = Search([p2])
+    s1.register_failed_matching_attempt()
+
+    s1.match(s2)
+    s2.match(s1)
+
+    queue = ladder_service.queues["ladder1v1"]
+
+    async def ready_player():
+        await asyncio.sleep(3)
+        ladder_service.ready_player(p1)
+
+    await asyncio.gather(
+        ladder_service.confirm_match(
+            s1,
+            s2,
+            queue,
+            [(s1, "ladder1v1"), (s2, "ladder1v1")]
+        ),
+        ready_player()
+    )
+
+    assert list(queue._queue) == [s1]
+    assert s1.failed_matching_attempts == 1
 
 
 @given(

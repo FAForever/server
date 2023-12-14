@@ -385,7 +385,11 @@ class LadderService(Service):
         for queue_name in queue_names:
             self._cancel_search(initiator, queue_name)
 
-    def _cancel_search(self, initiator: Player, queue_name: str) -> None:
+    def _cancel_search(
+        self,
+        initiator: Player,
+        queue_name: str
+    ) -> Optional[Search]:
         """
         Cancel search for a specific player/queue.
         """
@@ -397,7 +401,7 @@ class LadderService(Service):
                 initiator,
                 queue_name
             )
-            return
+            return None
         cancelled_search.cancel()
 
         for player in cancelled_search.players:
@@ -414,6 +418,7 @@ class LadderService(Service):
         self._logger.info(
             "%s stopped searching for %s", cancelled_search, queue_name
         )
+        return cancelled_search
 
     def _clear_search(
         self,
@@ -471,8 +476,10 @@ class LadderService(Service):
         """
         try:
             msg = {"command": "match_found", "queue_name": queue.name}
+            original_searches = []
 
-            for player in s1.players + s2.players:
+            all_players = s1.players + s2.players
+            for player in all_players:
                 player.state = PlayerState.STARTING_AUTOMATCH
                 player.write_message(msg)
 
@@ -482,11 +489,18 @@ class LadderService(Service):
                     if name != queue.name
                 )
                 for queue_name in queue_names:
-                    self._cancel_search(player, queue_name)
+                    search = self._cancel_search(player, queue_name)
+                    if search is not None:
+                        original_searches.append((search, queue_name))
 
-                self._clear_search(player, queue.name)
+            for player in all_players:
+                search = self._clear_search(player, queue.name)
+                if search is not None:
+                    original_searches.append((search, queue.name))
 
-            asyncio.create_task(self.confirm_match(s1, s2, queue))
+            asyncio.create_task(
+                self.confirm_match(s1, s2, queue, original_searches[::-1])
+            )
         except Exception:
             self._logger.exception(
                 "Error processing match between searches %s, and %s",
@@ -497,7 +511,8 @@ class LadderService(Service):
         self,
         s1: Search,
         s2: Search,
-        queue: MatchmakerQueue
+        queue: MatchmakerQueue,
+        original_searches: list[tuple[Search, str]],
     ):
         try:
             all_players = s1.players + s2.players
@@ -518,7 +533,7 @@ class LadderService(Service):
             self._cancel_match(all_players)
 
             # Return any search that fully accepted the match back to the queue
-            for search in (s1, s2):
+            for search, queue_name in original_searches:
                 search_players = search.players
                 search_unready_players = [
                     player
@@ -527,7 +542,10 @@ class LadderService(Service):
                 ]
                 if not search_unready_players:
                     search.unmatch()
-                    self._add_search_to_queue(search, queue)
+                    self._add_search_to_queue(
+                        search,
+                        self.queues[queue_name],
+                    )
                     self._logger.debug(
                         "%s auto requeued after failed match",
                         search
