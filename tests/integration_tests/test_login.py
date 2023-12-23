@@ -47,6 +47,41 @@ async def test_server_ban(lobby_server, user):
     }
 
 
+@pytest.mark.parametrize("user", [
+    ("Dostya", 2),
+    ("ban_long_time", 203)
+])
+async def test_server_ban_token(lobby_server, user, jwk_priv_key, jwk_kid):
+    user_name, user_id = user
+    proto = await connect_client(lobby_server)
+    await proto.send_message({
+        "command": "auth",
+        "version": "1.0.0-dev",
+        "user_agent": "faf-client",
+        "token": jwt.encode({
+            "sub": user_id,
+            "user_name": user_name,
+            "scp": ["lobby"],
+            "exp": int(time() + 1000),
+            "authorities": [],
+            "non_locked": True,
+            "jti": "",
+            "client_id": ""
+        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
+        "unique_id": "some_id"
+    })
+    msg = await proto.read_message()
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": (
+            "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
+            "<br><br><i>If you would like to appeal this ban, please send an "
+            "email to: moderation@faforever.com</i>"
+        )
+    }
+
+
 @pytest.mark.parametrize("user", ["ban_revoked", "ban_expired"])
 async def test_server_ban_revoked_or_expired(lobby_server, user):
     proto = await connect_client(lobby_server)
