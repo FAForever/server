@@ -39,7 +39,11 @@ async def test_server_ban(lobby_server, user):
     assert msg == {
         "command": "notice",
         "style": "error",
-        "text": "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
+        "text": (
+            "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
+            "<br><br><i>If you would like to appeal this ban, please send an "
+            "email to: moderation@faforever.com</i>"
+        )
     }
 
 
