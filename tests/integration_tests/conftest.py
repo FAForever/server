@@ -38,9 +38,22 @@ def mock_games():
 
 
 @pytest.fixture
-async def ladder_service(mocker, database, game_service, violation_service):
+async def ladder_service(
+    mocker,
+    database,
+    game_service,
+    message_queue_service,
+    player_service,
+    violation_service,
+):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
-    ladder_service = LadderService(database, game_service, violation_service)
+    ladder_service = LadderService(
+        database,
+        game_service,
+        message_queue_service,
+        player_service,
+        violation_service,
+    )
     await ladder_service.initialize()
     yield ladder_service
     await ladder_service.shutdown()
@@ -515,18 +528,23 @@ async def channel():
         yield channel
 
 
-async def connect_mq_consumer(server, channel, routing_key):
-    """
-    Returns a subclass of Protocol that yields messages read from a rabbitmq
-    exchange.
-    """
+async def connect_mq_queue(channel, routing_key):
     exchange = await channel.declare_exchange(
         config.MQ_EXCHANGE_NAME,
         aio_pika.ExchangeType.TOPIC,
         durable=True
     )
-    queue = await channel.declare_queue("", exclusive=True)
+    queue = await channel.declare_queue(None, exclusive=True)
     await queue.bind(exchange, routing_key=routing_key)
+    return queue
+
+
+async def connect_mq_consumer(channel, routing_key):
+    """
+    Returns a subclass of Protocol that yields messages read from a rabbitmq
+    exchange.
+    """
+    queue = await connect_mq_queue(channel, routing_key)
     proto = AioQueueProtocol(queue)
     await proto.consume()
 

@@ -167,7 +167,7 @@ class GameService(Service):
             "id_": game_id,
             "host": host,
             "name": name,
-            "map_": mapname,
+            "map_name": mapname,
             "game_mode": game_mode,
             "game_service": self,
             "game_stats_service": self.game_stats_service,

@@ -21,21 +21,26 @@ def ladder_and_game_service_context(
     @asynccontextmanager
     async def make_ladder_and_game_service():
         async with database_context(request) as database:
+            player_service = mock.Mock()
+            message_queue_service = mock.Mock(
+                declare_exchange=mock.AsyncMock(),
+                consume=mock.AsyncMock()
+            )
             with mock.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1):
                 game_service = GameService(
                     database,
-                    player_service=mock.Mock(),
+                    player_service=player_service,
                     game_stats_service=mock.Mock(),
                     rating_service=mock.Mock(),
-                    message_queue_service=mock.Mock(
-                        declare_exchange=mock.AsyncMock()
-                    )
+                    message_queue_service=message_queue_service,
                 )
                 violation_service = ViolationService()
                 ladder_service = LadderService(
                     database,
                     game_service,
-                    violation_service
+                    message_queue_service,
+                    player_service,
+                    violation_service,
                 )
 
                 await game_service.initialize()
@@ -56,10 +61,18 @@ async def ladder_service(
     mocker,
     database,
     game_service,
+    message_queue_service,
+    player_service,
     violation_service,
 ):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
-    ladder_service = LadderService(database, game_service, violation_service)
+    ladder_service = LadderService(
+        database,
+        game_service,
+        message_queue_service,
+        player_service,
+        violation_service,
+    )
     await ladder_service.initialize()
     yield ladder_service
     await ladder_service.shutdown()

@@ -390,7 +390,6 @@ async def test_game_ended_rates_game(lobby_server):
 @fast_forward(30)
 async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
     mq_proto_all = await connect_mq_consumer(
-        lobby_server,
         channel,
         "success.rating.update"
     )
@@ -925,12 +924,10 @@ async def test_game_stats_broadcasts_achievement_updates(
     channel
 ):
     mq_proto_ach = await connect_mq_consumer(
-        lobby_server,
         channel,
         "request.achievement.update"
     )
     mq_proto_evt = await connect_mq_consumer(
-        lobby_server,
         channel,
         "request.event.update"
     )
@@ -1018,7 +1015,6 @@ async def test_galactic_war_1v1_game_ended_broadcasts_army_results(
     channel
 ):
     mq_proto_all = await connect_mq_consumer(
-        lobby_server,
         channel,
         "success.gameResults.create"
     )
@@ -1114,7 +1110,6 @@ async def test_galactic_war_1v1_game_ended_broadcasts_army_results(
 @fast_forward(30)
 async def test_galactic_war_2v1_game_ended_broadcasts_army_results(lobby_server, channel):
     mq_proto_all = await connect_mq_consumer(
-        lobby_server,
         channel,
         "success.gameResults.create"
     )
