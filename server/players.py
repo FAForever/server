@@ -15,12 +15,12 @@ from .weakattr import WeakAttribute
 
 @unique
 class PlayerState(Enum):
-    IDLE = "idle"
-    PLAYING = "playing"
-    HOSTING = "hosting"
-    JOINING = "joining"
-    SEARCHING_LADDER = "searching"
-    STARTING_AUTOMATCH = "matching"
+    IDLE = 1
+    PLAYING = 2
+    HOSTING = 3
+    JOINING = 4
+    SEARCHING_LADDER = 5
+    STARTING_AUTOMATCH = 6
 
 
 class Player:
@@ -142,7 +142,12 @@ class Player:
             "avatar": self.avatar,
             "country": self.country,
             "clan": self.clan,
-            "state": self.state.value if self.lobby_connection else "offline",
+            # NOTE: We are only sending an 'offline' state for now to signal to
+            # the client when a player disconnects. However, this could be
+            # expanded in the future to expose more of the internal state
+            # tracking to the client to make the UI for showing players in game
+            # more correct.
+            "state": None if self.lobby_connection else "offline",
             "ratings": {
                 rating_type: {
                     "rating": self.ratings[rating_type],

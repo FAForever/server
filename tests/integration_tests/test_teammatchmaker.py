@@ -583,7 +583,6 @@ async def test_ratings_initialized_based_on_global(lobby_server):
                 "login": "test",
                 "clan": "678",
                 "country": "",
-                "state": "idle",
                 "ratings": {
                     "global": {
                         "rating": [2000.0, 125.0],
@@ -621,7 +620,6 @@ async def test_ratings_initialized_based_on_global(lobby_server):
         "login": "test",
         "clan": "678",
         "country": "",
-        "state": "searching",
         "ratings": {
             "global": {
                 "rating": [2000.0, 125.0],

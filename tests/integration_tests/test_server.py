@@ -350,17 +350,23 @@ async def test_player_info_broadcast(lobby_server):
     await perform_login(p2, ("Rhiza", "puff_the_magic_dragon"))
 
     await read_until(
-        p2, lambda m: m["command"] == "player_info"
-        and any(map(lambda d: d["login"] == "test", m["players"]))
+        p2,
+        lambda m: (
+            m["command"] == "player_info"
+            and any(map(lambda d: d["login"] == "test", m["players"]))
+        )
     )
 
     await p1.close()
     await read_until(
-        p2, lambda m: m["command"] == "player_info"
-        and any(map(
-            lambda d: d["login"] == "test" and d["state"] == "offline",
-            m["players"]
-        ))
+        p2,
+        lambda m: (
+            m["command"] == "player_info"
+            and any(map(
+                lambda d: d["login"] == "test" and d.get("state") == "offline",
+                m["players"]
+            ))
+        )
     )
 
 
