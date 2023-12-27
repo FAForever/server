@@ -159,37 +159,37 @@ class Player:
         with suppress(DisconnectedError):
             self.lobby_connection.write(message)
 
-    def to_dict(self):
+    def to_dict(self) -&gt; dict:
         &#34;&#34;&#34;
         Return a dictionary representing this player object
         &#34;&#34;&#34;
+        assert self.state is not None and self.state.value is not None
 
-        def filter_none(t):
-            _, v = t
-            return v is not None
-
-        return dict(
-            filter(
-                filter_none, (
-                    (&#34;id&#34;, self.id),
-                    (&#34;login&#34;, self.login),
-                    (&#34;avatar&#34;, self.avatar),
-                    (&#34;country&#34;, self.country),
-                    (&#34;clan&#34;, self.clan),
-                    (&#34;ratings&#34;, {
-                        rating_type: {
-                            &#34;rating&#34;: self.ratings[rating_type],
-                            &#34;number_of_games&#34;: self.game_count[rating_type]
-                        }
-                        for rating_type in self.ratings
-                    }),
-                    # Deprecated
-                    (&#34;global_rating&#34;, self.ratings[RatingType.GLOBAL]),
-                    (&#34;ladder_rating&#34;, self.ratings[RatingType.LADDER_1V1]),
-                    (&#34;number_of_games&#34;, self.game_count[RatingType.GLOBAL]),
-                )
-            )
-        )
+        cmd = {
+            &#34;id&#34;: self.id,
+            &#34;login&#34;: self.login,
+            &#34;avatar&#34;: self.avatar,
+            &#34;country&#34;: self.country,
+            &#34;clan&#34;: self.clan,
+            # NOTE: We are only sending an &#39;offline&#39; state for now to signal to
+            # the client when a player disconnects. However, this could be
+            # expanded in the future to expose more of the internal state
+            # tracking to the client to make the UI for showing players in game
+            # more correct.
+            &#34;state&#34;: None if self.lobby_connection else &#34;offline&#34;,
+            &#34;ratings&#34;: {
+                rating_type: {
+                    &#34;rating&#34;: self.ratings[rating_type],
+                    &#34;number_of_games&#34;: self.game_count[rating_type]
+                }
+                for rating_type in self.ratings
+            },
+            # DEPRECATED: Use ratings instead
+            &#34;global_rating&#34;: self.ratings[RatingType.GLOBAL],
+            &#34;ladder_rating&#34;: self.ratings[RatingType.LADDER_1V1],
+            &#34;number_of_games&#34;: self.game_count[RatingType.GLOBAL],
+        }
+        return {k: v for k, v in cmd.items() if v is not None}
 
     def __str__(self) -&gt; str:
         return (f&#34;Player({self.login}, {self.id}, &#34;
@@ -330,37 +330,37 @@ information about players.</p></div>
         with suppress(DisconnectedError):
             self.lobby_connection.write(message)
 
-    def to_dict(self):
+    def to_dict(self) -&gt; dict:
         &#34;&#34;&#34;
         Return a dictionary representing this player object
         &#34;&#34;&#34;
+        assert self.state is not None and self.state.value is not None
 
-        def filter_none(t):
-            _, v = t
-            return v is not None
-
-        return dict(
-            filter(
-                filter_none, (
-                    (&#34;id&#34;, self.id),
-                    (&#34;login&#34;, self.login),
-                    (&#34;avatar&#34;, self.avatar),
-                    (&#34;country&#34;, self.country),
-                    (&#34;clan&#34;, self.clan),
-                    (&#34;ratings&#34;, {
-                        rating_type: {
-                            &#34;rating&#34;: self.ratings[rating_type],
-                            &#34;number_of_games&#34;: self.game_count[rating_type]
-                        }
-                        for rating_type in self.ratings
-                    }),
-                    # Deprecated
-                    (&#34;global_rating&#34;, self.ratings[RatingType.GLOBAL]),
-                    (&#34;ladder_rating&#34;, self.ratings[RatingType.LADDER_1V1]),
-                    (&#34;number_of_games&#34;, self.game_count[RatingType.GLOBAL]),
-                )
-            )
-        )
+        cmd = {
+            &#34;id&#34;: self.id,
+            &#34;login&#34;: self.login,
+            &#34;avatar&#34;: self.avatar,
+            &#34;country&#34;: self.country,
+            &#34;clan&#34;: self.clan,
+            # NOTE: We are only sending an &#39;offline&#39; state for now to signal to
+            # the client when a player disconnects. However, this could be
+            # expanded in the future to expose more of the internal state
+            # tracking to the client to make the UI for showing players in game
+            # more correct.
+            &#34;state&#34;: None if self.lobby_connection else &#34;offline&#34;,
+            &#34;ratings&#34;: {
+                rating_type: {
+                    &#34;rating&#34;: self.ratings[rating_type],
+                    &#34;number_of_games&#34;: self.game_count[rating_type]
+                }
+                for rating_type in self.ratings
+            },
+            # DEPRECATED: Use ratings instead
+            &#34;global_rating&#34;: self.ratings[RatingType.GLOBAL],
+            &#34;ladder_rating&#34;: self.ratings[RatingType.LADDER_1V1],
+            &#34;number_of_games&#34;: self.game_count[RatingType.GLOBAL],
+        }
+        return {k: v for k, v in cmd.items() if v is not None}
 
     def __str__(self) -&gt; str:
         return (f&#34;Player({self.login}, {self.id}, &#34;
@@ -509,7 +509,7 @@ such as "Moderator"</p></div>
 </details>
 </dd>
 <dt id="server.players.Player.to_dict"><code class="name flex">
-<span>def <span class="ident">to_dict</span></span>(<span>self)</span>
+<span>def <span class="ident">to_dict</span></span>(<span>self) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return a dictionary representing this player object</p></div>
@@ -517,37 +517,37 @@ such as "Moderator"</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def to_dict(self):
+<pre><code class="python">def to_dict(self) -&gt; dict:
     &#34;&#34;&#34;
     Return a dictionary representing this player object
     &#34;&#34;&#34;
+    assert self.state is not None and self.state.value is not None
 
-    def filter_none(t):
-        _, v = t
-        return v is not None
-
-    return dict(
-        filter(
-            filter_none, (
-                (&#34;id&#34;, self.id),
-                (&#34;login&#34;, self.login),
-                (&#34;avatar&#34;, self.avatar),
-                (&#34;country&#34;, self.country),
-                (&#34;clan&#34;, self.clan),
-                (&#34;ratings&#34;, {
-                    rating_type: {
-                        &#34;rating&#34;: self.ratings[rating_type],
-                        &#34;number_of_games&#34;: self.game_count[rating_type]
-                    }
-                    for rating_type in self.ratings
-                }),
-                # Deprecated
-                (&#34;global_rating&#34;, self.ratings[RatingType.GLOBAL]),
-                (&#34;ladder_rating&#34;, self.ratings[RatingType.LADDER_1V1]),
-                (&#34;number_of_games&#34;, self.game_count[RatingType.GLOBAL]),
-            )
-        )
-    )</code></pre>
+    cmd = {
+        &#34;id&#34;: self.id,
+        &#34;login&#34;: self.login,
+        &#34;avatar&#34;: self.avatar,
+        &#34;country&#34;: self.country,
+        &#34;clan&#34;: self.clan,
+        # NOTE: We are only sending an &#39;offline&#39; state for now to signal to
+        # the client when a player disconnects. However, this could be
+        # expanded in the future to expose more of the internal state
+        # tracking to the client to make the UI for showing players in game
+        # more correct.
+        &#34;state&#34;: None if self.lobby_connection else &#34;offline&#34;,
+        &#34;ratings&#34;: {
+            rating_type: {
+                &#34;rating&#34;: self.ratings[rating_type],
+                &#34;number_of_games&#34;: self.game_count[rating_type]
+            }
+            for rating_type in self.ratings
+        },
+        # DEPRECATED: Use ratings instead
+        &#34;global_rating&#34;: self.ratings[RatingType.GLOBAL],
+        &#34;ladder_rating&#34;: self.ratings[RatingType.LADDER_1V1],
+        &#34;number_of_games&#34;: self.game_count[RatingType.GLOBAL],
+    }
+    return {k: v for k, v in cmd.items() if v is not None}</code></pre>
 </details>
 </dd>
 <dt id="server.players.Player.write_message"><code class="name flex">
