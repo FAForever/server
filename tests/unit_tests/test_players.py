@@ -91,6 +91,7 @@ def test_serialize():
         "id": 42,
         "login": "Something",
         "clan": "TOAST",
+        "state": "offline",
         "ratings": {
             "global": {
                 "rating": (1234, 68),
@@ -105,6 +106,15 @@ def test_serialize():
         "ladder_rating": (1500, 230),
         "number_of_games": 542,
     }
+
+
+def test_serialize_state():
+    conn = mock.Mock()
+    p = Player(lobby_connection=conn)
+    assert "state" not in p.to_dict()
+
+    del p.lobby_connection
+    assert p.to_dict()["state"] == "offline"
 
 
 async def test_send_message():
