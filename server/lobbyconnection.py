@@ -964,7 +964,7 @@ class LobbyConnection:
 
         game_class = CoopGame if game_mode == FeaturedModType.COOP else CustomGame
 
-        game = self.game_service.create_game(
+        game = await self.game_service.create_game(
             visibility=visibility,
             game_mode=game_mode,
             game_class=game_class,
@@ -1048,11 +1048,6 @@ class LobbyConnection:
             "args": ["/numgames", self.player.game_count[game.rating_type]],
             "uid": game.id,
             "mod": game.game_mode,
-            # Following parameters may not be used by the client yet. They are
-            # needed for setting up auto-lobby style matches such as ladder, gw,
-            # and team machmaking where the server decides what these game
-            # options are. Currently, options for ladder are hardcoded into the
-            # client.
             "name": game.name,
             # DEPRICATED: init_mode can be inferred from game_type
             "init_mode": game.init_mode.value,

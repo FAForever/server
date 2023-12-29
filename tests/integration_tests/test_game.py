@@ -264,6 +264,98 @@ async def send_player_options(proto, *options):
         })
 
 
+async def send_game_options(proto, *options):
+    for option in options:
+        await proto.send_message({
+            "target": "game",
+            "command": "GameOption",
+            "args": list(option)
+        })
+
+
+@fast_forward(20)
+async def test_game_info_message_updates(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    game_id = await host_game(proto)
+    await read_until_command(proto, "game_info", uid=game_id, timeout=5)
+
+    await send_game_options(proto, ["Title", "Test GameOptions"])
+    msg = await read_until_command(proto, "game_info", uid=game_id, timeout=5)
+    assert msg["title"] == "Test GameOptions"
+
+    await send_game_options(proto, ["Slots", "7"])
+    msg = await read_until_command(proto, "game_info", uid=game_id, timeout=5)
+    assert msg["max_players"] == 7
+
+    await send_game_options(proto, ["ScenarioFile", "/maps/foobar/scenario.lua"])
+    msg = await read_until_command(proto, "game_info", uid=game_id, timeout=5)
+    assert msg["mapname"] == "foobar"
+    assert msg["map_file_path"] == "maps/foobar.zip"
+
+    await send_game_options(proto, ["RestrictedCategories", "1"])
+    msg = await read_until_command(proto, "game_info", uid=game_id, timeout=5)
+    assert "bad_unit_restrictions" in msg["validity"]
+
+    await send_game_options(proto, ["Unranked", "Yes"])
+    msg = await read_until_command(proto, "game_info", uid=game_id, timeout=5)
+    assert "host_set_unranked" in msg["validity"]
+
+    await send_game_options(proto, ["Victory", "eradication"])
+    msg = await read_until_command(proto, "game_info", uid=game_id, timeout=5)
+    assert "wrong_victory_condition" in msg["validity"]
+
+    # TODO: Some options don't need to trigger game info updates. Pruning these
+    # could help with performance and reduce network bandwidth
+
+
+@fast_forward(20)
+async def test_game_validity_states(lobby_server):
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    # Set up the game
+    game_id = await host_game(host_proto)
+    msg = await read_until_command(host_proto, "game_info", uid=game_id, timeout=5)
+    assert msg["validity"] == ["single_player"]
+
+    # The host configures themselves, causing them to show up as connected
+    await send_player_options(host_proto, [host_id, "Team", 1])
+    msg = await read_until_command(host_proto, "game_info", uid=game_id, timeout=5)
+    assert msg["validity"] == ["uneven_teams_not_ranked", "single_player"]
+
+    # Change the map to an unranked map
+    await send_game_options(host_proto, [
+        "ScenarioFile",
+        "/maps/neroxis_map_generator_sneaky_map/sneaky_map_scenario.lua"
+    ])
+    msg = await read_until_command(host_proto, "game_info", uid=game_id, timeout=5)
+    assert msg["validity"] == [
+        "bad_map",
+        "uneven_teams_not_ranked",
+        "single_player"
+    ]
+
+    # Another player joins
+    await join_game(guest_proto, game_id)
+    await send_player_options(host_proto, [guest_id, "Team", 1])
+    msg = await read_until_command(host_proto, "game_info", uid=game_id, timeout=5)
+    assert msg["validity"] == ["bad_map"]
+
+    # Change the map to a ranked map
+    await send_game_options(host_proto, [
+        "ScenarioFile",
+        "/maps/scmp_001/scmp_001_scenario.lua"
+    ])
+
+    msg = await read_until_command(host_proto, "game_info", uid=game_id, timeout=5)
+    assert msg["validity"] == ["valid"]
+
+
 @fast_forward(60)
 async def test_game_info_messages(lobby_server):
     host_id, _, host_proto = await connect_and_sign_in(

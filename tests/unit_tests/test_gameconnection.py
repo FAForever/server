@@ -23,8 +23,15 @@ from tests.utils import exhaust_callbacks
 
 
 @pytest.fixture
-async def real_game(event_loop, database, game_service, game_stats_service):
-    return Game(42, database, game_service, game_stats_service)
+async def real_game(database, game_service, game_stats_service):
+    game = Game(
+        42,
+        database,
+        game_service,
+        game_stats_service
+    )
+    await game.initialize()
+    return game
 
 
 def assert_message_sent(game_connection: GameConnection, command, args):
@@ -402,35 +409,51 @@ async def test_cannot_parse_game_results(
         assert "Invalid result" in caplog.messages[0]
 
 
-async def test_handle_action_GameOption(
-    game: Game,
-    game_connection: GameConnection
-):
-    game.gameOptions = {"AIReplacement": "Off"}
+# TODO: Convert this to test for game.set_game_option
+async def test_handle_action_GameOption(game, game_connection: GameConnection):
+    game.game_options = {"AIReplacement": "Off"}
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
-    assert game.gameOptions["Victory"] == Victory.SANDBOX
+    assert game.game_options["Victory"] == Victory.SANDBOX
     await game_connection.handle_action("GameOption", ["AIReplacement", "On"])
-    assert game.gameOptions["AIReplacement"] == "On"
+    assert game.game_options["AIReplacement"] == "On"
     await game_connection.handle_action("GameOption", ["Slots", "7"])
-    assert game.max_players == 7
-    # I don't know what these paths actually look like
-    await game_connection.handle_action("GameOption", ["ScenarioFile", "C:\\Maps\\Some_Map"])
-    assert game.map_file_path == "maps/some_map.zip"
+    assert game.game_options["Slots"] == 7
     await game_connection.handle_action("GameOption", ["Title", "All welcome"])
     assert game.name == "All welcome"
     await game_connection.handle_action("GameOption", ["ArbitraryKey", "ArbitraryValue"])
-    assert game.gameOptions["ArbitraryKey"] == "ArbitraryValue"
+    assert game.game_options["ArbitraryKey"] == "ArbitraryValue"
+
+
+async def test_handle_action_GameOption_ScenarioFile(
+    game,
+    game_connection: GameConnection
+):
+    # Valid example from a replay
+    await game_connection.handle_action(
+        "GameOption", ["ScenarioFile", "/maps/scmp_009/scmp_009_scenario.lua"]
+    )
+    assert game.map_file_path == "maps/scmp_009.zip"
+
+    # Examples that document behavior but might not make sense or be necessary
+    await game_connection.handle_action(
+        "GameOption", ["ScenarioFile", "C:\\Maps\\Some_Map"]
+    )
+    assert game.map_file_path == "maps/some_map.zip"
+    await game_connection.handle_action(
+        "GameOption", ["ScenarioFile", "/maps/'some map'/scenario.lua"]
+    )
+    assert game.map_file_path == "maps/some map.zip"
 
 
 async def test_handle_action_GameOption_not_host(
-    game: Game,
+    game,
     game_connection: GameConnection,
     players
 ):
     game_connection.player = players.joining
-    game.gameOptions = {"Victory": "asdf"}
+    game.game_options = {"Victory": "asdf"}
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
-    assert game.gameOptions == {"Victory": "asdf"}
+    assert game.game_options == {"Victory": "asdf"}
 
 
 async def test_json_stats(
@@ -596,7 +619,7 @@ async def test_handle_action_OperationComplete_invalid(
     coop_game: CoopGame, game_connection: GameConnection, database
 ):
     coop_game.map_file_path = "maps/prothyon16.v0005.zip"
-    coop_game.validity = ValidityState.OTHER_UNRANK
+    coop_game.get_validity.return_value = ValidityState.OTHER_UNRANK
     game_connection.game = coop_game
     time_taken = "09:08:07.654321"
 

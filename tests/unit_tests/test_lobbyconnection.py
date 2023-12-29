@@ -457,7 +457,6 @@ async def test_command_game_host_calls_host_game_invalid_title(
     lobbyconnection, mock_games, test_game_info_invalid
 ):
     lobbyconnection.send = mock.AsyncMock()
-    mock_games.create_game = mock.Mock()
     await lobbyconnection.on_message_received({
         "command": "game_host",
         **test_game_info_invalid

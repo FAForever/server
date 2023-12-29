@@ -4,7 +4,6 @@ Manages interactions between players and matchmakers
 import asyncio
 import json
 import random
-import re
 import statistics
 from collections import defaultdict
 from typing import Awaitable, Callable, Optional
@@ -520,7 +519,7 @@ class LadderService(Service):
                 raise RuntimeError(f"No map pool available for rating {rating}!")
             _, _, map_path, _ = pool.choose_map(played_map_ids)
 
-            game = self.game_service.create_game(
+            game = await self.game_service.create_game(
                 game_class=LadderGame,
                 game_mode=queue.featured_mod,
                 host=host,
@@ -559,17 +558,13 @@ class LadderService(Service):
 
             game_options = queue.get_game_options()
             if game_options:
-                game.gameOptions.update(game_options)
-
-            mapname = re.match("maps/(.+).zip", map_path).group(1)
-            # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
-            # Really in the future, just send a better description
+                game.game_options.update(game_options)
 
             self._logger.debug("Starting ladder game: %s", game)
 
             def make_game_options(player: Player) -> GameLaunchOptions:
                 return GameLaunchOptions(
-                    mapname=mapname,
+                    mapname=game.map_folder_name,
                     expected_players=len(all_players),
                     game_options=game_options,
                     team=game.get_player_option(player.id, "Team"),

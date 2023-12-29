@@ -21,10 +21,9 @@ from .games import (
     GameConnectionState,
     GameError,
     GameState,
-    ValidityState,
-    Victory
+    ValidityState
 )
-from .games.typedefs import FA
+from .games.typedefs import FA, Victory
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, GpgNetServerProtocol, Protocol
@@ -228,22 +227,24 @@ class GameConnection(GpgNetServerProtocol):
         if not self.is_host():
             return
 
+        # Type transformations
         if key == "Victory":
-            self.game.gameOptions["Victory"] = Victory.__members__.get(
-                value.upper(), None
-            )
-        else:
-            self.game.gameOptions[key] = value
+            value = Victory.__members__.get(value.upper())
+        elif key == "Slots":
+            value = int(value)
 
-        if key == "Slots":
-            self.game.max_players = int(value)
-        elif key == "ScenarioFile":
+        self.game.game_options[key] = value
+
+        # Additional attributes
+        if key == "ScenarioFile":
+            # TODO: What is the point of this transformation?
             raw = repr(value)
-            self.game.map_scenario_path = \
+            scenario_path = \
                 raw.replace("\\", "/").replace("//", "/").replace("'", "")
-            self.game.map_file_path = "maps/{}.zip".format(
-                self.game.map_scenario_path.split("/")[2].lower()
-            )
+            with contextlib.suppress(IndexError):
+                map_name = scenario_path.split("/")[2].lower()
+                self.game.map_file_path = f"maps/{map_name}.zip"
+                await self.game.update_map_info()
         elif key == "Title":
             with contextlib.suppress(ValueError):
                 self.game.name = value
@@ -332,7 +333,9 @@ class GameConnection(GpgNetServerProtocol):
             )
             return
 
-        if self.game.validity != ValidityState.COOP_NOT_RANKED:
+        validity = self.game.get_validity()
+        if validity is not ValidityState.COOP_NOT_RANKED:
+            self._logger.info("Game was not valid: %s", validity)
             return
 
         secondary, delta = secondary, str(delta)
@@ -471,10 +474,6 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         elif state == "Lobby":
-            # TODO: Do we still need to schedule with `ensure_future`?
-            #
-            # We do not yield from the task, since we
-            # need to keep processing other commands while it runs
             await self._handle_lobby_state()
 
         elif state == "Launching":

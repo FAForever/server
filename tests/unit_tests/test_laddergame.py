@@ -13,13 +13,15 @@ from tests.unit_tests.test_game import add_connected_players
 
 @pytest.fixture()
 async def laddergame(database, game_service, game_stats_service):
-    return LadderGame(
+    game = LadderGame(
         id_=465312,
         database=database,
         game_service=game_service,
         game_stats_service=game_stats_service,
         rating_type=RatingType.LADDER_1V1
     )
+    await game.initialize()
+    return game
 
 
 async def test_handle_game_closed_manually(laddergame, players):
@@ -128,7 +130,7 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
 
     await laddergame.game_service._rating_service._join_rating_queue()
 
-    assert laddergame.validity is ValidityState.VALID
+    assert laddergame.get_validity() is ValidityState.VALID
     assert players[0].ratings[RatingType.LADDER_1V1][0] > player_1_old_mean
     assert players[1].ratings[RatingType.LADDER_1V1][0] < player_2_old_mean
 
@@ -179,7 +181,7 @@ async def test_persist_rating_victory(laddergame: LadderGame, database,
 
     await laddergame.game_service._rating_service._join_rating_queue()
 
-    assert laddergame.validity is ValidityState.VALID
+    assert laddergame.get_validity() is ValidityState.VALID
 
     async with database.acquire() as conn:
         result_after = list(await conn.execute(str(compiled)))
