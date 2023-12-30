@@ -1056,7 +1056,7 @@ async def test_army_results_present_for_invalid_games(game: Game, game_add_playe
     game_results = await game.resolve_game_results()
     result_dict = game_results.to_dict()
 
-    assert result_dict["teams"][0]["outcome"] == "UNKNOWN"
+    assert result_dict["teams"][0]["outcome"] == "VICTORY"
     assert result_dict["teams"][0]["army_results"] == [
         {
             "player_id": 1,
@@ -1071,7 +1071,7 @@ async def test_army_results_present_for_invalid_games(game: Game, game_add_playe
             "metadata": [],
         },
     ]
-    assert result_dict["teams"][1]["outcome"] == "UNKNOWN"
+    assert result_dict["teams"][1]["outcome"] == "DEFEAT"
     assert result_dict["teams"][1]["army_results"] == [
         {
             "player_id": 3,

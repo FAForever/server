@@ -1216,6 +1216,8 @@ async def test_galactic_war_2v1_game_ended_broadcasts_army_results(lobby_server,
         "sim_mod_ids": [],
         "teams": [
             {
+                "outcome": "VICTORY",
+                "player_ids": [1, 3],
                 "army_results": [
                     {
                         "player_id": 1,
@@ -1230,10 +1232,10 @@ async def test_galactic_war_2v1_game_ended_broadcasts_army_results(lobby_server,
                         "metadata": ["recall"],
                     },
                 ],
-                "outcome": "UNKNOWN",
-                "player_ids": [1, 3]
             },
             {
+                "outcome": "DEFEAT",
+                "player_ids": [6],
                 "army_results": [
                     {
                         "player_id": 6,
@@ -1242,8 +1244,6 @@ async def test_galactic_war_2v1_game_ended_broadcasts_army_results(lobby_server,
                         "metadata": ["recall"],
                     },
                 ],
-                "outcome": "UNKNOWN",
-                "player_ids": [6]
             },
         ],
         "validity": "UNEVEN_TEAMS_NOT_RANKED",
