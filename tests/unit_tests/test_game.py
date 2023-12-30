@@ -161,9 +161,9 @@ async def test_ffa_not_rated(game, game_add_players):
     game_add_players(game, 5, team=1)
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
-    game.launched_at = time.time() - 60 * 20    # seconds
+    game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity == ValidityState.FFA_NOT_RANKED
+    assert game.validity is ValidityState.FFA_NOT_RANKED
 
 
 async def test_generated_map_is_rated(game, game_add_players):
@@ -174,7 +174,7 @@ async def test_generated_map_is_rated(game, game_add_players):
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity == ValidityState.VALID
+    assert game.validity is ValidityState.VALID
 
 
 async def test_unranked_generated_map_not_rated(game, game_add_players):
@@ -185,7 +185,18 @@ async def test_unranked_generated_map_not_rated(game, game_add_players):
     await game.add_result(0, 1, "victory", 5)
     game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity == ValidityState.BAD_MAP
+    assert game.validity is ValidityState.BAD_MAP
+
+
+async def test_unranked_mod_not_rated(game, game_add_players):
+    game.state = GameState.LOBBY
+    game_add_players(game, 2, team=1)
+    game.mods = {"mod-id": "Some mod"}
+    await game.launch()
+    await game.add_result(0, 1, "victory", 5)
+    game.launched_at = time.time() - 60 * 20  # seconds
+    await game.on_game_finish()
+    assert game.validity is ValidityState.BAD_MOD
 
 
 async def test_two_player_ffa_is_rated(game, game_add_players):
@@ -193,9 +204,9 @@ async def test_two_player_ffa_is_rated(game, game_add_players):
     game_add_players(game, 2, team=1)
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
-    game.launched_at = time.time() - 60 * 20    # seconds
+    game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity == ValidityState.VALID
+    assert game.validity is ValidityState.VALID
 
 
 async def test_multi_team_not_rated(game, game_add_players):
@@ -205,9 +216,9 @@ async def test_multi_team_not_rated(game, game_add_players):
     game_add_players(game, 2, team=4)
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
-    game.launched_at = time.time() - 60 * 20    # seconds
+    game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity == ValidityState.MULTI_TEAM
+    assert game.validity is ValidityState.MULTI_TEAM
 
 
 async def test_has_ai_players_not_rated(game, game_add_players):
@@ -227,9 +238,9 @@ async def test_has_ai_players_not_rated(game, game_add_players):
     }
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
-    game.launched_at = time.time() - 60 * 20    # seconds
+    game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity == ValidityState.HAS_AI_PLAYERS
+    assert game.validity is ValidityState.HAS_AI_PLAYERS
 
 
 async def test_uneven_teams_not_rated(game, game_add_players):
@@ -238,19 +249,30 @@ async def test_uneven_teams_not_rated(game, game_add_players):
     game_add_players(game, 3, team=3)
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
-    game.launched_at = time.time() - 60 * 20    # seconds
+    game.launched_at = time.time() - 60 * 20  # seconds
     await game.on_game_finish()
-    assert game.validity == ValidityState.UNEVEN_TEAMS_NOT_RANKED
+    assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
 
 async def test_single_team_not_rated(game, game_add_players):
     n_players = 4
     game.state = GameState.LOBBY
     game_add_players(game, n_players, team=2)
+    print(game._player_options)
     await game.launch()
     game.launched_at = time.time() - 60 * 20
     for i in range(n_players):
-        await game.add_result(0, i + 1, "victory", 5)
+        await game.add_result(0, i, "victory", 5)
+    await game.on_game_finish()
+    assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
+
+
+async def test_single_player_not_rated(game, game_add_players):
+    game.state = GameState.LOBBY
+    game_add_players(game, 1, team=1)
+    await game.launch()
+    game.launched_at = time.time() - 60 * 20
+    await game.add_result(0, 0, "victory", 5)
     await game.on_game_finish()
     assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
 
@@ -449,7 +471,9 @@ async def test_game_marked_dirty_when_timed_out(game: Game, game_service):
 
 
 async def test_clear_slot(
-    game: Game, mock_game_connection: GameConnection, player_factory
+    game: Game,
+    mock_game_connection: GameConnection,
+    player_factory,
 ):
     game.state = GameState.LOBBY
     players = [
@@ -1056,7 +1080,7 @@ async def test_army_results_present_for_invalid_games(game: Game, game_add_playe
     game_results = await game.resolve_game_results()
     result_dict = game_results.to_dict()
 
-    assert result_dict["teams"][0]["outcome"] == "UNKNOWN"
+    assert result_dict["teams"][0]["outcome"] == "VICTORY"
     assert result_dict["teams"][0]["army_results"] == [
         {
             "player_id": 1,
@@ -1071,7 +1095,7 @@ async def test_army_results_present_for_invalid_games(game: Game, game_add_playe
             "metadata": [],
         },
     ]
-    assert result_dict["teams"][1]["outcome"] == "UNKNOWN"
+    assert result_dict["teams"][1]["outcome"] == "DEFEAT"
     assert result_dict["teams"][1]["army_results"] == [
         {
             "player_id": 3,
