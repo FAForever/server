@@ -649,6 +649,8 @@ class Game:
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
             return
 
+        # TODO: This validity state seems to be impossible to get because it is
+        # already covered by UNEVEN_TEAMS_NOT_RANKED above.
         if len(self.players) < 2:
             await self.mark_invalid(ValidityState.SINGLE_PLAYER)
             return
@@ -706,8 +708,8 @@ class Game:
         assert self.host is not None
 
         async with self._db.acquire() as conn:
-            # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
-            # so, and grab the map id at the same time.
+            # Determine if the map is blacklisted, and invalidate the game for
+            # ranking purposes if so, and grab the map id at the same time.
             result = await conn.execute(
                 "SELECT id, ranked FROM map_version "
                 "WHERE lower(filename) = lower(:filename)",
