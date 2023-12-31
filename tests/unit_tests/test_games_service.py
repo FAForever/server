@@ -12,6 +12,7 @@ from server.games import (
     VisibilityState
 )
 from server.players import PlayerState
+from server.types import Map
 from tests.unit_tests.conftest import add_connected_player
 from tests.utils import fast_forward
 
@@ -37,6 +38,8 @@ async def test_graceful_shutdown(game_service):
     with pytest.raises(DisabledError):
         game_service.create_game(
             game_mode="faf",
+            map=Map(None, "SCMP_007"),
+
         )
 
 
@@ -66,7 +69,7 @@ async def test_create_game(players, game_service):
         game_mode="faf",
         host=players.hosting,
         name="Test",
-        mapname="SCMP_007",
+        map=Map(None, "SCMP_007"),
         password=None
     )
     assert game is not None
@@ -83,7 +86,7 @@ async def test_all_games(players, game_service):
         game_mode="faf",
         host=players.hosting,
         name="Test",
-        mapname="SCMP_007",
+        map=Map(None, "SCMP_007"),
         password=None
     )
     assert game in game_service.pending_games
@@ -110,7 +113,7 @@ async def test_create_game_other_gamemode(players, game_service):
         game_mode="labwars",
         host=players.hosting,
         name="Test",
-        mapname="SCMP_007",
+        map=Map(None, "SCMP_007"),
         password=None
     )
     assert game is not None
@@ -125,7 +128,7 @@ async def test_close_lobby_games(players, game_service):
         game_mode="faf",
         host=players.hosting,
         name="Test",
-        mapname="SCMP_007",
+        map=Map(None, "SCMP_007"),
         password=None
     )
     game.state = GameState.LOBBY

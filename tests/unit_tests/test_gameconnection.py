@@ -19,6 +19,7 @@ from server.games import (
 )
 from server.players import PlayerState
 from server.protocol import DisconnectedError
+from server.types import Map
 from tests.utils import exhaust_callbacks
 
 
@@ -140,13 +141,12 @@ async def test_handle_action_GameState_lobby_sends_HostGame(
     players
 ):
     game_connection.player = players.hosting
-    game.map_file_path = "maps/some_map.zip"
-    game.map_folder_name = "some_map"
+    game.map = Map(None, "some_map")
 
     await game_connection.handle_action("GameState", ["Lobby"])
     await exhaust_callbacks(event_loop)
 
-    assert_message_sent(game_connection, "HostGame", [game.map_folder_name])
+    assert_message_sent(game_connection, "HostGame", [game.map.folder_name])
 
 
 async def test_handle_action_GameState_lobby_calls_ConnectToHost(
@@ -160,8 +160,6 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(
     game_connection.player = players.joining
     players.joining.game = game
     game.host = players.hosting
-    game.map_file_path = "maps/some_map.zip"
-    game.map_folder_name = "some_map"
 
     await game_connection.handle_action("GameState", ["Lobby"])
     await exhaust_callbacks(event_loop)
@@ -183,8 +181,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     players.joining.game = game
 
     game.host = players.hosting
-    game.map_file_path = "maps/some_map.zip"
-    game.map_folder_name = "some_map"
+    game.map = Map(None, "some_map")
     peer_conn = mock.Mock()
     players.peer.game_connection = peer_conn
     game.connections = [peer_conn]
@@ -229,8 +226,7 @@ async def test_handle_action_GameState_lobby_calls_abort(
     players.joining.game = game
     game.host = players.hosting
     game.host.state = PlayerState.IDLE
-    game.map_file_path = "maps/some_map.zip"
-    game.map_folder_name = "some_map"
+    game.map = Map(None, "some_map")
 
     await game_connection.handle_action("GameState", ["Lobby"])
     await exhaust_callbacks(event_loop)
@@ -415,7 +411,7 @@ async def test_handle_action_GameOption(
     assert game.max_players == 7
     # I don't know what these paths actually look like
     await game_connection.handle_action("GameOption", ["ScenarioFile", "C:\\Maps\\Some_Map"])
-    assert game.map_file_path == "maps/some_map.zip"
+    assert game.map.file_path == "maps/some_map.zip"
     await game_connection.handle_action("GameOption", ["Title", "All welcome"])
     assert game.name == "All welcome"
     await game_connection.handle_action("GameOption", ["ArbitraryKey", "ArbitraryValue"])
@@ -525,7 +521,7 @@ async def test_handle_action_OperationComplete(
     database,
 ):
     coop_game.id = 1  # reuse existing corresponding game_stats row
-    coop_game.map_file_path = "maps/prothyon16.v0005.zip"
+    coop_game.map = Map(None, "prothyon16.v0005")
     game_connection.game = coop_game
     time_taken = "09:08:07.654321"
 
@@ -549,7 +545,7 @@ async def test_handle_action_OperationComplete(
 async def test_handle_action_OperationComplete_primary_incomplete(
     primary, coop_game: CoopGame, game_connection: GameConnection, database
 ):
-    coop_game.map_file_path = "maps/prothyon16.v0005.zip"
+    coop_game.map = Map(None, "prothyon16.v0005")
     game_connection.game = coop_game
     time_taken = "09:08:07.654321"
 
@@ -572,7 +568,7 @@ async def test_handle_action_OperationComplete_primary_incomplete(
 async def test_handle_action_OperationComplete_non_coop_game(
     ugame: Game, game_connection: GameConnection, database
 ):
-    ugame.map_file_path = "maps/prothyon16.v0005.zip"
+    ugame.map = Map(None, "prothyon16.v0005")
     game_connection.game = ugame
     time_taken = "09:08:07.654321"
 
@@ -595,7 +591,7 @@ async def test_handle_action_OperationComplete_non_coop_game(
 async def test_handle_action_OperationComplete_invalid(
     coop_game: CoopGame, game_connection: GameConnection, database
 ):
-    coop_game.map_file_path = "maps/prothyon16.v0005.zip"
+    coop_game.map = Map(None, "prothyon16.v0005")
     coop_game.validity = ValidityState.OTHER_UNRANK
     game_connection.game = coop_game
     time_taken = "09:08:07.654321"
@@ -619,7 +615,7 @@ async def test_handle_action_OperationComplete_invalid(
 async def test_handle_action_OperationComplete_duplicate(
     coop_game: CoopGame, game_connection: GameConnection, database, caplog
 ):
-    coop_game.map_file_path = "maps/prothyon16.v0005.zip"
+    coop_game.map = Map(None, "prothyon16.v0005")
     game_connection.game = coop_game
     time_taken = "09:08:07.654321"
 

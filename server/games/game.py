@@ -27,6 +27,7 @@ from server.games.game_results import (
 )
 from server.rating import InclusiveRange, RatingType
 from server.timing import datetime_now
+from server.types import MAP_DEFAULT, Map
 
 from ..players import Player, PlayerState
 from .typedefs import (
@@ -57,13 +58,13 @@ class Game:
 
     def __init__(
         self,
-        id_: int,
+        id: int,
         database: "FAFDatabase",
         game_service: "GameService",
         game_stats_service: "GameStatsService",
         host: Optional[Player] = None,
-        name: str = "None",
-        map_: str = "SCMP_007",
+        name: str = "New Game",
+        map: Map = MAP_DEFAULT,
         game_mode: str = FeaturedModType.FAF,
         matchmaker_queue_id: Optional[int] = None,
         rating_type: Optional[str] = None,
@@ -72,8 +73,9 @@ class Game:
         max_players: int = 12,
         setup_timeout: int = 60,
     ):
+        self.id = id
         self._db = database
-        self._results = GameResultReports(id_)
+        self._results = GameResultReports(id)
         self._army_stats_list = []
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
@@ -83,16 +85,13 @@ class Game:
         self.launched_at = None
         self.finished = False
         self._logger = logging.getLogger(
-            f"{self.__class__.__qualname__}.{id_}"
+            f"{self.__class__.__qualname__}.{id}"
         )
-        self.id = id_
         self.visibility = VisibilityState.PUBLIC
         self.max_players = max_players
         self.host = host
         self.name = name
-        self.map_id = None
-        self.map_file_path = f"maps/{map_}.zip"
-        self.map_scenario_path = None
+        self.map = map
         self.password = None
         self._players_at_launch: list[Player] = []
         self.AIs = {}
@@ -558,7 +557,7 @@ class Game:
         return BasicGameInfo(
             self.id,
             self.rating_type,
-            self.map_id,
+            self.map.id,
             self.game_mode,
             list(self.mods.keys()),
             self.get_team_sets(),
@@ -707,25 +706,10 @@ class Game:
         """
         assert self.host is not None
 
-        async with self._db.acquire() as conn:
-            # Determine if the map is blacklisted, and invalidate the game for
-            # ranking purposes if so, and grab the map id at the same time.
-            result = await conn.execute(
-                "SELECT id, ranked FROM map_version "
-                "WHERE lower(filename) = lower(:filename)",
-                filename=self.map_file_path
-            )
-            row = result.fetchone()
+        # Ensure map data is up to date
+        self.map = await self.game_service.get_map(self.map.folder_name)
 
-        is_generated = (self.map_file_path and "neroxis_map_generator" in self.map_file_path)
-
-        if row:
-            self.map_id = row.id
-
-        if (
-            self.validity is ValidityState.VALID
-            and ((row and not row.ranked) or (not row and not is_generated))
-        ):
+        if self.validity is ValidityState.VALID and not self.map.ranked:
             await self.mark_invalid(ValidityState.BAD_MAP)
 
         modId = self.game_service.featured_mods[self.game_mode].id
@@ -743,7 +727,7 @@ class Game:
                     gameType=game_type,
                     gameMod=modId,
                     host=self.host.id,
-                    mapId=self.map_id,
+                    mapId=self.map.id,
                     gameName=self.name,
                     validity=self.validity.value,
                 )
@@ -893,8 +877,8 @@ class Game:
             "game_type": self.game_type.value,
             "featured_mod": self.game_mode,
             "sim_mods": self.mods,
-            "mapname": self.map_folder_name,
-            "map_file_path": self.map_file_path,
+            "mapname": self.map.folder_name,
+            "map_file_path": self.map.file_path,
             "host": self.host.login if self.host else "",
             "num_players": len(connected_players),
             "max_players": self.max_players,
@@ -923,19 +907,6 @@ class Game:
             }
         }
 
-    @property
-    def map_folder_name(self) -> str:
-        """
-        Map folder name
-        """
-        try:
-            return str(self.map_scenario_path.split("/")[2]).lower()
-        except (IndexError, AttributeError):
-            if self.map_file_path:
-                return self.map_file_path[5:-4].lower()
-            else:
-                return "scmp_009"
-
     def __eq__(self, other):
         if not isinstance(other, Game):
             return False
@@ -948,5 +919,5 @@ class Game:
     def __str__(self) -> str:
         return (
             f"Game({self.id}, {self.host.login if self.host else ''}, "
-            f"{self.map_file_path})"
+            f"{self.map.file_path})"
         )

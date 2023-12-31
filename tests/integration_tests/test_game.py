@@ -60,10 +60,11 @@ async def setup_game_1v1(
     host_id: int,
     guest_proto: Protocol,
     guest_id: int,
-    mod: str = "faf"
+    mod: str = "faf",
+    **kwargs,
 ):
     # Set up the game
-    game_id = await host_game(host_proto, mod=mod)
+    game_id = await host_game(host_proto, mod=mod, **kwargs)
     await join_game(guest_proto, game_id)
     # Set player options
     await send_player_options(
@@ -483,6 +484,70 @@ async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
     # There should be no further updates
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(mq_proto_all.read_message(), timeout=10)
+
+
+@fast_forward(60)
+async def test_neroxis_map_generator_rates_game(lobby_server):
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(guest_proto, "game_info")
+    ratings = await get_player_ratings(host_proto, "test", "Rhiza")
+
+    await setup_game_1v1(
+        host_proto,
+        host_id,
+        guest_proto,
+        guest_id,
+        mapname="neroxis_map_generator_1.9.0_vtz4hwq7uqsj2_byiaeaati43euqd7cq",
+    )
+    await host_proto.send_message({
+        "target": "game",
+        "command": "EnforceRating",
+        "args": []
+    })
+
+    # End the game
+    # Reports results
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [1, "victory 10"]
+        })
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [2, "defeat -10"]
+        })
+    # Report GameEnded
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameEnded",
+            "args": []
+        })
+
+    # Check that the ratings were updated
+    new_ratings = await get_player_ratings(host_proto, "test", "Rhiza")
+
+    assert ratings["test"][0] < new_ratings["test"][0]
+    assert ratings["Rhiza"][0] > new_ratings["Rhiza"][0]
+
+    # Now disconnect both players
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Ended"]
+        })
+
+    # The game should only be rated once
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(host_proto, "player_info", timeout=10)
 
 
 @fast_forward(30)

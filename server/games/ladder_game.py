@@ -27,8 +27,8 @@ class LadderGame(Game):
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
 
-    def __init__(self, id_, *args, **kwargs):
-        super().__init__(id_, *args, **kwargs)
+    def __init__(self, id, *args, **kwargs):
+        super().__init__(id, *args, **kwargs)
         self._launch_future = asyncio.Future()
 
     async def wait_hosted(self, timeout: float):

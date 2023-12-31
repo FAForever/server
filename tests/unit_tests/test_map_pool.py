@@ -24,30 +24,30 @@ def map_pool_factory():
 
 def test_choose_map(map_pool_factory):
     map_pool = map_pool_factory(maps=[
-        Map(1, "some_map", "maps/some_map.v001.zip"),
-        Map(2, "some_map", "maps/some_map.v001.zip"),
-        Map(3, "some_map", "maps/some_map.v001.zip"),
-        Map(4, "CHOOSE_ME", "maps/choose_me.v001.zip"),
+        Map(1, "some_map.v001"),
+        Map(2, "some_map.v001"),
+        Map(3, "some_map.v001"),
+        Map(4, "choose_me.v001"),
     ])
 
     # Make the probability very low that the test passes because we got lucky
     for _ in range(20):
         chosen_map = map_pool.choose_map([1, 2, 3])
-        assert chosen_map == (4, "CHOOSE_ME", "maps/choose_me.v001.zip", 1)
+        assert chosen_map == Map(4, "choose_me.v001")
 
 
 def test_choose_map_with_weights(map_pool_factory):
     map_pool = map_pool_factory(maps=[
-        Map(1, "some_map", "maps/some_map.v001.zip", 1),
-        Map(2, "some_map", "maps/some_map.v001.zip", 1),
-        Map(3, "some_map", "maps/some_map.v001.zip", 1),
-        Map(4, "CHOOSE_ME", "maps/choose_me.v001.zip", 10000000),
+        Map(1, "some_map.v001", weight=1),
+        Map(2, "some_map.v001", weight=1),
+        Map(3, "some_map.v001", weight=1),
+        Map(4, "choose_me.v001", weight=10000000),
     ])
 
     # Make the probability very low that the test passes because we got lucky
     for _ in range(20):
         chosen_map = map_pool.choose_map()
-        assert chosen_map == (4, "CHOOSE_ME", "maps/choose_me.v001.zip", 10000000)
+        assert chosen_map == Map(4, "choose_me.v001", weight=10000000)
 
 
 def test_choose_map_generated_map(map_pool_factory):
@@ -74,16 +74,23 @@ def test_choose_map_generated_map(map_pool_factory):
     seed_match = "[0-9a-z]{13}"
 
     assert chosen_map.id == map_id
-    assert re.match(f"maps/neroxis_map_generator_{version}_{seed_match}_{option_str}.zip", chosen_map.path)
-    assert re.match(f"neroxis_map_generator_{version}_{seed_match}_{option_str}", chosen_map.name)
+    assert re.match(
+        f"maps/neroxis_map_generator_{version}_{seed_match}_{option_str}.zip",
+        chosen_map.file_path,
+    )
+    assert re.match(
+        f"neroxis_map_generator_{version}_{seed_match}_{option_str}",
+        chosen_map.folder_name,
+    )
+    assert chosen_map.ranked is True
     assert chosen_map.weight == 1
 
 
 def test_choose_map_all_maps_played(map_pool_factory):
     maps = [
-        Map(1, "some_map", "maps/some_map.v001.zip"),
-        Map(2, "some_map", "maps/some_map.v001.zip"),
-        Map(3, "some_map", "maps/some_map.v001.zip"),
+        Map(1, "some_map.v001"),
+        Map(2, "some_map.v001"),
+        Map(3, "some_map.v001"),
     ]
     map_pool = map_pool_factory(maps=maps)
 
@@ -95,9 +102,9 @@ def test_choose_map_all_maps_played(map_pool_factory):
 
 def test_choose_map_all_played_but_generated_map_doesnt_dominate(map_pool_factory):
     maps = [
-        Map(1, "some_map", "maps/some_map.v001.zip", 1000000),
-        Map(2, "some_map", "maps/some_map.v001.zip", 1000000),
-        Map(3, "some_map", "maps/some_map.v001.zip", 1000000),
+        Map(1, "some_map.v001", weight=1000000),
+        Map(2, "some_map.v001", weight=1000000),
+        Map(3, "some_map.v001", weight=1000000),
         NeroxisGeneratedMap.of({
             "version": "0.0.0",
             "spawns": 2,
@@ -118,9 +125,9 @@ def test_choose_map_all_played_but_generated_map_doesnt_dominate(map_pool_factor
 
 def test_choose_map_all_maps_played_not_in_pool(map_pool_factory):
     maps = [
-        Map(1, "some_map", "maps/some_map.v001.zip"),
-        Map(2, "some_map", "maps/some_map.v001.zip"),
-        Map(3, "some_map", "maps/some_map.v001.zip"),
+        Map(1, "some_map.v001"),
+        Map(2, "some_map.v001"),
+        Map(3, "some_map.v001"),
     ]
     map_pool = map_pool_factory(maps=maps)
 
@@ -143,7 +150,7 @@ def test_choose_map_all_maps_played_returns_least_played(map_pool_factory):
     ]
 
     maps = [
-        Map(i + 1, "some_map", "maps/some_map.v001.zip") for i in range(num_maps)
+        Map(i + 1, "some_map.v001") for i in range(num_maps)
     ]
     # Shuffle the list so that `choose_map` can't just return the first map
     random.shuffle(maps)
@@ -152,19 +159,19 @@ def test_choose_map_all_maps_played_returns_least_played(map_pool_factory):
     chosen_map = map_pool.choose_map(played_map_ids)
 
     # Map 1 was played only once
-    assert chosen_map == (1, "some_map", "maps/some_map.v001.zip", 1)
+    assert chosen_map == Map(1, "some_map.v001")
 
 
 @given(history=st.lists(st.integers()))
 def test_choose_map_single_map(map_pool_factory, history):
     map_pool = map_pool_factory(maps=[
-        Map(1, "CHOOSE_ME", "maps/choose_me.v001.zip"),
+        Map(1, "choose_me.v001"),
     ])
 
     # Make the probability very low that the test passes because we got lucky
     for _ in range(20):
         chosen_map = map_pool.choose_map(history)
-        assert chosen_map == (1, "CHOOSE_ME", "maps/choose_me.v001.zip", 1)
+        assert chosen_map == Map(1, "choose_me.v001")
 
 
 def test_choose_map_raises_on_empty_map_pool(map_pool_factory):

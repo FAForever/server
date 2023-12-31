@@ -242,7 +242,7 @@ async def test_command_game_host_creates_game(
         "host": players.hosting,
         "visibility": VisibilityState.PUBLIC,
         "password": test_game_info["password"],
-        "mapname": test_game_info["mapname"],
+        "map": await mock_games.get_map(test_game_info["mapname"]),
         "rating_type": RatingType.GLOBAL,
         "displayed_rating_range": InclusiveRange(None, None),
         "enforce_rating_range": False

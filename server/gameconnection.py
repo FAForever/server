@@ -134,7 +134,7 @@ class GameConnection(GpgNetServerProtocol):
         """
         player_state = self.player.state
         if player_state == PlayerState.HOSTING:
-            await self.send_HostGame(self.game.map_folder_name)
+            await self.send_HostGame(self.game.map.folder_name)
             self.game.set_hosted()
         # If the player is joining, we connect him to host
         # followed by the rest of the players.
@@ -239,11 +239,9 @@ class GameConnection(GpgNetServerProtocol):
             self.game.max_players = int(value)
         elif key == "ScenarioFile":
             raw = repr(value)
-            self.game.map_scenario_path = \
-                raw.replace("\\", "/").replace("//", "/").replace("'", "")
-            self.game.map_file_path = "maps/{}.zip".format(
-                self.game.map_scenario_path.split("/")[2].lower()
-            )
+            map_scenario_path = raw.replace("\\", "/").replace("//", "/").replace("'", "")
+            map_folder_name = map_scenario_path.split("/")[2].lower()
+            self.game.map = await self.game_service.get_map(map_folder_name)
         elif key == "Title":
             with contextlib.suppress(ValueError):
                 self.game.name = value
@@ -339,13 +337,13 @@ class GameConnection(GpgNetServerProtocol):
         async with self._db.acquire() as conn:
             result = await conn.execute(
                 select(coop_map.c.id).where(
-                    coop_map.c.filename == self.game.map_file_path
+                    coop_map.c.filename == self.game.map.file_path
                 )
             )
             row = result.fetchone()
             if not row:
                 self._logger.debug(
-                    "can't find coop map: %s", self.game.map_file_path
+                    "can't find coop map: %s", self.game.map.file_path
                 )
                 return
             mission = row.id

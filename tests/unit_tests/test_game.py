@@ -22,6 +22,7 @@ from server.games import (
 from server.games.game_results import ArmyOutcome
 from server.games.typedefs import FeaturedModType
 from server.rating import InclusiveRange, RatingType
+from server.types import Map
 from tests.unit_tests.conftest import (
     add_connected_player,
     add_connected_players,
@@ -168,7 +169,11 @@ async def test_ffa_not_rated(game, game_add_players):
 
 async def test_generated_map_is_rated(game, game_add_players):
     game.state = GameState.LOBBY
-    game.map_file_path = "maps/neroxis_map_generator_1.0.0_1234.zip"
+    game.map = Map(
+        None,
+        "neroxis_map_generator_1.0.0_23g6m_aiea",
+        ranked=True
+    )
     game_add_players(game, 2, team=1)
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
@@ -179,7 +184,7 @@ async def test_generated_map_is_rated(game, game_add_players):
 
 async def test_unranked_generated_map_not_rated(game, game_add_players):
     game.state = GameState.LOBBY
-    game.map_file_path = "maps/neroxis_map_generator_sneaky_map.zip"
+    game.map = Map(None, "neroxis_map_generator_sneaky_map")
     game_add_players(game, 2, team=1)
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
@@ -643,8 +648,8 @@ async def test_to_dict(game, player_factory):
         "state": "playing",
         "featured_mod": game.game_mode,
         "sim_mods": game.mods,
-        "mapname": game.map_folder_name,
-        "map_file_path": game.map_file_path,
+        "mapname": game.map.folder_name,
+        "map_file_path": game.map.file_path,
         "host": game.host.login,
         "num_players": len(game.players),
         "max_players": game.max_players,
@@ -1010,7 +1015,7 @@ async def test_game_results(game: Game, players):
             }
         ]
     assert result_dict["game_id"] == game.id
-    assert result_dict["map_id"] == game.map_id
+    assert result_dict["map_id"] == game.map.id
     assert result_dict["featured_mod"] == "faf"
     assert result_dict["sim_mod_ids"] == []
 

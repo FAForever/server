@@ -952,6 +952,7 @@ class LobbyConnection:
 
         mod = message.get("mod") or FeaturedModType.FAF
         mapname = message.get("mapname") or "scmp_007"
+        game_map = await self.game_service.get_map(mapname)
         password = message.get("password")
         game_mode = mod.lower()
         rating_min = message.get("rating_min")
@@ -970,7 +971,7 @@ class LobbyConnection:
             game_class=game_class,
             host=self.player,
             name=title,
-            mapname=mapname,
+            map=game_map,
             password=password,
             rating_type=RatingType.GLOBAL,
             displayed_rating_range=InclusiveRange(rating_min, rating_max),
