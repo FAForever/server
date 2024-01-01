@@ -63,7 +63,9 @@ class BanError(Exception):
     def message(self):
         return (
             f&#34;You are banned from FAF {self._ban_duration_text()}. &lt;br&gt;&#34;
-            f&#34;Reason: &lt;br&gt;{self.ban_reason}&#34;
+            f&#34;Reason: &lt;br&gt;{self.ban_reason}&lt;br&gt;&lt;br&gt;&#34;
+            &#34;&lt;i&gt;If you would like to appeal this ban, please send an email to: &#34;
+            &#34;moderation@faforever.com&lt;/i&gt;&#34;
         )
 
     def _ban_duration_text(self):
@@ -152,7 +154,9 @@ class DisabledError(Exception):
     def message(self):
         return (
             f&#34;You are banned from FAF {self._ban_duration_text()}. &lt;br&gt;&#34;
-            f&#34;Reason: &lt;br&gt;{self.ban_reason}&#34;
+            f&#34;Reason: &lt;br&gt;{self.ban_reason}&lt;br&gt;&lt;br&gt;&#34;
+            &#34;&lt;i&gt;If you would like to appeal this ban, please send an email to: &#34;
+            &#34;moderation@faforever.com&lt;/i&gt;&#34;
         )
 
     def _ban_duration_text(self):
@@ -184,7 +188,9 @@ class DisabledError(Exception):
 <pre><code class="python">def message(self):
     return (
         f&#34;You are banned from FAF {self._ban_duration_text()}. &lt;br&gt;&#34;
-        f&#34;Reason: &lt;br&gt;{self.ban_reason}&#34;
+        f&#34;Reason: &lt;br&gt;{self.ban_reason}&lt;br&gt;&lt;br&gt;&#34;
+        &#34;&lt;i&gt;If you would like to appeal this ban, please send an email to: &#34;
+        &#34;moderation@faforever.com&lt;/i&gt;&#34;
     )</code></pre>
 </details>
 </dd>
