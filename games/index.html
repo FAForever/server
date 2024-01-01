@@ -35,7 +35,7 @@ from typing import NamedTuple
 
 from .coop import CoopGame
 from .custom_game import CustomGame
-from .game import Game, GameError
+from .game import Game, GameError, GameOptions
 from .ladder_game import LadderGame
 from .typedefs import (
     FeaturedModType,
@@ -66,6 +66,7 @@ __all__ = (
     &#34;Game&#34;,
     &#34;GameConnectionState&#34;,
     &#34;GameError&#34;,
+    &#34;GameOptions&#34;,
     &#34;GameState&#34;,
     &#34;GameType&#34;,
     &#34;InitMode&#34;,
@@ -132,7 +133,7 @@ __all__ = (
         super().__init__(*args, **kwargs)
 
         self.validity = ValidityState.COOP_NOT_RANKED
-        self.gameOptions.update({
+        self.game_options.update({
             &#34;Victory&#34;: Victory.SANDBOX,
             &#34;TeamSpawn&#34;: &#34;fixed&#34;,
             &#34;RevealedCivilians&#34;: &#34;No&#34;,
@@ -233,7 +234,6 @@ __all__ = (
 <li><code><a title="server.games.game.Game.is_visible_to_player" href="game.html#server.games.game.Game.is_visible_to_player">is_visible_to_player</a></code></li>
 <li><code><a title="server.games.game.Game.launch" href="game.html#server.games.game.Game.launch">launch</a></code></li>
 <li><code><a title="server.games.game.Game.load_results" href="game.html#server.games.game.Game.load_results">load_results</a></code></li>
-<li><code><a title="server.games.game.Game.map_folder_name" href="game.html#server.games.game.Game.map_folder_name">map_folder_name</a></code></li>
 <li><code><a title="server.games.game.Game.persist_results" href="game.html#server.games.game.Game.persist_results">persist_results</a></code></li>
 <li><code><a title="server.games.game.Game.players" href="game.html#server.games.game.Game.players">players</a></code></li>
 <li><code><a title="server.games.game.Game.remove_game_connection" href="game.html#server.games.game.Game.remove_game_connection">remove_game_connection</a></code></li>
@@ -249,7 +249,7 @@ __all__ = (
 </dd>
 <dt id="server.games.CustomGame"><code class="flex name class">
 <span>class <span class="ident">CustomGame</span></span>
-<span>(</span><span>id_, *args, **kwargs)</span>
+<span>(</span><span>id, *args, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Object that lasts for the lifetime of a game on FAF.</p></div>
@@ -262,13 +262,13 @@ class CustomGame(Game):
     init_mode = InitMode.NORMAL_LOBBY
     game_type = GameType.CUSTOM
 
-    def __init__(self, id_, *args, **kwargs):
+    def __init__(self, id, *args, **kwargs):
         new_kwargs = {
             &#34;rating_type&#34;: RatingType.GLOBAL,
             &#34;setup_timeout&#34;: 30
         }
         new_kwargs.update(kwargs)
-        super().__init__(id_, *args, **new_kwargs)
+        super().__init__(id, *args, **new_kwargs)
 
     async def _run_pre_rate_validity_checks(self):
         limit = len(self.players) * 60
@@ -304,7 +304,6 @@ class CustomGame(Game):
 <li><code><a title="server.games.game.Game.is_visible_to_player" href="game.html#server.games.game.Game.is_visible_to_player">is_visible_to_player</a></code></li>
 <li><code><a title="server.games.game.Game.launch" href="game.html#server.games.game.Game.launch">launch</a></code></li>
 <li><code><a title="server.games.game.Game.load_results" href="game.html#server.games.game.Game.load_results">load_results</a></code></li>
-<li><code><a title="server.games.game.Game.map_folder_name" href="game.html#server.games.game.Game.map_folder_name">map_folder_name</a></code></li>
 <li><code><a title="server.games.game.Game.persist_results" href="game.html#server.games.game.Game.persist_results">persist_results</a></code></li>
 <li><code><a title="server.games.game.Game.players" href="game.html#server.games.game.Game.players">players</a></code></li>
 <li><code><a title="server.games.game.Game.remove_game_connection" href="game.html#server.games.game.Game.remove_game_connection">remove_game_connection</a></code></li>
@@ -410,7 +409,7 @@ class CustomGame(Game):
 </dd>
 <dt id="server.games.Game"><code class="flex name class">
 <span>class <span class="ident">Game</span></span>
-<span>(</span><span>id_: int, database: FAFDatabase, game_service: GameService, game_stats_service: GameStatsService, host: Optional[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>] = None, name: str = 'None', map_: str = 'SCMP_007', game_mode: str = 'faf', matchmaker_queue_id: Optional[int] = None, rating_type: Optional[str] = None, displayed_rating_range: Optional[<a title="server.rating.InclusiveRange" href="../rating.html#server.rating.InclusiveRange">InclusiveRange</a>] = None, enforce_rating_range: bool = False, max_players: int = 12, setup_timeout: int = 60)</span>
+<span>(</span><span>id: int, database: FAFDatabase, game_service: GameService, game_stats_service: GameStatsService, host: Optional[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>] = None, name: str = 'New Game', map: <a title="server.types.Map" href="../types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1), game_mode: str = 'faf', matchmaker_queue_id: Optional[int] = None, rating_type: Optional[str] = None, displayed_rating_range: Optional[<a title="server.rating.InclusiveRange" href="../rating.html#server.rating.InclusiveRange">InclusiveRange</a>] = None, enforce_rating_range: bool = False, max_players: int = 12, setup_timeout: int = 60)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Object that lasts for the lifetime of a game on FAF.</p></div>
@@ -427,13 +426,13 @@ class CustomGame(Game):
 
     def __init__(
         self,
-        id_: int,
+        id: int,
         database: &#34;FAFDatabase&#34;,
         game_service: &#34;GameService&#34;,
         game_stats_service: &#34;GameStatsService&#34;,
         host: Optional[Player] = None,
-        name: str = &#34;None&#34;,
-        map_: str = &#34;SCMP_007&#34;,
+        name: str = &#34;New Game&#34;,
+        map: Map = MAP_DEFAULT,
         game_mode: str = FeaturedModType.FAF,
         matchmaker_queue_id: Optional[int] = None,
         rating_type: Optional[str] = None,
@@ -442,8 +441,9 @@ class CustomGame(Game):
         max_players: int = 12,
         setup_timeout: int = 60,
     ):
+        self.id = id
         self._db = database
-        self._results = GameResultReports(id_)
+        self._results = GameResultReports(id)
         self._army_stats_list = []
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
@@ -453,16 +453,12 @@ class CustomGame(Game):
         self.launched_at = None
         self.finished = False
         self._logger = logging.getLogger(
-            f&#34;{self.__class__.__qualname__}.{id_}&#34;
+            f&#34;{self.__class__.__qualname__}.{id}&#34;
         )
-        self.id = id_
         self.visibility = VisibilityState.PUBLIC
-        self.max_players = max_players
         self.host = host
         self.name = name
-        self.map_id = None
-        self.map_file_path = f&#34;maps/{map_}.zip&#34;
-        self.map_scenario_path = None
+        self.map = map
         self.password = None
         self._players_at_launch: list[Player] = []
         self.AIs = {}
@@ -477,18 +473,29 @@ class CustomGame(Game):
         self._connections = {}
         self._configured_player_ids: set[int] = set()
         self.enforce_rating = False
-        self.gameOptions = {
-            &#34;FogOfWar&#34;: &#34;explored&#34;,
-            &#34;GameSpeed&#34;: &#34;normal&#34;,
-            &#34;Victory&#34;: Victory.DEMORALIZATION,
-            &#34;CheatsEnabled&#34;: &#34;false&#34;,
-            &#34;PrebuiltUnits&#34;: &#34;Off&#34;,
-            &#34;NoRushOption&#34;: &#34;Off&#34;,
-            &#34;TeamLock&#34;: &#34;locked&#34;,
-            &#34;AIReplacement&#34;: &#34;Off&#34;,
-            &#34;RestrictedCategories&#34;: 0,
-            &#34;Unranked&#34;: &#34;No&#34;
-        }
+        self.game_options = GameOptions(
+            id,
+            {
+                &#34;AIReplacement&#34;: &#34;Off&#34;,
+                &#34;CheatsEnabled&#34;: &#34;false&#34;,
+                &#34;FogOfWar&#34;: &#34;explored&#34;,
+                &#34;GameSpeed&#34;: &#34;normal&#34;,
+                &#34;NoRushOption&#34;: &#34;Off&#34;,
+                &#34;PrebuiltUnits&#34;: &#34;Off&#34;,
+                &#34;RestrictedCategories&#34;: 0,
+                &#34;ScenarioFile&#34;: (pathlib.PurePath(map.scenario_file)),
+                &#34;Slots&#34;: max_players,
+                &#34;TeamLock&#34;: &#34;locked&#34;,
+                &#34;Unranked&#34;: &#34;No&#34;,
+                &#34;Victory&#34;: Victory.DEMORALIZATION,
+            }
+        )
+        self.game_options.add_async_callback(
+            &#34;ScenarioFile&#34;,
+            self.on_scenario_file_changed,
+        )
+        self.game_options.add_callback(&#34;Title&#34;, self.on_title_changed)
+
         self.mods = {}
         self._hosted_future = asyncio.Future()
         self._finish_lock = asyncio.Lock()
@@ -502,6 +509,18 @@ class CustomGame(Game):
             self._logger.debug(&#34;Game setup timed out, cancelling game&#34;)
             await self.on_game_finish()
 
+    async def on_scenario_file_changed(self, scenario_path: pathlib.PurePath):
+        try:
+            map_folder_name = scenario_path.parts[2].lower()
+        except IndexError:
+            return
+
+        self.map = await self.game_service.get_map(map_folder_name)
+
+    def on_title_changed(self, title: str):
+        with contextlib.suppress(ValueError):
+            self.name = title
+
     @property
     def name(self):
         return self._name
@@ -511,8 +530,13 @@ class CustomGame(Game):
         &#34;&#34;&#34;
         Verifies that names only contain ascii characters.
         &#34;&#34;&#34;
+        value = value.strip()
+
         if not value.isascii():
-            raise ValueError(&#34;Name must be ascii!&#34;)
+            raise ValueError(&#34;Game title must be ascii!&#34;)
+
+        if not value:
+            raise ValueError(&#34;Game title must not be empty!&#34;)
 
         self.set_name_unchecked(value)
 
@@ -524,6 +548,10 @@ class CustomGame(Game):
         &#34;&#34;&#34;
         max_len = game_stats.c.gameName.type.length
         self._name = value[:max_len]
+
+    @property
+    def max_players(self) -&gt; int:
+        return self.game_options[&#34;Slots&#34;]
 
     @property
     def armies(self) -&gt; frozenset[int]:
@@ -697,13 +725,11 @@ class CustomGame(Game):
         try:
             if (
                 len(self._army_stats_list) == 0
-                or self.gameOptions[&#34;CheatsEnabled&#34;] != &#34;false&#34;
+                or self.game_options[&#34;CheatsEnabled&#34;] != &#34;false&#34;
             ):
                 return
 
             self._players_with_unsent_army_stats.remove(player)
-            # Stat processing contacts the API and can take quite a while so
-            # we don&#39;t want to await it
             asyncio.create_task(
                 self._game_stats_service.process_game_stats(
                     player, self, self._army_stats_list
@@ -928,7 +954,7 @@ class CustomGame(Game):
         return BasicGameInfo(
             self.id,
             self.rating_type,
-            self.map_id,
+            self.map.id,
             self.game_mode,
             list(self.mods.keys()),
             self.get_team_sets(),
@@ -1031,12 +1057,13 @@ class CustomGame(Game):
         await self._validate_game_options(valid_options)
 
     async def _validate_game_options(
-        self, valid_options: dict[str, tuple[Any, ValidityState]]
+        self,
+        valid_options: dict[str, tuple[Any, ValidityState]]
     ) -&gt; bool:
-        for key, value in self.gameOptions.items():
+        for key, value in self.game_options.items():
             if key in valid_options:
-                (valid_value, validity_state) = valid_options[key]
-                if valid_value != self.gameOptions[key]:
+                valid_value, validity_state = valid_options[key]
+                if value != valid_value:
                     await self.mark_invalid(validity_state)
                     return False
         return True
@@ -1077,34 +1104,19 @@ class CustomGame(Game):
         &#34;&#34;&#34;
         assert self.host is not None
 
-        async with self._db.acquire() as conn:
-            # Determine if the map is blacklisted, and invalidate the game for
-            # ranking purposes if so, and grab the map id at the same time.
-            result = await conn.execute(
-                &#34;SELECT id, ranked FROM map_version &#34;
-                &#34;WHERE lower(filename) = lower(:filename)&#34;,
-                filename=self.map_file_path
-            )
-            row = result.fetchone()
+        # Ensure map data is up to date
+        self.map = await self.game_service.get_map(self.map.folder_name)
 
-        is_generated = (self.map_file_path and &#34;neroxis_map_generator&#34; in self.map_file_path)
-
-        if row:
-            self.map_id = row.id
-
-        if (
-            self.validity is ValidityState.VALID
-            and ((row and not row.ranked) or (not row and not is_generated))
-        ):
+        if self.validity is ValidityState.VALID and not self.map.ranked:
             await self.mark_invalid(ValidityState.BAD_MAP)
 
         modId = self.game_service.featured_mods[self.game_mode].id
 
         # Write out the game_stats record.
-        # In some cases, games can be invalidated while running: we check for those cases when
-        # the game ends and update this record as appropriate.
+        # In some cases, games can be invalidated while running: we check for
+        # those cases when the game ends and update this record as appropriate.
 
-        game_type = str(self.gameOptions.get(&#34;Victory&#34;).value)
+        game_type = str(self.game_options.get(&#34;Victory&#34;).value)
 
         async with self._db.acquire() as conn:
             await conn.execute(
@@ -1113,7 +1125,7 @@ class CustomGame(Game):
                     gameType=game_type,
                     gameMod=modId,
                     host=self.host.id,
-                    mapId=self.map_id,
+                    mapId=self.map.id,
                     gameName=self.name,
                     validity=self.validity.value,
                 )
@@ -1263,8 +1275,9 @@ class CustomGame(Game):
             &#34;game_type&#34;: self.game_type.value,
             &#34;featured_mod&#34;: self.game_mode,
             &#34;sim_mods&#34;: self.mods,
-            &#34;mapname&#34;: self.map_folder_name,
-            &#34;map_file_path&#34;: self.map_file_path,
+            &#34;mapname&#34;: self.map.folder_name,
+            # DEPRECATED: Use `mapname` instead
+            &#34;map_file_path&#34;: self.map.file_path,
             &#34;host&#34;: self.host.login if self.host else &#34;&#34;,
             &#34;num_players&#34;: len(connected_players),
             &#34;max_players&#34;: self.max_players,
@@ -1293,19 +1306,6 @@ class CustomGame(Game):
             }
         }
 
-    @property
-    def map_folder_name(self) -&gt; str:
-        &#34;&#34;&#34;
-        Map folder name
-        &#34;&#34;&#34;
-        try:
-            return str(self.map_scenario_path.split(&#34;/&#34;)[2]).lower()
-        except (IndexError, AttributeError):
-            if self.map_file_path:
-                return self.map_file_path[5:-4].lower()
-            else:
-                return &#34;scmp_009&#34;
-
     def __eq__(self, other):
         if not isinstance(other, Game):
             return False
@@ -1318,7 +1318,7 @@ class CustomGame(Game):
     def __str__(self) -&gt; str:
         return (
             f&#34;Game({self.id}, {self.host.login if self.host else &#39;&#39;}, &#34;
-            f&#34;{self.map_file_path})&#34;
+            f&#34;{self.map.file_path})&#34;
         )</code></pre>
 </details>
 <h3>Subclasses</h3>
@@ -1445,25 +1445,16 @@ def is_multi_team(self) -&gt; bool:
     return len(self.teams) &gt; 2</code></pre>
 </details>
 </dd>
-<dt id="server.games.Game.map_folder_name"><code class="name">var <span class="ident">map_folder_name</span> : str</code></dt>
+<dt id="server.games.Game.max_players"><code class="name">var <span class="ident">max_players</span> : int</code></dt>
 <dd>
-<div class="desc"><p>Map folder name</p></div>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def map_folder_name(self) -&gt; str:
-    &#34;&#34;&#34;
-    Map folder name
-    &#34;&#34;&#34;
-    try:
-        return str(self.map_scenario_path.split(&#34;/&#34;)[2]).lower()
-    except (IndexError, AttributeError):
-        if self.map_file_path:
-            return self.map_file_path[5:-4].lower()
-        else:
-            return &#34;scmp_009&#34;</code></pre>
+def max_players(self) -&gt; int:
+    return self.game_options[&#34;Slots&#34;]</code></pre>
 </details>
 </dd>
 <dt id="server.games.Game.name"><code class="name">var <span class="ident">name</span></code></dt>
@@ -1744,7 +1735,7 @@ assigned an army or team, and deletes any AI's.</p></div>
     return BasicGameInfo(
         self.id,
         self.rating_type,
-        self.map_id,
+        self.map.id,
         self.game_mode,
         list(self.mods.keys()),
         self.get_team_sets(),
@@ -2003,6 +1994,38 @@ performance.</p></div>
         player.state = PlayerState.PLAYING
     await self.update_game_stats()
     await self.update_game_player_stats()</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.on_scenario_file_changed"><code class="name flex">
+<span>async def <span class="ident">on_scenario_file_changed</span></span>(<span>self, scenario_path: pathlib.PurePath)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def on_scenario_file_changed(self, scenario_path: pathlib.PurePath):
+    try:
+        map_folder_name = scenario_path.parts[2].lower()
+    except IndexError:
+        return
+
+    self.map = await self.game_service.get_map(map_folder_name)</code></pre>
+</details>
+</dd>
+<dt id="server.games.Game.on_title_changed"><code class="name flex">
+<span>def <span class="ident">on_title_changed</span></span>(<span>self, title: str)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def on_title_changed(self, title: str):
+    with contextlib.suppress(ValueError):
+        self.name = title</code></pre>
 </details>
 </dd>
 <dt id="server.games.Game.persist_results"><code class="name flex">
@@ -2300,8 +2323,9 @@ game.</p></div>
         &#34;game_type&#34;: self.game_type.value,
         &#34;featured_mod&#34;: self.game_mode,
         &#34;sim_mods&#34;: self.mods,
-        &#34;mapname&#34;: self.map_folder_name,
-        &#34;map_file_path&#34;: self.map_file_path,
+        &#34;mapname&#34;: self.map.folder_name,
+        # DEPRECATED: Use `mapname` instead
+        &#34;map_file_path&#34;: self.map.file_path,
         &#34;host&#34;: self.host.login if self.host else &#34;&#34;,
         &#34;num_players&#34;: len(connected_players),
         &#34;max_players&#34;: self.max_players,
@@ -2406,34 +2430,19 @@ care about recording stats for, after all).</p></div>
     &#34;&#34;&#34;
     assert self.host is not None
 
-    async with self._db.acquire() as conn:
-        # Determine if the map is blacklisted, and invalidate the game for
-        # ranking purposes if so, and grab the map id at the same time.
-        result = await conn.execute(
-            &#34;SELECT id, ranked FROM map_version &#34;
-            &#34;WHERE lower(filename) = lower(:filename)&#34;,
-            filename=self.map_file_path
-        )
-        row = result.fetchone()
+    # Ensure map data is up to date
+    self.map = await self.game_service.get_map(self.map.folder_name)
 
-    is_generated = (self.map_file_path and &#34;neroxis_map_generator&#34; in self.map_file_path)
-
-    if row:
-        self.map_id = row.id
-
-    if (
-        self.validity is ValidityState.VALID
-        and ((row and not row.ranked) or (not row and not is_generated))
-    ):
+    if self.validity is ValidityState.VALID and not self.map.ranked:
         await self.mark_invalid(ValidityState.BAD_MAP)
 
     modId = self.game_service.featured_mods[self.game_mode].id
 
     # Write out the game_stats record.
-    # In some cases, games can be invalidated while running: we check for those cases when
-    # the game ends and update this record as appropriate.
+    # In some cases, games can be invalidated while running: we check for
+    # those cases when the game ends and update this record as appropriate.
 
-    game_type = str(self.gameOptions.get(&#34;Victory&#34;).value)
+    game_type = str(self.game_options.get(&#34;Victory&#34;).value)
 
     async with self._db.acquire() as conn:
         await conn.execute(
@@ -2442,7 +2451,7 @@ care about recording stats for, after all).</p></div>
                 gameType=game_type,
                 gameMod=modId,
                 host=self.host.id,
-                mapId=self.map_id,
+                mapId=self.map.id,
                 gameName=self.name,
                 validity=self.validity.value,
             )
@@ -2593,6 +2602,181 @@ class GameConnectionState(Enum):
 <li>builtins.BaseException</li>
 </ul>
 </dd>
+<dt id="server.games.GameOptions"><code class="flex name class">
+<span>class <span class="ident">GameOptions</span></span>
+<span>(</span><span>id: int, *args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>dict() -&gt; new empty dictionary
+dict(mapping) -&gt; new dictionary initialized from a mapping object's
+(key, value) pairs
+dict(iterable) -&gt; new dictionary initialized as if via:
+d = {}
+for k, v in iterable:
+d[k] = v
+dict(**kwargs) -&gt; new dictionary initialized with the name=value pairs
+in the keyword argument list.
+For example:
+dict(one=1, two=2)</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GameOptions(dict):
+    def __init__(self, id: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._logger = logging.getLogger(
+            f&#34;{self.__class__.__qualname__}.{id}&#34;
+        )
+        self.callbacks = defaultdict(list)
+        self.async_callbacks = defaultdict(list)
+
+    def add_callback(self, key: str, callback: Callable[[Any], Any]):
+        self.callbacks[key].append(callback)
+
+    def add_async_callback(
+        self,
+        key: str,
+        callback: Callable[[Any], Awaitable[Any]],
+    ):
+        self.async_callbacks[key].append(callback)
+
+    async def set_option(self, k: str, v: Any) -&gt; None:
+        v = self._set_option(k, v)
+        self._run_sync_callbacks(k, v)
+
+        await asyncio.gather(*(
+            self._log_async_exception(
+                async_callback(v),
+                k,
+                v,
+            )
+            for async_callback in self.async_callbacks.get(k, ())
+        ))
+
+    def __setitem__(self, k: str, v: Any) -&gt; None:
+        v = self._set_option(k, v)
+        self._run_sync_callbacks(k, v)
+
+        for async_callback in self.async_callbacks.get(k, ()):
+            asyncio.create_task(
+                self._log_async_exception(
+                    async_callback(v),
+                    k,
+                    v,
+                )
+            )
+
+    def _set_option(self, k: str, v: Any) -&gt; Any:
+        &#34;&#34;&#34;
+        Set the new value potentially transforming it first. Returns the value
+        that was set.
+        &#34;&#34;&#34;
+        if k == &#34;Victory&#34; and not isinstance(v, Victory):
+            victory = Victory.__members__.get(v.upper())
+            if victory is None:
+                victory = self.get(&#34;Victory&#34;)
+                self._logger.warning(
+                    &#34;Invalid victory type &#39;%s&#39;! Using &#39;%s&#39; instead.&#34;,
+                    v,
+                    victory.name if victory else None,
+                )
+                return
+            v = victory
+        elif k == &#34;Slots&#34;:
+            v = int(v)
+        elif k == &#34;ScenarioFile&#34;:
+            # Convert to a posix path. Since posix paths are also interpreted
+            # the same way as windows paths (but not the other way around!) we
+            # can do this by parsing as a PureWindowsPath first
+            v = pathlib.PurePath(pathlib.PureWindowsPath(v).as_posix())
+
+        super().__setitem__(k, v)
+
+        return v
+
+    def _run_sync_callbacks(self, k: str, v: Any):
+        for callback in self.callbacks.get(k, ()):
+            try:
+                callback(v)
+            except Exception:
+                self._logger.exception(
+                    &#34;Error running callback for &#39;%s&#39; (value %r)&#34;,
+                    k,
+                    v,
+                )
+
+    async def _log_async_exception(self, coro: Awaitable[Any], k: str, v: Any):
+        try:
+            return await coro
+        except Exception:
+            self._logger.exception(
+                &#34;Error running async callback for &#39;%s&#39; (value %r)&#34;,
+                k,
+                v,
+            )</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.dict</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="server.games.GameOptions.add_async_callback"><code class="name flex">
+<span>def <span class="ident">add_async_callback</span></span>(<span>self, key: str, callback: Callable[[Any], Awaitable[Any]])</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_async_callback(
+    self,
+    key: str,
+    callback: Callable[[Any], Awaitable[Any]],
+):
+    self.async_callbacks[key].append(callback)</code></pre>
+</details>
+</dd>
+<dt id="server.games.GameOptions.add_callback"><code class="name flex">
+<span>def <span class="ident">add_callback</span></span>(<span>self, key: str, callback: Callable[[Any], Any])</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_callback(self, key: str, callback: Callable[[Any], Any]):
+    self.callbacks[key].append(callback)</code></pre>
+</details>
+</dd>
+<dt id="server.games.GameOptions.set_option"><code class="name flex">
+<span>async def <span class="ident">set_option</span></span>(<span>self, k: str, v: Any) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def set_option(self, k: str, v: Any) -&gt; None:
+    v = self._set_option(k, v)
+    self._run_sync_callbacks(k, v)
+
+    await asyncio.gather(*(
+        self._log_async_exception(
+            async_callback(v),
+            k,
+            v,
+        )
+        for async_callback in self.async_callbacks.get(k, ())
+    ))</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 <dt id="server.games.GameState"><code class="flex name class">
 <span>class <span class="ident">GameState</span></span>
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
@@ -2703,7 +2887,7 @@ class InitMode(Enum):
 </dd>
 <dt id="server.games.LadderGame"><code class="flex name class">
 <span>class <span class="ident">LadderGame</span></span>
-<span>(</span><span>id_, *args, **kwargs)</span>
+<span>(</span><span>id, *args, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Class for 1v1 ladder games</p></div>
@@ -2717,8 +2901,8 @@ class InitMode(Enum):
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
 
-    def __init__(self, id_, *args, **kwargs):
-        super().__init__(id_, *args, **kwargs)
+    def __init__(self, id, *args, **kwargs):
+        super().__init__(id, *args, **kwargs)
         self._launch_future = asyncio.Future()
 
     async def wait_hosted(self, timeout: float):
@@ -2895,7 +3079,6 @@ as 1 for win and 0 for anything else.</p></div>
 <li><code><a title="server.games.game.Game.is_visible_to_player" href="game.html#server.games.game.Game.is_visible_to_player">is_visible_to_player</a></code></li>
 <li><code><a title="server.games.game.Game.launch" href="game.html#server.games.game.Game.launch">launch</a></code></li>
 <li><code><a title="server.games.game.Game.load_results" href="game.html#server.games.game.Game.load_results">load_results</a></code></li>
-<li><code><a title="server.games.game.Game.map_folder_name" href="game.html#server.games.game.Game.map_folder_name">map_folder_name</a></code></li>
 <li><code><a title="server.games.game.Game.persist_results" href="game.html#server.games.game.Game.persist_results">persist_results</a></code></li>
 <li><code><a title="server.games.game.Game.players" href="game.html#server.games.game.Game.players">players</a></code></li>
 <li><code><a title="server.games.game.Game.remove_game_connection" href="game.html#server.games.game.Game.remove_game_connection">remove_game_connection</a></code></li>
@@ -3221,11 +3404,13 @@ class VisibilityState(Enum):
 <li><code><a title="server.games.Game.is_visible_to_player" href="#server.games.Game.is_visible_to_player">is_visible_to_player</a></code></li>
 <li><code><a title="server.games.Game.launch" href="#server.games.Game.launch">launch</a></code></li>
 <li><code><a title="server.games.Game.load_results" href="#server.games.Game.load_results">load_results</a></code></li>
-<li><code><a title="server.games.Game.map_folder_name" href="#server.games.Game.map_folder_name">map_folder_name</a></code></li>
 <li><code><a title="server.games.Game.mark_invalid" href="#server.games.Game.mark_invalid">mark_invalid</a></code></li>
+<li><code><a title="server.games.Game.max_players" href="#server.games.Game.max_players">max_players</a></code></li>
 <li><code><a title="server.games.Game.name" href="#server.games.Game.name">name</a></code></li>
 <li><code><a title="server.games.Game.on_game_finish" href="#server.games.Game.on_game_finish">on_game_finish</a></code></li>
 <li><code><a title="server.games.Game.on_game_launched" href="#server.games.Game.on_game_launched">on_game_launched</a></code></li>
+<li><code><a title="server.games.Game.on_scenario_file_changed" href="#server.games.Game.on_scenario_file_changed">on_scenario_file_changed</a></code></li>
+<li><code><a title="server.games.Game.on_title_changed" href="#server.games.Game.on_title_changed">on_title_changed</a></code></li>
 <li><code><a title="server.games.Game.persist_results" href="#server.games.Game.persist_results">persist_results</a></code></li>
 <li><code><a title="server.games.Game.players" href="#server.games.Game.players">players</a></code></li>
 <li><code><a title="server.games.Game.process_game_results" href="#server.games.Game.process_game_results">process_game_results</a></code></li>
@@ -3256,6 +3441,14 @@ class VisibilityState(Enum):
 </li>
 <li>
 <h4><code><a title="server.games.GameError" href="#server.games.GameError">GameError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="server.games.GameOptions" href="#server.games.GameOptions">GameOptions</a></code></h4>
+<ul class="">
+<li><code><a title="server.games.GameOptions.add_async_callback" href="#server.games.GameOptions.add_async_callback">add_async_callback</a></code></li>
+<li><code><a title="server.games.GameOptions.add_callback" href="#server.games.GameOptions.add_callback">add_callback</a></code></li>
+<li><code><a title="server.games.GameOptions.set_option" href="#server.games.GameOptions.set_option">set_option</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="server.games.GameState" href="#server.games.GameState">GameState</a></code></h4>

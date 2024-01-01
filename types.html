@@ -33,6 +33,7 @@ General type definitions
 
 import base64
 import random
+import re
 from typing import Any, NamedTuple, Optional, Protocol
 
 
@@ -67,10 +68,20 @@ class MapPoolMap(Protocol):
 
 
 class Map(NamedTuple):
-    id: int
-    name: str
-    path: str
+    id: Optional[int]
+    folder_name: str
+    ranked: bool = False
+    # Map pool only
     weight: int = 1
+
+    @property
+    def file_path(self):
+        &#34;&#34;&#34;A representation of the map name as it looks in the database&#34;&#34;&#34;
+        return f&#34;maps/{self.folder_name}.zip&#34;
+
+    @property
+    def scenario_file(self):
+        return f&#34;/maps/{self.folder_name}/{self.folder_name}_scenario.lua&#34;
 
     def get_map(self) -&gt; &#34;Map&#34;:
         return self
@@ -83,8 +94,18 @@ class NeroxisGeneratedMap(NamedTuple):
     map_size_pixels: int
     weight: int = 1
 
+    _NAME_PATTERN = re.compile(
+        &#34;neroxis_map_generator_([0-9.]+)_([a-z2-7]+)_([a-z2-7]+)&#34;
+    )
+
+    @classmethod
+    def is_neroxis_map(cls, folder_name: str) -&gt; bool:
+        &#34;&#34;&#34;Check if mapname is map generator&#34;&#34;&#34;
+        return cls._NAME_PATTERN.fullmatch(folder_name) is not None
+
     @classmethod
     def of(cls, params: dict, weight: int = 1):
+        &#34;&#34;&#34;Create a NeroxisGeneratedMap from params dict&#34;&#34;&#34;
         assert params[&#34;type&#34;] == &#34;neroxis&#34;
 
         map_size_pixels = int(params[&#34;size&#34;])
@@ -100,12 +121,22 @@ class NeroxisGeneratedMap(NamedTuple):
             raise Exception(&#34;spawns is not a multiple of 2&#34;)
 
         version = params[&#34;version&#34;]
-        return NeroxisGeneratedMap(
-            -int.from_bytes(bytes(f&#34;{version}_{spawns}_{map_size_pixels}&#34;, encoding=&#34;ascii&#34;), &#34;big&#34;),
+        return cls(
+            cls._get_id(version, spawns, map_size_pixels),
             version,
             spawns,
             map_size_pixels,
-            weight
+            weight,
+        )
+
+    @staticmethod
+    def _get_id(version: str, spawns: int, map_size_pixels: int) -&gt; int:
+        return -int.from_bytes(
+            bytes(
+                f&#34;{version}_{spawns}_{map_size_pixels}&#34;,
+                encoding=&#34;ascii&#34;
+            ),
+            &#34;big&#34;
         )
 
     def get_map(self) -&gt; Map:
@@ -114,14 +145,30 @@ class NeroxisGeneratedMap(NamedTuple):
         parameters are specified hand back None
         &#34;&#34;&#34;
         seed_bytes = random.getrandbits(64).to_bytes(8, &#34;big&#34;)
+        seed_str = base64.b32encode(seed_bytes).decode(&#34;ascii&#34;).replace(&#34;=&#34;, &#34;&#34;).lower()
+
         size_byte = (self.map_size_pixels // 64).to_bytes(1, &#34;big&#34;)
         spawn_byte = self.spawns.to_bytes(1, &#34;big&#34;)
         option_bytes = spawn_byte + size_byte
-        seed_str = base64.b32encode(seed_bytes).decode(&#34;ascii&#34;).replace(&#34;=&#34;, &#34;&#34;).lower()
         option_str = base64.b32encode(option_bytes).decode(&#34;ascii&#34;).replace(&#34;=&#34;, &#34;&#34;).lower()
-        map_name = f&#34;neroxis_map_generator_{self.version}_{seed_str}_{option_str}&#34;
-        map_path = f&#34;maps/{map_name}.zip&#34;
-        return Map(self.id, map_name, map_path, self.weight)</code></pre>
+
+        folder_name = f&#34;neroxis_map_generator_{self.version}_{seed_str}_{option_str}&#34;
+
+        return Map(
+            id=self.id,
+            folder_name=folder_name,
+            ranked=True,
+            weight=self.weight,
+        )
+
+
+# Default for map argument in game/game_service. Games are only created without
+# the map argument in unit tests.
+MAP_DEFAULT = Map(
+    id=None,
+    folder_name=&#34;scmp_007&#34;,
+    ranked=False,
+)</code></pre>
 </details>
 </section>
 <section>
@@ -242,19 +289,29 @@ def from_string(cls, address: str) -&gt; &#34;Address&#34;:
 </dd>
 <dt id="server.types.Map"><code class="flex name class">
 <span>class <span class="ident">Map</span></span>
-<span>(</span><span>id: int, name: str, path: str, weight: int = 1)</span>
+<span>(</span><span>id: Optional[int], folder_name: str, ranked: bool = False, weight: int = 1)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Map(id, name, path, weight)</p></div>
+<div class="desc"><p>Map(id, folder_name, ranked, weight)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Map(NamedTuple):
-    id: int
-    name: str
-    path: str
+    id: Optional[int]
+    folder_name: str
+    ranked: bool = False
+    # Map pool only
     weight: int = 1
+
+    @property
+    def file_path(self):
+        &#34;&#34;&#34;A representation of the map name as it looks in the database&#34;&#34;&#34;
+        return f&#34;maps/{self.folder_name}.zip&#34;
+
+    @property
+    def scenario_file(self):
+        return f&#34;/maps/{self.folder_name}/{self.folder_name}_scenario.lua&#34;
 
     def get_map(self) -&gt; &#34;Map&#34;:
         return self</code></pre>
@@ -265,17 +322,42 @@ def from_string(cls, address: str) -&gt; &#34;Address&#34;:
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="server.types.Map.id"><code class="name">var <span class="ident">id</span> : int</code></dt>
+<dt id="server.types.Map.file_path"><code class="name">var <span class="ident">file_path</span></code></dt>
 <dd>
-<div class="desc"><p>Alias for field number 0</p></div>
+<div class="desc"><p>A representation of the map name as it looks in the database</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def file_path(self):
+    &#34;&#34;&#34;A representation of the map name as it looks in the database&#34;&#34;&#34;
+    return f&#34;maps/{self.folder_name}.zip&#34;</code></pre>
+</details>
 </dd>
-<dt id="server.types.Map.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dt id="server.types.Map.folder_name"><code class="name">var <span class="ident">folder_name</span> : str</code></dt>
 <dd>
 <div class="desc"><p>Alias for field number 1</p></div>
 </dd>
-<dt id="server.types.Map.path"><code class="name">var <span class="ident">path</span> : str</code></dt>
+<dt id="server.types.Map.id"><code class="name">var <span class="ident">id</span> : Optional[int]</code></dt>
+<dd>
+<div class="desc"><p>Alias for field number 0</p></div>
+</dd>
+<dt id="server.types.Map.ranked"><code class="name">var <span class="ident">ranked</span> : bool</code></dt>
 <dd>
 <div class="desc"><p>Alias for field number 2</p></div>
+</dd>
+<dt id="server.types.Map.scenario_file"><code class="name">var <span class="ident">scenario_file</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def scenario_file(self):
+    return f&#34;/maps/{self.folder_name}/{self.folder_name}_scenario.lua&#34;</code></pre>
+</details>
 </dd>
 <dt id="server.types.Map.weight"><code class="name">var <span class="ident">weight</span> : int</code></dt>
 <dd>
@@ -388,8 +470,18 @@ Protocol classes can be generic, they are defined as::</p>
     map_size_pixels: int
     weight: int = 1
 
+    _NAME_PATTERN = re.compile(
+        &#34;neroxis_map_generator_([0-9.]+)_([a-z2-7]+)_([a-z2-7]+)&#34;
+    )
+
+    @classmethod
+    def is_neroxis_map(cls, folder_name: str) -&gt; bool:
+        &#34;&#34;&#34;Check if mapname is map generator&#34;&#34;&#34;
+        return cls._NAME_PATTERN.fullmatch(folder_name) is not None
+
     @classmethod
     def of(cls, params: dict, weight: int = 1):
+        &#34;&#34;&#34;Create a NeroxisGeneratedMap from params dict&#34;&#34;&#34;
         assert params[&#34;type&#34;] == &#34;neroxis&#34;
 
         map_size_pixels = int(params[&#34;size&#34;])
@@ -405,12 +497,22 @@ Protocol classes can be generic, they are defined as::</p>
             raise Exception(&#34;spawns is not a multiple of 2&#34;)
 
         version = params[&#34;version&#34;]
-        return NeroxisGeneratedMap(
-            -int.from_bytes(bytes(f&#34;{version}_{spawns}_{map_size_pixels}&#34;, encoding=&#34;ascii&#34;), &#34;big&#34;),
+        return cls(
+            cls._get_id(version, spawns, map_size_pixels),
             version,
             spawns,
             map_size_pixels,
-            weight
+            weight,
+        )
+
+    @staticmethod
+    def _get_id(version: str, spawns: int, map_size_pixels: int) -&gt; int:
+        return -int.from_bytes(
+            bytes(
+                f&#34;{version}_{spawns}_{map_size_pixels}&#34;,
+                encoding=&#34;ascii&#34;
+            ),
+            &#34;big&#34;
         )
 
     def get_map(self) -&gt; Map:
@@ -419,14 +521,21 @@ Protocol classes can be generic, they are defined as::</p>
         parameters are specified hand back None
         &#34;&#34;&#34;
         seed_bytes = random.getrandbits(64).to_bytes(8, &#34;big&#34;)
+        seed_str = base64.b32encode(seed_bytes).decode(&#34;ascii&#34;).replace(&#34;=&#34;, &#34;&#34;).lower()
+
         size_byte = (self.map_size_pixels // 64).to_bytes(1, &#34;big&#34;)
         spawn_byte = self.spawns.to_bytes(1, &#34;big&#34;)
         option_bytes = spawn_byte + size_byte
-        seed_str = base64.b32encode(seed_bytes).decode(&#34;ascii&#34;).replace(&#34;=&#34;, &#34;&#34;).lower()
         option_str = base64.b32encode(option_bytes).decode(&#34;ascii&#34;).replace(&#34;=&#34;, &#34;&#34;).lower()
-        map_name = f&#34;neroxis_map_generator_{self.version}_{seed_str}_{option_str}&#34;
-        map_path = f&#34;maps/{map_name}.zip&#34;
-        return Map(self.id, map_name, map_path, self.weight)</code></pre>
+
+        folder_name = f&#34;neroxis_map_generator_{self.version}_{seed_str}_{option_str}&#34;
+
+        return Map(
+            id=self.id,
+            folder_name=folder_name,
+            ranked=True,
+            weight=self.weight,
+        )</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -434,17 +543,33 @@ Protocol classes can be generic, they are defined as::</p>
 </ul>
 <h3>Static methods</h3>
 <dl>
+<dt id="server.types.NeroxisGeneratedMap.is_neroxis_map"><code class="name flex">
+<span>def <span class="ident">is_neroxis_map</span></span>(<span>folder_name: str) ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Check if mapname is map generator</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def is_neroxis_map(cls, folder_name: str) -&gt; bool:
+    &#34;&#34;&#34;Check if mapname is map generator&#34;&#34;&#34;
+    return cls._NAME_PATTERN.fullmatch(folder_name) is not None</code></pre>
+</details>
+</dd>
 <dt id="server.types.NeroxisGeneratedMap.of"><code class="name flex">
 <span>def <span class="ident">of</span></span>(<span>params: dict, weight: int = 1)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Create a NeroxisGeneratedMap from params dict</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
 def of(cls, params: dict, weight: int = 1):
+    &#34;&#34;&#34;Create a NeroxisGeneratedMap from params dict&#34;&#34;&#34;
     assert params[&#34;type&#34;] == &#34;neroxis&#34;
 
     map_size_pixels = int(params[&#34;size&#34;])
@@ -460,12 +585,12 @@ def of(cls, params: dict, weight: int = 1):
         raise Exception(&#34;spawns is not a multiple of 2&#34;)
 
     version = params[&#34;version&#34;]
-    return NeroxisGeneratedMap(
-        -int.from_bytes(bytes(f&#34;{version}_{spawns}_{map_size_pixels}&#34;, encoding=&#34;ascii&#34;), &#34;big&#34;),
+    return cls(
+        cls._get_id(version, spawns, map_size_pixels),
         version,
         spawns,
         map_size_pixels,
-        weight
+        weight,
     )</code></pre>
 </details>
 </dd>
@@ -511,14 +636,21 @@ parameters are specified hand back None</p></div>
     parameters are specified hand back None
     &#34;&#34;&#34;
     seed_bytes = random.getrandbits(64).to_bytes(8, &#34;big&#34;)
+    seed_str = base64.b32encode(seed_bytes).decode(&#34;ascii&#34;).replace(&#34;=&#34;, &#34;&#34;).lower()
+
     size_byte = (self.map_size_pixels // 64).to_bytes(1, &#34;big&#34;)
     spawn_byte = self.spawns.to_bytes(1, &#34;big&#34;)
     option_bytes = spawn_byte + size_byte
-    seed_str = base64.b32encode(seed_bytes).decode(&#34;ascii&#34;).replace(&#34;=&#34;, &#34;&#34;).lower()
     option_str = base64.b32encode(option_bytes).decode(&#34;ascii&#34;).replace(&#34;=&#34;, &#34;&#34;).lower()
-    map_name = f&#34;neroxis_map_generator_{self.version}_{seed_str}_{option_str}&#34;
-    map_path = f&#34;maps/{map_name}.zip&#34;
-    return Map(self.id, map_name, map_path, self.weight)</code></pre>
+
+    folder_name = f&#34;neroxis_map_generator_{self.version}_{seed_str}_{option_str}&#34;
+
+    return Map(
+        id=self.id,
+        folder_name=folder_name,
+        ranked=True,
+        weight=self.weight,
+    )</code></pre>
 </details>
 </dd>
 </dl>
@@ -560,11 +692,13 @@ parameters are specified hand back None</p></div>
 </li>
 <li>
 <h4><code><a title="server.types.Map" href="#server.types.Map">Map</a></code></h4>
-<ul class="">
+<ul class="two-column">
+<li><code><a title="server.types.Map.file_path" href="#server.types.Map.file_path">file_path</a></code></li>
+<li><code><a title="server.types.Map.folder_name" href="#server.types.Map.folder_name">folder_name</a></code></li>
 <li><code><a title="server.types.Map.get_map" href="#server.types.Map.get_map">get_map</a></code></li>
 <li><code><a title="server.types.Map.id" href="#server.types.Map.id">id</a></code></li>
-<li><code><a title="server.types.Map.name" href="#server.types.Map.name">name</a></code></li>
-<li><code><a title="server.types.Map.path" href="#server.types.Map.path">path</a></code></li>
+<li><code><a title="server.types.Map.ranked" href="#server.types.Map.ranked">ranked</a></code></li>
+<li><code><a title="server.types.Map.scenario_file" href="#server.types.Map.scenario_file">scenario_file</a></code></li>
 <li><code><a title="server.types.Map.weight" href="#server.types.Map.weight">weight</a></code></li>
 </ul>
 </li>
@@ -581,6 +715,7 @@ parameters are specified hand back None</p></div>
 <ul class="two-column">
 <li><code><a title="server.types.NeroxisGeneratedMap.get_map" href="#server.types.NeroxisGeneratedMap.get_map">get_map</a></code></li>
 <li><code><a title="server.types.NeroxisGeneratedMap.id" href="#server.types.NeroxisGeneratedMap.id">id</a></code></li>
+<li><code><a title="server.types.NeroxisGeneratedMap.is_neroxis_map" href="#server.types.NeroxisGeneratedMap.is_neroxis_map">is_neroxis_map</a></code></li>
 <li><code><a title="server.types.NeroxisGeneratedMap.map_size_pixels" href="#server.types.NeroxisGeneratedMap.map_size_pixels">map_size_pixels</a></code></li>
 <li><code><a title="server.types.NeroxisGeneratedMap.of" href="#server.types.NeroxisGeneratedMap.of">of</a></code></li>
 <li><code><a title="server.types.NeroxisGeneratedMap.spawns" href="#server.types.NeroxisGeneratedMap.spawns">spawns</a></code></li>

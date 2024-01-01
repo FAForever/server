@@ -978,9 +978,12 @@ class LobbyConnection:
         title = message.get(&#34;title&#34;) or f&#34;{self.player.login}&#39;s game&#34;
         if not title.isascii():
             raise ClientError(&#34;Title must contain only ascii characters.&#34;)
+        if not title.strip():
+            raise ClientError(&#34;Title must not be empty.&#34;)
 
         mod = message.get(&#34;mod&#34;) or FeaturedModType.FAF
         mapname = message.get(&#34;mapname&#34;) or &#34;scmp_007&#34;
+        game_map = await self.game_service.get_map(mapname)
         password = message.get(&#34;password&#34;)
         game_mode = mod.lower()
         rating_min = message.get(&#34;rating_min&#34;)
@@ -999,7 +1002,7 @@ class LobbyConnection:
             game_class=game_class,
             host=self.player,
             name=title,
-            mapname=mapname,
+            map=game_map,
             password=password,
             rating_type=RatingType.GLOBAL,
             displayed_rating_range=InclusiveRange(rating_min, rating_max),
@@ -2212,9 +2215,12 @@ class LobbyConnection:
         title = message.get(&#34;title&#34;) or f&#34;{self.player.login}&#39;s game&#34;
         if not title.isascii():
             raise ClientError(&#34;Title must contain only ascii characters.&#34;)
+        if not title.strip():
+            raise ClientError(&#34;Title must not be empty.&#34;)
 
         mod = message.get(&#34;mod&#34;) or FeaturedModType.FAF
         mapname = message.get(&#34;mapname&#34;) or &#34;scmp_007&#34;
+        game_map = await self.game_service.get_map(mapname)
         password = message.get(&#34;password&#34;)
         game_mode = mod.lower()
         rating_min = message.get(&#34;rating_min&#34;)
@@ -2233,7 +2239,7 @@ class LobbyConnection:
             game_class=game_class,
             host=self.player,
             name=title,
-            mapname=mapname,
+            map=game_map,
             password=password,
             rating_type=RatingType.GLOBAL,
             displayed_rating_range=InclusiveRange(rating_min, rating_max),
@@ -3035,9 +3041,12 @@ async def command_game_host(self, message):
     title = message.get(&#34;title&#34;) or f&#34;{self.player.login}&#39;s game&#34;
     if not title.isascii():
         raise ClientError(&#34;Title must contain only ascii characters.&#34;)
+    if not title.strip():
+        raise ClientError(&#34;Title must not be empty.&#34;)
 
     mod = message.get(&#34;mod&#34;) or FeaturedModType.FAF
     mapname = message.get(&#34;mapname&#34;) or &#34;scmp_007&#34;
+    game_map = await self.game_service.get_map(mapname)
     password = message.get(&#34;password&#34;)
     game_mode = mod.lower()
     rating_min = message.get(&#34;rating_min&#34;)
@@ -3056,7 +3065,7 @@ async def command_game_host(self, message):
         game_class=game_class,
         host=self.player,
         name=title,
-        mapname=mapname,
+        map=game_map,
         password=password,
         rating_type=RatingType.GLOBAL,
         displayed_rating_range=InclusiveRange(rating_min, rating_max),

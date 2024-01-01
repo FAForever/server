@@ -40,13 +40,13 @@ class CustomGame(Game):
     init_mode = InitMode.NORMAL_LOBBY
     game_type = GameType.CUSTOM
 
-    def __init__(self, id_, *args, **kwargs):
+    def __init__(self, id, *args, **kwargs):
         new_kwargs = {
             &#34;rating_type&#34;: RatingType.GLOBAL,
             &#34;setup_timeout&#34;: 30
         }
         new_kwargs.update(kwargs)
-        super().__init__(id_, *args, **new_kwargs)
+        super().__init__(id, *args, **new_kwargs)
 
     async def _run_pre_rate_validity_checks(self):
         limit = len(self.players) * 60
@@ -65,7 +65,7 @@ class CustomGame(Game):
 <dl>
 <dt id="server.games.custom_game.CustomGame"><code class="flex name class">
 <span>class <span class="ident">CustomGame</span></span>
-<span>(</span><span>id_, *args, **kwargs)</span>
+<span>(</span><span>id, *args, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Object that lasts for the lifetime of a game on FAF.</p></div>
@@ -78,13 +78,13 @@ class CustomGame(Game):
     init_mode = InitMode.NORMAL_LOBBY
     game_type = GameType.CUSTOM
 
-    def __init__(self, id_, *args, **kwargs):
+    def __init__(self, id, *args, **kwargs):
         new_kwargs = {
             &#34;rating_type&#34;: RatingType.GLOBAL,
             &#34;setup_timeout&#34;: 30
         }
         new_kwargs.update(kwargs)
-        super().__init__(id_, *args, **new_kwargs)
+        super().__init__(id, *args, **new_kwargs)
 
     async def _run_pre_rate_validity_checks(self):
         limit = len(self.players) * 60
@@ -120,7 +120,6 @@ class CustomGame(Game):
 <li><code><a title="server.games.game.Game.is_visible_to_player" href="game.html#server.games.game.Game.is_visible_to_player">is_visible_to_player</a></code></li>
 <li><code><a title="server.games.game.Game.launch" href="game.html#server.games.game.Game.launch">launch</a></code></li>
 <li><code><a title="server.games.game.Game.load_results" href="game.html#server.games.game.Game.load_results">load_results</a></code></li>
-<li><code><a title="server.games.game.Game.map_folder_name" href="game.html#server.games.game.Game.map_folder_name">map_folder_name</a></code></li>
 <li><code><a title="server.games.game.Game.persist_results" href="game.html#server.games.game.Game.persist_results">persist_results</a></code></li>
 <li><code><a title="server.games.game.Game.players" href="game.html#server.games.game.Game.players">players</a></code></li>
 <li><code><a title="server.games.game.Game.remove_game_connection" href="game.html#server.games.game.Game.remove_game_connection">remove_game_connection</a></code></li>

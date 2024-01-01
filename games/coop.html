@@ -40,7 +40,7 @@ class CoopGame(Game):
         super().__init__(*args, **kwargs)
 
         self.validity = ValidityState.COOP_NOT_RANKED
-        self.gameOptions.update({
+        self.game_options.update({
             &#34;Victory&#34;: Victory.SANDBOX,
             &#34;TeamSpawn&#34;: &#34;fixed&#34;,
             &#34;RevealedCivilians&#34;: &#34;No&#34;,
@@ -99,7 +99,7 @@ class CoopGame(Game):
         super().__init__(*args, **kwargs)
 
         self.validity = ValidityState.COOP_NOT_RANKED
-        self.gameOptions.update({
+        self.game_options.update({
             &#34;Victory&#34;: Victory.SANDBOX,
             &#34;TeamSpawn&#34;: &#34;fixed&#34;,
             &#34;RevealedCivilians&#34;: &#34;No&#34;,
@@ -200,7 +200,6 @@ class CoopGame(Game):
 <li><code><a title="server.games.game.Game.is_visible_to_player" href="game.html#server.games.game.Game.is_visible_to_player">is_visible_to_player</a></code></li>
 <li><code><a title="server.games.game.Game.launch" href="game.html#server.games.game.Game.launch">launch</a></code></li>
 <li><code><a title="server.games.game.Game.load_results" href="game.html#server.games.game.Game.load_results">load_results</a></code></li>
-<li><code><a title="server.games.game.Game.map_folder_name" href="game.html#server.games.game.Game.map_folder_name">map_folder_name</a></code></li>
 <li><code><a title="server.games.game.Game.persist_results" href="game.html#server.games.game.Game.persist_results">persist_results</a></code></li>
 <li><code><a title="server.games.game.Game.players" href="game.html#server.games.game.Game.players">players</a></code></li>
 <li><code><a title="server.games.game.Game.remove_game_connection" href="game.html#server.games.game.Game.remove_game_connection">remove_game_connection</a></code></li>

@@ -50,8 +50,7 @@ from .games import (
     GameConnectionState,
     GameError,
     GameState,
-    ValidityState,
-    Victory
+    ValidityState
 )
 from .games.typedefs import FA
 from .player_service import PlayerService
@@ -163,7 +162,7 @@ class GameConnection(GpgNetServerProtocol):
         &#34;&#34;&#34;
         player_state = self.player.state
         if player_state == PlayerState.HOSTING:
-            await self.send_HostGame(self.game.map_folder_name)
+            await self.send_HostGame(self.game.map.folder_name)
             self.game.set_hosted()
         # If the player is joining, we connect him to host
         # followed by the rest of the players.
@@ -257,25 +256,7 @@ class GameConnection(GpgNetServerProtocol):
         if not self.is_host():
             return
 
-        if key == &#34;Victory&#34;:
-            self.game.gameOptions[&#34;Victory&#34;] = Victory.__members__.get(
-                value.upper(), None
-            )
-        else:
-            self.game.gameOptions[key] = value
-
-        if key == &#34;Slots&#34;:
-            self.game.max_players = int(value)
-        elif key == &#34;ScenarioFile&#34;:
-            raw = repr(value)
-            self.game.map_scenario_path = \
-                raw.replace(&#34;\\&#34;, &#34;/&#34;).replace(&#34;//&#34;, &#34;/&#34;).replace(&#34;&#39;&#34;, &#34;&#34;)
-            self.game.map_file_path = &#34;maps/{}.zip&#34;.format(
-                self.game.map_scenario_path.split(&#34;/&#34;)[2].lower()
-            )
-        elif key == &#34;Title&#34;:
-            with contextlib.suppress(ValueError):
-                self.game.name = value
+        await self.game.game_options.set_option(key, value)
 
         self._mark_dirty()
 
@@ -368,13 +349,13 @@ class GameConnection(GpgNetServerProtocol):
         async with self._db.acquire() as conn:
             result = await conn.execute(
                 select(coop_map.c.id).where(
-                    coop_map.c.filename == self.game.map_file_path
+                    coop_map.c.filename == self.game.map.file_path
                 )
             )
             row = result.fetchone()
             if not row:
                 self._logger.debug(
-                    &#34;can&#39;t find coop map: %s&#34;, self.game.map_file_path
+                    &#34;can&#39;t find coop map: %s&#34;, self.game.map.file_path
                 )
                 return
             mission = row.id
@@ -802,7 +783,7 @@ COMMAND_HANDLERS = {
         &#34;&#34;&#34;
         player_state = self.player.state
         if player_state == PlayerState.HOSTING:
-            await self.send_HostGame(self.game.map_folder_name)
+            await self.send_HostGame(self.game.map.folder_name)
             self.game.set_hosted()
         # If the player is joining, we connect him to host
         # followed by the rest of the players.
@@ -896,25 +877,7 @@ COMMAND_HANDLERS = {
         if not self.is_host():
             return
 
-        if key == &#34;Victory&#34;:
-            self.game.gameOptions[&#34;Victory&#34;] = Victory.__members__.get(
-                value.upper(), None
-            )
-        else:
-            self.game.gameOptions[key] = value
-
-        if key == &#34;Slots&#34;:
-            self.game.max_players = int(value)
-        elif key == &#34;ScenarioFile&#34;:
-            raw = repr(value)
-            self.game.map_scenario_path = \
-                raw.replace(&#34;\\&#34;, &#34;/&#34;).replace(&#34;//&#34;, &#34;/&#34;).replace(&#34;&#39;&#34;, &#34;&#34;)
-            self.game.map_file_path = &#34;maps/{}.zip&#34;.format(
-                self.game.map_scenario_path.split(&#34;/&#34;)[2].lower()
-            )
-        elif key == &#34;Title&#34;:
-            with contextlib.suppress(ValueError):
-                self.game.name = value
+        await self.game.game_options.set_option(key, value)
 
         self._mark_dirty()
 
@@ -1007,13 +970,13 @@ COMMAND_HANDLERS = {
         async with self._db.acquire() as conn:
             result = await conn.execute(
                 select(coop_map.c.id).where(
-                    coop_map.c.filename == self.game.map_file_path
+                    coop_map.c.filename == self.game.map.file_path
                 )
             )
             row = result.fetchone()
             if not row:
                 self._logger.debug(
-                    &#34;can&#39;t find coop map: %s&#34;, self.game.map_file_path
+                    &#34;can&#39;t find coop map: %s&#34;, self.game.map.file_path
                 )
                 return
             mission = row.id
@@ -1704,25 +1667,7 @@ included for documentation purposes.</p></div>
     if not self.is_host():
         return
 
-    if key == &#34;Victory&#34;:
-        self.game.gameOptions[&#34;Victory&#34;] = Victory.__members__.get(
-            value.upper(), None
-        )
-    else:
-        self.game.gameOptions[key] = value
-
-    if key == &#34;Slots&#34;:
-        self.game.max_players = int(value)
-    elif key == &#34;ScenarioFile&#34;:
-        raw = repr(value)
-        self.game.map_scenario_path = \
-            raw.replace(&#34;\\&#34;, &#34;/&#34;).replace(&#34;//&#34;, &#34;/&#34;).replace(&#34;&#39;&#34;, &#34;&#34;)
-        self.game.map_file_path = &#34;maps/{}.zip&#34;.format(
-            self.game.map_scenario_path.split(&#34;/&#34;)[2].lower()
-        )
-    elif key == &#34;Title&#34;:
-        with contextlib.suppress(ValueError):
-            self.game.name = value
+    await self.game.game_options.set_option(key, value)
 
     self._mark_dirty()</code></pre>
 </details>
@@ -1925,13 +1870,13 @@ to start due to players using differing game settings.</p></div>
     async with self._db.acquire() as conn:
         result = await conn.execute(
             select(coop_map.c.id).where(
-                coop_map.c.filename == self.game.map_file_path
+                coop_map.c.filename == self.game.map.file_path
             )
         )
         row = result.fetchone()
         if not row:
             self._logger.debug(
-                &#34;can&#39;t find coop map: %s&#34;, self.game.map_file_path
+                &#34;can&#39;t find coop map: %s&#34;, self.game.map.file_path
             )
             return
         mission = row.id

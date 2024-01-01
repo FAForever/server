@@ -55,8 +55,8 @@ class LadderGame(Game):
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
 
-    def __init__(self, id_, *args, **kwargs):
-        super().__init__(id_, *args, **kwargs)
+    def __init__(self, id, *args, **kwargs):
+        super().__init__(id, *args, **kwargs)
         self._launch_future = asyncio.Future()
 
     async def wait_hosted(self, timeout: float):
@@ -150,7 +150,7 @@ class LadderGame(Game):
 </dd>
 <dt id="server.games.ladder_game.LadderGame"><code class="flex name class">
 <span>class <span class="ident">LadderGame</span></span>
-<span>(</span><span>id_, *args, **kwargs)</span>
+<span>(</span><span>id, *args, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Class for 1v1 ladder games</p></div>
@@ -164,8 +164,8 @@ class LadderGame(Game):
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
 
-    def __init__(self, id_, *args, **kwargs):
-        super().__init__(id_, *args, **kwargs)
+    def __init__(self, id, *args, **kwargs):
+        super().__init__(id, *args, **kwargs)
         self._launch_future = asyncio.Future()
 
     async def wait_hosted(self, timeout: float):
@@ -342,7 +342,6 @@ as 1 for win and 0 for anything else.</p></div>
 <li><code><a title="server.games.game.Game.is_visible_to_player" href="game.html#server.games.game.Game.is_visible_to_player">is_visible_to_player</a></code></li>
 <li><code><a title="server.games.game.Game.launch" href="game.html#server.games.game.Game.launch">launch</a></code></li>
 <li><code><a title="server.games.game.Game.load_results" href="game.html#server.games.game.Game.load_results">load_results</a></code></li>
-<li><code><a title="server.games.game.Game.map_folder_name" href="game.html#server.games.game.Game.map_folder_name">map_folder_name</a></code></li>
 <li><code><a title="server.games.game.Game.persist_results" href="game.html#server.games.game.Game.persist_results">persist_results</a></code></li>
 <li><code><a title="server.games.game.Game.players" href="game.html#server.games.game.Game.players">players</a></code></li>
 <li><code><a title="server.games.game.Game.remove_game_connection" href="game.html#server.games.game.Game.remove_game_connection">remove_game_connection</a></code></li>

@@ -36,14 +36,15 @@ from collections import Counter
 from typing import Optional, Union, ValuesView
 
 import aiocron
-from sqlalchemy import select
+from cachetools import LRUCache
+from sqlalchemy import func, select
 
 from server.config import config
 
 from . import metrics
 from .core import Service
 from .db import FAFDatabase
-from .db.models import game_featuredMods
+from .db.models import game_featuredMods, map_version
 from .decorators import with_logger
 from .exceptions import DisabledError
 from .games import (
@@ -59,6 +60,7 @@ from .matchmaker import MatchmakerQueue
 from .message_queue_service import MessageQueueService
 from .players import Player
 from .rating_service import RatingService
+from .types import MAP_DEFAULT, Map, NeroxisGeneratedMap
 
 
 @with_logger
@@ -86,11 +88,14 @@ class GameService(Service):
         self._allow_new_games = False
         self._drain_event = None
 
-        # Populated below in really_update_static_ish_data.
+        # Populated below in update_data.
         self.featured_mods = dict()
 
         # A set of mod ids that are allowed in ranked games
         self.ranked_mods: set[str] = set()
+
+        # A cache of map_version info needed by Game
+        self.map_info_cache = LRUCache(maxsize=256)
 
         # The set of active games
         self._games: dict[int, Game] = dict()
@@ -125,14 +130,16 @@ class GameService(Service):
         time we need, but which can in principle change over time.
         &#34;&#34;&#34;
         async with self._db.acquire() as conn:
-            rows = await conn.execute(select(
-                game_featuredMods.c.id,
-                game_featuredMods.c.gamemod,
-                game_featuredMods.c.name,
-                game_featuredMods.c.description,
-                game_featuredMods.c.publish,
-                game_featuredMods.c.order
-            ).select_from(game_featuredMods))
+            rows = await conn.execute(
+                select(
+                    game_featuredMods.c.id,
+                    game_featuredMods.c.gamemod,
+                    game_featuredMods.c.name,
+                    game_featuredMods.c.description,
+                    game_featuredMods.c.publish,
+                    game_featuredMods.c.order
+                )
+            )
 
             for row in rows:
                 self.featured_mods[row.gamemod] = FeaturedMod(
@@ -144,10 +151,50 @@ class GameService(Service):
                     row.order
                 )
 
-            result = await conn.execute(&#34;SELECT uid FROM table_mod WHERE ranked = 1&#34;)
+            result = await conn.execute(
+                &#34;SELECT uid FROM table_mod WHERE ranked = 1&#34;
+            )
 
             # Turn resultset into a list of uids
             self.ranked_mods = {row.uid for row in result}
+
+    async def get_map(self, folder_name: str) -&gt; Map:
+        folder_name = folder_name.lower()
+        filename = f&#34;maps/{folder_name}.zip&#34;
+
+        map = self.map_info_cache.get(filename)
+        if map is not None:
+            return map
+
+        async with self._db.acquire() as conn:
+            result = await conn.execute(
+                select(
+                    map_version.c.id,
+                    map_version.c.filename,
+                    map_version.c.ranked,
+                )
+                .where(
+                    func.lower(map_version.c.filename) == filename
+                )
+            )
+            row = result.fetchone()
+            if not row:
+                # The map requested is not in the database. This is fine as
+                # players may be using privately shared or generated maps that
+                # are not in the vault.
+                return Map(
+                    id=None,
+                    folder_name=folder_name,
+                    ranked=NeroxisGeneratedMap.is_neroxis_map(folder_name),
+                )
+
+            map = Map(
+                id=row.id,
+                folder_name=folder_name,
+                ranked=row.ranked
+            )
+            self.map_info_cache[filename] = map
+            return map
 
     def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
         if isinstance(obj, Game):
@@ -179,7 +226,7 @@ class GameService(Service):
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
-        mapname: Optional[str] = None,
+        map: Map = MAP_DEFAULT,
         password: Optional[str] = None,
         matchmaker_queue_id: Optional[int] = None,
         **kwargs
@@ -193,10 +240,10 @@ class GameService(Service):
         game_id = self.create_uid()
         game_args = {
             &#34;database&#34;: self._db,
-            &#34;id_&#34;: game_id,
+            &#34;id&#34;: game_id,
             &#34;host&#34;: host,
             &#34;name&#34;: name,
-            &#34;map_&#34;: mapname,
+            &#34;map&#34;: map,
             &#34;game_mode&#34;: game_mode,
             &#34;game_service&#34;: self,
             &#34;game_stats_service&#34;: self.game_stats_service,
@@ -390,11 +437,14 @@ class GameService(Service):
         self._allow_new_games = False
         self._drain_event = None
 
-        # Populated below in really_update_static_ish_data.
+        # Populated below in update_data.
         self.featured_mods = dict()
 
         # A set of mod ids that are allowed in ranked games
         self.ranked_mods: set[str] = set()
+
+        # A cache of map_version info needed by Game
+        self.map_info_cache = LRUCache(maxsize=256)
 
         # The set of active games
         self._games: dict[int, Game] = dict()
@@ -429,14 +479,16 @@ class GameService(Service):
         time we need, but which can in principle change over time.
         &#34;&#34;&#34;
         async with self._db.acquire() as conn:
-            rows = await conn.execute(select(
-                game_featuredMods.c.id,
-                game_featuredMods.c.gamemod,
-                game_featuredMods.c.name,
-                game_featuredMods.c.description,
-                game_featuredMods.c.publish,
-                game_featuredMods.c.order
-            ).select_from(game_featuredMods))
+            rows = await conn.execute(
+                select(
+                    game_featuredMods.c.id,
+                    game_featuredMods.c.gamemod,
+                    game_featuredMods.c.name,
+                    game_featuredMods.c.description,
+                    game_featuredMods.c.publish,
+                    game_featuredMods.c.order
+                )
+            )
 
             for row in rows:
                 self.featured_mods[row.gamemod] = FeaturedMod(
@@ -448,10 +500,50 @@ class GameService(Service):
                     row.order
                 )
 
-            result = await conn.execute(&#34;SELECT uid FROM table_mod WHERE ranked = 1&#34;)
+            result = await conn.execute(
+                &#34;SELECT uid FROM table_mod WHERE ranked = 1&#34;
+            )
 
             # Turn resultset into a list of uids
             self.ranked_mods = {row.uid for row in result}
+
+    async def get_map(self, folder_name: str) -&gt; Map:
+        folder_name = folder_name.lower()
+        filename = f&#34;maps/{folder_name}.zip&#34;
+
+        map = self.map_info_cache.get(filename)
+        if map is not None:
+            return map
+
+        async with self._db.acquire() as conn:
+            result = await conn.execute(
+                select(
+                    map_version.c.id,
+                    map_version.c.filename,
+                    map_version.c.ranked,
+                )
+                .where(
+                    func.lower(map_version.c.filename) == filename
+                )
+            )
+            row = result.fetchone()
+            if not row:
+                # The map requested is not in the database. This is fine as
+                # players may be using privately shared or generated maps that
+                # are not in the vault.
+                return Map(
+                    id=None,
+                    folder_name=folder_name,
+                    ranked=NeroxisGeneratedMap.is_neroxis_map(folder_name),
+                )
+
+            map = Map(
+                id=row.id,
+                folder_name=folder_name,
+                ranked=row.ranked
+            )
+            self.map_info_cache[filename] = map
+            return map
 
     def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
         if isinstance(obj, Game):
@@ -483,7 +575,7 @@ class GameService(Service):
         visibility=VisibilityState.PUBLIC,
         host: Optional[Player] = None,
         name: Optional[str] = None,
-        mapname: Optional[str] = None,
+        map: Map = MAP_DEFAULT,
         password: Optional[str] = None,
         matchmaker_queue_id: Optional[int] = None,
         **kwargs
@@ -497,10 +589,10 @@ class GameService(Service):
         game_id = self.create_uid()
         game_args = {
             &#34;database&#34;: self._db,
-            &#34;id_&#34;: game_id,
+            &#34;id&#34;: game_id,
             &#34;host&#34;: host,
             &#34;name&#34;: name,
-            &#34;map_&#34;: mapname,
+            &#34;map&#34;: map,
             &#34;game_mode&#34;: game_mode,
             &#34;game_service&#34;: self,
             &#34;game_stats_service&#34;: self.game_stats_service,
@@ -758,7 +850,7 @@ def pending_games(self) -&gt; list[Game]:
 </details>
 </dd>
 <dt id="server.game_service.GameService.create_game"><code class="name flex">
-<span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame, visibility=VisibilityState.PUBLIC, host: Optional[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>] = None, name: Optional[str] = None, mapname: Optional[str] = None, password: Optional[str] = None, matchmaker_queue_id: Optional[int] = None, **kwargs)</span>
+<span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame, visibility=VisibilityState.PUBLIC, host: Optional[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>] = None, name: Optional[str] = None, map: <a title="server.types.Map" href="types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1), password: Optional[str] = None, matchmaker_queue_id: Optional[int] = None, **kwargs)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Main entrypoint for creating new games</p></div>
@@ -773,7 +865,7 @@ def pending_games(self) -&gt; list[Game]:
     visibility=VisibilityState.PUBLIC,
     host: Optional[Player] = None,
     name: Optional[str] = None,
-    mapname: Optional[str] = None,
+    map: Map = MAP_DEFAULT,
     password: Optional[str] = None,
     matchmaker_queue_id: Optional[int] = None,
     **kwargs
@@ -787,10 +879,10 @@ def pending_games(self) -&gt; list[Game]:
     game_id = self.create_uid()
     game_args = {
         &#34;database&#34;: self._db,
-        &#34;id_&#34;: game_id,
+        &#34;id&#34;: game_id,
         &#34;host&#34;: host,
         &#34;name&#34;: name,
-        &#34;map_&#34;: mapname,
+        &#34;map&#34;: map,
         &#34;game_mode&#34;: game_mode,
         &#34;game_service&#34;: self,
         &#34;game_stats_service&#34;: self.game_stats_service,
@@ -843,6 +935,54 @@ def pending_games(self) -&gt; list[Game]:
         self._drain_event = asyncio.Event()
 
     await self._drain_event.wait()</code></pre>
+</details>
+</dd>
+<dt id="server.game_service.GameService.get_map"><code class="name flex">
+<span>async def <span class="ident">get_map</span></span>(<span>self, folder_name: str) ‑> <a title="server.types.Map" href="types.html#server.types.Map">Map</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def get_map(self, folder_name: str) -&gt; Map:
+    folder_name = folder_name.lower()
+    filename = f&#34;maps/{folder_name}.zip&#34;
+
+    map = self.map_info_cache.get(filename)
+    if map is not None:
+        return map
+
+    async with self._db.acquire() as conn:
+        result = await conn.execute(
+            select(
+                map_version.c.id,
+                map_version.c.filename,
+                map_version.c.ranked,
+            )
+            .where(
+                func.lower(map_version.c.filename) == filename
+            )
+        )
+        row = result.fetchone()
+        if not row:
+            # The map requested is not in the database. This is fine as
+            # players may be using privately shared or generated maps that
+            # are not in the vault.
+            return Map(
+                id=None,
+                folder_name=folder_name,
+                ranked=NeroxisGeneratedMap.is_neroxis_map(folder_name),
+            )
+
+        map = Map(
+            id=row.id,
+            folder_name=folder_name,
+            ranked=row.ranked
+        )
+        self.map_info_cache[filename] = map
+        return map</code></pre>
 </details>
 </dd>
 <dt id="server.game_service.GameService.initialise_game_counter"><code class="name flex">
@@ -1024,14 +1164,16 @@ time we need, but which can in principle change over time.</p></div>
     time we need, but which can in principle change over time.
     &#34;&#34;&#34;
     async with self._db.acquire() as conn:
-        rows = await conn.execute(select(
-            game_featuredMods.c.id,
-            game_featuredMods.c.gamemod,
-            game_featuredMods.c.name,
-            game_featuredMods.c.description,
-            game_featuredMods.c.publish,
-            game_featuredMods.c.order
-        ).select_from(game_featuredMods))
+        rows = await conn.execute(
+            select(
+                game_featuredMods.c.id,
+                game_featuredMods.c.gamemod,
+                game_featuredMods.c.name,
+                game_featuredMods.c.description,
+                game_featuredMods.c.publish,
+                game_featuredMods.c.order
+            )
+        )
 
         for row in rows:
             self.featured_mods[row.gamemod] = FeaturedMod(
@@ -1043,7 +1185,9 @@ time we need, but which can in principle change over time.</p></div>
                 row.order
             )
 
-        result = await conn.execute(&#34;SELECT uid FROM table_mod WHERE ranked = 1&#34;)
+        result = await conn.execute(
+            &#34;SELECT uid FROM table_mod WHERE ranked = 1&#34;
+        )
 
         # Turn resultset into a list of uids
         self.ranked_mods = {row.uid for row in result}</code></pre>
@@ -1086,6 +1230,7 @@ time we need, but which can in principle change over time.</p></div>
 <li><code><a title="server.game_service.GameService.create_game" href="#server.game_service.GameService.create_game">create_game</a></code></li>
 <li><code><a title="server.game_service.GameService.create_uid" href="#server.game_service.GameService.create_uid">create_uid</a></code></li>
 <li><code><a title="server.game_service.GameService.drain_games" href="#server.game_service.GameService.drain_games">drain_games</a></code></li>
+<li><code><a title="server.game_service.GameService.get_map" href="#server.game_service.GameService.get_map">get_map</a></code></li>
 <li><code><a title="server.game_service.GameService.initialise_game_counter" href="#server.game_service.GameService.initialise_game_counter">initialise_game_counter</a></code></li>
 <li><code><a title="server.game_service.GameService.live_games" href="#server.game_service.GameService.live_games">live_games</a></code></li>
 <li><code><a title="server.game_service.GameService.mark_dirty" href="#server.game_service.GameService.mark_dirty">mark_dirty</a></code></li>
