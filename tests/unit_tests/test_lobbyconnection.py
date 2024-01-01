@@ -78,8 +78,7 @@ def mock_geoip():
 
 
 @pytest.fixture
-def lobbyconnection(
-    event_loop,
+async def lobbyconnection(
     database,
     mock_protocol,
     mock_games,
@@ -288,7 +287,6 @@ async def test_command_game_host_creates_correct_game(
 
 
 async def test_command_game_join_calls_join_game(
-    mocker,
     database,
     lobbyconnection,
     game_service,

@@ -263,7 +263,6 @@ async def test_single_team_not_rated(game, game_add_players):
     n_players = 4
     game.state = GameState.LOBBY
     game_add_players(game, n_players, team=2)
-    print(game._player_options)
     await game.launch()
     game.launched_at = time.time() - 60 * 20
     for i in range(n_players):
@@ -799,6 +798,7 @@ async def test_get_army_score_conflicting_results_tied(game, game_add_players):
 async def test_equality(game):
     assert game == game
     assert game != Game(5, mock.Mock(), mock.Mock(), mock.Mock())
+    assert game != "a string"
 
 
 async def test_hashing(game):

@@ -59,7 +59,7 @@ class GameService(Service):
         self._allow_new_games = False
         self._drain_event = None
 
-        # Populated below in really_update_static_ish_data.
+        # Populated below in update_data.
         self.featured_mods = dict()
 
         # A set of mod ids that are allowed in ranked games
@@ -101,14 +101,16 @@ class GameService(Service):
         time we need, but which can in principle change over time.
         """
         async with self._db.acquire() as conn:
-            rows = await conn.execute(select(
-                game_featuredMods.c.id,
-                game_featuredMods.c.gamemod,
-                game_featuredMods.c.name,
-                game_featuredMods.c.description,
-                game_featuredMods.c.publish,
-                game_featuredMods.c.order
-            ).select_from(game_featuredMods))
+            rows = await conn.execute(
+                select(
+                    game_featuredMods.c.id,
+                    game_featuredMods.c.gamemod,
+                    game_featuredMods.c.name,
+                    game_featuredMods.c.description,
+                    game_featuredMods.c.publish,
+                    game_featuredMods.c.order
+                )
+            )
 
             for row in rows:
                 self.featured_mods[row.gamemod] = FeaturedMod(
@@ -120,7 +122,9 @@ class GameService(Service):
                     row.order
                 )
 
-            result = await conn.execute("SELECT uid FROM table_mod WHERE ranked = 1")
+            result = await conn.execute(
+                "SELECT uid FROM table_mod WHERE ranked = 1"
+            )
 
             # Turn resultset into a list of uids
             self.ranked_mods = {row.uid for row in result}

@@ -359,8 +359,6 @@ class Game:
                 return
 
             self._players_with_unsent_army_stats.remove(player)
-            # Stat processing contacts the API and can take quite a while so
-            # we don't want to await it
             asyncio.create_task(
                 self._game_stats_service.process_game_stats(
                     player, self, self._army_stats_list
@@ -688,12 +686,13 @@ class Game:
         await self._validate_game_options(valid_options)
 
     async def _validate_game_options(
-        self, valid_options: dict[str, tuple[Any, ValidityState]]
+        self,
+        valid_options: dict[str, tuple[Any, ValidityState]]
     ) -> bool:
         for key, value in self.game_options.items():
             if key in valid_options:
-                (valid_value, validity_state) = valid_options[key]
-                if valid_value != self.game_options[key]:
+                valid_value, validity_state = valid_options[key]
+                if value != valid_value:
                     await self.mark_invalid(validity_state)
                     return False
         return True
@@ -743,8 +742,8 @@ class Game:
         modId = self.game_service.featured_mods[self.game_mode].id
 
         # Write out the game_stats record.
-        # In some cases, games can be invalidated while running: we check for those cases when
-        # the game ends and update this record as appropriate.
+        # In some cases, games can be invalidated while running: we check for
+        # those cases when the game ends and update this record as appropriate.
 
         game_type = str(self.game_options.get("Victory").value)
 

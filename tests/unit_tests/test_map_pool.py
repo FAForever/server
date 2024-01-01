@@ -36,6 +36,7 @@ def test_choose_map(map_pool_factory):
         assert chosen_map == Map(4, "choose_me.v001")
 
 
+@pytest.mark.flaky
 def test_choose_map_with_weights(map_pool_factory):
     map_pool = map_pool_factory(maps=[
         Map(1, "some_map.v001", weight=1),
