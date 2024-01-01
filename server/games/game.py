@@ -905,6 +905,7 @@ class Game:
             "featured_mod": self.game_mode,
             "sim_mods": self.mods,
             "mapname": self.map.folder_name,
+            # DEPRECATED: Use `mapname` instead
             "map_file_path": self.map.file_path,
             "host": self.host.login if self.host else "",
             "num_players": len(connected_players),
