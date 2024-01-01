@@ -645,14 +645,12 @@ class Game:
         """
         A subset of checks that need to be overridden in coop games.
         """
-        if None in self.teams or not self.is_even:
-            await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
-            return
-
-        # TODO: This validity state seems to be impossible to get because it is
-        # already covered by UNEVEN_TEAMS_NOT_RANKED above.
         if len(self.players) < 2:
             await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+            return
+
+        if None in self.teams or not self.is_even:
+            await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
             return
 
         valid_options = {
