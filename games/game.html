@@ -703,14 +703,12 @@ class Game:
         &#34;&#34;&#34;
         A subset of checks that need to be overridden in coop games.
         &#34;&#34;&#34;
-        if None in self.teams or not self.is_even:
-            await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
-            return
-
-        # TODO: This validity state seems to be impossible to get because it is
-        # already covered by UNEVEN_TEAMS_NOT_RANKED above.
         if len(self.players) &lt; 2:
             await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+            return
+
+        if None in self.teams or not self.is_even:
+            await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
             return
 
         valid_options = {
@@ -1722,14 +1720,12 @@ class GameOptions(dict):
         &#34;&#34;&#34;
         A subset of checks that need to be overridden in coop games.
         &#34;&#34;&#34;
-        if None in self.teams or not self.is_even:
-            await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
-            return
-
-        # TODO: This validity state seems to be impossible to get because it is
-        # already covered by UNEVEN_TEAMS_NOT_RANKED above.
         if len(self.players) &lt; 2:
             await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+            return
+
+        if None in self.teams or not self.is_even:
+            await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
             return
 
         valid_options = {
@@ -3160,14 +3156,12 @@ care about recording stats for, after all).</p></div>
     &#34;&#34;&#34;
     A subset of checks that need to be overridden in coop games.
     &#34;&#34;&#34;
-    if None in self.teams or not self.is_even:
-        await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
-        return
-
-    # TODO: This validity state seems to be impossible to get because it is
-    # already covered by UNEVEN_TEAMS_NOT_RANKED above.
     if len(self.players) &lt; 2:
         await self.mark_invalid(ValidityState.SINGLE_PLAYER)
+        return
+
+    if None in self.teams or not self.is_even:
+        await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
         return
 
     valid_options = {
