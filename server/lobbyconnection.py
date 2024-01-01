@@ -949,6 +949,8 @@ class LobbyConnection:
         title = message.get("title") or f"{self.player.login}'s game"
         if not title.isascii():
             raise ClientError("Title must contain only ascii characters.")
+        if not title.strip():
+            raise ClientError("Title must not be empty.")
 
         mod = message.get("mod") or FeaturedModType.FAF
         mapname = message.get("mapname") or "scmp_007"

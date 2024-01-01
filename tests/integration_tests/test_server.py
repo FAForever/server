@@ -683,6 +683,56 @@ async def test_host_missing_fields(lobby_server):
     assert msg["featured_mod"] == "faf"
 
 
+@fast_forward(10)
+async def test_host_game_name_only_spaces(lobby_server):
+    player_id, session, proto = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server
+    )
+
+    await read_until_command(proto, "game_info")
+
+    await proto.send_message({
+        "command": "game_host",
+        "mod": "",
+        "visibility": "public",
+        "title": "    ",
+    })
+
+    msg = await read_until_command(proto, "notice", timeout=10)
+
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Title must not be empty.",
+    }
+
+
+@fast_forward(10)
+async def test_host_game_name_non_ascii(lobby_server):
+    player_id, session, proto = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server
+    )
+
+    await read_until_command(proto, "game_info")
+
+    await proto.send_message({
+        "command": "game_host",
+        "mod": "",
+        "visibility": "public",
+        "title": "ÇÒÖL GÃMÊ"
+    })
+
+    msg = await read_until_command(proto, "notice", timeout=10)
+
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Title must contain only ascii characters."
+    }
+
+
 async def test_play_game_while_queueing(lobby_server):
     player_id, session, proto = await connect_and_sign_in(
         ("test", "test_password"),

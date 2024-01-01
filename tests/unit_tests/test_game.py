@@ -613,6 +613,12 @@ async def test_name_sanitization(game, players):
     with pytest.raises(ValueError):
         game.name = "Hello ⏴⏵⏶⏷⏸⏹⏺⏻♿"
 
+    with pytest.raises(ValueError):
+        game.name = "    \n\n\t"
+
+    with pytest.raises(ValueError):
+        game.name = ""
+
     game.name = "A" * 256
     assert game.name == "A" * 128
 

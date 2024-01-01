@@ -164,8 +164,13 @@ class Game:
         """
         Verifies that names only contain ascii characters.
         """
+        value = value.strip()
+
         if not value.isascii():
-            raise ValueError("Name must be ascii!")
+            raise ValueError("Game title must be ascii!")
+
+        if not value:
+            raise ValueError("Game title must not be empty!")
 
         self.set_name_unchecked(value)
 
