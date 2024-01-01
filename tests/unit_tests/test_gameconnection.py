@@ -399,23 +399,58 @@ async def test_cannot_parse_game_results(
 
 
 async def test_handle_action_GameOption(
-    game: Game,
-    game_connection: GameConnection
+    real_game: Game,
+    game_connection: GameConnection,
+    players,
 ):
-    game.gameOptions = {"AIReplacement": "Off"}
+    game = real_game
+    game.host = players.hosting
+    game_connection.player = players.hosting
+    game_connection.game = real_game
+
+    game.game_options.clear()
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
-    assert game.gameOptions["Victory"] == Victory.SANDBOX
+    assert game.game_options["Victory"] == Victory.SANDBOX
     await game_connection.handle_action("GameOption", ["AIReplacement", "On"])
-    assert game.gameOptions["AIReplacement"] == "On"
+    assert game.game_options["AIReplacement"] == "On"
     await game_connection.handle_action("GameOption", ["Slots", "7"])
     assert game.max_players == 7
-    # I don't know what these paths actually look like
-    await game_connection.handle_action("GameOption", ["ScenarioFile", "C:\\Maps\\Some_Map"])
+    # This is a contrived example. Windows style paths might not actually show
+    # up, but the server has historically supported them.
+    await game_connection.handle_action(
+        "GameOption",
+        ["ScenarioFile", "C:\\Maps\\Some_Map\\Some_Map_scenario.lua"]
+    )
     assert game.map.file_path == "maps/some_map.zip"
+    assert game.map.folder_name == "some_map"
     await game_connection.handle_action("GameOption", ["Title", "All welcome"])
     assert game.name == "All welcome"
     await game_connection.handle_action("GameOption", ["ArbitraryKey", "ArbitraryValue"])
-    assert game.gameOptions["ArbitraryKey"] == "ArbitraryValue"
+    assert game.game_options["ArbitraryKey"] == "ArbitraryValue"
+
+
+@pytest.mark.parametrize("scenario_file", (
+    "/maps/x1mp_002/x1mp_002_scenario.lua",
+    "/MAPS/X1MP_002/X1MP_002_SCENARIO.LUA",
+    "////maps/////x1mp_002////x1mp_002_scenario.lua",
+))
+async def test_handle_action_GameOption_ScenarioFile(
+    real_game: Game,
+    game_connection: GameConnection,
+    players,
+    scenario_file,
+):
+    game = real_game
+    game.host = players.hosting
+    game_connection.player = players.hosting
+    game_connection.game = real_game
+
+    await game_connection.handle_action(
+        "GameOption",
+        ["ScenarioFile", scenario_file]
+    )
+    assert game.map.file_path == "maps/x1mp_002.zip"
+    assert game.map.folder_name == "x1mp_002"
 
 
 async def test_handle_action_GameOption_not_host(
@@ -424,9 +459,9 @@ async def test_handle_action_GameOption_not_host(
     players
 ):
     game_connection.player = players.joining
-    game.gameOptions = {"Victory": "asdf"}
+    game.game_options = {"Victory": "asdf"}
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
-    assert game.gameOptions == {"Victory": "asdf"}
+    assert game.game_options == {"Victory": "asdf"}
 
 
 async def test_json_stats(

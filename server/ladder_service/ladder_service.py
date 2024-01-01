@@ -563,7 +563,7 @@ class LadderService(Service):
 
             game_options = queue.get_game_options()
             if game_options:
-                game.gameOptions.update(game_options)
+                game.game_options.update(game_options)
 
             self._logger.debug("Starting ladder game: %s", game)
 

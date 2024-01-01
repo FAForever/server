@@ -12,7 +12,7 @@ class CoopGame(Game):
         super().__init__(*args, **kwargs)
 
         self.validity = ValidityState.COOP_NOT_RANKED
-        self.gameOptions.update({
+        self.game_options.update({
             "Victory": Victory.SANDBOX,
             "TeamSpawn": "fixed",
             "RevealedCivilians": "No",

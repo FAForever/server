@@ -330,6 +330,70 @@ async def test_game_info_messages(lobby_server):
 
 
 @fast_forward(60)
+async def test_game_info_messages_for_game_options(lobby_server):
+    _, _, proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    await read_until_command(proto, "game_info", timeout=10)
+
+    await host_game(proto, title="Test Game")
+
+    msg = await read_until_command(proto, "game_info", timeout=10)
+    assert msg["title"] == "Test Game"
+    assert msg["launched_at"] is None
+
+    # Send valid game options that will cause changes to `game_info` messages
+    await proto.send_message({
+        "target": "game",
+        "command": "GameOption",
+        "args": ["Title", "New title set in lobby"]
+    })
+    msg = await read_until_command(proto, "game_info", timeout=10)
+    assert msg["title"] == "New title set in lobby"
+
+    await proto.send_message({
+        "target": "game",
+        "command": "GameOption",
+        "args": ["Slots", "4"]
+    })
+    msg = await read_until_command(proto, "game_info", timeout=10)
+    assert msg["max_players"] == 4
+
+    await proto.send_message({
+        "target": "game",
+        "command": "GameOption",
+        "args": ["ScenarioFile", "/maps/new_map/new_map_scenario.lua"]
+    })
+    msg = await read_until_command(proto, "game_info", timeout=10)
+    assert msg["mapname"] == "new_map"
+
+    # Send some invalid game options
+    await proto.send_message({
+        "target": "game",
+        "command": "GameOption",
+        "args": ["Title", ""]
+    })
+    msg = await read_until_command(proto, "game_info", timeout=10)
+    assert msg["title"] == "New title set in lobby"
+
+    await proto.send_message({
+        "target": "game",
+        "command": "GameOption",
+        "args": ["Slots", "1.5"]
+    })
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto, "game_info", timeout=5)
+
+    await proto.send_message({
+        "target": "game",
+        "command": "GameOption",
+        "args": ["ScenarioFile", "/bad_scenario_file/"]
+    })
+    msg = await read_until_command(proto, "game_info", timeout=10)
+    assert msg["mapname"] == "new_map"
+
+
+@fast_forward(60)
 async def test_game_ended_rates_game(lobby_server):
     host_id, _, host_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server

@@ -142,11 +142,11 @@ async def check_game_settings(
     game: Game, settings: list[tuple[str, Any, ValidityState]]
 ):
     for key, value, expected in settings:
-        old = game.gameOptions.get(key)
-        game.gameOptions[key] = value
+        old = game.game_options.get(key)
+        game.game_options[key] = value
         await game.validate_game_settings()
         assert game.validity is expected
-        game.gameOptions[key] = old
+        game.game_options[key] = old
 
 
 async def test_add_result_unknown(game, game_add_players):

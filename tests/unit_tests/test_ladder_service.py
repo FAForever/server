@@ -190,8 +190,8 @@ async def test_start_game_with_game_options(
 
     assert game.rating_type == queue.rating_type
     assert game.max_players == 2
-    assert game.gameOptions["Share"] == "ShareUntilDeath"
-    assert game.gameOptions["UnitCap"] == 500
+    assert game.game_options["Share"] == "ShareUntilDeath"
+    assert game.game_options["UnitCap"] == 500
 
     LadderGame.wait_launched.assert_called_once()
 
