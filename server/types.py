@@ -4,6 +4,7 @@ General type definitions
 
 import base64
 import random
+import re
 from typing import Any, NamedTuple, Optional, Protocol
 
 
@@ -38,10 +39,20 @@ class MapPoolMap(Protocol):
 
 
 class Map(NamedTuple):
-    id: int
-    name: str
-    path: str
+    id: Optional[int]
+    folder_name: str
+    ranked: bool = False
+    # Map pool only
     weight: int = 1
+
+    @property
+    def file_path(self):
+        """A representation of the map name as it looks in the database"""
+        return f"maps/{self.folder_name}.zip"
+
+    @property
+    def scenario_file(self):
+        return f"/maps/{self.folder_name}/{self.folder_name}_scenario.lua"
 
     def get_map(self) -> "Map":
         return self
@@ -54,8 +65,18 @@ class NeroxisGeneratedMap(NamedTuple):
     map_size_pixels: int
     weight: int = 1
 
+    _NAME_PATTERN = re.compile(
+        "neroxis_map_generator_([0-9.]+)_([a-z2-7]+)_([a-z2-7]+)"
+    )
+
+    @classmethod
+    def is_neroxis_map(cls, folder_name: str) -> bool:
+        """Check if mapname is map generator"""
+        return cls._NAME_PATTERN.fullmatch(folder_name) is not None
+
     @classmethod
     def of(cls, params: dict, weight: int = 1):
+        """Create a NeroxisGeneratedMap from params dict"""
         assert params["type"] == "neroxis"
 
         map_size_pixels = int(params["size"])
@@ -71,12 +92,22 @@ class NeroxisGeneratedMap(NamedTuple):
             raise Exception("spawns is not a multiple of 2")
 
         version = params["version"]
-        return NeroxisGeneratedMap(
-            -int.from_bytes(bytes(f"{version}_{spawns}_{map_size_pixels}", encoding="ascii"), "big"),
+        return cls(
+            cls._get_id(version, spawns, map_size_pixels),
             version,
             spawns,
             map_size_pixels,
-            weight
+            weight,
+        )
+
+    @staticmethod
+    def _get_id(version: str, spawns: int, map_size_pixels: int) -> int:
+        return -int.from_bytes(
+            bytes(
+                f"{version}_{spawns}_{map_size_pixels}",
+                encoding="ascii"
+            ),
+            "big"
         )
 
     def get_map(self) -> Map:
@@ -85,11 +116,27 @@ class NeroxisGeneratedMap(NamedTuple):
         parameters are specified hand back None
         """
         seed_bytes = random.getrandbits(64).to_bytes(8, "big")
+        seed_str = base64.b32encode(seed_bytes).decode("ascii").replace("=", "").lower()
+
         size_byte = (self.map_size_pixels // 64).to_bytes(1, "big")
         spawn_byte = self.spawns.to_bytes(1, "big")
         option_bytes = spawn_byte + size_byte
-        seed_str = base64.b32encode(seed_bytes).decode("ascii").replace("=", "").lower()
         option_str = base64.b32encode(option_bytes).decode("ascii").replace("=", "").lower()
-        map_name = f"neroxis_map_generator_{self.version}_{seed_str}_{option_str}"
-        map_path = f"maps/{map_name}.zip"
-        return Map(self.id, map_name, map_path, self.weight)
+
+        folder_name = f"neroxis_map_generator_{self.version}_{seed_str}_{option_str}"
+
+        return Map(
+            id=self.id,
+            folder_name=folder_name,
+            ranked=True,
+            weight=self.weight,
+        )
+
+
+# Default for map argument in game/game_service. Games are only created without
+# the map argument in unit tests.
+MAP_DEFAULT = Map(
+    id=None,
+    folder_name="scmp_007",
+    ranked=False,
+)

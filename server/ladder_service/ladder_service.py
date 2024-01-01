@@ -22,10 +22,7 @@ from server.db.models import (
     game_player_stats,
     game_stats,
     leaderboard,
-    leaderboard_rating_journal
-)
-from server.db.models import map as t_map
-from server.db.models import (
+    leaderboard_rating_journal,
     map_pool,
     map_pool_map_version,
     map_version,
@@ -132,11 +129,10 @@ class LadderService(Service):
                 map_pool_map_version.c.map_params,
                 map_version.c.id.label("map_id"),
                 map_version.c.filename,
-                t_map.c.display_name
+                map_version.c.ranked,
             ).select_from(
                 map_pool.outerjoin(map_pool_map_version)
                 .outerjoin(map_version)
-                .outerjoin(t_map)
             )
         )
         map_pool_maps = {}
@@ -147,8 +143,17 @@ class LadderService(Service):
                 map_pool_maps[id_] = (name, list())
             _, map_list = map_pool_maps[id_]
             if row.map_id is not None:
+                # Database filenames contain the maps/ prefix and .zip suffix.
+                # This comes from the content server which hosts the files at
+                # https://content.faforever.com/maps/name.zip
+                folder_name = re.match(r"maps/(.+)\.zip", row.filename).group(1)
                 map_list.append(
-                    Map(row.map_id, row.display_name, row.filename, row.weight)
+                    Map(
+                        id=row.map_id,
+                        folder_name=folder_name,
+                        ranked=row.ranked,
+                        weight=row.weight,
+                    )
                 )
             elif row.map_params is not None:
                 try:
@@ -518,19 +523,19 @@ class LadderService(Service):
             pool = queue.get_map_pool_for_rating(rating)
             if not pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
-            _, _, map_path, _ = pool.choose_map(played_map_ids)
+            game_map = pool.choose_map(played_map_ids)
 
             game = self.game_service.create_game(
                 game_class=LadderGame,
                 game_mode=queue.featured_mod,
                 host=host,
                 name="Matchmaker Game",
+                map=game_map,
                 matchmaker_queue_id=queue.id,
                 rating_type=queue.rating_type,
-                max_players=len(all_players)
+                max_players=len(all_players),
             )
             game.init_mode = InitMode.AUTO_LOBBY
-            game.map_file_path = map_path
             game.set_name_unchecked(game_name(team1, team2))
 
             team1 = sorted(team1, key=get_displayed_rating)
@@ -559,17 +564,13 @@ class LadderService(Service):
 
             game_options = queue.get_game_options()
             if game_options:
-                game.gameOptions.update(game_options)
-
-            mapname = re.match("maps/(.+).zip", map_path).group(1)
-            # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
-            # Really in the future, just send a better description
+                game.game_options.update(game_options)
 
             self._logger.debug("Starting ladder game: %s", game)
 
             def make_game_options(player: Player) -> GameLaunchOptions:
                 return GameLaunchOptions(
-                    mapname=mapname,
+                    mapname=game_map.folder_name,
                     expected_players=len(all_players),
                     game_options=game_options,
                     team=game.get_player_option(player.id, "Team"),

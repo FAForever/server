@@ -6,7 +6,7 @@ from typing import NamedTuple
 
 from .coop import CoopGame
 from .custom_game import CustomGame
-from .game import Game, GameError
+from .game import Game, GameError, GameOptions
 from .ladder_game import LadderGame
 from .typedefs import (
     FeaturedModType,
@@ -37,6 +37,7 @@ __all__ = (
     "Game",
     "GameConnectionState",
     "GameError",
+    "GameOptions",
     "GameState",
     "GameType",
     "InitMode",

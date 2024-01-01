@@ -59,21 +59,21 @@ async def test_load_from_database(ladder_service, queue_factory):
         assert queue.rating_peak == 1000.0
         assert len(queue.map_pools) == 3
         assert list(queue.map_pools[1][0].maps.values()) == [
-            Map(id=15, name="SCMP_015", path="maps/scmp_015.zip"),
-            Map(id=16, name="SCMP_015", path="maps/scmp_015.v0002.zip"),
-            Map(id=17, name="SCMP_015", path="maps/scmp_015.v0003.zip"),
+            Map(15, "scmp_015", ranked=True),
+            Map(16, "scmp_015.v0002", ranked=True),
+            Map(17, "scmp_015.v0003", ranked=True),
         ]
         assert list(queue.map_pools[2][0].maps.values()) == [
-            Map(id=11, name="SCMP_011", path="maps/scmp_011.zip"),
-            Map(id=14, name="SCMP_014", path="maps/scmp_014.zip"),
-            Map(id=15, name="SCMP_015", path="maps/scmp_015.zip"),
-            Map(id=16, name="SCMP_015", path="maps/scmp_015.v0002.zip"),
-            Map(id=17, name="SCMP_015", path="maps/scmp_015.v0003.zip"),
+            Map(11, "scmp_011", ranked=True),
+            Map(14, "scmp_014", ranked=True),
+            Map(15, "scmp_015", ranked=True),
+            Map(16, "scmp_015.v0002", ranked=True),
+            Map(17, "scmp_015.v0003", ranked=True),
         ]
         assert list(queue.map_pools[3][0].maps.values()) == [
-            Map(id=1, name="SCMP_001", path="maps/scmp_001.zip"),
-            Map(id=2, name="SCMP_002", path="maps/scmp_002.zip"),
-            Map(id=3, name="SCMP_003", path="maps/scmp_003.zip"),
+            Map(1, "scmp_001", ranked=True),
+            Map(2, "scmp_002", ranked=True),
+            Map(3, "scmp_003", ranked=True),
         ]
 
         queue = ladder_service.queues["neroxis1v1"]
@@ -190,8 +190,8 @@ async def test_start_game_with_game_options(
 
     assert game.rating_type == queue.rating_type
     assert game.max_players == 2
-    assert game.gameOptions["Share"] == "ShareUntilDeath"
-    assert game.gameOptions["UnitCap"] == 500
+    assert game.game_options["Share"] == "ShareUntilDeath"
+    assert game.game_options["UnitCap"] == 500
 
     LadderGame.wait_launched.assert_called_once()
 
@@ -444,7 +444,7 @@ async def test_start_game_start_spots(
         rating_type=RatingType.GLOBAL
     )
     queue.add_map_pool(
-        MapPool(1, "test", [Map(1, "scmp_007", "maps/scmp_007.zip")]),
+        MapPool(1, "test", [Map(1, "scmp_007")]),
         min_rating=None,
         max_rating=None
     )

@@ -78,8 +78,7 @@ def mock_geoip():
 
 
 @pytest.fixture
-def lobbyconnection(
-    event_loop,
+async def lobbyconnection(
     database,
     mock_protocol,
     mock_games,
@@ -242,7 +241,7 @@ async def test_command_game_host_creates_game(
         "host": players.hosting,
         "visibility": VisibilityState.PUBLIC,
         "password": test_game_info["password"],
-        "mapname": test_game_info["mapname"],
+        "map": await mock_games.get_map(test_game_info["mapname"]),
         "rating_type": RatingType.GLOBAL,
         "displayed_rating_range": InclusiveRange(None, None),
         "enforce_rating_range": False
@@ -288,7 +287,6 @@ async def test_command_game_host_creates_correct_game(
 
 
 async def test_command_game_join_calls_join_game(
-    mocker,
     database,
     lobbyconnection,
     game_service,

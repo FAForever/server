@@ -12,13 +12,13 @@ class CustomGame(Game):
     init_mode = InitMode.NORMAL_LOBBY
     game_type = GameType.CUSTOM
 
-    def __init__(self, id_, *args, **kwargs):
+    def __init__(self, id, *args, **kwargs):
         new_kwargs = {
             "rating_type": RatingType.GLOBAL,
             "setup_timeout": 30
         }
         new_kwargs.update(kwargs)
-        super().__init__(id_, *args, **new_kwargs)
+        super().__init__(id, *args, **new_kwargs)
 
     async def _run_pre_rate_validity_checks(self):
         limit = len(self.players) * 60

@@ -22,6 +22,7 @@ from server.games import (
 from server.games.game_results import ArmyOutcome
 from server.games.typedefs import FeaturedModType
 from server.rating import InclusiveRange, RatingType
+from server.types import Map
 from tests.unit_tests.conftest import (
     add_connected_player,
     add_connected_players,
@@ -141,11 +142,11 @@ async def check_game_settings(
     game: Game, settings: list[tuple[str, Any, ValidityState]]
 ):
     for key, value, expected in settings:
-        old = game.gameOptions.get(key)
-        game.gameOptions[key] = value
+        old = game.game_options.get(key)
+        game.game_options[key] = value
         await game.validate_game_settings()
         assert game.validity is expected
-        game.gameOptions[key] = old
+        game.game_options[key] = old
 
 
 async def test_add_result_unknown(game, game_add_players):
@@ -168,7 +169,11 @@ async def test_ffa_not_rated(game, game_add_players):
 
 async def test_generated_map_is_rated(game, game_add_players):
     game.state = GameState.LOBBY
-    game.map_file_path = "maps/neroxis_map_generator_1.0.0_1234.zip"
+    game.map = Map(
+        None,
+        "neroxis_map_generator_1.0.0_23g6m_aiea",
+        ranked=True
+    )
     game_add_players(game, 2, team=1)
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
@@ -179,7 +184,7 @@ async def test_generated_map_is_rated(game, game_add_players):
 
 async def test_unranked_generated_map_not_rated(game, game_add_players):
     game.state = GameState.LOBBY
-    game.map_file_path = "maps/neroxis_map_generator_sneaky_map.zip"
+    game.map = Map(None, "neroxis_map_generator_sneaky_map")
     game_add_players(game, 2, team=1)
     await game.launch()
     await game.add_result(0, 1, "victory", 5)
@@ -258,7 +263,6 @@ async def test_single_team_not_rated(game, game_add_players):
     n_players = 4
     game.state = GameState.LOBBY
     game_add_players(game, n_players, team=2)
-    print(game._player_options)
     await game.launch()
     game.launched_at = time.time() - 60 * 20
     for i in range(n_players):
@@ -609,6 +613,12 @@ async def test_name_sanitization(game, players):
     with pytest.raises(ValueError):
         game.name = "Hello ⏴⏵⏶⏷⏸⏹⏺⏻♿"
 
+    with pytest.raises(ValueError):
+        game.name = "    \n\n\t"
+
+    with pytest.raises(ValueError):
+        game.name = ""
+
     game.name = "A" * 256
     assert game.name == "A" * 128
 
@@ -643,8 +653,8 @@ async def test_to_dict(game, player_factory):
         "state": "playing",
         "featured_mod": game.game_mode,
         "sim_mods": game.mods,
-        "mapname": game.map_folder_name,
-        "map_file_path": game.map_file_path,
+        "mapname": game.map.folder_name,
+        "map_file_path": game.map.file_path,
         "host": game.host.login,
         "num_players": len(game.players),
         "max_players": game.max_players,
@@ -794,6 +804,7 @@ async def test_get_army_score_conflicting_results_tied(game, game_add_players):
 async def test_equality(game):
     assert game == game
     assert game != Game(5, mock.Mock(), mock.Mock(), mock.Mock())
+    assert game != "a string"
 
 
 async def test_hashing(game):
@@ -1010,7 +1021,7 @@ async def test_game_results(game: Game, players):
             }
         ]
     assert result_dict["game_id"] == game.id
-    assert result_dict["map_id"] == game.map_id
+    assert result_dict["map_id"] == game.map.id
     assert result_dict["featured_mod"] == "faf"
     assert result_dict["sim_mod_ids"] == []
 

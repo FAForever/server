@@ -175,7 +175,6 @@ async def test_graceful_shutdown(
     lobby_instance,
     lobby_server,
     tmp_user,
-    monkeypatch
 ):
     _, _, proto = await connect_and_sign_in(
         await tmp_user("Player"),
@@ -622,7 +621,7 @@ async def test_info_broadcast_to_rabbitmq(lobby_server, channel):
     _, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
-    await read_until_command(proto, "game_info")
+    await read_until_command(proto, "game_info", timeout=10)
     # matchmaker_info is broadcast whenever the timer pops
     await read_until_command(mq_proto_all, "matchmaker_info")
 
@@ -640,6 +639,7 @@ async def test_info_broadcast_to_rabbitmq(lobby_server, channel):
     ("ban_expired", "ban_expired"),
     ("No_UID", "his_pw")
 ])
+@fast_forward(10)
 async def test_game_host_authenticated(lobby_server, user):
     _, _, proto = await connect_and_sign_in(user, lobby_server)
     await read_until_command(proto, "game_info")
@@ -651,15 +651,15 @@ async def test_game_host_authenticated(lobby_server, user):
         "visibility": "public",
     })
 
-    msg = await read_until_command(proto, "game_launch")
+    msg = await read_until_command(proto, "game_launch", timeout=10)
 
     assert msg["mod"] == "faf"
     assert "args" in msg
     assert isinstance(msg["uid"], int)
 
 
-@fast_forward(5)
-async def test_host_missing_fields(event_loop, lobby_server, player_service):
+@fast_forward(10)
+async def test_host_missing_fields(lobby_server):
     player_id, session, proto = await connect_and_sign_in(
         ("test", "test_password"),
         lobby_server
@@ -671,16 +671,66 @@ async def test_host_missing_fields(event_loop, lobby_server, player_service):
         "command": "game_host",
         "mod": "",
         "visibility": "public",
-        "title": ""
+        "title": "",
     })
 
-    msg = await read_until_command(proto, "game_info")
+    msg = await read_until_command(proto, "game_info", timeout=10)
 
     assert msg["title"] == "test's game"
     assert msg["game_type"] == "custom"
     assert msg["mapname"] == "scmp_007"
     assert msg["map_file_path"] == "maps/scmp_007.zip"
     assert msg["featured_mod"] == "faf"
+
+
+@fast_forward(10)
+async def test_host_game_name_only_spaces(lobby_server):
+    player_id, session, proto = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server
+    )
+
+    await read_until_command(proto, "game_info")
+
+    await proto.send_message({
+        "command": "game_host",
+        "mod": "",
+        "visibility": "public",
+        "title": "    ",
+    })
+
+    msg = await read_until_command(proto, "notice", timeout=10)
+
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Title must not be empty.",
+    }
+
+
+@fast_forward(10)
+async def test_host_game_name_non_ascii(lobby_server):
+    player_id, session, proto = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server
+    )
+
+    await read_until_command(proto, "game_info")
+
+    await proto.send_message({
+        "command": "game_host",
+        "mod": "",
+        "visibility": "public",
+        "title": "ÇÒÖL GÃMÊ"
+    })
+
+    msg = await read_until_command(proto, "notice", timeout=10)
+
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Title must contain only ascii characters."
+    }
 
 
 async def test_play_game_while_queueing(lobby_server):

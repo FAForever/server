@@ -1,9 +1,11 @@
 import asyncio
+import contextlib
 import json
 import logging
+import pathlib
 import time
 from collections import defaultdict
-from typing import Any, Iterable, Optional
+from typing import Any, Awaitable, Callable, Iterable, Optional
 
 from sqlalchemy import and_, bindparam
 from sqlalchemy.exc import DBAPIError
@@ -27,6 +29,7 @@ from server.games.game_results import (
 )
 from server.rating import InclusiveRange, RatingType
 from server.timing import datetime_now
+from server.types import MAP_DEFAULT, Map
 
 from ..players import Player, PlayerState
 from .typedefs import (
@@ -57,13 +60,13 @@ class Game:
 
     def __init__(
         self,
-        id_: int,
+        id: int,
         database: "FAFDatabase",
         game_service: "GameService",
         game_stats_service: "GameStatsService",
         host: Optional[Player] = None,
-        name: str = "None",
-        map_: str = "SCMP_007",
+        name: str = "New Game",
+        map: Map = MAP_DEFAULT,
         game_mode: str = FeaturedModType.FAF,
         matchmaker_queue_id: Optional[int] = None,
         rating_type: Optional[str] = None,
@@ -72,8 +75,9 @@ class Game:
         max_players: int = 12,
         setup_timeout: int = 60,
     ):
+        self.id = id
         self._db = database
-        self._results = GameResultReports(id_)
+        self._results = GameResultReports(id)
         self._army_stats_list = []
         self._players_with_unsent_army_stats = []
         self._game_stats_service = game_stats_service
@@ -83,16 +87,12 @@ class Game:
         self.launched_at = None
         self.finished = False
         self._logger = logging.getLogger(
-            f"{self.__class__.__qualname__}.{id_}"
+            f"{self.__class__.__qualname__}.{id}"
         )
-        self.id = id_
         self.visibility = VisibilityState.PUBLIC
-        self.max_players = max_players
         self.host = host
         self.name = name
-        self.map_id = None
-        self.map_file_path = f"maps/{map_}.zip"
-        self.map_scenario_path = None
+        self.map = map
         self.password = None
         self._players_at_launch: list[Player] = []
         self.AIs = {}
@@ -107,18 +107,29 @@ class Game:
         self._connections = {}
         self._configured_player_ids: set[int] = set()
         self.enforce_rating = False
-        self.gameOptions = {
-            "FogOfWar": "explored",
-            "GameSpeed": "normal",
-            "Victory": Victory.DEMORALIZATION,
-            "CheatsEnabled": "false",
-            "PrebuiltUnits": "Off",
-            "NoRushOption": "Off",
-            "TeamLock": "locked",
-            "AIReplacement": "Off",
-            "RestrictedCategories": 0,
-            "Unranked": "No"
-        }
+        self.game_options = GameOptions(
+            id,
+            {
+                "AIReplacement": "Off",
+                "CheatsEnabled": "false",
+                "FogOfWar": "explored",
+                "GameSpeed": "normal",
+                "NoRushOption": "Off",
+                "PrebuiltUnits": "Off",
+                "RestrictedCategories": 0,
+                "ScenarioFile": (pathlib.PurePath(map.scenario_file)),
+                "Slots": max_players,
+                "TeamLock": "locked",
+                "Unranked": "No",
+                "Victory": Victory.DEMORALIZATION,
+            }
+        )
+        self.game_options.add_async_callback(
+            "ScenarioFile",
+            self.on_scenario_file_changed,
+        )
+        self.game_options.add_callback("Title", self.on_title_changed)
+
         self.mods = {}
         self._hosted_future = asyncio.Future()
         self._finish_lock = asyncio.Lock()
@@ -132,6 +143,18 @@ class Game:
             self._logger.debug("Game setup timed out, cancelling game")
             await self.on_game_finish()
 
+    async def on_scenario_file_changed(self, scenario_path: pathlib.PurePath):
+        try:
+            map_folder_name = scenario_path.parts[2].lower()
+        except IndexError:
+            return
+
+        self.map = await self.game_service.get_map(map_folder_name)
+
+    def on_title_changed(self, title: str):
+        with contextlib.suppress(ValueError):
+            self.name = title
+
     @property
     def name(self):
         return self._name
@@ -141,8 +164,13 @@ class Game:
         """
         Verifies that names only contain ascii characters.
         """
+        value = value.strip()
+
         if not value.isascii():
-            raise ValueError("Name must be ascii!")
+            raise ValueError("Game title must be ascii!")
+
+        if not value:
+            raise ValueError("Game title must not be empty!")
 
         self.set_name_unchecked(value)
 
@@ -154,6 +182,10 @@ class Game:
         """
         max_len = game_stats.c.gameName.type.length
         self._name = value[:max_len]
+
+    @property
+    def max_players(self) -> int:
+        return self.game_options["Slots"]
 
     @property
     def armies(self) -> frozenset[int]:
@@ -327,13 +359,11 @@ class Game:
         try:
             if (
                 len(self._army_stats_list) == 0
-                or self.gameOptions["CheatsEnabled"] != "false"
+                or self.game_options["CheatsEnabled"] != "false"
             ):
                 return
 
             self._players_with_unsent_army_stats.remove(player)
-            # Stat processing contacts the API and can take quite a while so
-            # we don't want to await it
             asyncio.create_task(
                 self._game_stats_service.process_game_stats(
                     player, self, self._army_stats_list
@@ -558,7 +588,7 @@ class Game:
         return BasicGameInfo(
             self.id,
             self.rating_type,
-            self.map_id,
+            self.map.id,
             self.game_mode,
             list(self.mods.keys()),
             self.get_team_sets(),
@@ -661,12 +691,13 @@ class Game:
         await self._validate_game_options(valid_options)
 
     async def _validate_game_options(
-        self, valid_options: dict[str, tuple[Any, ValidityState]]
+        self,
+        valid_options: dict[str, tuple[Any, ValidityState]]
     ) -> bool:
-        for key, value in self.gameOptions.items():
+        for key, value in self.game_options.items():
             if key in valid_options:
-                (valid_value, validity_state) = valid_options[key]
-                if valid_value != self.gameOptions[key]:
+                valid_value, validity_state = valid_options[key]
+                if value != valid_value:
                     await self.mark_invalid(validity_state)
                     return False
         return True
@@ -707,34 +738,19 @@ class Game:
         """
         assert self.host is not None
 
-        async with self._db.acquire() as conn:
-            # Determine if the map is blacklisted, and invalidate the game for
-            # ranking purposes if so, and grab the map id at the same time.
-            result = await conn.execute(
-                "SELECT id, ranked FROM map_version "
-                "WHERE lower(filename) = lower(:filename)",
-                filename=self.map_file_path
-            )
-            row = result.fetchone()
+        # Ensure map data is up to date
+        self.map = await self.game_service.get_map(self.map.folder_name)
 
-        is_generated = (self.map_file_path and "neroxis_map_generator" in self.map_file_path)
-
-        if row:
-            self.map_id = row.id
-
-        if (
-            self.validity is ValidityState.VALID
-            and ((row and not row.ranked) or (not row and not is_generated))
-        ):
+        if self.validity is ValidityState.VALID and not self.map.ranked:
             await self.mark_invalid(ValidityState.BAD_MAP)
 
         modId = self.game_service.featured_mods[self.game_mode].id
 
         # Write out the game_stats record.
-        # In some cases, games can be invalidated while running: we check for those cases when
-        # the game ends and update this record as appropriate.
+        # In some cases, games can be invalidated while running: we check for
+        # those cases when the game ends and update this record as appropriate.
 
-        game_type = str(self.gameOptions.get("Victory").value)
+        game_type = str(self.game_options.get("Victory").value)
 
         async with self._db.acquire() as conn:
             await conn.execute(
@@ -743,7 +759,7 @@ class Game:
                     gameType=game_type,
                     gameMod=modId,
                     host=self.host.id,
-                    mapId=self.map_id,
+                    mapId=self.map.id,
                     gameName=self.name,
                     validity=self.validity.value,
                 )
@@ -893,8 +909,9 @@ class Game:
             "game_type": self.game_type.value,
             "featured_mod": self.game_mode,
             "sim_mods": self.mods,
-            "mapname": self.map_folder_name,
-            "map_file_path": self.map_file_path,
+            "mapname": self.map.folder_name,
+            # DEPRECATED: Use `mapname` instead
+            "map_file_path": self.map.file_path,
             "host": self.host.login if self.host else "",
             "num_players": len(connected_players),
             "max_players": self.max_players,
@@ -923,19 +940,6 @@ class Game:
             }
         }
 
-    @property
-    def map_folder_name(self) -> str:
-        """
-        Map folder name
-        """
-        try:
-            return str(self.map_scenario_path.split("/")[2]).lower()
-        except (IndexError, AttributeError):
-            if self.map_file_path:
-                return self.map_file_path[5:-4].lower()
-            else:
-                return "scmp_009"
-
     def __eq__(self, other):
         if not isinstance(other, Game):
             return False
@@ -948,5 +952,100 @@ class Game:
     def __str__(self) -> str:
         return (
             f"Game({self.id}, {self.host.login if self.host else ''}, "
-            f"{self.map_file_path})"
+            f"{self.map.file_path})"
         )
+
+
+class GameOptions(dict):
+    def __init__(self, id: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._logger = logging.getLogger(
+            f"{self.__class__.__qualname__}.{id}"
+        )
+        self.callbacks = defaultdict(list)
+        self.async_callbacks = defaultdict(list)
+
+    def add_callback(self, key: str, callback: Callable[[Any], Any]):
+        self.callbacks[key].append(callback)
+
+    def add_async_callback(
+        self,
+        key: str,
+        callback: Callable[[Any], Awaitable[Any]],
+    ):
+        self.async_callbacks[key].append(callback)
+
+    async def set_option(self, k: str, v: Any) -> None:
+        v = self._set_option(k, v)
+        self._run_sync_callbacks(k, v)
+
+        await asyncio.gather(*(
+            self._log_async_exception(
+                async_callback(v),
+                k,
+                v,
+            )
+            for async_callback in self.async_callbacks.get(k, ())
+        ))
+
+    def __setitem__(self, k: str, v: Any) -> None:
+        v = self._set_option(k, v)
+        self._run_sync_callbacks(k, v)
+
+        for async_callback in self.async_callbacks.get(k, ()):
+            asyncio.create_task(
+                self._log_async_exception(
+                    async_callback(v),
+                    k,
+                    v,
+                )
+            )
+
+    def _set_option(self, k: str, v: Any) -> Any:
+        """
+        Set the new value potentially transforming it first. Returns the value
+        that was set.
+        """
+        if k == "Victory" and not isinstance(v, Victory):
+            victory = Victory.__members__.get(v.upper())
+            if victory is None:
+                victory = self.get("Victory")
+                self._logger.warning(
+                    "Invalid victory type '%s'! Using '%s' instead.",
+                    v,
+                    victory.name if victory else None,
+                )
+                return
+            v = victory
+        elif k == "Slots":
+            v = int(v)
+        elif k == "ScenarioFile":
+            # Convert to a posix path. Since posix paths are also interpreted
+            # the same way as windows paths (but not the other way around!) we
+            # can do this by parsing as a PureWindowsPath first
+            v = pathlib.PurePath(pathlib.PureWindowsPath(v).as_posix())
+
+        super().__setitem__(k, v)
+
+        return v
+
+    def _run_sync_callbacks(self, k: str, v: Any):
+        for callback in self.callbacks.get(k, ()):
+            try:
+                callback(v)
+            except Exception:
+                self._logger.exception(
+                    "Error running callback for '%s' (value %r)",
+                    k,
+                    v,
+                )
+
+    async def _log_async_exception(self, coro: Awaitable[Any], k: str, v: Any):
+        try:
+            return await coro
+        except Exception:
+            self._logger.exception(
+                "Error running async callback for '%s' (value %r)",
+                k,
+                v,
+            )

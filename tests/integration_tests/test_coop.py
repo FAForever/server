@@ -9,18 +9,18 @@ from .conftest import connect_and_sign_in, read_until, read_until_command
 from .test_game import host_game, send_player_options
 
 
-@fast_forward(5)
+@fast_forward(100)
 async def test_host_coop_game(lobby_server):
     _, _, proto = await connect_and_sign_in(
         ("test", "test_password"),
         lobby_server
     )
 
-    await read_until_command(proto, "game_info")
+    await read_until_command(proto, "game_info", timeout=10)
 
     await host_game(proto, mod="coop", title="")
 
-    msg = await read_until_command(proto, "game_info")
+    msg = await read_until_command(proto, "game_info", timeout=10)
 
     assert msg["title"] == "test's game"
     assert msg["mapname"] == "scmp_007"
@@ -29,7 +29,7 @@ async def test_host_coop_game(lobby_server):
     assert msg["game_type"] == "coop"
 
 
-@fast_forward(30)
+@fast_forward(100)
 async def test_single_player_game_recorded(lobby_server, database):
     test_id, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
