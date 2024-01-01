@@ -516,16 +516,37 @@ class LobbyConnection:
 
         async with self._db.acquire() as conn:
             result = await conn.execute(
-                select(t_login.c.login)
+                select(
+                    t_login.c.login,
+                    lobby_ban.c.reason,
+                    lobby_ban.c.expires_at
+                )
+                .select_from(t_login.outerjoin(lobby_ban))
                 .where(t_login.c.id == player_id)
+                .order_by(lobby_ban.c.expires_at.desc())
             )
             row = result.fetchone()
 
             if not row:
-                self._logger.warning("User id not found in database possible fraudulent token: %s", player_id)
+                self._logger.warning(
+                    "User id %s not found in database! Possible fraudulent "
+                    "token: %s",
+                    player_id,
+                    token
+                )
                 raise AuthenticationError("Cannot find user id", auth_method)
 
             username = row.login
+            ban_reason = row.reason
+            ban_expiry = row.expires_at
+
+            now = datetime.utcnow()
+            if ban_reason is not None and now < ban_expiry:
+                self._logger.debug(
+                    "Rejected login from banned user: %s, %s, %s",
+                    player_id, username, self.session
+                )
+                raise BanError(ban_expiry, ban_reason)
 
         # DEPRECATED: IRC passwords are handled outside of the lobby server.
         # This message remains here for backwards compatibility, but the data

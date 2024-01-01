@@ -34,7 +34,9 @@ class BanError(Exception):
     def message(self):
         return (
             f"You are banned from FAF {self._ban_duration_text()}. <br>"
-            f"Reason: <br>{self.ban_reason}"
+            f"Reason: <br>{self.ban_reason}<br><br>"
+            "<i>If you would like to appeal this ban, please send an email to: "
+            "moderation@faforever.com</i>"
         )
 
     def _ban_duration_text(self):

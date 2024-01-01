@@ -1076,8 +1076,11 @@ async def test_abort_connection_if_banned(
     lobbyconnection.player.id = 203
     with pytest.raises(BanError) as banned_error:
         await lobbyconnection.abort_connection_if_banned()
-    assert banned_error.value.message() == \
+    assert banned_error.value.message() == (
         "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
+        "<br><br><i>If you would like to appeal this ban, please send an email "
+        "to: moderation@faforever.com</i>"
+    )
 
     # test user who is banned for another 46 hours
     lobbyconnection.player.id = 204
