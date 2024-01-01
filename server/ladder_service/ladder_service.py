@@ -143,8 +143,9 @@ class LadderService(Service):
                 map_pool_maps[id_] = (name, list())
             _, map_list = map_pool_maps[id_]
             if row.map_id is not None:
-                # FIXME: Database filenames contain the maps/ prefix and .zip suffix.
-                # Really in the future, just send a better description
+                # Database filenames contain the maps/ prefix and .zip suffix.
+                # This comes from the content server which hosts the files at
+                # https://content.faforever.com/maps/name.zip
                 folder_name = re.match(r"maps/(.+)\.zip", row.filename).group(1)
                 map_list.append(
                     Map(
