@@ -278,7 +278,7 @@ async def test_single_player_not_rated(game, game_add_players):
     game.launched_at = time.time() - 60 * 20
     await game.add_result(0, 0, "victory", 5)
     await game.on_game_finish()
-    assert game.validity is ValidityState.UNEVEN_TEAMS_NOT_RANKED
+    assert game.validity is ValidityState.SINGLE_PLAYER
 
 
 async def test_game_visible_to_host(game: Game, players):
