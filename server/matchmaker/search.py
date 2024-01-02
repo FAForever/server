@@ -40,7 +40,7 @@ class Search:
         self.players = players
         self.rating_type = rating_type
         self.start_time = start_time or time.time()
-        self._match = asyncio.get_event_loop().create_future()
+        self._match: Optional[asyncio.Future] = None
         self._failed_matching_attempts = 0
         self.on_matched = on_matched
 
@@ -173,14 +173,18 @@ class Search:
 
     @property
     def is_matched(self) -> bool:
-        return self._match.done() and not self._match.cancelled()
+        return (
+            self._match
+            and self._match.done()
+            and not self._match.cancelled()
+        )
 
     def done(self) -> bool:
-        return self._match.done()
+        return self._match and self._match.done()
 
     @property
     def is_cancelled(self) -> bool:
-        return self._match.cancelled()
+        return self._match and self._match.cancelled()
 
     def matches_with(self, other: "Search") -> bool:
         """
@@ -224,20 +228,29 @@ class Search:
                     mean,
                     adjusted_mean
                 )
-        self._match.set_result(other)
+
+        self._get_match().set_result(other)
+
+    def unmatch(self):
+        self._match = None
 
     async def await_match(self):
         """
         Wait for this search to complete
         """
-        await asyncio.wait_for(self._match, None)
-        return self._match
+        await asyncio.wait_for(self._get_match(), None)
 
     def cancel(self):
         """
         Cancel searching for a match
         """
-        self._match.cancel()
+        self._get_match().cancel()
+
+    def _get_match(self) -> asyncio.Future:
+        if self._match is None:
+            self._match = asyncio.get_running_loop().create_future()
+
+        return self._match
 
     def __str__(self) -> str:
         return (
@@ -340,7 +353,7 @@ class CombinedSearch(Search):
         """
         Wait for this search to complete
         """
-        await asyncio.wait({s.await_match() for s in self.searches})
+        await asyncio.wait([s.await_match() for s in self.searches])
 
     def cancel(self):
         """

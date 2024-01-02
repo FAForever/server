@@ -261,10 +261,31 @@ def test_combined_search_attributes(matchmaker_players):
         p2.ratings[RatingType.LADDER_1V1],
         p3.ratings[RatingType.LADDER_1V1]
     ]
+    assert search.get_original_searches() == [s1, s2]
     assert search.failed_matching_attempts == 1
 
     search.register_failed_matching_attempt()
     assert search.failed_matching_attempts == 2
+
+
+def test_search_get_original_searches(matchmaker_players):
+    p1, p2, p3, p4, p5, p6 = matchmaker_players
+    s1 = Search([p1, p2])
+    s2 = Search([p3])
+    s3 = Search([p4, p5])
+    s4 = Search([p6])
+    cs1 = CombinedSearch(s1, s2)
+    cs2 = CombinedSearch(cs1, s3)
+    search = CombinedSearch(cs2, s4)
+
+    assert search.get_original_searches() == [cs2, s4]
+
+
+def test_combined_search_nested_get_original_searches(matchmaker_players):
+    p1 = matchmaker_players[0]
+    s1 = Search([p1])
+
+    assert s1.get_original_searches() == [s1]
 
 
 def test_queue_time_until_next_pop(queue_factory):

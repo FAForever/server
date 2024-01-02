@@ -156,6 +156,35 @@ async def start_search(proto, queue_name="ladder1v1"):
     )
 
 
+async def accept_match(proto, timeout=5):
+    await read_until_command(proto, "match_info", timeout=timeout)
+    await proto.send_message({"command": "match_ready"})
+    return await read_until_command(
+        proto,
+        "match_info",
+        ready=True,
+        timeout=10
+    )
+
+
+async def read_until_match(proto, timeout=30):
+    # If the players did not match, this will fail due to a timeout error
+    msg = await read_until_command(proto, "match_found", timeout=timeout)
+    # Accept match
+    match_info = await read_until_command(proto, "match_info", timeout=timeout)
+    await proto.send_message({"command": "match_ready"})
+    # Wait for all players to be ready. This could be the same as the message
+    # notifying us that our match ready was received so we can't use
+    # `accept_match` here.
+    await read_until_command(
+        proto,
+        "match_info",
+        players_ready=match_info["players_total"],
+        timeout=10
+    )
+    return msg
+
+
 async def queue_player_for_matchmaking(
     user,
     lobby_server,
@@ -183,10 +212,6 @@ async def queue_players_for_matchmaking(
         queue_name
     )
 
-    # If the players did not match, this will fail due to a timeout error
-    await read_until_command(proto1, "match_found", timeout=30)
-    await read_until_command(proto2, "match_found")
-
     return player1_id, proto1, player2_id, proto2
 
 
@@ -195,27 +220,22 @@ async def queue_temp_players_for_matchmaking(
     tmp_user,
     num_players,
     queue_name,
+    player_name=None,
 ):
     """
     Queue an arbitrary number of players for matchmaking in a particular queue
     by setting up temp users.
     """
     users = await asyncio.gather(*[
-        tmp_user(queue_name)
+        tmp_user(player_name or queue_name)
         for _ in range(num_players)
     ])
-    protos = await asyncio.gather(*[
+    responses = await asyncio.gather(*[
         queue_player_for_matchmaking(user, lobby_server, queue_name)
         for user in users
     ])
 
-    # If the players did not match, this will fail due to a timeout error
-    await asyncio.gather(*[
-        read_until_command(proto, "match_found", timeout=30)
-        for _, proto in protos
-    ])
-
-    return protos
+    return (proto for _, proto in responses)
 
 
 async def get_player_ratings(proto, *names, rating_type="global"):
@@ -803,9 +823,11 @@ async def test_ladder_game_draw_bug(lobby_server, database):
     instead of a draw.
     """
     player1_id, proto1, player2_id, proto2 = await queue_players_for_matchmaking(lobby_server)
+    protos = (proto1, proto2)
 
+    await asyncio.gather(*[read_until_match(proto) for proto in protos])
     msg1, msg2 = await asyncio.gather(*[
-        client_response(proto) for proto in (proto1, proto2)
+        client_response(proto) for proto in protos
     ])
     game_id = msg1["uid"]
     army1 = msg1["map_position"]
@@ -819,7 +841,7 @@ async def test_ladder_game_draw_bug(lobby_server, database):
             (player_id, "Faction", msg["faction"]),
             (player_id, "Color", msg["map_position"]),
         )
-    for proto in (proto1, proto2):
+    for proto in protos:
         await proto.send_message({
             "target": "game",
             "command": "GameState",
@@ -836,14 +858,14 @@ async def test_ladder_game_draw_bug(lobby_server, database):
         [army1, "score 1"],
         [army2, "defeat -10"]
     ):
-        for proto in (proto1, proto2):
+        for proto in protos:
             await proto.send_message({
                 "target": "game",
                 "command": "GameResult",
                 "args": result
             })
 
-    for proto in (proto1, proto2):
+    for proto in protos:
         await proto.send_message({
             "target": "game",
             "command": "GameEnded",
@@ -886,7 +908,7 @@ async def test_ladder_game_draw_bug(lobby_server, database):
             assert row.score == 0
 
 
-@fast_forward(15)
+@fast_forward(70)
 async def test_ladder_game_not_joinable(lobby_server):
     """
     We should not be able to join AUTO_LOBBY games using the `game_join` command.
@@ -894,7 +916,8 @@ async def test_ladder_game_not_joinable(lobby_server):
     _, _, test_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
-    _, proto1, _, _ = await queue_players_for_matchmaking(lobby_server)
+    _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     await read_until_command(test_proto, "game_info")
 
     msg = await read_until_command(proto1, "game_launch")

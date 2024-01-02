@@ -175,7 +175,7 @@ class MatchmakerQueue:
         proposed_matches, unmatched_searches = await loop.run_in_executor(
             None,
             self.matchmaker.find,
-            searches,
+            (search for search in searches if not search.done()),
             self.team_size,
             self.rating_peak,
         )
@@ -226,7 +226,7 @@ class MatchmakerQueue:
         for search in unmatched_searches:
             search.register_failed_matching_attempt()
             self._logger.debug(
-                "Search %s remained unmatched at threshold %f in attempt number %s",
+                "%s remained unmatched at threshold %f in attempt number %s",
                 search, search.match_threshold, search.failed_matching_attempts
             )
 

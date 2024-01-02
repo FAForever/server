@@ -6,8 +6,10 @@ import json
 import random
 import re
 import statistics
+import weakref
 from collections import defaultdict
-from typing import Awaitable, Callable, Optional
+from datetime import timedelta
+from typing import Awaitable, Callable, Iterable, Optional
 
 import aiocron
 import humanize
@@ -40,11 +42,14 @@ from server.ladder_service.violation_service import ViolationService
 from server.matchmaker import (
     MapPool,
     MatchmakerQueue,
+    MatchOffer,
+    OfferTimeoutError,
     OnMatchedCallback,
     Search
 )
 from server.metrics import MatchLaunch
 from server.players import Player, PlayerState
+from server.timing import datetime_now
 from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
 
 
@@ -68,6 +73,11 @@ class LadderService(Service):
         self.violation_service = violation_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
+        # NOTE: We are using a WeakValueDictionary to store the player -> offer
+        # associations so that we don't need to write any cleanup code. The
+        # values will automatically be deleted from the dictionary when the
+        # MatchOffer object is garbage collected / deleted.
+        self._match_offers = weakref.WeakValueDictionary()
         self._allow_new_searches = True
 
     async def initialize(self) -> None:
@@ -338,20 +348,27 @@ class LadderService(Service):
             on_matched=on_matched
         )
 
-        for player in players:
+        self._add_search_to_queue(search, queue)
+
+    def _add_search_to_queue(
+        self,
+        search: Search,
+        queue: MatchmakerQueue,
+    ):
+        for player in search.players:
             player.state = PlayerState.SEARCHING_LADDER
 
             self.write_rating_progress(player, queue.rating_type)
 
             player.write_message({
                 "command": "search_info",
-                "queue_name": queue_name,
+                "queue_name": queue.name,
                 "state": "start"
             })
 
-            self._searches[player][queue_name] = search
+            self._searches[player][queue.name] = search
 
-        self._logger.info("%s started searching for %s", search, queue_name)
+        self._logger.info("%s started searching for %s", search, queue.name)
 
         asyncio.create_task(queue.search(search))
 
@@ -368,7 +385,11 @@ class LadderService(Service):
         for queue_name in queue_names:
             self._cancel_search(initiator, queue_name)
 
-    def _cancel_search(self, initiator: Player, queue_name: str) -> None:
+    def _cancel_search(
+        self,
+        initiator: Player,
+        queue_name: str
+    ) -> Optional[Search]:
         """
         Cancel search for a specific player/queue.
         """
@@ -380,7 +401,7 @@ class LadderService(Service):
                 initiator,
                 queue_name
             )
-            return
+            return None
         cancelled_search.cancel()
 
         for player in cancelled_search.players:
@@ -397,6 +418,7 @@ class LadderService(Service):
         self._logger.info(
             "%s stopped searching for %s", cancelled_search, queue_name
         )
+        return cancelled_search
 
     def _clear_search(
         self,
@@ -417,26 +439,28 @@ class LadderService(Service):
         return search
 
     def write_rating_progress(self, player: Player, rating_type: str) -> None:
-        if player not in self._informed_players:
-            self._informed_players.add(player)
-            _, deviation = player.ratings[rating_type]
+        if player in self._informed_players:
+            return
 
-            if deviation > 490:
-                player.write_message({
-                    "command": "notice",
-                    "style": "info",
-                    "text": (
-                        "<i>Welcome to the matchmaker</i><br><br><b>The "
-                        "matchmaking system needs to calibrate your skill level; "
-                        "your first few games may be more imbalanced as the "
-                        "system attempts to learn your capability as a player."
-                        "</b><br><b>"
-                        "Afterwards, you'll be more reliably matched up with "
-                        "people of your skill level: so don't worry if your "
-                        "first few games are uneven. This will improve as you "
-                        "play!</b>"
-                    )
-                })
+        self._informed_players.add(player)
+        _, deviation = player.ratings[rating_type]
+
+        if deviation > 490:
+            player.write_message({
+                "command": "notice",
+                "style": "info",
+                "text": (
+                    "<i>Welcome to the matchmaker</i><br><br><b>The "
+                    "matchmaking system needs to calibrate your skill level; "
+                    "your first few games may be more imbalanced as the "
+                    "system attempts to learn your capability as a player."
+                    "</b><br><b>"
+                    "Afterwards, you'll be more reliably matched up with "
+                    "people of your skill level: so don't worry if your "
+                    "first few games are uneven. This will improve as you "
+                    "play!</b>"
+                )
+            })
 
     def on_match_found(
         self,
@@ -452,8 +476,10 @@ class LadderService(Service):
         """
         try:
             msg = {"command": "match_found", "queue_name": queue.name}
+            original_searches = []
 
-            for player in s1.players + s2.players:
+            all_players = s1.players + s2.players
+            for player in all_players:
                 player.state = PlayerState.STARTING_AUTOMATCH
                 player.write_message(msg)
 
@@ -463,16 +489,97 @@ class LadderService(Service):
                     if name != queue.name
                 )
                 for queue_name in queue_names:
-                    self._cancel_search(player, queue_name)
+                    search = self._cancel_search(player, queue_name)
+                    if search is not None:
+                        original_searches.append((search, queue_name))
 
-                self._clear_search(player, queue.name)
+            for player in all_players:
+                search = self._clear_search(player, queue.name)
+                if search is not None:
+                    original_searches.append((search, queue.name))
 
-            asyncio.create_task(self.start_game(s1.players, s2.players, queue))
+            asyncio.create_task(
+                self.confirm_match(s1, s2, queue, original_searches[::-1])
+            )
         except Exception:
             self._logger.exception(
                 "Error processing match between searches %s, and %s",
                 s1, s2
             )
+
+    async def confirm_match(
+        self,
+        s1: Search,
+        s2: Search,
+        queue: MatchmakerQueue,
+        original_searches: list[tuple[Search, str]],
+    ):
+        try:
+            all_players = s1.players + s2.players
+
+            offer = self.create_match_offer(all_players)
+            offer.write_broadcast_update()
+            await offer.wait_ready()
+
+            await self.start_game(s1.players, s2.players, queue)
+        except OfferTimeoutError:
+            unready_players = list(offer.get_unready_players())
+            assert unready_players, "Unready players should be non-empty if offer timed out"
+
+            self._logger.info(
+                "Match failed to start. Some players did not ready up in time: %s",
+                [player.login for player in unready_players]
+            )
+            self._cancel_match(all_players)
+
+            # Return any search that fully accepted the match back to the queue
+            for search, queue_name in original_searches:
+                search_players = search.players
+                search_unready_players = [
+                    player
+                    for player in unready_players
+                    if player in search_players
+                ]
+                if not search_unready_players:
+                    search.unmatch()
+                    self._add_search_to_queue(
+                        search,
+                        self.queues[queue_name],
+                    )
+                    self._logger.debug(
+                        "%s auto requeued after failed match",
+                        search
+                    )
+                else:
+                    for player in search_players:
+                        player.write_message({
+                            "command": "match_notice",
+                            "unready_players": [
+                                p.id for p in search_unready_players
+                            ]
+                        })
+
+            self.violation_service.register_violations(unready_players)
+
+        except Exception as e:
+            self._logger.exception(
+                "Error processing match between searches %s, and %s: %s",
+                s1, s2, e
+            )
+
+    def create_match_offer(self, players: Iterable[Player]):
+        offer = MatchOffer(
+            players,
+            datetime_now() + timedelta(seconds=config.MATCH_OFFER_TIME)
+        )
+        for player in players:
+            self._match_offers[player] = offer
+        return offer
+
+    def ready_player(self, player: Player):
+        offer = self._match_offers.get(player)
+        if offer is not None:
+            offer.ready_player(player)
 
     def start_game(
         self,
@@ -607,12 +714,7 @@ class LadderService(Service):
             if game:
                 await game.on_game_finish()
 
-            game_id = game.id if game else None
-            msg = {"command": "match_cancelled", "game_id": game_id}
-            for player in all_players:
-                if player.state == PlayerState.STARTING_AUTOMATCH:
-                    player.state = PlayerState.IDLE
-                player.write_message(msg)
+            self._cancel_match(all_players, game)
 
             if abandoning_players:
                 self._logger.info(
@@ -620,6 +722,20 @@ class LadderService(Service):
                     abandoning_players
                 )
                 self.violation_service.register_violations(abandoning_players)
+
+    def _cancel_match(
+        self,
+        players: list[Player],
+        game: Optional[LadderGame] = None,
+    ):
+        msg = {"command": "match_cancelled"}
+        if game:
+            msg["game_id"] = game.id
+
+        for player in players:
+            if player.state == PlayerState.STARTING_AUTOMATCH:
+                player.state = PlayerState.IDLE
+            player.write_message(msg)
 
     async def launch_match(
         self,

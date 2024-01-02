@@ -23,14 +23,18 @@ from .test_game import (
     queue_players_for_matchmaking,
     queue_temp_players_for_matchmaking,
     read_until_launched,
-    send_player_options
+    read_until_match,
+    send_player_options,
+    start_search
 )
+from .test_parties import accept_party_invite, invite_to_party
 
 
 @fast_forward(70)
 async def test_game_launch_message(lobby_server):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     msg1 = await read_until_command(proto1, "game_launch")
     await open_fa(proto1)
     msg2 = await read_until_command(proto2, "game_launch")
@@ -67,6 +71,7 @@ async def test_game_launch_message_map_generator(lobby_server):
         queue_name="neroxis1v1"
     )
 
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     msg1 = await read_until_command(proto1, "game_launch")
     await open_fa(proto1)
     msg2 = await read_until_command(proto2, "game_launch")
@@ -87,6 +92,7 @@ async def test_game_launch_message_game_options(lobby_server, tmp_user):
         queue_name="gameoptions"
     )
 
+    await asyncio.gather(*[read_until_match(proto) for proto in protos])
     msgs = await asyncio.gather(*[
         client_response(proto) for _, proto in protos
     ])
@@ -103,6 +109,7 @@ async def test_game_launch_message_game_options(lobby_server, tmp_user):
 async def test_game_matchmaking_start(lobby_server, database):
     host_id, host, guest_id, guest = await queue_players_for_matchmaking(lobby_server)
 
+    await asyncio.gather(*[read_until_match(proto) for proto in (host, guest)])
     # The player that queued last will be the host
     msg = await read_until_command(host, "game_launch")
     game_id = msg["uid"]
@@ -166,8 +173,9 @@ async def test_game_matchmaking_start(lobby_server, database):
 
 @fast_forward(15)
 async def test_game_matchmaking_start_while_matched(lobby_server):
-    _, proto1, _, _ = await queue_players_for_matchmaking(lobby_server)
+    _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     # Trying to queue again after match was found should generate an error
     await proto1.send_message({
         "command": "game_matchmaking",
@@ -178,10 +186,50 @@ async def test_game_matchmaking_start_while_matched(lobby_server):
     assert msg["text"].startswith("Can't join a queue while ladder1 is in")
 
 
+@fast_forward(100)
+async def test_game_matchmaking_search_after_timeout(lobby_server):
+    _, proto1 = await queue_player_for_matchmaking(
+        ("ladder1", "ladder1"),
+        lobby_server,
+        "ladder1v1"
+    )
+    _, proto2 = await queue_player_for_matchmaking(
+        ("ladder2", "ladder2"),
+        lobby_server,
+        "ladder1v1"
+    )
+
+    await read_until_command(proto1, "match_info")
+    await read_until_command(proto2, "match_info")
+
+    # Only player 1 readies up
+    await proto1.send_message({"command": "match_ready"})
+
+    await read_until_command(proto1, "match_info", timeout=5)
+    await read_until_command(proto2, "match_info")
+
+    # So the match times out
+    await read_until_command(proto1, "match_cancelled", timeout=40)
+    await read_until_command(proto2, "match_cancelled")
+
+    # Player 2 joins the queue again
+    await proto2.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "seraphim",
+        "mod": "ladder1v1"
+    })
+
+    # The players should match
+    await read_until_command(proto1, "match_info")
+    await read_until_command(proto2, "match_info")
+
+
 @fast_forward(120)
 async def test_game_matchmaking_timeout(lobby_server, game_service):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     msg1 = await idle_response(proto1, timeout=120)
     await read_until_command(proto2, "match_cancelled", timeout=120)
     await read_until_command(proto1, "match_cancelled", timeout=120)
@@ -229,6 +277,7 @@ async def test_game_matchmaking_timeout(lobby_server, game_service):
 async def test_game_matchmaking_timeout_guest(lobby_server, game_service):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     msg1, msg2 = await asyncio.gather(
         client_response(proto1),
         client_response(proto2)
@@ -305,10 +354,12 @@ async def test_game_matchmaking_cancel(lobby_server):
         await read_until_command(proto, "search_info", timeout=5)
 
 
-@fast_forward(50)
+@fast_forward(120)
 async def test_game_matchmaking_disconnect(lobby_server):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
+
     # One player disconnects before the game has launched
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
     await proto1.close()
 
     msg = await read_until_command(proto2, "match_cancelled", timeout=120)
@@ -316,12 +367,26 @@ async def test_game_matchmaking_disconnect(lobby_server):
     assert msg == {"command": "match_cancelled", "game_id": 41956}
 
 
+@fast_forward(120)
+async def test_game_matchmaking_disconnect_no_accept_offer(lobby_server):
+    _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
+
+    # One player disconnects before the game has launched
+    await read_until_command(proto1, "match_found", timeout=30)
+    await proto1.close()
+
+    msg = await read_until_command(proto2, "match_cancelled", timeout=120)
+
+    assert msg == {"command": "match_cancelled"}
+
+
 @pytest.mark.flaky
 @fast_forward(130)
 async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(lobby_server)
 
-    _, _ = await asyncio.gather(
+    await asyncio.gather(*[read_until_match(proto) for proto in (proto1, proto2)])
+    await asyncio.gather(
         client_response(proto1),
         client_response(proto2)
     )
@@ -355,6 +420,256 @@ async def test_game_matchmaking_close_fa_and_requeue(lobby_server):
     await read_until_command(proto1, "match_found", timeout=5)
 
 
+@fast_forward(130)
+async def test_game_matchmaking_no_accept_offer_auto_requeue(
+    lobby_server,
+    tmp_user,
+):
+    proto1, proto2 = await queue_temp_players_for_matchmaking(
+        lobby_server,
+        tmp_user,
+        num_players=2,
+        queue_name="ladder1v1",
+        player_name="Player",
+    )
+
+    await read_until_command(proto1, "match_found", timeout=30)
+    await read_until_command(proto2, "match_found", timeout=5)
+
+    # Only player 1 accepts the match
+    await read_until_command(proto1, "match_info", timeout=5)
+    await read_until_command(proto2, "match_info", timeout=5)
+    await proto1.send_message({"command": "match_ready"})
+    await read_until_command(proto1, "match_cancelled", timeout=120)
+
+    # Player 1 is automatically re-added to the queue, but player 2 is not
+    await read_until_command(proto1, "search_info", state="start", timeout=5)
+    msg = await read_until_command(proto1, "matchmaker_info", timeout=5)
+    queue_message = next(
+        queue
+        for queue in msg["queues"]
+        if queue["queue_name"] == "ladder1v1"
+    )
+    assert queue_message["num_players"] == 1
+
+    # A third player joins the queue and is matched with player 1
+    proto3, = await queue_temp_players_for_matchmaking(
+        lobby_server,
+        tmp_user,
+        num_players=1,
+        queue_name="ladder1v1",
+        player_name="Player",
+    )
+
+    await read_until_command(proto1, "match_found")
+    await read_until_command(proto1, "match_info", timeout=5)
+    await proto1.send_message({"command": "match_ready"})
+
+    # Check that the queue is emptied correctly
+    msg = await read_until_command(proto1, "matchmaker_info", timeout=5)
+    queue_message = next(
+        queue
+        for queue in msg["queues"]
+        if queue["queue_name"] == "ladder1v1"
+    )
+    assert queue_message["num_players"] == 0
+
+    await read_until_match(proto3)
+    await asyncio.gather(
+        client_response(proto1),
+        client_response(proto3)
+    )
+
+
+@fast_forward(130)
+async def test_game_matchmaking_no_accept_offer_auto_requeue_party(
+    lobby_server,
+    tmp_user,
+):
+    users = await asyncio.gather(*[
+        tmp_user("Player")
+        for _ in range(4)
+    ])
+    res = await asyncio.gather(*[
+        connect_and_sign_in(user, lobby_server)
+        for user in users
+    ])
+    protos = [proto for _, _, proto in res]
+    proto1, proto2, proto3, proto4 = protos
+    id_1, id_2, id_3, id_4 = (id_ for id_, _, _ in res)
+
+    # Set up two parties, (p1, p2) and (p3, p4)
+    await invite_to_party(proto1, id_2)
+    await invite_to_party(proto3, id_4)
+    await read_until_command(proto2, "party_invite", timeout=10)
+    await read_until_command(proto4, "party_invite", timeout=10)
+    await accept_party_invite(proto2, id_1)
+    await accept_party_invite(proto4, id_3)
+
+    # Both parties join the queue
+    await start_search(proto1, "tmm2v2")
+    await start_search(proto3, "tmm2v2")
+
+    await asyncio.gather(*(
+        read_until_command(
+            proto,
+            "match_found",
+            timeout=30,
+            queue_name="tmm2v2",
+        )
+        for proto in protos
+    ))
+
+    # Only 1 party accepts the match
+    await asyncio.gather(*(
+        read_until_command(proto, "match_info", timeout=5)
+        for proto in protos
+    ))
+    for proto in (proto1, proto2, proto3):
+        await proto.send_message({"command": "match_ready"})
+
+    await read_until_command(proto1, "match_cancelled", timeout=120)
+
+    # Player 1 and Player 2 are automatically re-added to the queue
+    await read_until_command(
+        proto1,
+        "search_info",
+        state="start",
+        queue_name="tmm2v2",
+        timeout=10,
+    )
+    await read_until_command(
+        proto2,
+        "search_info",
+        state="start",
+        queue_name="tmm2v2",
+        timeout=10,
+    )
+    msg = await read_until_command(proto1, "matchmaker_info", timeout=5)
+    queue_message = next(
+        queue
+        for queue in msg["queues"]
+        if queue["queue_name"] == "tmm2v2"
+    )
+    assert queue_message["num_players"] == 2
+
+    # Two more players joins the queue and are matched with player 1 and 2
+    proto5, proto6 = await queue_temp_players_for_matchmaking(
+        lobby_server,
+        tmp_user,
+        num_players=2,
+        queue_name="tmm2v2",
+        player_name="Player",
+    )
+
+    await read_until_command(proto1, "match_found", queue_name="tmm2v2")
+    await read_until_command(proto1, "match_info", timeout=5)
+    await proto1.send_message({"command": "match_ready"})
+
+    # Check that the queue is emptied correctly
+    msg = await read_until_command(proto1, "matchmaker_info", timeout=5)
+    queue_message = next(
+        queue
+        for queue in msg["queues"]
+        if queue["queue_name"] == "tmm2v2"
+    )
+    assert queue_message["num_players"] == 0
+
+    await asyncio.gather(*(
+        read_until_match(proto)
+        for proto in (proto2, proto5, proto6)
+    ))
+    await asyncio.gather(*(
+        client_response(proto)
+        for proto in (proto1, proto2, proto5, proto6)
+    ))
+
+
+@fast_forward(130)
+async def test_game_matchmaking_no_accept_offer_auto_requeue_multiqueue(
+    lobby_server,
+    tmp_user,
+):
+    proto1, proto2 = await queue_temp_players_for_matchmaking(
+        lobby_server,
+        tmp_user,
+        num_players=2,
+        queue_name="ladder1v1",
+        player_name="Player",
+    )
+    await start_search(proto1, "tmm2v2")
+
+    await read_until_command(
+        proto1,
+        "match_found",
+        timeout=30,
+        queue_name="ladder1v1",
+    )
+    await read_until_command(
+        proto2,
+        "match_found",
+        timeout=5,
+        queue_name="ladder1v1",
+    )
+
+    # Only player 1 accepts the match
+    await read_until_command(proto1, "match_info", timeout=5)
+    await read_until_command(proto2, "match_info", timeout=5)
+    await proto1.send_message({"command": "match_ready"})
+    await read_until_command(proto1, "match_cancelled", timeout=120)
+
+    # Player 1 is automatically re-added to the queues, but player 2 is not
+    await read_until_command(
+        proto1,
+        "search_info",
+        state="start",
+        queue_name="ladder1v1",
+        timeout=10,
+    )
+    await read_until_command(
+        proto1,
+        "search_info",
+        state="start",
+        queue_name="tmm2v2",
+        timeout=10,
+    )
+    msg = await read_until_command(proto1, "matchmaker_info", timeout=5)
+    queue_message = next(
+        queue
+        for queue in msg["queues"]
+        if queue["queue_name"] == "ladder1v1"
+    )
+    assert queue_message["num_players"] == 1
+
+    # A third player joins the queue and is matched with player 1
+    proto3, = await queue_temp_players_for_matchmaking(
+        lobby_server,
+        tmp_user,
+        num_players=1,
+        queue_name="ladder1v1",
+        player_name="Player",
+    )
+
+    await read_until_command(proto1, "match_found")
+    await read_until_command(proto1, "match_info", timeout=5)
+    await proto1.send_message({"command": "match_ready"})
+
+    # Check that the queue is emptied correctly
+    msg = await read_until_command(proto1, "matchmaker_info", timeout=5)
+    queue_message = next(
+        queue
+        for queue in msg["queues"]
+        if queue["queue_name"] == "ladder1v1"
+    )
+    assert queue_message["num_players"] == 0
+
+    await read_until_match(proto3)
+    await asyncio.gather(
+        client_response(proto1),
+        client_response(proto3)
+    )
+
+
 @pytest.mark.flaky
 @fast_forward(200)
 async def test_anti_map_repetition(lobby_server):
@@ -365,6 +680,10 @@ async def test_anti_map_repetition(lobby_server):
     for _ in range(20):
         ret = await queue_players_for_matchmaking(lobby_server)
         player1_id, proto1, player2_id, proto2 = ret
+        await asyncio.gather(
+            read_until_match(proto1),
+            read_until_match(proto2)
+        )
         msg1, msg2 = await asyncio.gather(
             client_response(proto1),
             client_response(proto2)
@@ -500,7 +819,9 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
             msg = await read_until_command(proto, "matchmaker_info")
 
             queue_message = next(
-                q for q in msg["queues"] if q["queue_name"] == "ladder1v1"
+                queue
+                for queue in msg["queues"]
+                if queue["queue_name"] == "ladder1v1"
             )
             if queue_message["num_players"] == 0:
                 continue
@@ -519,7 +840,11 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
     # Update message because we left the queue
     msg = await read_until_command(proto, "matchmaker_info")
 
-    queue_message = next(q for q in msg["queues"] if q["queue_name"] == "ladder1v1")
+    queue_message = next(
+        queue
+        for queue in msg["queues"]
+        if queue["queue_name"] == "ladder1v1"
+    )
     assert queue_message["num_players"] == 0
 
 
