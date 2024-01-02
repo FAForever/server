@@ -24,7 +24,7 @@
 import asyncio
 
 
-async def exhaust_callbacks(loop):
+async def exhaust_callbacks():
     """
     Run the loop until all ready callbacks are executed.
     The coroutine doesn't wait for callbacks scheduled in the future with
@@ -32,5 +32,6 @@ async def exhaust_callbacks(loop):
     :meth:`~asyncio.BaseEventLoop.call_later()`.
     :param loop: event loop
     """
+    loop = asyncio.get_running_loop()
     while loop._ready:
         await asyncio.sleep(0)

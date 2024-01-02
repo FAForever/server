@@ -69,7 +69,6 @@ async def context(mock_service):
 
 
 async def test_serverside_abort(
-    event_loop,
     mock_context,
     mock_connection,
     mock_service
@@ -79,7 +78,7 @@ async def test_serverside_abort(
     with closing(writer):
         proto = QDataStreamProtocol(reader, writer)
         await proto.send_message({"some_junk": True})
-        await exhaust_callbacks(event_loop)
+        await exhaust_callbacks()
 
         mock_connection.on_connection_lost.assert_any_call()
         mock_service.on_connection_lost.assert_called_once()
@@ -108,7 +107,7 @@ async def test_connection_broken_external(context):
     assert len(ctx.connections) == 0
 
 
-async def test_unexpected_exception(event_loop, context, caplog, mocker):
+async def test_unexpected_exception(context, caplog, mocker):
     srv, ctx = context
 
     mocker.patch.object(

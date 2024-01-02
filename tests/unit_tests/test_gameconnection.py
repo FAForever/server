@@ -137,14 +137,13 @@ async def test_handle_action_GameState_idle_sets_player_state(
 async def test_handle_action_GameState_lobby_sends_HostGame(
     game: Game,
     game_connection: GameConnection,
-    event_loop,
     players
 ):
     game_connection.player = players.hosting
     game.map = Map(None, "some_map")
 
     await game_connection.handle_action("GameState", ["Lobby"])
-    await exhaust_callbacks(event_loop)
+    await exhaust_callbacks()
 
     assert_message_sent(game_connection, "HostGame", [game.map.folder_name])
 
@@ -152,7 +151,6 @@ async def test_handle_action_GameState_lobby_sends_HostGame(
 async def test_handle_action_GameState_lobby_calls_ConnectToHost(
     game: Game,
     game_connection: GameConnection,
-    event_loop,
     players
 ):
     game_connection.send = mock.AsyncMock()
@@ -162,7 +160,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(
     game.host = players.hosting
 
     await game_connection.handle_action("GameState", ["Lobby"])
-    await exhaust_callbacks(event_loop)
+    await exhaust_callbacks()
 
     game_connection.connect_to_host.assert_called_with(players.hosting.game_connection)
 
@@ -170,7 +168,6 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(
 async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     game: Game,
     game_connection: GameConnection,
-    event_loop,
     players
 ):
     game_connection.send = mock.AsyncMock()
@@ -187,7 +184,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     game.connections = [peer_conn]
 
     await game_connection.handle_action("GameState", ["Lobby"])
-    await exhaust_callbacks(event_loop)
+    await exhaust_callbacks()
 
     game_connection.connect_to_peer.assert_called_with(peer_conn)
 
@@ -195,7 +192,6 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
 async def test_handle_lobby_state_handles_GameError(
     real_game: Game,
     game_connection: GameConnection,
-    event_loop,
     players
 ):
     game_connection.abort = mock.AsyncMock()
@@ -209,7 +205,7 @@ async def test_handle_lobby_state_handles_GameError(
     real_game.state = GameState.ENDED
 
     await game_connection.handle_action("GameState", ["Lobby"])
-    await exhaust_callbacks(event_loop)
+    await exhaust_callbacks()
 
     game_connection.abort.assert_called_once()
 
@@ -217,7 +213,6 @@ async def test_handle_lobby_state_handles_GameError(
 async def test_handle_action_GameState_lobby_calls_abort(
     game: Game,
     game_connection: GameConnection,
-    event_loop,
     players
 ):
     game_connection.send = mock.AsyncMock()
@@ -229,7 +224,7 @@ async def test_handle_action_GameState_lobby_calls_abort(
     game.map = Map(None, "some_map")
 
     await game_connection.handle_action("GameState", ["Lobby"])
-    await exhaust_callbacks(event_loop)
+    await exhaust_callbacks()
 
     game_connection.abort.assert_called_once()
 

@@ -59,7 +59,7 @@ def fast_forward(timeout):
             fut = asyncio.create_task(f(*args, **kwargs))
 
             while not fut.done() and time < timeout:
-                await exhaust_callbacks(loop)
+                await exhaust_callbacks()
                 await advance_time(0.1)
                 time += 0.1
 

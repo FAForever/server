@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import AbstractContextManager, asynccontextmanager
 from time import perf_counter
 from unittest import mock
@@ -74,14 +75,13 @@ async def violation_service():
 
 
 @pytest.fixture
-def game_connection(
+async def game_connection(
     request,
     database,
     game,
     players,
     game_service,
     player_service,
-    event_loop
 ):
     conn = GameConnection(
         database=database,
@@ -93,9 +93,10 @@ def game_connection(
     )
 
     conn.finished_sim = False
+    loop = asyncio.get_running_loop()
 
     def fin():
-        event_loop.run_until_complete(conn.abort())
+        loop.run_until_complete(conn.abort())
 
     request.addfinalizer(fin)
     return conn

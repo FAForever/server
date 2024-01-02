@@ -34,7 +34,7 @@ async def host(proto):
 @pytest.mark.slow
 @fast_forward(300)
 async def test_game_info_broadcast_on_connection_error(
-    event_loop, lobby_server, tmp_user, ladder_service, game_service, caplog
+    lobby_server, tmp_user, ladder_service, game_service, caplog
 ):
     """
     Causes connection errors in `do_report_dirties` which in turn will cause
