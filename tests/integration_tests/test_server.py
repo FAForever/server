@@ -733,6 +733,35 @@ async def test_game_host_name_non_ascii(lobby_server):
     }
 
 
+@fast_forward(30)
+async def test_game_host_then_queue(lobby_server):
+    player_id, session, proto = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server
+    )
+    await read_until_command(proto, "game_info")
+
+    # Send game_host but don't send GameState: Idle, then immediately queue
+    await proto.send_message({
+        "command": "game_host",
+        "title": "My Game",
+        "mod": "faf",
+        "visibility": "public",
+    })
+    await proto.send_message({
+        "command": "game_matchmaking",
+        "state": "start",
+        "faction": "uef"
+    })
+
+    msg = await read_until_command(proto, "notice", timeout=10)
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Can't join a queue while test is in state STARTING_GAME",
+    }
+
+
 @fast_forward(10)
 async def test_play_game_while_queueing(lobby_server):
     player_id, session, proto = await connect_and_sign_in(

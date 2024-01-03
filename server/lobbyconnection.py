@@ -1069,6 +1069,10 @@ class LobbyConnection:
     ):
         assert self.player is not None
         assert self.game_connection is None
+        assert self.player.state in (
+            PlayerState.IDLE,
+            PlayerState.STARTING_AUTOMATCH,
+        )
 
         # TODO: Fix setting up a ridiculous amount of cyclic pointers here
         if is_host:
@@ -1080,8 +1084,12 @@ class LobbyConnection:
             player=self.player,
             protocol=self.protocol,
             player_service=self.player_service,
-            games=self.game_service
+            games=self.game_service,
+            setup_timeout=game.setup_timeout,
         )
+
+        if self.player.state is PlayerState.IDLE:
+            self.player.state = PlayerState.STARTING_GAME
 
         self.player.game = game
         cmd = {

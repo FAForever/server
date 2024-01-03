@@ -62,12 +62,12 @@ async def test_disconnect_all_peers(
         return "OK"
 
     # Set up a peer that will disconnect without error
-    ok_disconnect = mock.create_autospec(GameConnection)
+    ok_disconnect = mock.create_autospec(game_connection)
     ok_disconnect.state = GameConnectionState.CONNECTED_TO_HOST
     ok_disconnect.send_DisconnectFromPeer = fake_send_dc
 
     # Set up a peer that will throw an exception
-    fail_disconnect = mock.create_autospec(GameConnection)
+    fail_disconnect = mock.create_autospec(game_connection)
     fail_disconnect.send_DisconnectFromPeer.return_value = Exception("Test exception")
     fail_disconnect.state = GameConnectionState.CONNECTED_TO_HOST
 
@@ -81,7 +81,7 @@ async def test_disconnect_all_peers(
 
 
 async def test_connect_to_peer(game_connection):
-    peer = mock.create_autospec(GameConnection)
+    peer = mock.create_autospec(game_connection)
 
     await game_connection.connect_to_peer(peer)
 
@@ -92,7 +92,7 @@ async def test_connect_to_peer_disconnected(game_connection):
     # Weak reference has dissapeared
     await game_connection.connect_to_peer(None)
 
-    peer = mock.create_autospec(GameConnection)
+    peer = mock.create_autospec(game_connection)
     peer.send_ConnectToPeer.side_effect = DisconnectedError("Test error")
 
     # The client disconnects right as we send the message

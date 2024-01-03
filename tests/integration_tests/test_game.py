@@ -632,7 +632,12 @@ async def test_double_host_message(lobby_server):
         "mod": "faf",
         "visibility": "public",
     })
-    await read_until_command(proto, "game_launch", timeout=10)
+    msg = await read_until_command(proto, "notice", timeout=10)
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Can't host a game while in state STARTING_GAME",
+    }
 
 
 @fast_forward(30)
@@ -661,7 +666,12 @@ async def test_double_join_message(lobby_server):
         "command": "game_join",
         "uid": game_id
     })
-    await read_until_command(guest_proto, "game_launch", timeout=10)
+    msg = await read_until_command(guest_proto, "notice", timeout=10)
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Can't join a game while in state STARTING_GAME",
+    }
 
 
 @fast_forward(30)

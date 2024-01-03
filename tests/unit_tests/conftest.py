@@ -74,7 +74,7 @@ async def violation_service():
 
 
 @pytest.fixture
-def game_connection(
+async def game_connection(
     request,
     database,
     game,

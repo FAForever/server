@@ -103,6 +103,7 @@ class Game:
         self.displayed_rating_range = displayed_rating_range or InclusiveRange()
         self.enforce_rating_range = enforce_rating_range
         self.matchmaker_queue_id = matchmaker_queue_id
+        self.setup_timeout = setup_timeout
         self.state = GameState.INITIALIZING
         self._connections = {}
         self._configured_player_ids: set[int] = set()

@@ -42,7 +42,8 @@ class GameConnection(GpgNetServerProtocol):
         protocol: Protocol,
         player_service: PlayerService,
         games: GameService,
-        state: GameConnectionState = GameConnectionState.INITIALIZING
+        state: GameConnectionState = GameConnectionState.INITIALIZING,
+        setup_timeout: int = 60,
     ):
         """
         Construct a new GameConnection
@@ -52,38 +53,35 @@ class GameConnection(GpgNetServerProtocol):
             f"{self.__class__.__qualname__}.{game.id}"
         )
         self._db = database
-        self._logger.debug("GameConnection initializing")
 
         self.protocol = protocol
         self._state = state
         self.game_service = games
         self.player_service = player_service
 
-        self._player = player
+        self.player = player
         player.game_connection = self  # Set up weak reference to self
-        self._game = game
+        self.game = game
+
+        self.setup_timeout = setup_timeout
 
         self.finished_sim = False
+
+        self._logger.debug("GameConnection initializing")
+        if self.state is GameConnectionState.INITIALIZING:
+            asyncio.get_event_loop().create_task(
+                self.timeout_game_connection(setup_timeout)
+            )
+
+    async def timeout_game_connection(self, timeout):
+        await asyncio.sleep(timeout)
+        if self.state is GameConnectionState.INITIALIZING:
+            self._logger.debug("GameConection timed out...")
+            await self.abort("Player took too long to start the game")
 
     @property
     def state(self) -> GameConnectionState:
         return self._state
-
-    @property
-    def game(self) -> Game:
-        return self._game
-
-    @game.setter
-    def game(self, val: Game):
-        self._game = val
-
-    @property
-    def player(self) -> Player:
-        return self._player
-
-    @player.setter
-    def player(self, val: Player):
-        self._player = val
 
     def is_host(self) -> bool:
         if not self.game or not self.player:
@@ -122,6 +120,7 @@ class GameConnection(GpgNetServerProtocol):
             self.game.add_game_connection(self)
             self.player.state = PlayerState.HOSTING
         else:
+            self._state = GameConnectionState.INITIALIZED
             self.player.state = PlayerState.JOINING
 
     async def _handle_lobby_state(self):

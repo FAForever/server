@@ -264,7 +264,7 @@ async def test_launch_game(lobbyconnection, game, player_factory):
     assert lobbyconnection.player.game == game
     assert lobbyconnection.player.game_connection == lobbyconnection.game_connection
     assert lobbyconnection.game_connection.player == lobbyconnection.player
-    assert lobbyconnection.player.state == PlayerState.IDLE
+    assert lobbyconnection.player.state == PlayerState.STARTING_GAME
     lobbyconnection.send.assert_called_once()
 
 
@@ -791,7 +791,6 @@ async def test_game_connection_not_restored_if_game_state_prohibits(
     game_service: GameService,
     game_stats_service,
     game_state,
-    mocker,
     database
 ):
     del lobbyconnection.player.game_connection
@@ -998,8 +997,9 @@ async def test_command_matchmaker_info(
     })
 
 
-async def test_connection_lost(lobbyconnection):
+async def test_connection_lost(lobbyconnection, players):
     lobbyconnection.game_connection = mock.create_autospec(GameConnection)
+    lobbyconnection.game_connection.player = players.hosting
     await lobbyconnection.on_connection_lost()
 
     lobbyconnection.game_connection.on_connection_lost.assert_called_once()
