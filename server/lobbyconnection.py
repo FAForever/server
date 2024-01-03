@@ -216,6 +216,35 @@ class LobbyConnection:
             self._logger.exception(e)
             await self.abort("Error processing command")
 
+    def ice_only(func):
+        """
+        Ensures that a handler function is not invoked from a non ICE client.
+        """
+        @wraps(func)
+        async def wrapper(self, message):
+            if self._attempted_connectivity_test:
+                raise ClientError("Cannot join game. Please update your client to the newest version.")
+            return await func(self, message)
+        return wrapper
+
+    def player_idle(state_text):
+        """
+        Ensures that a handler function is not invoked unless the player state
+        is IDLE.
+        """
+        def decorator(func):
+            @wraps(func)
+            async def wrapper(self, message):
+                if self.player.state != PlayerState.IDLE:
+                    raise ClientError(
+                        f"Can't {state_text} while in state "
+                        f"{self.player.state.name}",
+                        recoverable=True
+                    )
+                return await func(self, message)
+            return wrapper
+        return decorator
+
     async def command_ping(self, msg):
         await self.send({"command": "pong"})
 
@@ -716,22 +745,35 @@ class LobbyConnection:
 
         await self.send_game_list()
 
+    @ice_only
+    @player_idle("reconnect to a game")
     async def command_restore_game_session(self, message):
         assert self.player is not None
 
-        game_id = int(message.get("game_id"))
+        game_id = int(message["game_id"])
 
         # Restore the player's game connection, if the game still exists and is live
         if not game_id or game_id not in self.game_service:
-            await self.send_warning("The game you were connected to does no longer exist")
+            await self.send_warning("The game you were connected to no longer exists")
             return
 
-        game = self.game_service[game_id]  # type: Game
-        if game.state is not GameState.LOBBY and game.state is not GameState.LIVE:
+        game: Game = self.game_service[game_id]
+
+        if game.state not in (GameState.LOBBY, GameState.LIVE):
+            # NOTE: Getting here is only possible if you join within the
+            # 1 second window between the game ending and the game being removed
+            # from the game service.
             await self.send_warning("The game you were connected to is no longer available")
             return
 
-        self._logger.debug("Restoring game session of player %s to game %s", self.player, game)
+        if (
+            game.state is GameState.LIVE
+            and self.player.id not in (player.id for player in game.players)
+        ):
+            await self.send_warning("You are not part of this game")
+            return
+
+        self._logger.info("Restoring game session of player %s to game %s", self.player, game)
         self.game_connection = GameConnection(
             database=self._db,
             game=game,
@@ -745,6 +787,10 @@ class LobbyConnection:
         game.add_game_connection(self.game_connection)
         self.player.state = PlayerState.PLAYING
         self.player.game = game
+        # TODO: When the player drops, their player options are deleted as a
+        # method of tracking when people are actually connected to the host
+        # during the lobby phase. However, that means when they reconnect here
+        # they will not show up in the `game_info` message.
 
     async def command_ask_session(self, message):
         user_agent = message.get("user_agent")
@@ -828,35 +874,6 @@ class LobbyConnection:
                 self.player_service.mark_dirty(self.player)
         else:
             raise KeyError("invalid action")
-
-    def ice_only(func):
-        """
-        Ensures that a handler function is not invoked from a non ICE client.
-        """
-        @wraps(func)
-        async def wrapper(self, message):
-            if self._attempted_connectivity_test:
-                raise ClientError("Cannot join game. Please update your client to the newest version.")
-            return await func(self, message)
-        return wrapper
-
-    def player_idle(state_text):
-        """
-        Ensures that a handler function is not invoked unless the player state
-        is IDLE.
-        """
-        def decorator(func):
-            @wraps(func)
-            async def wrapper(self, message):
-                if self.player.state != PlayerState.IDLE:
-                    raise ClientError(
-                        f"Can't {state_text} while in state "
-                        f"{self.player.state.name}",
-                        recoverable=True
-                    )
-                return await func(self, message)
-            return wrapper
-        return decorator
 
     @ice_only
     @player_idle("join a game")

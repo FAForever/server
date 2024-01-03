@@ -659,7 +659,7 @@ async def test_game_host_authenticated(lobby_server, user):
 
 
 @fast_forward(10)
-async def test_host_missing_fields(lobby_server):
+async def test_game_host_missing_fields(lobby_server):
     player_id, session, proto = await connect_and_sign_in(
         ("test", "test_password"),
         lobby_server
@@ -684,7 +684,7 @@ async def test_host_missing_fields(lobby_server):
 
 
 @fast_forward(10)
-async def test_host_game_name_only_spaces(lobby_server):
+async def test_game_host_name_only_spaces(lobby_server):
     player_id, session, proto = await connect_and_sign_in(
         ("test", "test_password"),
         lobby_server
@@ -709,7 +709,7 @@ async def test_host_game_name_only_spaces(lobby_server):
 
 
 @fast_forward(10)
-async def test_host_game_name_non_ascii(lobby_server):
+async def test_game_host_name_non_ascii(lobby_server):
     player_id, session, proto = await connect_and_sign_in(
         ("test", "test_password"),
         lobby_server
@@ -733,12 +733,12 @@ async def test_host_game_name_non_ascii(lobby_server):
     }
 
 
+@fast_forward(10)
 async def test_play_game_while_queueing(lobby_server):
     player_id, session, proto = await connect_and_sign_in(
         ("test", "test_password"),
         lobby_server
     )
-
     await read_until_command(proto, "game_info")
 
     await proto.send_message({
@@ -761,6 +761,32 @@ async def test_play_game_while_queueing(lobby_server):
         "command": "notice",
         "style": "error",
         "text": "Can't join a game while in state SEARCHING_LADDER"
+    }
+
+    await proto.send_message({"command": "restore_game_session"})
+    msg = await read_until_command(proto, "notice")
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Can't reconnect to a game while in state SEARCHING_LADDER"
+    }
+
+
+@fast_forward(10)
+async def test_restore_game_session_no_game(lobby_server):
+    player_id, session, proto = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server
+    )
+    await read_until_command(proto, "game_info")
+
+    await proto.send_message({"command": "restore_game_session", "game_id": 42})
+
+    msg = await read_until_command(proto, "notice")
+    assert msg == {
+        "command": "notice",
+        "style": "info",
+        "text": "The game you were connected to no longer exists"
     }
 
 

@@ -781,7 +781,7 @@ async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnecti
     lobbyconnection.send.assert_any_call({
         "command": "notice",
         "style": "info",
-        "text": "The game you were connected to does no longer exist"
+        "text": "The game you were connected to no longer exists"
     })
 
 
@@ -803,6 +803,7 @@ async def test_game_connection_not_restored_if_game_state_prohibits(
     game.password = None
     game.game_mode = "faf"
     game.id = 42
+    game.players = [lobbyconnection.player]
     game_service._games[42] = game
 
     await lobbyconnection.on_message_received({
@@ -836,6 +837,7 @@ async def test_game_connection_restored_if_game_exists(
     game.password = None
     game.game_mode = "faf"
     game.id = 42
+    game.players = [lobbyconnection.player]
     game_service._games[42] = game
 
     await lobbyconnection.on_message_received({
