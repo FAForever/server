@@ -485,10 +485,10 @@ class GameConnection(GpgNetServerProtocol):
                     )
         # Signals that the FA executable has been closed
         elif state == "Ended":
-            await self.on_connection_lost()
+            await self.on_connection_closed()
         self._mark_dirty()
 
-    async def handle_game_ended(self, *args:  list[Any]):
+    async def handle_game_ended(self, *args: list[Any]):
         """
         Signals that the simulation has ended.
         """
@@ -591,7 +591,21 @@ class GameConnection(GpgNetServerProtocol):
                     exc_info=True
                 )
 
+    async def on_connection_closed(self):
+        """
+        The connection is closed by the player.
+        """
+        try:
+            await self.game.disconnect_player(self.player)
+        except Exception as e:  # pragma: no cover
+            self._logger.exception(e)
+        finally:
+            await self.abort()
+
     async def on_connection_lost(self):
+        """
+        The connection is lost due to a disconnect from the lobby server.
+        """
         try:
             await self.game.remove_game_connection(self)
         except Exception as e:  # pragma: no cover

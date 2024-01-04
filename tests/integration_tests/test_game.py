@@ -768,8 +768,7 @@ async def test_restore_game_session_lobby(lobby_server):
     msg = await read_until_command(guest_proto, "game_info", timeout=10)
     assert msg["teams_ids"] == [
         {"team_id": 1, "player_ids": [host_id]},
-        # TODO: Team 2 should have guest_id!
-        # {"team_id": 2, "player_ids": [guest_id]},
+        {"team_id": 2, "player_ids": [guest_id]},
     ]
 
 
@@ -810,8 +809,7 @@ async def test_restore_game_session_live(lobby_server):
     msg = await read_until_command(guest_proto, "game_info", timeout=10)
     assert msg["teams_ids"] == [
         {"team_id": 1, "player_ids": [host_id]},
-        # TODO: Team 2 should have guest_id!
-        {"team_id": 2, "player_ids": []},
+        {"team_id": 2, "player_ids": [guest_id]},
     ]
 
 

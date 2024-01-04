@@ -787,10 +787,6 @@ class LobbyConnection:
         game.add_game_connection(self.game_connection)
         self.player.state = PlayerState.PLAYING
         self.player.game = game
-        # TODO: When the player drops, their player options are deleted as a
-        # method of tracking when people are actually connected to the host
-        # during the lobby phase. However, that means when they reconnect here
-        # they will not show up in the `game_info` message.
 
     async def command_ask_session(self, message):
         user_agent = message.get("user_agent")

@@ -379,7 +379,7 @@ async def test_add_game_connection_twice(game: Game, players, mock_game_connecti
     join_conn = add_connected_player(game, players.joining)
     assert game.players == [players.hosting, players.joining]
     # Player leaves
-    await game.remove_game_connection(join_conn)
+    await game.disconnect_player(players.joining)
     assert game.players == [players.hosting]
     # Player joins again
     game.add_game_connection(join_conn)
@@ -414,15 +414,42 @@ async def test_add_game_connection_throws_if_not_lobby_state(
     assert players.hosting not in game.players
 
 
-async def test_remove_game_connection(
-    game: Game, players, mock_game_connection
-):
+async def test_disconnect_player(game: Game, players):
     game.state = GameState.LOBBY
-    mock_game_connection.player = players.hosting
-    mock_game_connection.state = GameConnectionState.CONNECTED_TO_HOST
-    game.add_game_connection(mock_game_connection)
-    await game.remove_game_connection(mock_game_connection)
+    add_connected_player(game, players.hosting)
+
+    assert players.hosting in game.players
+    assert players.hosting.game_connection in game.connections
+    assert players.hosting.id in game._configured_player_ids
+
+    await game.disconnect_player(players.hosting)
+
     assert players.hosting not in game.players
+    assert players.hosting.game_connection not in game.connections
+    assert players.hosting.id not in game._configured_player_ids
+
+
+async def test_disconnect_player_not_in_game(game: Game, players):
+    players.idle.game_connection = None
+    game.remove_game_connection = mock.AsyncMock()
+
+    await game.disconnect_player(players.idle)
+    game.remove_game_connection.assert_not_awaited()
+
+
+async def test_remove_game_connection(game: Game, players):
+    game.state = GameState.LOBBY
+    add_connected_player(game, players.hosting)
+
+    assert players.hosting in game.players
+    assert players.hosting.game_connection in game.connections
+    assert players.hosting.id in game._configured_player_ids
+
+    await game.remove_game_connection(players.hosting.game_connection)
+
+    assert players.hosting not in game.players
+    assert players.hosting.game_connection not in game.connections
+    assert players.hosting.id in game._configured_player_ids
 
 
 async def test_game_end_when_no_more_connections(

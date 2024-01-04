@@ -264,12 +264,12 @@ async def test_handle_action_GameState_launching_when_ended(
     game.launch.assert_not_called()
 
 
-async def test_handle_action_GameState_ended_calls_on_connection_lost(
+async def test_handle_action_GameState_ended_calls_on_connection_closed(
     game_connection: GameConnection
 ):
-    game_connection.on_connection_lost = mock.AsyncMock()
+    game_connection.on_connection_closed = mock.AsyncMock()
     await game_connection.handle_action("GameState", ["Ended"])
-    game_connection.on_connection_lost.assert_called_once_with()
+    game_connection.on_connection_closed.assert_called_once_with()
 
 
 async def test_handle_action_PlayerOption(game: Game, game_connection: GameConnection):
