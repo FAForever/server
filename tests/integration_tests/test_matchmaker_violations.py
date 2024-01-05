@@ -120,12 +120,24 @@ async def test_violation_persisted_across_logins(mocker, lobby_server):
 
     await read_until_command(host, "match_cancelled", timeout=120)
     await read_until_command(guest, "match_cancelled", timeout=10)
+    await read_until_command(host, "game_info", timeout=10, state="closed")
+
+    # DEPRECATED: Because the game sends a game_launch to the guest after the
+    # host times out, we need to simulate opening and closing the game before
+    # we can queue again. If we wait for the timeout, our violations expire.
+    await open_fa(guest)
+    await guest.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Ended"]
+    })
 
     # Second time searching there is no ban
     await start_search(host)
     await start_search(guest)
     await read_until_command(host, "match_cancelled", timeout=120)
     await read_until_command(guest, "match_cancelled", timeout=10)
+    await read_until_command(host, "game_info", timeout=10, state="closed")
 
     # Third time searching there is a short ban
     await host.send_message({
@@ -177,12 +189,34 @@ async def test_violation_persisted_across_parties(mocker, lobby_server):
 
     await read_until_command(host, "match_cancelled", timeout=120)
     await read_until_command(guest, "match_cancelled", timeout=10)
+    await read_until_command(host, "game_info", timeout=10, state="closed")
+
+    # DEPRECATED: Because the game sends a game_launch to the guest after the
+    # host times out, we need to simulate opening and closing the game before
+    # we can queue again. If we wait for the timeout, our violations expire.
+    await open_fa(guest)
+    await guest.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Ended"]
+    })
 
     # Second time searching there is no ban
     await start_search(host)
     await start_search(guest)
     await read_until_command(host, "match_cancelled", timeout=120)
     await read_until_command(guest, "match_cancelled", timeout=10)
+    await read_until_command(host, "game_info", timeout=10, state="closed")
+
+    # DEPRECATED: Because the game sends a game_launch to the guest after the
+    # host times out, we need to simulate opening and closing the game before
+    # we can queue again. If we wait for the timeout, our violations expire.
+    await open_fa(guest)
+    await guest.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Ended"]
+    })
 
     # Third time searching there is a short ban
     await host.send_message({

@@ -103,6 +103,7 @@ class Game:
         self.displayed_rating_range = displayed_rating_range or InclusiveRange()
         self.enforce_rating_range = enforce_rating_range
         self.matchmaker_queue_id = matchmaker_queue_id
+        self.setup_timeout = setup_timeout
         self.state = GameState.INITIALIZING
         self._connections = {}
         self._configured_player_ids: set[int] = set()
@@ -390,6 +391,17 @@ class Game:
         self._logger.info("Added game connection %s", game_connection)
         self._connections[game_connection.player] = game_connection
 
+    async def disconnect_player(self, player: Player):
+        if player.game_connection not in self._connections.values():
+            return
+
+        self._configured_player_ids.discard(player.id)
+
+        if self.state is GameState.LOBBY and player.id in self._player_options:
+            del self._player_options[player.id]
+
+        await self.remove_game_connection(player.game_connection)
+
     async def remove_game_connection(self, game_connection):
         """
         Remove a game connection from this game.
@@ -403,10 +415,6 @@ class Game:
         player = game_connection.player
         del self._connections[player]
         del player.game
-        self._configured_player_ids.discard(player.id)
-
-        if self.state is GameState.LOBBY and player.id in self._player_options:
-            del self._player_options[player.id]
 
         self._logger.info("Removed game connection %s", game_connection)
 

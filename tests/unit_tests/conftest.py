@@ -74,7 +74,7 @@ async def violation_service():
 
 
 @pytest.fixture
-def game_connection(
+async def game_connection(
     request,
     database,
     game,
@@ -114,6 +114,7 @@ def make_mock_game_connection(
     gc.state = state
     gc.player = player
     gc.finished_sim = False
+    player.game_connection = gc
     return gc
 
 

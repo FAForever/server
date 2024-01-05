@@ -4,6 +4,7 @@ import json
 import time
 from collections import defaultdict
 from datetime import datetime
+from unittest import mock
 
 import pytest
 from sqlalchemy import select
@@ -631,7 +632,12 @@ async def test_double_host_message(lobby_server):
         "mod": "faf",
         "visibility": "public",
     })
-    await read_until_command(proto, "game_launch", timeout=10)
+    msg = await read_until_command(proto, "notice", timeout=10)
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Can't host a game while in state STARTING_GAME",
+    }
 
 
 @fast_forward(30)
@@ -660,7 +666,231 @@ async def test_double_join_message(lobby_server):
         "command": "game_join",
         "uid": game_id
     })
-    await read_until_command(guest_proto, "game_launch", timeout=10)
+    msg = await read_until_command(guest_proto, "notice", timeout=10)
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Can't join a game while in state STARTING_GAME",
+    }
+
+
+@fast_forward(30)
+async def test_double_restore_game_session_message(lobby_server):
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    game_id = await setup_game_1v1(host_proto, host_id, guest_proto, guest_id)
+
+    await guest_proto.close()
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(guest_proto, "game_info", timeout=10)
+
+    await guest_proto.send_message({
+        "command": "restore_game_session",
+        "game_id": game_id
+    })
+    await guest_proto.send_message({
+        "command": "restore_game_session",
+        "game_id": game_id
+    })
+    msg = await read_until_command(guest_proto, "notice", timeout=10)
+    assert msg == {
+        "command": "notice",
+        "style": "error",
+        "text": "Can't reconnect to a game while in state PLAYING",
+    }
+
+
+@fast_forward(30)
+async def test_restore_game_session_lobby(lobby_server):
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    game_id = await host_game(host_proto)
+    await join_game(guest_proto, game_id)
+    await send_player_options(
+        host_proto,
+        [host_id, "Army", 1],
+        [host_id, "Team", 1],
+        [host_id, "StartSpot", 1],
+        [host_id, "Faction", 1],
+        [host_id, "Color", 1],
+        [guest_id, "Army", 2],
+        [guest_id, "Team", 2],
+        [guest_id, "StartSpot", 2],
+        [guest_id, "Faction", 2],
+        [guest_id, "Color", 2],
+    )
+    msg = await read_until_command(
+        guest_proto,
+        "game_info",
+        timeout=10,
+        num_players=2,
+    )
+    assert msg["teams_ids"] == [
+        {"team_id": 1, "player_ids": [host_id]},
+        {"team_id": 2, "player_ids": [guest_id]},
+    ]
+
+    # Guest disconnects while in lobby
+    await guest_proto.close()
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(
+        guest_proto,
+        "game_info",
+        timeout=10,
+        # Because there are other game_info messages flying around, make sure
+        # we read until with the entire game list sent during login.
+        games=mock.ANY,
+    )
+
+    await guest_proto.send_message({
+        "command": "restore_game_session",
+        "game_id": game_id
+    })
+    # NOTE: This isn't realistic behavior but is a way for us to trigger another
+    # game_info message
+    await guest_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Bogus"]
+    })
+    msg = await read_until_command(guest_proto, "game_info", timeout=10)
+    assert msg["teams_ids"] == [
+        {"team_id": 1, "player_ids": [host_id]},
+        {"team_id": 2, "player_ids": [guest_id]},
+    ]
+
+
+@fast_forward(30)
+async def test_restore_game_session_live(lobby_server):
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    game_id = await setup_game_1v1(host_proto, host_id, guest_proto, guest_id)
+
+    await guest_proto.close()
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(
+        guest_proto,
+        "game_info",
+        timeout=10,
+        # Because there are other game_info messages flying around, make sure
+        # we read until with the entire game list sent during login.
+        games=mock.ANY,
+    )
+
+    await guest_proto.send_message({
+        "command": "restore_game_session",
+        "game_id": game_id
+    })
+    # NOTE: This isn't realistic behavior but is a way for us to trigger another
+    # game_info message
+    await guest_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Bogus"]
+    })
+    msg = await read_until_command(guest_proto, "game_info", timeout=10)
+    assert msg["teams_ids"] == [
+        {"team_id": 1, "player_ids": [host_id]},
+        {"team_id": 2, "player_ids": [guest_id]},
+    ]
+
+
+@fast_forward(30)
+async def test_restore_game_session_live_wrong_game(lobby_server):
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    _, _, other_proto = await connect_and_sign_in(
+        ("test2", "test2"), lobby_server
+    )
+    game_id = await setup_game_1v1(host_proto, host_id, guest_proto, guest_id)
+
+    await read_until_command(guest_proto, "game_info", timeout=10)
+
+    await other_proto.send_message({
+        "command": "restore_game_session",
+        "game_id": game_id
+    })
+    msg = await read_until_command(other_proto, "notice", timeout=10)
+    assert msg == {
+        "command": "notice",
+        "style": "info",
+        "text": "You are not part of this game",
+    }
+
+
+@fast_forward(10)
+async def test_restore_game_session_game_ended(lobby_server):
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    game_id = await setup_game_1v1(host_proto, host_id, guest_proto, guest_id)
+
+    # Player disconnects and the other player reports that they won the game
+    await guest_proto.close()
+    for result in (
+        [1, "victory 10"],
+        [2, "defeat -10"],
+    ):
+        await host_proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": result
+        })
+    # Report GameEnded
+    await host_proto.send_message({
+        "target": "game",
+        "command": "GameEnded",
+        "args": []
+    })
+    await read_until_command(
+        host_proto,
+        "game_info",
+        timeout=10,
+        uid=game_id,
+        state="closed",
+    )
+
+    # Player tries to reconnect too late
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(guest_proto, "game_info", timeout=10)
+
+    await guest_proto.send_message({
+        "command": "restore_game_session",
+        "game_id": game_id
+    })
+    msg = await read_until_command(guest_proto, "notice", timeout=10)
+    assert msg == {
+        "command": "notice",
+        "style": "info",
+        "text": "The game you were connected to no longer exists",
+    }
 
 
 @fast_forward(100)
