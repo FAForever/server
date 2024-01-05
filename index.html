@@ -964,7 +964,7 @@ class ConfigurationService(Service):
 </dd>
 <dt id="server.GameConnection"><code class="flex name class">
 <span>class <span class="ident">GameConnection</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, protocol: <a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>, player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, games: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>, state: <a title="server.games.typedefs.GameConnectionState" href="games/typedefs.html#server.games.typedefs.GameConnectionState">GameConnectionState</a> = GameConnectionState.INITIALIZING)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, protocol: <a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>, player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, games: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>, state: <a title="server.games.typedefs.GameConnectionState" href="games/typedefs.html#server.games.typedefs.GameConnectionState">GameConnectionState</a> = GameConnectionState.INITIALIZING, setup_timeout: int = 60)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Responsible for connections to the game, using the GPGNet protocol</p>
@@ -986,7 +986,8 @@ class ConfigurationService(Service):
         protocol: Protocol,
         player_service: PlayerService,
         games: GameService,
-        state: GameConnectionState = GameConnectionState.INITIALIZING
+        state: GameConnectionState = GameConnectionState.INITIALIZING,
+        setup_timeout: int = 60,
     ):
         &#34;&#34;&#34;
         Construct a new GameConnection
@@ -996,38 +997,35 @@ class ConfigurationService(Service):
             f&#34;{self.__class__.__qualname__}.{game.id}&#34;
         )
         self._db = database
-        self._logger.debug(&#34;GameConnection initializing&#34;)
 
         self.protocol = protocol
         self._state = state
         self.game_service = games
         self.player_service = player_service
 
-        self._player = player
+        self.player = player
         player.game_connection = self  # Set up weak reference to self
-        self._game = game
+        self.game = game
+
+        self.setup_timeout = setup_timeout
 
         self.finished_sim = False
+
+        self._logger.debug(&#34;GameConnection initializing&#34;)
+        if self.state is GameConnectionState.INITIALIZING:
+            asyncio.get_event_loop().create_task(
+                self.timeout_game_connection(setup_timeout)
+            )
+
+    async def timeout_game_connection(self, timeout):
+        await asyncio.sleep(timeout)
+        if self.state is GameConnectionState.INITIALIZING:
+            self._logger.debug(&#34;GameConection timed out...&#34;)
+            await self.abort(&#34;Player took too long to start the game&#34;)
 
     @property
     def state(self) -&gt; GameConnectionState:
         return self._state
-
-    @property
-    def game(self) -&gt; Game:
-        return self._game
-
-    @game.setter
-    def game(self, val: Game):
-        self._game = val
-
-    @property
-    def player(self) -&gt; Player:
-        return self._player
-
-    @player.setter
-    def player(self, val: Player):
-        self._player = val
 
     def is_host(self) -&gt; bool:
         if not self.game or not self.player:
@@ -1066,6 +1064,7 @@ class ConfigurationService(Service):
             self.game.add_game_connection(self)
             self.player.state = PlayerState.HOSTING
         else:
+            self._state = GameConnectionState.INITIALIZED
             self.player.state = PlayerState.JOINING
 
     async def _handle_lobby_state(self):
@@ -1430,10 +1429,10 @@ class ConfigurationService(Service):
                     )
         # Signals that the FA executable has been closed
         elif state == &#34;Ended&#34;:
-            await self.on_connection_lost()
+            await self.on_connection_closed()
         self._mark_dirty()
 
-    async def handle_game_ended(self, *args:  list[Any]):
+    async def handle_game_ended(self, *args: list[Any]):
         &#34;&#34;&#34;
         Signals that the simulation has ended.
         &#34;&#34;&#34;
@@ -1536,7 +1535,21 @@ class ConfigurationService(Service):
                     exc_info=True
                 )
 
+    async def on_connection_closed(self):
+        &#34;&#34;&#34;
+        The connection is closed by the player.
+        &#34;&#34;&#34;
+        try:
+            await self.game.disconnect_player(self.player)
+        except Exception as e:  # pragma: no cover
+            self._logger.exception(e)
+        finally:
+            await self.abort()
+
     async def on_connection_lost(self):
+        &#34;&#34;&#34;
+        The connection is lost due to a disconnect from the lobby server.
+        &#34;&#34;&#34;
         try:
             await self.game.remove_game_connection(self)
         except Exception as e:  # pragma: no cover
@@ -1553,30 +1566,6 @@ class ConfigurationService(Service):
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="server.GameConnection.game"><code class="name">var <span class="ident">game</span> : <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a></code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def game(self) -&gt; Game:
-    return self._game</code></pre>
-</details>
-</dd>
-<dt id="server.GameConnection.player"><code class="name">var <span class="ident">player</span> : <a title="server.players.Player" href="players.html#server.players.Player">Player</a></code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def player(self) -&gt; Player:
-    return self._player</code></pre>
-</details>
-</dd>
 <dt id="server.GameConnection.state"><code class="name">var <span class="ident">state</span> : <a title="server.games.typedefs.GameConnectionState" href="games/typedefs.html#server.games.typedefs.GameConnectionState">GameConnectionState</a></code></dt>
 <dd>
 <div class="desc"></div>
@@ -1889,7 +1878,7 @@ included for documentation purposes.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_game_ended(self, *args:  list[Any]):
+<pre><code class="python">async def handle_game_ended(self, *args: list[Any]):
     &#34;&#34;&#34;
     Signals that the simulation has ended.
     &#34;&#34;&#34;
@@ -2043,7 +2032,7 @@ included for documentation purposes.</p></div>
                 )
     # Signals that the FA executable has been closed
     elif state == &#34;Ended&#34;:
-        await self.on_connection_lost()
+        await self.on_connection_closed()
     self._mark_dirty()</code></pre>
 </details>
 </dd>
@@ -2339,16 +2328,40 @@ the same parameters as TeamkillReport.</p>
     )</code></pre>
 </details>
 </dd>
+<dt id="server.GameConnection.on_connection_closed"><code class="name flex">
+<span>async def <span class="ident">on_connection_closed</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>The connection is closed by the player.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def on_connection_closed(self):
+    &#34;&#34;&#34;
+    The connection is closed by the player.
+    &#34;&#34;&#34;
+    try:
+        await self.game.disconnect_player(self.player)
+    except Exception as e:  # pragma: no cover
+        self._logger.exception(e)
+    finally:
+        await self.abort()</code></pre>
+</details>
+</dd>
 <dt id="server.GameConnection.on_connection_lost"><code class="name flex">
 <span>async def <span class="ident">on_connection_lost</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The connection is lost due to a disconnect from the lobby server.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def on_connection_lost(self):
+    &#34;&#34;&#34;
+    The connection is lost due to a disconnect from the lobby server.
+    &#34;&#34;&#34;
     try:
         await self.game.remove_game_connection(self)
     except Exception as e:  # pragma: no cover
@@ -2386,6 +2399,22 @@ cause the caller to be disconnected as well.</p></div>
 
     self._logger.log(TRACE, &#34;&gt;&gt; %s: %s&#34;, self.player.login, message)
     await self.protocol.send_message(message)</code></pre>
+</details>
+</dd>
+<dt id="server.GameConnection.timeout_game_connection"><code class="name flex">
+<span>async def <span class="ident">timeout_game_connection</span></span>(<span>self, timeout)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def timeout_game_connection(self, timeout):
+    await asyncio.sleep(timeout)
+    if self.state is GameConnectionState.INITIALIZING:
+        self._logger.debug(&#34;GameConection timed out...&#34;)
+        await self.abort(&#34;Player took too long to start the game&#34;)</code></pre>
 </details>
 </dd>
 </dl>
@@ -4556,8 +4585,6 @@ class LadderService(Service):
             game_id = game.id if game else None
             msg = {&#34;command&#34;: &#34;match_cancelled&#34;, &#34;game_id&#34;: game_id}
             for player in all_players:
-                if player.state == PlayerState.STARTING_AUTOMATCH:
-                    player.state = PlayerState.IDLE
                 player.write_message(msg)
 
             if abandoning_players:
@@ -8105,7 +8132,6 @@ class ViolationService(Service):
 <li><code><a title="server.GameConnection.connect_to_host" href="#server.GameConnection.connect_to_host">connect_to_host</a></code></li>
 <li><code><a title="server.GameConnection.connect_to_peer" href="#server.GameConnection.connect_to_peer">connect_to_peer</a></code></li>
 <li><code><a title="server.GameConnection.disconnect_all_peers" href="#server.GameConnection.disconnect_all_peers">disconnect_all_peers</a></code></li>
-<li><code><a title="server.GameConnection.game" href="#server.GameConnection.game">game</a></code></li>
 <li><code><a title="server.GameConnection.handle_action" href="#server.GameConnection.handle_action">handle_action</a></code></li>
 <li><code><a title="server.GameConnection.handle_ai_option" href="#server.GameConnection.handle_ai_option">handle_ai_option</a></code></li>
 <li><code><a title="server.GameConnection.handle_bottleneck" href="#server.GameConnection.handle_bottleneck">handle_bottleneck</a></code></li>
@@ -8130,10 +8156,11 @@ class ViolationService(Service):
 <li><code><a title="server.GameConnection.handle_teamkill_happened" href="#server.GameConnection.handle_teamkill_happened">handle_teamkill_happened</a></code></li>
 <li><code><a title="server.GameConnection.handle_teamkill_report" href="#server.GameConnection.handle_teamkill_report">handle_teamkill_report</a></code></li>
 <li><code><a title="server.GameConnection.is_host" href="#server.GameConnection.is_host">is_host</a></code></li>
+<li><code><a title="server.GameConnection.on_connection_closed" href="#server.GameConnection.on_connection_closed">on_connection_closed</a></code></li>
 <li><code><a title="server.GameConnection.on_connection_lost" href="#server.GameConnection.on_connection_lost">on_connection_lost</a></code></li>
-<li><code><a title="server.GameConnection.player" href="#server.GameConnection.player">player</a></code></li>
 <li><code><a title="server.GameConnection.send" href="#server.GameConnection.send">send</a></code></li>
 <li><code><a title="server.GameConnection.state" href="#server.GameConnection.state">state</a></code></li>
+<li><code><a title="server.GameConnection.timeout_game_connection" href="#server.GameConnection.timeout_game_connection">timeout_game_connection</a></code></li>
 </ul>
 </li>
 <li>

@@ -131,6 +131,7 @@ class Game:
         self.displayed_rating_range = displayed_rating_range or InclusiveRange()
         self.enforce_rating_range = enforce_rating_range
         self.matchmaker_queue_id = matchmaker_queue_id
+        self.setup_timeout = setup_timeout
         self.state = GameState.INITIALIZING
         self._connections = {}
         self._configured_player_ids: set[int] = set()
@@ -418,6 +419,17 @@ class Game:
         self._logger.info(&#34;Added game connection %s&#34;, game_connection)
         self._connections[game_connection.player] = game_connection
 
+    async def disconnect_player(self, player: Player):
+        if player.game_connection not in self._connections.values():
+            return
+
+        self._configured_player_ids.discard(player.id)
+
+        if self.state is GameState.LOBBY and player.id in self._player_options:
+            del self._player_options[player.id]
+
+        await self.remove_game_connection(player.game_connection)
+
     async def remove_game_connection(self, game_connection):
         &#34;&#34;&#34;
         Remove a game connection from this game.
@@ -431,10 +443,6 @@ class Game:
         player = game_connection.player
         del self._connections[player]
         del player.game
-        self._configured_player_ids.discard(player.id)
-
-        if self.state is GameState.LOBBY and player.id in self._player_options:
-            del self._player_options[player.id]
 
         self._logger.info(&#34;Removed game connection %s&#34;, game_connection)
 
@@ -1148,6 +1156,7 @@ class GameOptions(dict):
         self.displayed_rating_range = displayed_rating_range or InclusiveRange()
         self.enforce_rating_range = enforce_rating_range
         self.matchmaker_queue_id = matchmaker_queue_id
+        self.setup_timeout = setup_timeout
         self.state = GameState.INITIALIZING
         self._connections = {}
         self._configured_player_ids: set[int] = set()
@@ -1435,6 +1444,17 @@ class GameOptions(dict):
         self._logger.info(&#34;Added game connection %s&#34;, game_connection)
         self._connections[game_connection.player] = game_connection
 
+    async def disconnect_player(self, player: Player):
+        if player.game_connection not in self._connections.values():
+            return
+
+        self._configured_player_ids.discard(player.id)
+
+        if self.state is GameState.LOBBY and player.id in self._player_options:
+            del self._player_options[player.id]
+
+        await self.remove_game_connection(player.game_connection)
+
     async def remove_game_connection(self, game_connection):
         &#34;&#34;&#34;
         Remove a game connection from this game.
@@ -1448,10 +1468,6 @@ class GameOptions(dict):
         player = game_connection.player
         del self._connections[player]
         del player.game
-        self._configured_player_ids.discard(player.id)
-
-        if self.state is GameState.LOBBY and player.id in self._player_options:
-            del self._player_options[player.id]
 
         self._logger.info(&#34;Removed game connection %s&#34;, game_connection)
 
@@ -2367,6 +2383,27 @@ assigned an army or team, and deletes any AI's.</p></div>
         del self.AIs[item]</code></pre>
 </details>
 </dd>
+<dt id="server.games.game.Game.disconnect_player"><code class="name flex">
+<span>async def <span class="ident">disconnect_player</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def disconnect_player(self, player: Player):
+    if player.game_connection not in self._connections.values():
+        return
+
+    self._configured_player_ids.discard(player.id)
+
+    if self.state is GameState.LOBBY and player.id in self._player_options:
+        del self._player_options[player.id]
+
+    await self.remove_game_connection(player.game_connection)</code></pre>
+</details>
+</dd>
 <dt id="server.games.game.Game.get_army_results"><code class="name flex">
 <span>def <span class="ident">get_army_results</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> <a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a></span>
 </code></dt>
@@ -2809,10 +2846,6 @@ game.</p></div>
     player = game_connection.player
     del self._connections[player]
     del player.game
-    self._configured_player_ids.discard(player.id)
-
-    if self.state is GameState.LOBBY and player.id in self._player_options:
-        del self._player_options[player.id]
 
     self._logger.info(&#34;Removed game connection %s&#34;, game_connection)
 
@@ -3437,6 +3470,7 @@ dict(one=1, two=2)</p></div>
 <li><code><a title="server.games.game.Game.check_sim_end" href="#server.games.game.Game.check_sim_end">check_sim_end</a></code></li>
 <li><code><a title="server.games.game.Game.clear_slot" href="#server.games.game.Game.clear_slot">clear_slot</a></code></li>
 <li><code><a title="server.games.game.Game.connections" href="#server.games.game.Game.connections">connections</a></code></li>
+<li><code><a title="server.games.game.Game.disconnect_player" href="#server.games.game.Game.disconnect_player">disconnect_player</a></code></li>
 <li><code><a title="server.games.game.Game.game_type" href="#server.games.game.Game.game_type">game_type</a></code></li>
 <li><code><a title="server.games.game.Game.get_army_results" href="#server.games.game.Game.get_army_results">get_army_results</a></code></li>
 <li><code><a title="server.games.game.Game.get_army_score" href="#server.games.game.Game.get_army_score">get_army_score</a></code></li>

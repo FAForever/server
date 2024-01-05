@@ -640,8 +640,6 @@ class LadderService(Service):
             game_id = game.id if game else None
             msg = {&#34;command&#34;: &#34;match_cancelled&#34;, &#34;game_id&#34;: game_id}
             for player in all_players:
-                if player.state == PlayerState.STARTING_AUTOMATCH:
-                    player.state = PlayerState.IDLE
                 player.write_message(msg)
 
             if abandoning_players:
@@ -1349,8 +1347,6 @@ class LadderService(Service):
             game_id = game.id if game else None
             msg = {&#34;command&#34;: &#34;match_cancelled&#34;, &#34;game_id&#34;: game_id}
             for player in all_players:
-                if player.state == PlayerState.STARTING_AUTOMATCH:
-                    player.state = PlayerState.IDLE
                 player.write_message(msg)
 
             if abandoning_players:
