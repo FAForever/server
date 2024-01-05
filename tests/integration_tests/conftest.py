@@ -120,7 +120,6 @@ def jwk_kid():
 
 @pytest.fixture
 async def lobby_server_factory(
-    event_loop,
     database,
     broadcast_service,
     player_service,
@@ -133,7 +132,7 @@ async def lobby_server_factory(
     oauth_service,
     violation_service,
     policy_server,
-    jwks_server
+    jwks_server,
 ):
     all_contexts = []
 
@@ -141,7 +140,7 @@ async def lobby_server_factory(
         instance = ServerInstance(
             "UnitTestServer",
             database,
-            loop=event_loop,
+            loop=asyncio.get_running_loop(),
             _override_services={
                 "broadcast_service": broadcast_service,
                 "geo_ip_service": geoip_service,
@@ -186,7 +185,7 @@ async def lobby_server_factory(
         # https://github.com/FAForever/server/issues/717
         for proto in context.__connected_client_protos:
             proto.abort()
-    await exhaust_callbacks(event_loop)
+    await exhaust_callbacks()
 
 
 @pytest.fixture
@@ -364,17 +363,18 @@ async def jwks_server(jwk_kid):
 
 
 @pytest.fixture
-async def proxy_server(lobby_server_proxy, event_loop):
+async def proxy_server(lobby_server_proxy):
     buf_len = 262144
     dnsbl = proxyprotocol.dnsbl.NoopDnsbl()
 
     host, port = lobby_server_proxy.sockets[0].getsockname()
     dest = proxyprotocol.server.Address(f"{host}:{port}")
 
-    server = await event_loop.create_server(
+    loop = asyncio.get_running_loop()
+    server = await loop.create_server(
         lambda: proxyprotocol.server.protocol.DownstreamProtocol(
             proxyprotocol.server.protocol.UpstreamProtocol,
-            event_loop,
+            loop,
             buf_len,
             dnsbl,
             dest

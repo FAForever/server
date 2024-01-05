@@ -1,3 +1,5 @@
+import asyncio
+
 from server import ServerInstance
 from server.config import config
 from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
@@ -31,14 +33,14 @@ async def test_multiple_contexts(
     party_service,
     rating_service,
     oauth_service,
-    event_loop
 ):
     config.USE_POLICY_SERVER = False
 
+    loop = asyncio.get_running_loop()
     instance = ServerInstance(
         "TestMultiContext",
         database,
-        loop=event_loop,
+        loop=loop,
         _override_services={
             "broadcast_service": broadcast_service,
             "game_service": game_service,

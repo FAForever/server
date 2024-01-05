@@ -694,7 +694,6 @@ async def test_on_match_found_sets_player_state(
 async def test_start_and_cancel_search(
     ladder_service: LadderService,
     player_factory,
-    event_loop,
 ):
     p1 = player_factory(
         "Dostya",
@@ -705,7 +704,7 @@ async def test_start_and_cancel_search(
 
     ladder_service.start_search([p1], "ladder1v1")
     search = ladder_service._searches[p1]["ladder1v1"]
-    await exhaust_callbacks(event_loop)
+    await exhaust_callbacks()
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert search in ladder_service.queues["ladder1v1"]._queue
@@ -720,7 +719,6 @@ async def test_start_and_cancel_search(
 async def test_start_search_cancels_previous_search(
     ladder_service: LadderService,
     player_factory,
-    event_loop,
 ):
     p1 = player_factory(
         "Dostya",
@@ -731,14 +729,14 @@ async def test_start_search_cancels_previous_search(
 
     ladder_service.start_search([p1], "ladder1v1")
     search1 = ladder_service._searches[p1]["ladder1v1"]
-    await exhaust_callbacks(event_loop)
+    await exhaust_callbacks()
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert search1 in ladder_service.queues["ladder1v1"]._queue
 
     ladder_service.start_search([p1], "ladder1v1")
     search2 = ladder_service._searches[p1]["ladder1v1"]
-    await exhaust_callbacks(event_loop)
+    await exhaust_callbacks()
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert search1.is_cancelled
@@ -749,7 +747,6 @@ async def test_start_search_cancels_previous_search(
 async def test_cancel_all_searches(
     ladder_service: LadderService,
     player_factory,
-    event_loop,
 ):
     p1 = player_factory(
         "Dostya",
@@ -760,7 +757,7 @@ async def test_cancel_all_searches(
 
     ladder_service.start_search([p1], "ladder1v1")
     search = ladder_service._searches[p1]["ladder1v1"]
-    await exhaust_callbacks(event_loop)
+    await exhaust_callbacks()
 
     assert p1.state == PlayerState.SEARCHING_LADDER
     assert search in ladder_service.queues["ladder1v1"]._queue

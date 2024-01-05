@@ -107,7 +107,7 @@ async def lobbyconnection(
 
 
 @pytest.fixture
-def policy_server(event_loop):
+async def policy_server():
     host = "localhost"
     port = 6080
 
@@ -128,9 +128,9 @@ def policy_server(event_loop):
         site = web.TCPSite(runner, host, port)
         await site.start()
 
-    event_loop.run_until_complete(start_app())
+    await start_app()
     yield (host, port)
-    event_loop.run_until_complete(runner.cleanup())
+    await runner.cleanup()
 
 
 async def test_unauthenticated_calls_abort(lobbyconnection, test_game_info):

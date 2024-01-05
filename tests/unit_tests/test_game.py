@@ -1174,7 +1174,7 @@ async def test_game_results_commander_kills(
 
 
 @fast_forward(5)
-async def test_game_rated_only_once(event_loop, game, game_add_players):
+async def test_game_rated_only_once(game, game_add_players):
     game.state = GameState.LOBBY
     game_add_players(game, 2)
 
