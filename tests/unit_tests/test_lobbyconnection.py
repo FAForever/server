@@ -610,7 +610,7 @@ async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection):
     })
 
 
-async def test_command_avatar_select(mocker, database, lobbyconnection: LobbyConnection):
+async def test_command_avatar_select(database, lobbyconnection: LobbyConnection):
     lobbyconnection.player.id = 2  # Dostya test user
 
     await lobbyconnection.on_message_received({
@@ -656,6 +656,24 @@ async def test_command_social_add_friend(lobbyconnection, database):
     assert lobbyconnection.player.friends == {2}
 
 
+async def test_command_social_add_friend_idempotent(lobbyconnection, database):
+    lobbyconnection.player.id = 1
+
+    friends = await get_friends(lobbyconnection.player.id, database)
+    assert friends == []
+    assert lobbyconnection.player.friends == set()
+
+    for _ in range(5):
+        await lobbyconnection.command_social_add({
+            "command": "social_add",
+            "friend": 2
+        })
+
+    friends = await get_friends(lobbyconnection.player.id, database)
+    assert friends == [2]
+    assert lobbyconnection.player.friends == {2}
+
+
 async def test_command_social_remove_friend(lobbyconnection, database):
     lobbyconnection.player.id = 2
 
@@ -672,11 +690,19 @@ async def test_command_social_remove_friend(lobbyconnection, database):
     assert friends == []
     assert lobbyconnection.player.friends == set()
 
-    # Removing twice does nothing
-    await lobbyconnection.on_message_received({
-        "command": "social_remove",
-        "friend": 1
-    })
+
+async def test_command_social_remove_friend_idempotent(lobbyconnection, database):
+    lobbyconnection.player.id = 2
+
+    friends = await get_friends(lobbyconnection.player.id, database)
+    assert friends == [1]
+    lobbyconnection.player.friends = {1}
+
+    for _ in range(5):
+        await lobbyconnection.command_social_remove({
+            "command": "social_remove",
+            "friend": 1
+        })
 
     friends = await get_friends(lobbyconnection.player.id, database)
     assert friends == []

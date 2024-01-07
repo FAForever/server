@@ -333,6 +333,9 @@ class LobbyConnection:
         else:
             return
 
+        if subject_id in player_attr:
+            return
+
         async with self._db.acquire() as conn:
             await conn.execute(friends_and_foes.insert().values(
                 user_id=self.player.id,
