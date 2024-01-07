@@ -22,12 +22,27 @@ async def config_service(monkeypatch):
 async def test_configuration_refresh(monkeypatch):
     config.refresh()
     assert config.DB_PASSWORD == "banana"
+    assert config.DB_LOGIN == "root"
+
     monkeypatch.setenv("CONFIGURATION_FILE", "tests/data/refresh_conf.yaml")
     assert config.DB_PASSWORD == "banana"
 
+    # Values in config file will override defaults
     config.refresh()
-
     assert config.DB_PASSWORD == "apple"
+    assert config.DB_LOGIN == "root"
+
+    # Values in config file will override environment
+    monkeypatch.setenv("DB_PASSWORD", "plantain")
+    config.refresh()
+    assert config.DB_PASSWORD == "apple"
+    assert config.DB_LOGIN == "root"
+
+    # Values in environment will override defaults
+    monkeypatch.setenv("DB_LOGIN", "beet")
+    config.refresh()
+    assert config.DB_PASSWORD == "apple"
+    assert config.DB_LOGIN == "beet"
 
 
 async def test_config_refresh_file_not_found(monkeypatch):
@@ -80,7 +95,7 @@ async def test_config_callback_on_change(config_service, monkeypatch):
 
 
 @fast_forward(20)
-async def test_config_no_callback_without_change(config_service, monkeypatch):
+async def test_config_no_callback_without_change(config_service):
     callback = mock.Mock()
     config.register_callback("DB_PASSWORD", callback)
     assert config.DB_PASSWORD == "banana"

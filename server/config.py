@@ -156,7 +156,9 @@ class ConfigurationStore:
         self.QUEUE_POP_TIME_MOVING_AVG_SIZE = 5
 
         self._defaults = {
-            key: value for key, value in vars(self).items() if key.isupper()
+            key: value
+            for key, value in vars(self).items()
+            if key.isupper()
         }
 
         self._callbacks: dict[str, Callable] = {}
@@ -164,6 +166,12 @@ class ConfigurationStore:
 
     def refresh(self) -> None:
         new_values = self._defaults.copy()
+        # Add fallback values from environment.
+        # NOTE: Only works for string values!
+        for key in new_values:
+            value = os.getenv(key)
+            if value is not None:
+                new_values[key] = value
 
         config_file = os.getenv("CONFIGURATION_FILE")
         if config_file is not None:
