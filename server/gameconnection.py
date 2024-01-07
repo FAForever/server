@@ -288,7 +288,11 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.warning("Invalid result for %s reported: %s", army, result)
         else:
             await self.game.add_result(
-                self.player.id, army, result_type, int(score), frozenset(metadata)
+                self.player.id,
+                army,
+                result_type,
+                int(score),
+                frozenset(metadata),
             )
 
     async def handle_operation_complete(
@@ -350,7 +354,7 @@ class GameConnection(GpgNetServerProtocol):
         except json.JSONDecodeError as e:
             self._logger.warning(
                 "Malformed game stats reported by %s: '...%s...'",
-                self._player.login,
+                self.player.login,
                 stats[e.pos-20:e.pos+20]
             )
 
