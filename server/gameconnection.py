@@ -336,17 +336,18 @@ class GameConnection(GpgNetServerProtocol):
 
             # Each player in a co-op game will send the OperationComplete
             # message but we only need to perform this insert once
-            if not self.game.leaderboard_saved:
-                await conn.execute(
-                    coop_leaderboard.insert().values(
-                        mission=mission,
-                        gameuid=self.game.id,
-                        secondary=secondary,
-                        time=delta,
-                        player_count=len(self.game.players),
+            async with self.game.leaderboard_lock:
+                if not self.game.leaderboard_saved:
+                    await conn.execute(
+                        coop_leaderboard.insert().values(
+                            mission=mission,
+                            gameuid=self.game.id,
+                            secondary=secondary,
+                            time=delta,
+                            player_count=len(self.game.players),
+                        )
                     )
-                )
-                self.game.leaderboard_saved = True
+                    self.game.leaderboard_saved = True
 
     async def handle_json_stats(self, stats: str):
         try:

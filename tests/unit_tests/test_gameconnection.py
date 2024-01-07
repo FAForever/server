@@ -527,9 +527,7 @@ async def test_handle_action_TeamkillHappened(
 
 
 async def test_handle_action_TeamkillHappened_AI(
-    game: Game,
     game_connection: GameConnection,
-    database
 ):
     # Should fail with a sql constraint error if this isn't handled correctly
     game_connection.abort = mock.AsyncMock()
@@ -675,13 +673,12 @@ async def test_handle_action_OperationComplete_duplicate(
         )
 
     with caplog.at_level(logging.ERROR):
-        await game_connection.handle_action(
-            "OperationComplete", [1, 1, time_taken]
-        )
-        caplog.clear()
-        await game_connection.handle_action(
-            "OperationComplete", [1, 1, time_taken]
-        )
+        await asyncio.gather(*(
+            game_connection.handle_action(
+                "OperationComplete", [1, 1, time_taken]
+            )
+            for _ in range(10)
+        ))
 
         assert not any(
             record.exc_info
