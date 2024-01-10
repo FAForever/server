@@ -160,7 +160,7 @@ async def global_database(request) -> FAFDatabase:
         user=user,
         password=pw or "",
         port=port,
-        db=name
+        db=name,
     )
 
 
@@ -183,7 +183,7 @@ def database_context():
             user=user,
             password=pw or "",
             port=port,
-            db=name
+            db=name,
         )
         await db.connect()
 
@@ -211,7 +211,7 @@ async def game(database, players):
 
 
 GAME_UID = 1
-COOP_GAME_UID = 1
+COOP_GAME_UID = 2
 
 
 @pytest.fixture

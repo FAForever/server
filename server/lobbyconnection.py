@@ -189,7 +189,11 @@ class LobbyConnection:
             })
             await self.abort(e.message())
         except ClientError as e:
-            self._logger.warning("Client error: %s", e.message)
+            self._logger.warning(
+                "ClientError[%s]: %s",
+                self.user_agent,
+                e.message,
+            )
             await self.send({
                 "command": "notice",
                 "style": "error",
@@ -331,6 +335,9 @@ class LobbyConnection:
             subject_id = message["foe"]
             player_attr = self.player.foes
         else:
+            return
+
+        if subject_id in player_attr:
             return
 
         async with self._db.acquire() as conn:

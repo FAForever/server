@@ -1,3 +1,5 @@
+import asyncio
+
 from .game import Game
 from .typedefs import FA, GameType, InitMode, ValidityState, Victory
 
@@ -19,6 +21,7 @@ class CoopGame(Game):
             "Difficulty": 3,
             "Expansion": "true"
         })
+        self.leaderboard_lock = asyncio.Lock()
         self.leaderboard_saved = False
 
     async def validate_game_mode_settings(self):
