@@ -26,7 +26,9 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from .game import Game
+<pre><code class="python">import asyncio
+
+from .game import Game
 from .typedefs import FA, GameType, InitMode, ValidityState, Victory
 
 
@@ -47,6 +49,7 @@ class CoopGame(Game):
             &#34;Difficulty&#34;: 3,
             &#34;Expansion&#34;: &#34;true&#34;
         })
+        self.leaderboard_lock = asyncio.Lock()
         self.leaderboard_saved = False
 
     async def validate_game_mode_settings(self):
@@ -106,6 +109,7 @@ class CoopGame(Game):
             &#34;Difficulty&#34;: 3,
             &#34;Expansion&#34;: &#34;true&#34;
         })
+        self.leaderboard_lock = asyncio.Lock()
         self.leaderboard_saved = False
 
     async def validate_game_mode_settings(self):

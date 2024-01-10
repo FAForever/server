@@ -140,6 +140,7 @@ __all__ = (
             &#34;Difficulty&#34;: 3,
             &#34;Expansion&#34;: &#34;true&#34;
         })
+        self.leaderboard_lock = asyncio.Lock()
         self.leaderboard_saved = False
 
     async def validate_game_mode_settings(self):

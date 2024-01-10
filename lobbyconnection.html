@@ -218,7 +218,11 @@ class LobbyConnection:
             })
             await self.abort(e.message())
         except ClientError as e:
-            self._logger.warning(&#34;Client error: %s&#34;, e.message)
+            self._logger.warning(
+                &#34;ClientError[%s]: %s&#34;,
+                self.user_agent,
+                e.message,
+            )
             await self.send({
                 &#34;command&#34;: &#34;notice&#34;,
                 &#34;style&#34;: &#34;error&#34;,
@@ -360,6 +364,9 @@ class LobbyConnection:
             subject_id = message[&#34;foe&#34;]
             player_attr = self.player.foes
         else:
+            return
+
+        if subject_id in player_attr:
             return
 
         async with self._db.acquire() as conn:
@@ -1497,7 +1504,11 @@ class LobbyConnection:
             })
             await self.abort(e.message())
         except ClientError as e:
-            self._logger.warning(&#34;Client error: %s&#34;, e.message)
+            self._logger.warning(
+                &#34;ClientError[%s]: %s&#34;,
+                self.user_agent,
+                e.message,
+            )
             await self.send({
                 &#34;command&#34;: &#34;notice&#34;,
                 &#34;style&#34;: &#34;error&#34;,
@@ -1639,6 +1650,9 @@ class LobbyConnection:
             subject_id = message[&#34;foe&#34;]
             player_attr = self.player.foes
         else:
+            return
+
+        if subject_id in player_attr:
             return
 
         async with self._db.acquire() as conn:
@@ -3652,6 +3666,9 @@ async def command_restore_game_session(self, message):
     else:
         return
 
+    if subject_id in player_attr:
+        return
+
     async with self._db.acquire() as conn:
         await conn.execute(friends_and_foes.insert().values(
             user_id=self.player.id,
@@ -3888,7 +3905,11 @@ async def command_restore_game_session(self, message):
         })
         await self.abort(e.message())
     except ClientError as e:
-        self._logger.warning(&#34;Client error: %s&#34;, e.message)
+        self._logger.warning(
+            &#34;ClientError[%s]: %s&#34;,
+            self.user_agent,
+            e.message,
+        )
         await self.send({
             &#34;command&#34;: &#34;notice&#34;,
             &#34;style&#34;: &#34;error&#34;,
