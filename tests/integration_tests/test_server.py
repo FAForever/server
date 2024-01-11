@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import and_, select
 
 from server.config import config
-from server.db.models import avatars, avatars_list, ban
+from server.db.models import avatars, avatars_list, ban, friends_and_foes
 from server.protocol import DisconnectedError
 from tests.utils import fast_forward
 
@@ -996,3 +996,215 @@ async def test_avatar_select_not_owned(lobby_server, database):
     async with database.acquire() as conn:
         result = await get_player_selected_avatars(conn, player_id)
         assert result.rowcount == 0
+
+
+@fast_forward(30)
+async def test_social_add_friend(lobby_server, database):
+    subject_id = 10
+    player_id, _, proto = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server,
+    )
+    await read_until_command(proto, "game_info")
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select(friends_and_foes)
+            .where(
+                and_(
+                    friends_and_foes.c.user_id == player_id,
+                    friends_and_foes.c.subject_id == subject_id,
+                )
+            )
+        )
+        row = result.fetchone()
+        assert row is None
+
+    # Other player doesn't even need to be online
+    await proto.send_message({
+        "command": "social_add",
+        "friend": subject_id,
+    })
+    await asyncio.sleep(5)
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select(friends_and_foes)
+            .where(
+                and_(
+                    friends_and_foes.c.user_id == player_id,
+                    friends_and_foes.c.subject_id == subject_id,
+                )
+            )
+        )
+        row = result.fetchone()
+
+        assert row.subject_id == subject_id
+        assert row.status == "FRIEND"
+
+
+@fast_forward(30)
+async def test_social_add_foe(lobby_server, database):
+    subject_id = 10
+    player_id, _, proto = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server,
+    )
+    await read_until_command(proto, "game_info")
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select(friends_and_foes)
+            .where(
+                and_(
+                    friends_and_foes.c.user_id == player_id,
+                    friends_and_foes.c.subject_id == subject_id,
+                )
+            )
+        )
+        row = result.fetchone()
+        assert row is None
+
+    # Other player doesn't even need to be online
+    await proto.send_message({
+        "command": "social_add",
+        "foe": subject_id,
+    })
+    await asyncio.sleep(5)
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select(friends_and_foes)
+            .where(
+                and_(
+                    friends_and_foes.c.user_id == player_id,
+                    friends_and_foes.c.subject_id == subject_id,
+                )
+            )
+        )
+        row = result.fetchone()
+
+        assert row.subject_id == subject_id
+        assert row.status == "FOE"
+
+
+@fast_forward(30)
+async def test_social_add_friend_while_hosting(lobby_server):
+    _, _, proto1 = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server,
+    )
+    rhiza_id, _, proto2 = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"),
+        lobby_server,
+    )
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+
+    game_id = await host_game(proto1, visibility="friends")
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto2, "game_info", timeout=10, uid=game_id)
+
+    await proto1.send_message({
+        "command": "social_add",
+        "friend": rhiza_id,
+    })
+
+    await read_until_command(
+        proto2,
+        "game_info",
+        timeout=10,
+        uid=game_id,
+        state="open",
+    )
+
+
+@fast_forward(30)
+async def test_social_add_foe_while_hosting(lobby_server):
+    _, _, proto1 = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server,
+    )
+    rhiza_id, _, proto2 = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"),
+        lobby_server,
+    )
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+
+    game_id = await host_game(proto1)
+    await read_until_command(proto2, "game_info", timeout=10, uid=game_id)
+
+    await proto1.send_message({
+        "command": "social_add",
+        "foe": rhiza_id,
+    })
+
+    await read_until_command(
+        proto2,
+        "game_info",
+        timeout=10,
+        uid=game_id,
+        state="closed",
+    )
+
+
+@fast_forward(30)
+async def test_social_remove_friend_while_hosting(lobby_server):
+    _, _, proto1 = await connect_and_sign_in(
+        ("friends", "friends"),
+        lobby_server,
+    )
+    test_id, _, proto2 = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server,
+    )
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+
+    game_id = await host_game(proto1, visibility="friends")
+    await read_until_command(proto2, "game_info", timeout=5, uid=game_id)
+
+    await proto1.send_message({
+        "command": "social_remove",
+        "friend": test_id,
+    })
+
+    await read_until_command(
+        proto2,
+        "game_info",
+        timeout=10,
+        uid=game_id,
+        state="closed",
+    )
+
+
+@fast_forward(30)
+async def test_social_remove_foe_while_hosting(lobby_server):
+    _, _, proto1 = await connect_and_sign_in(
+        ("test", "test_password"),
+        lobby_server,
+    )
+    rhiza_id, _, proto2 = await connect_and_sign_in(
+        ("foed_by_test", "foe"),
+        lobby_server,
+    )
+    await read_until_command(proto1, "game_info")
+    await read_until_command(proto2, "game_info")
+
+    game_id = await host_game(proto1)
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(proto2, "game_info", timeout=5, uid=game_id)
+
+    await proto1.send_message({
+        "command": "social_remove",
+        "foe": rhiza_id,
+    })
+
+    await read_until_command(
+        proto2,
+        "game_info",
+        timeout=10,
+        uid=game_id,
+        state="open",
+    )

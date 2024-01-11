@@ -333,8 +333,20 @@ class LobbyConnection:
                 friends_and_foes.c.subject_id == subject_id
             )))
 
-        with contextlib.suppress(KeyError):
-            player_attr.remove(subject_id)
+        game = self.player.game
+        visibility_context_manager = contextlib.nullcontext()
+
+        if game and game.host == self.player:
+            # If the player is currently hosting a game, we need to make sure
+            # that the visibility change is sent to the subject
+            subject = self.player_service.get_player(subject_id)
+            visibility_context_manager = self._write_visibility_change_context(
+                game,
+                subject,
+            )
+
+        with visibility_context_manager:
+            player_attr.discard(subject_id)
 
     async def command_social_add(self, message):
         if "friend" in message:
@@ -358,7 +370,48 @@ class LobbyConnection:
                 subject_id=subject_id,
             ))
 
-        player_attr.add(subject_id)
+        game = self.player.game
+        visibility_context_manager = contextlib.nullcontext()
+
+        if game and game.host == self.player:
+            # If the player is currently hosting a game, we need to make sure
+            # that the visibility change is sent to the subject
+            subject = self.player_service.get_player(subject_id)
+            visibility_context_manager = self._write_visibility_change_context(
+                game,
+                subject,
+            )
+
+        with visibility_context_manager:
+            player_attr.add(subject_id)
+
+    @contextlib.contextmanager
+    def _write_visibility_change_context(
+        self,
+        game: Game,
+        player: Player,
+    ):
+        # Check visibility before/after
+        was_visible = game.is_visible_to_player(player)
+        yield
+        is_visible = game.is_visible_to_player(player)
+
+        if was_visible is is_visible:
+            return
+
+        self._logger.debug(
+            "Visibility for %s changed for %s from %s -> %s",
+            game,
+            player.login,
+            was_visible,
+            is_visible,
+        )
+
+        msg = game.to_dict()
+        if not is_visible:
+            msg["state"] = "closed"
+
+        player.write_message(msg)
 
     async def kick(self):
         await self.send({
