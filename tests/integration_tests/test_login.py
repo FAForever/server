@@ -1,3 +1,4 @@
+from datetime import datetime
 from time import time
 
 import jwt
@@ -9,6 +10,8 @@ from .conftest import (
     perform_login,
     read_until_command
 )
+
+TIMEOUT = 10 # login timeout in seconds
 
 
 async def test_server_login_invalid(lobby_server):
@@ -118,9 +121,12 @@ async def test_server_login_valid(lobby_server):
     assert msg == {
         "command": "welcome",
         "me": me,
+        "current_time": msg.get("current_time", None),
         "id": 3,
         "login": "Rhiza"
     }
+    assert isinstance(msg.get("current_time", None), float)
+    assert abs(msg.get("current_time", -1) - datetime.utcnow().timestamp()) <= TIMEOUT
     msg = await proto.read_message()
     assert msg == {
         "command": "player_info",
@@ -163,9 +169,12 @@ async def test_server_login_valid_admin(lobby_server):
     assert msg == {
         "command": "welcome",
         "me": me,
+        "current_time": msg.get("current_time", None),
         "id": 1,
         "login": "test"
     }
+    assert isinstance(msg.get("current_time", None), float)
+    assert abs(msg.get("current_time", -1) - datetime.utcnow().timestamp()) <= TIMEOUT
     msg = await proto.read_message()
     assert msg == {
         "command": "player_info",
@@ -207,9 +216,12 @@ async def test_server_login_valid_moderator(lobby_server):
     assert msg == {
         "command": "welcome",
         "me": me,
+        "current_time": msg.get("current_time", None),
         "id": 20,
         "login": "moderator"
     }
+    assert isinstance(msg.get("current_time", None), float)
+    assert abs(msg.get("current_time", -1) - datetime.utcnow().timestamp()) <= TIMEOUT
     msg = await proto.read_message()
     assert msg == {
         "command": "player_info",
@@ -305,9 +317,12 @@ async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid):
     assert msg == {
         "command": "welcome",
         "me": me,
+        "current_time": msg.get("current_time", None),
         "id": 3,
         "login": "Rhiza"
     }
+    assert isinstance(msg.get("current_time", None), float)
+    assert abs(msg.get("current_time", -1) - datetime.utcnow().timestamp()) <= TIMEOUT
     msg = await proto.read_message()
     assert msg == {
         "command": "player_info",
