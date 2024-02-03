@@ -11,7 +11,7 @@ from .conftest import (
     read_until_command
 )
 
-TIMEOUT = 10 #  login timeout in seconds
+TIMEOUT = 10
 
 
 async def test_server_login_invalid(lobby_server):
