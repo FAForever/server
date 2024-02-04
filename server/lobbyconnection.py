@@ -693,7 +693,7 @@ class LobbyConnection:
         await self.send({
             "command": "welcome",
             "me": self.player.to_dict(),
-            "current_time": datetime.utcnow().timestamp(),
+            "current_time": datetime_now().isoformat(),
 
             # For backwards compatibility for old clients. For now.
             "id": self.player.id,
