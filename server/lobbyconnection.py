@@ -18,6 +18,7 @@ from sqlalchemy.exc import DBAPIError
 
 import server.metrics as metrics
 from server.db import FAFDatabase
+from server.timing import datetime_now
 
 from .config import TRACE, config
 from .db.models import (
