@@ -252,7 +252,7 @@ def fixed_time(iso_utc_time: str | float | int | datetime.datetime = 0) -> Conte
     if isinstance(iso_utc_time, str):
         iso_utc_time = datetime.datetime.fromisoformat(iso_utc_time)
     elif isinstance(iso_utc_time, (float, int)):
-        iso_utc_time = datetime.datetime.fromtimestamp(iso_utc_time, datetime.UTC)
+        iso_utc_time = datetime.datetime.fromtimestamp(iso_utc_time, datetime.timezone.utc)
 
     def mock_datetime_now() -> datetime:
         return iso_utc_time
