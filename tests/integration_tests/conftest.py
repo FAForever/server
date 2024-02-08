@@ -1,10 +1,12 @@
 import asyncio
+import datetime
 import hashlib
 import json
 import logging
 import textwrap
 from collections import defaultdict
-from typing import Any, Callable, Optional
+from contextlib import contextmanager
+from typing import Any, Callable, ContextManager, Optional
 from unittest import mock
 
 import aio_pika
@@ -238,6 +240,26 @@ def lobby_contexts(lobby_setup):
 def lobby_contexts_proxy(lobby_setup_proxy):
     _, contexts = lobby_setup_proxy
     return contexts
+
+
+@contextmanager
+def fixed_time(iso_utc_time: str | float | int | datetime.datetime = 0) -> ContextManager[datetime.datetime]:
+    """
+    Context manager to fix server.timing value. Yields native datetime object of fixed time.
+
+    :param iso_utc_time: UTC time to use. Can be isoformat, timestamp or native object.
+    """
+    if isinstance(iso_utc_time, str):
+        iso_utc_time = datetime.datetime.fromisoformat(iso_utc_time)
+    elif isinstance(iso_utc_time, (float, int)):
+        iso_utc_time = datetime.datetime.fromtimestamp(iso_utc_time, datetime.UTC)
+
+    def mock_datetime_now() -> datetime:
+        return iso_utc_time
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr('server.lobbyconnection.datetime_now', mock_datetime_now)
+        yield iso_utc_time
 
 
 # TODO: This fixture is poorly named since it returns a ServerContext, however,
