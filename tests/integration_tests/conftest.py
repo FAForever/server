@@ -258,7 +258,7 @@ def fixed_time(iso_utc_time: str | float | int | datetime.datetime = 0) -> Conte
         return iso_utc_time
 
     with pytest.MonkeyPatch.context() as mp:
-        mp.setattr('server.lobbyconnection.datetime_now', mock_datetime_now)
+        mp.setattr("server.lobbyconnection.datetime_now", mock_datetime_now)
         yield iso_utc_time
 
 
