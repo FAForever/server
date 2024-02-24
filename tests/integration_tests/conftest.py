@@ -241,7 +241,7 @@ def lobby_contexts_proxy(lobby_setup_proxy):
     return contexts
 
 
-@pytest.fuxture
+@pytest.fixture
 def fixed_time(monkeypatch):
     """
     Fixture to fix server.timing value. By default, fixes all timings at 1970-01-01T00:00:00+00:00. Additionally, returned function can be called unbound times to change timing value, e.g.:
