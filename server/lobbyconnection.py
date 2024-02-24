@@ -18,6 +18,7 @@ from sqlalchemy.exc import DBAPIError
 
 import server.metrics as metrics
 from server.db import FAFDatabase
+from server.timing import datetime_now
 
 from .config import TRACE, config
 from .db.models import (
@@ -693,6 +694,7 @@ class LobbyConnection:
         await self.send({
             "command": "welcome",
             "me": self.player.to_dict(),
+            "current_time": datetime_now().isoformat(),
 
             # For backwards compatibility for old clients. For now.
             "id": self.player.id,

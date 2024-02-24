@@ -92,7 +92,7 @@ async def test_server_ban_revoked_or_expired(lobby_server, user):
     assert msg["login"] == user
 
 
-async def test_server_login_valid(lobby_server):
+async def test_server_login_valid(lobby_server, fixed_time):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ("Rhiza", "puff_the_magic_dragon"))
     msg = await proto.read_message()
@@ -118,6 +118,7 @@ async def test_server_login_valid(lobby_server):
     assert msg == {
         "command": "welcome",
         "me": me,
+        "current_time": "1970-01-01T00:00:00+00:00",
         "id": 3,
         "login": "Rhiza"
     }
@@ -137,7 +138,7 @@ async def test_server_login_valid(lobby_server):
     }
 
 
-async def test_server_login_valid_admin(lobby_server):
+async def test_server_login_valid_admin(lobby_server, fixed_time):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ("test", "test_password"))
     msg = await proto.read_message()
@@ -163,6 +164,7 @@ async def test_server_login_valid_admin(lobby_server):
     assert msg == {
         "command": "welcome",
         "me": me,
+        "current_time": "1970-01-01T00:00:00+00:00",
         "id": 1,
         "login": "test"
     }
@@ -182,7 +184,7 @@ async def test_server_login_valid_admin(lobby_server):
     }
 
 
-async def test_server_login_valid_moderator(lobby_server):
+async def test_server_login_valid_moderator(lobby_server, fixed_time):
     proto = await connect_client(lobby_server)
     await perform_login(proto, ("moderator", "moderator"))
     msg = await proto.read_message()
@@ -207,6 +209,7 @@ async def test_server_login_valid_moderator(lobby_server):
     assert msg == {
         "command": "welcome",
         "me": me,
+        "current_time": "1970-01-01T00:00:00+00:00",
         "id": 20,
         "login": "moderator"
     }
@@ -261,7 +264,7 @@ async def test_server_login_double(lobby_server):
     }
 
 
-async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid):
+async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid, fixed_time):
     proto = await connect_client(lobby_server)
     await proto.send_message({
         "command": "auth",
@@ -305,6 +308,7 @@ async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid):
     assert msg == {
         "command": "welcome",
         "me": me,
+        "current_time": "1970-01-01T00:00:00+00:00",
         "id": 3,
         "login": "Rhiza"
     }

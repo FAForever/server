@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import hashlib
 import json
 import logging
@@ -238,6 +239,37 @@ def lobby_contexts(lobby_setup):
 def lobby_contexts_proxy(lobby_setup_proxy):
     _, contexts = lobby_setup_proxy
     return contexts
+
+
+@pytest.fixture
+def fixed_time(monkeypatch):
+    """
+    Fixture to fix server.timing value. By default, fixes all timings at 1970-01-01T00:00:00+00:00. Additionally, returned function can be called unbound times to change timing value, e.g.:
+
+    def test_time(fixed_time):
+        assert server.lobbyconnection.datetime_now().timestamp == 0.
+        fixed_time(1)
+        assert server.lobbyconnection.datetime_now().timestamp == 1.
+    """
+
+    def fix_time(iso_utc_time: str | float | int | datetime.datetime = 0):
+        """
+        Fix server.timing value.
+
+        :param iso_utc_time: UTC time to use. Can be isoformat, timestamp or native object.
+        """
+        if isinstance(iso_utc_time, str):
+            iso_utc_time = datetime.datetime.fromisoformat(iso_utc_time)
+        elif isinstance(iso_utc_time, (float, int)):
+            iso_utc_time = datetime.datetime.fromtimestamp(iso_utc_time, datetime.timezone.utc)
+
+        def mock_datetime_now() -> datetime:
+            return iso_utc_time
+
+        monkeypatch.setattr("server.lobbyconnection.datetime_now", mock_datetime_now)
+
+    fix_time()
+    return fix_time
 
 
 # TODO: This fixture is poorly named since it returns a ServerContext, however,
