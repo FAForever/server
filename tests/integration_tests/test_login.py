@@ -264,7 +264,7 @@ async def test_server_login_double(lobby_server):
     }
 
 
-async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid):
+async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid, fixed_time):
     proto = await connect_client(lobby_server)
     await proto.send_message({
         "command": "auth",
