@@ -247,9 +247,9 @@ def fixed_time(monkeypatch):
     Fixture to fix server.timing value. By default, fixes all timings at 1970-01-01T00:00:00+00:00. Additionally, returned function can be called unbound times to change timing value, e.g.:
 
     def test_time(fixed_time):
-        assert server.lobbyconnection.datetime_now().timestamp == 0.
+        assert server.lobbyconnection.datetime_now().timestamp == 0
         fixed_time(1)
-        assert server.lobbyconnection.datetime_now().timestamp == 1.
+        assert server.lobbyconnection.datetime_now().timestamp == 1
     """
 
     def fix_time(iso_utc_time: str | float | int | datetime.datetime = 0):
