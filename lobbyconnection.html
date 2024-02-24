@@ -47,6 +47,7 @@ from sqlalchemy.exc import DBAPIError
 
 import server.metrics as metrics
 from server.db import FAFDatabase
+from server.timing import datetime_now
 
 from .config import TRACE, config
 from .db.models import (
@@ -722,6 +723,7 @@ class LobbyConnection:
         await self.send({
             &#34;command&#34;: &#34;welcome&#34;,
             &#34;me&#34;: self.player.to_dict(),
+            &#34;current_time&#34;: datetime_now().isoformat(),
 
             # For backwards compatibility for old clients. For now.
             &#34;id&#34;: self.player.id,
@@ -2008,6 +2010,7 @@ class LobbyConnection:
         await self.send({
             &#34;command&#34;: &#34;welcome&#34;,
             &#34;me&#34;: self.player.to_dict(),
+            &#34;current_time&#34;: datetime_now().isoformat(),
 
             # For backwards compatibility for old clients. For now.
             &#34;id&#34;: self.player.id,
@@ -4018,6 +4021,7 @@ async def command_restore_game_session(self, message):
     await self.send({
         &#34;command&#34;: &#34;welcome&#34;,
         &#34;me&#34;: self.player.to_dict(),
+        &#34;current_time&#34;: datetime_now().isoformat(),
 
         # For backwards compatibility for old clients. For now.
         &#34;id&#34;: self.player.id,
