@@ -5,8 +5,7 @@ import json
 import logging
 import textwrap
 from collections import defaultdict
-from contextlib import contextmanager
-from typing import Any, Callable, ContextManager, Optional
+from typing import Any, Callable, Optional
 from unittest import mock
 
 import aio_pika
