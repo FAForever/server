@@ -5,6 +5,7 @@ from unittest import mock
 import pytest
 from aiohttp import web
 from sqlalchemy import and_, select
+from sqlalchemy.exc import OperationalError
 
 from server.config import config
 from server.db.models import ban, friends_and_foes
@@ -157,6 +158,26 @@ async def test_bad_command_calls_abort(lobbyconnection):
 
     lobbyconnection.send.assert_called_once_with({"command": "invalid"})
     lobbyconnection.abort.assert_called_once_with("Error processing command")
+
+
+async def test_database_outage_error_responds_cleanly(lobbyconnection):
+    lobbyconnection.send = mock.AsyncMock()
+    lobbyconnection.abort = mock.AsyncMock()
+    
+    with pytest.raises(OperationalError):
+        await lobbyconnection.on_message_received({
+            "command": "hello",
+            "login": "test",
+            "password": sha256(b"test_password").hexdigest(),
+            "unique_id": "blah"
+        })
+    
+    lobbyconnection.send.assert_called_once_with({
+        "command": "notice",
+        "style": "error",
+        "text": "Unable to connect to database. Please try again later."
+    })
+    lobbyconnection.abort.assert_called_once_with("Error connecting to database")
 
 
 async def test_command_pong_does_nothing(lobbyconnection):
