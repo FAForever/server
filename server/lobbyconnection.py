@@ -224,7 +224,7 @@ class LobbyConnection:
                 "text": "Unable to connect to database. Please try again later."
             })
             # Make sure to abort here to avoid a thundering herd problem.
-            await self.abort('Error connecting to database')
+            await self.abort("Error connecting to database")
         except Exception as e:  # pragma: no cover
             await self.send({"command": "invalid"})
             self._logger.exception(e)
