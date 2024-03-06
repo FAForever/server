@@ -166,23 +166,19 @@ async def test_database_outage_error_responds_cleanly(lobbyconnection):
     lobbyconnection.send = mock.AsyncMock()
 
     def mock_ensure_authenticated(cmd):
-        raise OperationalError(statement='', params=[], orig=None)
-
+        raise OperationalError(statement="", params=[], orig=None)
     lobbyconnection.ensure_authenticated = mock_ensure_authenticated
-    
     await lobbyconnection.on_message_received({
         "command": "hello",
         "login": "test",
         "password": sha256(b"test_password").hexdigest(),
         "unique_id": "blah"
     })
-    
     lobbyconnection.send.assert_called_once_with({
         "command": "notice",
         "style": "error",
         "text": "Unable to connect to database. Please try again later."
     })
-    
     lobbyconnection.abort.assert_called_once_with("Error connecting to database")
 
 
