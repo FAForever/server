@@ -59,7 +59,7 @@ unmatched_searches = Gauge(
 matchmaker_search_duration = Histogram(
     "server_matchmaker_queue_search_duration_seconds",
     "Time spent searching for matches per search in seconds",
-    ["queue", "status"],
+    ["queue", "status", "players_in_queue"],
     buckets=[30, 60, 120, 180, 240, 300, 420, 600, 900, 1800, 3600],
 )
 

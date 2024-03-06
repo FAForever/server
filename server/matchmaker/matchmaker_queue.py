@@ -19,8 +19,9 @@ MatchFoundCallback = Callable[[Search, Search, "MatchmakerQueue"], Any]
 
 
 class MatchmakerSearchTimer:
-    def __init__(self, queue_name):
-        self.queue_name = queue_name
+    def __init__(self, queue_name: str, players_in_queue: int):
+        self.queue_name = queue_name,
+        self.players_in_queue = players_in_queue
 
     def __enter__(self):
         self.start_time = time.monotonic()
@@ -34,7 +35,7 @@ class MatchmakerSearchTimer:
         else:
             status = "errored"
 
-        metric = metrics.matchmaker_search_duration.labels(self.queue_name, status)
+        metric = metrics.matchmaker_search_duration.labels(self.queue_name, status, self.players_in_queue)
         metric.observe(total_time)
 
 
@@ -140,7 +141,7 @@ class MatchmakerQueue:
         assert search is not None
 
         try:
-            with MatchmakerSearchTimer(self.name):
+            with MatchmakerSearchTimer(self.name, self.num_players):
                 self.push(search)
                 await search.await_match()
             self._logger.debug("Search complete: %s", search)
