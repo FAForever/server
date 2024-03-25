@@ -14,7 +14,7 @@ from typing import Optional
 
 import aiohttp
 from sqlalchemy import and_, func, select
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, OperationalError
 
 import server.metrics as metrics
 from server.db import FAFDatabase
@@ -216,6 +216,16 @@ class LobbyConnection:
                 self.get_user_identifier(),
                 cmd
             )
+        except OperationalError:
+            # When the database goes down, SqlAlchemy will throw an OperationalError
+            self._logger.error("Encountered OperationalError on message received. This could indicate DB is down.")
+            await self.send({
+                "command": "notice",
+                "style": "error",
+                "text": "Unable to connect to database. Please try again later."
+            })
+            # Make sure to abort here to avoid a thundering herd problem.
+            await self.abort("Error connecting to database")
         except Exception as e:  # pragma: no cover
             await self.send({"command": "invalid"})
             self._logger.exception(e)
