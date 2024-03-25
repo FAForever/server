@@ -216,8 +216,9 @@ class LobbyConnection:
                 self.get_user_identifier(),
                 cmd
             )
-        except OperationalError:
+        except OperationalError as e:
             # When the database goes down, SqlAlchemy will throw an OperationalError
+            self._logger.error(f'Encountered OperationalError on message received. This could indicate DB is down.')
             await self.send({
                 "command": "notice",
                 "style": "error",
