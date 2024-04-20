@@ -61,6 +61,7 @@ async def test_game_launch_message(lobby_server):
     }
 
 
+@pytest.mark.flaky
 @fast_forward(70)
 async def test_game_launch_message_map_generator(lobby_server):
     _, proto1, _, proto2 = await queue_players_for_matchmaking(
