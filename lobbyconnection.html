@@ -43,7 +43,7 @@ from typing import Optional
 
 import aiohttp
 from sqlalchemy import and_, func, select
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, OperationalError
 
 import server.metrics as metrics
 from server.db import FAFDatabase
@@ -245,6 +245,16 @@ class LobbyConnection:
                 self.get_user_identifier(),
                 cmd
             )
+        except OperationalError:
+            # When the database goes down, SqlAlchemy will throw an OperationalError
+            self._logger.error(&#34;Encountered OperationalError on message received. This could indicate DB is down.&#34;)
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;error&#34;,
+                &#34;text&#34;: &#34;Unable to connect to database. Please try again later.&#34;
+            })
+            # Make sure to abort here to avoid a thundering herd problem.
+            await self.abort(&#34;Error connecting to database&#34;)
         except Exception as e:  # pragma: no cover
             await self.send({&#34;command&#34;: &#34;invalid&#34;})
             self._logger.exception(e)
@@ -1532,6 +1542,16 @@ class LobbyConnection:
                 self.get_user_identifier(),
                 cmd
             )
+        except OperationalError:
+            # When the database goes down, SqlAlchemy will throw an OperationalError
+            self._logger.error(&#34;Encountered OperationalError on message received. This could indicate DB is down.&#34;)
+            await self.send({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;error&#34;,
+                &#34;text&#34;: &#34;Unable to connect to database. Please try again later.&#34;
+            })
+            # Make sure to abort here to avoid a thundering herd problem.
+            await self.abort(&#34;Error connecting to database&#34;)
         except Exception as e:  # pragma: no cover
             await self.send({&#34;command&#34;: &#34;invalid&#34;})
             self._logger.exception(e)
@@ -3934,6 +3954,16 @@ async def command_restore_game_session(self, message):
             self.get_user_identifier(),
             cmd
         )
+    except OperationalError:
+        # When the database goes down, SqlAlchemy will throw an OperationalError
+        self._logger.error(&#34;Encountered OperationalError on message received. This could indicate DB is down.&#34;)
+        await self.send({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;error&#34;,
+            &#34;text&#34;: &#34;Unable to connect to database. Please try again later.&#34;
+        })
+        # Make sure to abort here to avoid a thundering herd problem.
+        await self.abort(&#34;Error connecting to database&#34;)
     except Exception as e:  # pragma: no cover
         await self.send({&#34;command&#34;: &#34;invalid&#34;})
         self._logger.exception(e)
