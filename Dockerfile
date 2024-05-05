@@ -27,10 +27,10 @@ FROM python:3.10-slim
 ARG GITHUB_REF
 ENV VERSION=$GITHUB_REF
 
-COPY --from=builder /code/.venv/lib/ /usr/local/lib/
-COPY --from=builder /code/main.py /code/
-
 RUN useradd --no-create-home faf
+
+COPY --from=builder /code/.venv/lib/ /usr/local/lib/
+COPY --from=builder --chown=faf:faf /code/main.py /code/
 
 WORKDIR /code/
 USER faf
