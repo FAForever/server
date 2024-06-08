@@ -112,24 +112,22 @@ class Search:
         """
         return [rating.displayed() for rating in self.raw_ratings]
 
-    def _nearby_rating_range(self, delta: int) -> tuple[int, int]:
+    def _nearby_rating_range(self, delta: int) -> list[tuple[int, int]]:
         """
         Returns 'boundary' mu values for player matching. Adjust delta for
         different game qualities.
         """
-        mu, _ = self.ratings[0]  # Takes the rating of the first player, only works for 1v1
-        rounded_mu = int(math.ceil(mu / 10) * 10)  # Round to 10
-        return rounded_mu - delta, rounded_mu + delta
+        ranges = []
+        for rating in self.ratings:
+            mu, _ = rating
+            rounded_mu = int(math.ceil(mu / 10) * 10)  # Round to 10
+            ranges.append((rounded_mu - delta, rounded_mu + delta))
+        return ranges
 
     @property
-    def boundary_80(self) -> tuple[int, int]:
+    def boundary_80(self) -> list[tuple[int, int]]:
         """ Achieves roughly 80% quality. """
         return self._nearby_rating_range(200)
-
-    @property
-    def boundary_75(self) -> tuple[int, int]:
-        """ Achieves roughly 75% quality. FIXME - why is it MORE restrictive??? """
-        return self._nearby_rating_range(100)
 
     @property
     def failed_matching_attempts(self) -> int:

@@ -450,8 +450,7 @@ async def test_matchmaker_info_message(lobby_server, mocker):
         assert queue["queue_pop_time_delta"] == math.ceil(
             config.QUEUE_POP_TIME_MAX / 2
         )
-        assert queue["boundary_80s"] == []
-        assert queue["boundary_75s"] == []
+        assert queue["boundaries"] == []
 
 
 @fast_forward(10)
@@ -484,8 +483,7 @@ async def test_command_matchmaker_info(lobby_server, mocker):
         assert queue["queue_pop_time_delta"] == math.ceil(
             config.QUEUE_POP_TIME_MAX / 2
         )
-        assert queue["boundary_80s"] == []
-        assert queue["boundary_75s"] == []
+        assert queue["boundaries"] == []
 
 
 @fast_forward(10)
@@ -512,10 +510,10 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
             queue_message = next(
                 q for q in msg["queues"] if q["queue_name"] == "ladder1v1"
             )
-            if not queue_message["boundary_80s"]:
+            if not queue_message["boundaries"]:
                 continue
 
-            assert len(queue_message["boundary_80s"]) == 1
+            assert len(queue_message["boundaries"]) == 1
 
             return
 
@@ -530,7 +528,7 @@ async def test_matchmaker_info_message_on_cancel(lobby_server):
     msg = await read_until_command(proto, "matchmaker_info")
 
     queue_message = next(q for q in msg["queues"] if q["queue_name"] == "ladder1v1")
-    assert len(queue_message["boundary_80s"]) == 0
+    assert len(queue_message["boundaries"]) == 0
 
 
 @fast_forward(10)

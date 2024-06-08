@@ -278,6 +278,8 @@ class MatchmakerQueue:
         """
         Return a fuzzy representation of the searches currently in the queue
         """
+        boundaries = []
+        boundaries.extend(search.boundary_80 for search in self._queue.keys())
         return {
             "queue_name": self.name,
             "queue_pop_time": datetime.fromtimestamp(
@@ -288,8 +290,7 @@ class MatchmakerQueue:
                 ndigits=2
             ),
             "num_players": self.num_players,
-            "boundary_80s": [search.boundary_80 for search in self._queue.keys()],
-            "boundary_75s": [search.boundary_75 for search in self._queue.keys()],
+            "boundaries": boundaries,
             # TODO: Remove, the client should query the API for this
             "team_size": self.team_size,
         }
