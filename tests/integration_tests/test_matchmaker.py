@@ -450,7 +450,7 @@ async def test_matchmaker_info_message(lobby_server, mocker):
         assert queue["queue_pop_time_delta"] == math.ceil(
             config.QUEUE_POP_TIME_MAX / 2
         )
-        assert queue["ratings"] == {}
+        assert queue["ratings"] == []
         assert queue["boundary_80s"] == []
         assert queue["boundary_75s"] == []
 
@@ -485,7 +485,7 @@ async def test_command_matchmaker_info(lobby_server, mocker):
         assert queue["queue_pop_time_delta"] == math.ceil(
             config.QUEUE_POP_TIME_MAX / 2
         )
-        assert queue["ratings"] == {}
+        assert queue["ratings"] == []
         assert queue["boundary_80s"] == []
         assert queue["boundary_75s"] == []
 
