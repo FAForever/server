@@ -88,7 +88,7 @@ async def test_info_message(lobby_server):
 
         if queue["queue_name"] == "tmm2v2":
             assert boundaries == [[300, 700]]
-            assert ratings == [500]
+            assert ratings == [0]  # team queues use displayed rating for matching
         else:
             assert boundaries == []
             assert ratings == []
