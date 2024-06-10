@@ -1037,9 +1037,9 @@ async def test_command_matchmaker_info(
                 "queue_name": "test",
                 "queue_pop_time": "2019-07-01T16:53:20+00:00",
                 "queue_pop_time_delta": 1.0,
-                "team_size": 1,
+                "team_size": 3,
                 "num_players": 6,
-                "boundaries": {1700, 250, 0, 700, 1000},
+                "ratings": {1700, 125, 1125},
                 "boundary_80s": [(1800, 2200), (400, 800), (800, 1200)],
                 "boundary_75s": [(1900, 2100), (500, 700), (900, 1100)]
             }
