@@ -1003,13 +1003,13 @@ async def test_command_matchmaker_info(
     player_factory,
     mocker
 ):
-    queue = queue_factory("test", rating_type=RatingType.LADDER_1V1)
+    queue = queue_factory("test", team_size=3, rating_type=RatingType.LADDER_1V1)
     queue.timer.next_queue_pop = 1_562_000_000
     queue.push(Search([
         player_factory(player_id=1, ladder_rating=(2000, 100), ladder_games=200),
     ]))
     queue.push(Search([
-        player_factory(player_id=2, ladder_rating=(500, 120), ladder_games=100),
+        player_factory(player_id=2, ladder_rating=(600, 120), ladder_games=100),
         player_factory(player_id=3, ladder_rating=(1500, 500), ladder_games=0),
     ]))
     queue.push(Search([
@@ -1039,7 +1039,9 @@ async def test_command_matchmaker_info(
                 "queue_pop_time_delta": 1.0,
                 "team_size": 1,
                 "num_players": 6,
-                "boundaries": [(1800, 2200), (300, 700), (800, 1200)],
+                "boundaries": {1700, 250, 0, 700, 1000},
+                "boundary_80s": [(1800, 2200), (400, 800), (800, 1200)],
+                "boundary_75s": [(1900, 2100), (500, 700), (900, 1100)]
             }
         ]
     })

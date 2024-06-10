@@ -87,8 +87,10 @@ async def test_info_message(lobby_server):
 
         if queue["queue_name"] == "tmm2v2":
             assert boundaries == [[300, 700]]
+            assert queue["ratings"] == {500}
         else:
             assert boundaries == []
+            assert queue["ratings"] == {}
 
 
 @fast_forward(10)
