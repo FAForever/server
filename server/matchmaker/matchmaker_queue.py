@@ -292,7 +292,7 @@ class MatchmakerQueue:
                 ndigits=2
             ),
             "num_players": self.num_players,
-            "ratings": list(ratings),
+            "ratings": sorted(ratings),
             # DEPRECATED
             "boundary_80s": [search.boundary_80 for search in self._queue.keys()],
             # DEPRECATED
