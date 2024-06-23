@@ -2,18 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.10.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
 <title>server.games.typedefs API documentation</title>
-<meta name="description" content="" />
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
-<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
 </head>
 <body>
 <main>
@@ -22,243 +25,6 @@
 <h1 class="title">Module <code>server.games.typedefs</code></h1>
 </header>
 <section id="section-intro">
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">from enum import Enum, unique
-from typing import Any, NamedTuple, Optional
-
-from server.db.typedefs import Victory
-from server.games.game_results import ArmyResult, GameOutcome
-from server.players import Player
-
-
-@unique
-class GameState(Enum):
-    INITIALIZING = 0
-    LOBBY = 1
-    LIVE = 2
-    ENDED = 3
-
-
-@unique
-class GameConnectionState(Enum):
-    INITIALIZING = 0
-    INITIALIZED = 1
-    CONNECTED_TO_HOST = 2
-    ENDED = 3
-
-
-@unique
-class InitMode(Enum):
-    NORMAL_LOBBY = 0
-    AUTO_LOBBY = 1
-
-
-@unique
-class GameType(Enum):
-    COOP = &#34;coop&#34;
-    CUSTOM = &#34;custom&#34;
-    MATCHMAKER = &#34;matchmaker&#34;
-
-
-@unique
-class VisibilityState(Enum):
-    PUBLIC = &#34;public&#34;
-    FRIENDS = &#34;friends&#34;
-
-
-# Identifiers must be kept in sync with the contents of the invalid_game_reasons table.
-# New reasons added should have a description added to that table. Identifiers should never be
-# reused, and values should never be deleted from invalid_game_reasons.
-@unique
-class ValidityState(Enum):
-    VALID = 0
-    TOO_MANY_DESYNCS = 1
-    WRONG_VICTORY_CONDITION = 2
-    NO_FOG_OF_WAR = 3
-    CHEATS_ENABLED = 4
-    PREBUILT_ENABLED = 5
-    NORUSH_ENABLED = 6
-    BAD_UNIT_RESTRICTIONS = 7
-    BAD_MAP = 8
-    TOO_SHORT = 9
-    BAD_MOD = 10
-    COOP_NOT_RANKED = 11
-    MUTUAL_DRAW = 12
-    SINGLE_PLAYER = 13
-    FFA_NOT_RANKED = 14
-    UNEVEN_TEAMS_NOT_RANKED = 15
-    UNKNOWN_RESULT = 16
-    UNLOCKED_TEAMS = 17
-    MULTI_TEAM = 18
-    HAS_AI_PLAYERS = 19
-    CIVILIANS_REVEALED = 20
-    WRONG_DIFFICULTY = 21
-    EXPANSION_DISABLED = 22
-    SPAWN_NOT_FIXED = 23
-    OTHER_UNRANK = 24
-    HOST_SET_UNRANKED = 25
-
-
-class FeaturedModType():
-    &#34;&#34;&#34;
-    String constants for featured mod technical_name
-    &#34;&#34;&#34;
-
-    COOP = &#34;coop&#34;
-    FAF = &#34;faf&#34;
-    FAFBETA = &#34;fafbeta&#34;
-    LADDER_1V1 = &#34;ladder1v1&#34;
-
-
-class BasicGameInfo(NamedTuple):
-    &#34;&#34;&#34;
-    Holds basic information about a game that does not change after launch.
-    Fields:
-     - game_id: id of the game
-     - rating_type: str (e.g. &#34;ladder1v1&#34;)
-     - map_id: id of the map used
-     - game_mode: name of the featured mod
-    &#34;&#34;&#34;
-
-    game_id: int
-    rating_type: Optional[str]
-    map_id: int
-    game_mode: str
-    mods: list[int]
-    teams: list[set[Player]]
-
-
-class TeamRatingSummary(NamedTuple):
-    outcome: GameOutcome
-    player_ids: set[int]
-    army_results: list[ArmyResult]
-
-
-class EndedGameInfo(NamedTuple):
-    &#34;&#34;&#34;
-    Holds the outcome of an ended game.
-    Fields:
-     - game_id: id of the game
-     - rating_type: str (e.g. &#34;ladder1v1&#34;)
-     - map_id: id of the map used
-     - game_mode: name of the featured mod
-     - validity: ValidityState (e.g. VALID or TOO_SHORT)
-     - team_summaries: a list of TeamRatingSummaries containing IDs of players
-       on the team and the team&#39;s outcome
-    &#34;&#34;&#34;
-
-    game_id: int
-    rating_type: Optional[str]
-    map_id: int
-    game_mode: str
-    mods: list[int]
-    commander_kills: dict[str, int]
-    validity: ValidityState
-    team_summaries: list[TeamRatingSummary]
-
-    @classmethod
-    def from_basic(
-        cls,
-        basic_info: BasicGameInfo,
-        validity: ValidityState,
-        team_outcomes: list[GameOutcome],
-        commander_kills: dict[str, int],
-        team_army_results: list[list[ArmyResult]],
-    ) -&gt; &#34;EndedGameInfo&#34;:
-        if len(basic_info.teams) != len(team_outcomes):
-            raise ValueError(
-                &#34;Team sets of basic_info and team outcomes must refer to the &#34;
-                &#34;same number of teams in the same order.&#34;
-            )
-
-        return cls(
-            basic_info.game_id,
-            basic_info.rating_type,
-            basic_info.map_id,
-            basic_info.game_mode,
-            basic_info.mods,
-            commander_kills,
-            validity,
-            [
-                TeamRatingSummary(outcome, set(player.id for player in team), army_results)
-                for outcome, team, army_results
-                in zip(team_outcomes, basic_info.teams, team_army_results)
-            ],
-        )
-
-    def to_dict(self):
-        return {
-            &#34;game_id&#34;: self.game_id,
-            &#34;rating_type&#34;: self.rating_type
-            if self.rating_type is not None
-            else &#34;None&#34;,
-            &#34;map_id&#34;: self.map_id,
-            &#34;featured_mod&#34;: self.game_mode,
-            &#34;sim_mod_ids&#34;: self.mods,
-            &#34;commander_kills&#34;: self.commander_kills,
-            &#34;validity&#34;: self.validity.name,
-            &#34;teams&#34;: [
-                {
-                    &#34;outcome&#34;: team_summary.outcome.name,
-                    &#34;player_ids&#34;: list(team_summary.player_ids),
-                    &#34;army_results&#34;: [
-                        result._asdict()
-                        for result in sorted(
-                            team_summary.army_results,
-                            key=lambda x: x.player_id
-                        )
-                    ],
-                }
-                for team_summary in self.team_summaries
-            ],
-        }
-
-
-class _FAEnabled(object):
-    __slots__ = ()
-
-    def __eq__(self, other: Any) -&gt; bool:
-        if isinstance(other, str):
-            other = other.lower()
-
-        return other in (True, &#34;true&#34;, &#34;on&#34;, &#34;yes&#34;, 1)
-
-
-class _FADisabled(object):
-    __slots__ = ()
-
-    def __eq__(self, other: Any) -&gt; bool:
-        if isinstance(other, str):
-            other = other.lower()
-
-        return other in (False, &#34;false&#34;, &#34;off&#34;, &#34;no&#34;, 0)
-
-
-class FA(object):
-    __slots__ = ()
-
-    ENABLED = _FAEnabled()
-    DISABLED = _FADisabled()
-
-
-__all__ = (
-    &#34;BasicGameInfo&#34;,
-    &#34;EndedGameInfo&#34;,
-    &#34;FA&#34;,
-    &#34;FeaturedModType&#34;,
-    &#34;GameConnectionState&#34;,
-    &#34;GameState&#34;,
-    &#34;GameType&#34;,
-    &#34;InitMode&#34;,
-    &#34;TeamRatingSummary&#34;,
-    &#34;ValidityState&#34;,
-    &#34;Victory&#34;,
-    &#34;VisibilityState&#34;,
-)</code></pre>
-</details>
 </section>
 <section>
 </section>
@@ -441,40 +207,6 @@ on the team and the team's outcome</p></div>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@classmethod
-def from_basic(
-    cls,
-    basic_info: BasicGameInfo,
-    validity: ValidityState,
-    team_outcomes: list[GameOutcome],
-    commander_kills: dict[str, int],
-    team_army_results: list[list[ArmyResult]],
-) -&gt; &#34;EndedGameInfo&#34;:
-    if len(basic_info.teams) != len(team_outcomes):
-        raise ValueError(
-            &#34;Team sets of basic_info and team outcomes must refer to the &#34;
-            &#34;same number of teams in the same order.&#34;
-        )
-
-    return cls(
-        basic_info.game_id,
-        basic_info.rating_type,
-        basic_info.map_id,
-        basic_info.game_mode,
-        basic_info.mods,
-        commander_kills,
-        validity,
-        [
-            TeamRatingSummary(outcome, set(player.id for player in team), army_results)
-            for outcome, team, army_results
-            in zip(team_outcomes, basic_info.teams, team_army_results)
-        ],
-    )</code></pre>
-</details>
 </dd>
 </dl>
 <h3>Instance variables</h3>
@@ -519,37 +251,6 @@ def from_basic(
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def to_dict(self):
-    return {
-        &#34;game_id&#34;: self.game_id,
-        &#34;rating_type&#34;: self.rating_type
-        if self.rating_type is not None
-        else &#34;None&#34;,
-        &#34;map_id&#34;: self.map_id,
-        &#34;featured_mod&#34;: self.game_mode,
-        &#34;sim_mod_ids&#34;: self.mods,
-        &#34;commander_kills&#34;: self.commander_kills,
-        &#34;validity&#34;: self.validity.name,
-        &#34;teams&#34;: [
-            {
-                &#34;outcome&#34;: team_summary.outcome.name,
-                &#34;player_ids&#34;: list(team_summary.player_ids),
-                &#34;army_results&#34;: [
-                    result._asdict()
-                    for result in sorted(
-                        team_summary.army_results,
-                        key=lambda x: x.player_id
-                    )
-                ],
-            }
-            for team_summary in self.team_summaries
-        ],
-    }</code></pre>
-</details>
 </dd>
 </dl>
 </dd>
@@ -1030,7 +731,6 @@ class VisibilityState(Enum):
 </section>
 </article>
 <nav id="sidebar">
-<h1>Index</h1>
 <div class="toc">
 <ul></ul>
 </div>
@@ -1178,7 +878,7 @@ class VisibilityState(Enum):
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
 </footer>
 </body>
 </html>

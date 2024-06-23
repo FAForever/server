@@ -2,18 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.10.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.0">
 <title>server.matchmaker API documentation</title>
-<meta name="description" content="The matchmaker system …" />
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
-<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<meta name="description" content="The matchmaker system …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
-<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+})</script>
 </head>
 <body>
 <main>
@@ -25,30 +28,6 @@
 <p>The matchmaker system</p>
 <p>Used for keeping track of queues of players wanting to play specific kinds of
 games, currently just used for 1v1 <code>ladder</code>.</p>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">&#34;&#34;&#34;
-The matchmaker system
-
-Used for keeping track of queues of players wanting to play specific kinds of
-games, currently just used for 1v1 ``ladder``.
-&#34;&#34;&#34;
-from .map_pool import MapPool
-from .matchmaker_queue import MatchmakerQueue
-from .pop_timer import PopTimer
-from .search import CombinedSearch, OnMatchedCallback, Search
-
-__all__ = (
-    &#34;CombinedSearch&#34;,
-    &#34;MapPool&#34;,
-    &#34;MatchmakerQueue&#34;,
-    &#34;OnMatchedCallback&#34;,
-    &#34;PopTimer&#34;,
-    &#34;Search&#34;,
-)</code></pre>
-</details>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
@@ -191,7 +170,7 @@ __all__ = (
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="server.matchmaker.CombinedSearch.average_rating"><code class="name">var <span class="ident">average_rating</span> : float</code></dt>
+<dt id="server.matchmaker.CombinedSearch.average_rating"><code class="name">prop <span class="ident">average_rating</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -203,7 +182,7 @@ def average_rating(self) -&gt; float:
     return get_average_rating(self.searches)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.CombinedSearch.cumulative_rating"><code class="name">var <span class="ident">cumulative_rating</span> : float</code></dt>
+<dt id="server.matchmaker.CombinedSearch.cumulative_rating"><code class="name">prop <span class="ident">cumulative_rating</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -215,7 +194,7 @@ def cumulative_rating(self) -&gt; float:
     return sum(s.cumulative_rating for s in self.searches)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.CombinedSearch.failed_matching_attempts"><code class="name">var <span class="ident">failed_matching_attempts</span> : int</code></dt>
+<dt id="server.matchmaker.CombinedSearch.failed_matching_attempts"><code class="name">prop <span class="ident">failed_matching_attempts</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -227,7 +206,7 @@ def failed_matching_attempts(self) -&gt; int:
     return max(search.failed_matching_attempts for search in self.searches)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.CombinedSearch.is_cancelled"><code class="name">var <span class="ident">is_cancelled</span> : bool</code></dt>
+<dt id="server.matchmaker.CombinedSearch.is_cancelled"><code class="name">prop <span class="ident">is_cancelled</span> : bool</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -239,7 +218,7 @@ def is_cancelled(self) -&gt; bool:
     return any(s.is_cancelled for s in self.searches)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.CombinedSearch.is_matched"><code class="name">var <span class="ident">is_matched</span> : bool</code></dt>
+<dt id="server.matchmaker.CombinedSearch.is_matched"><code class="name">prop <span class="ident">is_matched</span> : bool</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -251,7 +230,7 @@ def is_matched(self) -&gt; bool:
     return all(s.is_matched for s in self.searches)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.CombinedSearch.match_threshold"><code class="name">var <span class="ident">match_threshold</span> : float</code></dt>
+<dt id="server.matchmaker.CombinedSearch.match_threshold"><code class="name">prop <span class="ident">match_threshold</span> : float</code></dt>
 <dd>
 <div class="desc"><p>Defines the threshold for game quality</p></div>
 <details class="source">
@@ -266,7 +245,7 @@ def match_threshold(self) -&gt; float:
     return min(s.match_threshold for s in self.searches)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.CombinedSearch.players"><code class="name">var <span class="ident">players</span> : list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</code></dt>
+<dt id="server.matchmaker.CombinedSearch.players"><code class="name">prop <span class="ident">players</span> : list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -278,7 +257,7 @@ def players(self) -&gt; list[Player]:
     return list(itertools.chain(*[s.players for s in self.searches]))</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.CombinedSearch.ratings"><code class="name">var <span class="ident">ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
+<dt id="server.matchmaker.CombinedSearch.ratings"><code class="name">prop <span class="ident">ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -290,7 +269,7 @@ def ratings(self) -&gt; list[Rating]:
     return list(itertools.chain(*[s.ratings for s in self.searches]))</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.CombinedSearch.raw_ratings"><code class="name">var <span class="ident">raw_ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
+<dt id="server.matchmaker.CombinedSearch.raw_ratings"><code class="name">prop <span class="ident">raw_ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -310,29 +289,12 @@ def raw_ratings(self) -&gt; list[Rating]:
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def done(self) -&gt; bool:
-    return all(s.done() for s in self.searches)</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.CombinedSearch.get_original_searches"><code class="name flex">
 <span>def <span class="ident">get_original_searches</span></span>(<span>self) ‑> list[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns the searches of which this CombinedSearch is comprised</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_original_searches(self) -&gt; list[Search]:
-    &#34;&#34;&#34;
-    Returns the searches of which this CombinedSearch is comprised
-    &#34;&#34;&#34;
-    return list(self.searches)</code></pre>
-</details>
 </dd>
 </dl>
 <h3>Inherited members</h3>
@@ -424,57 +386,12 @@ class MapPool(object):
 <div class="desc"><p>Select a random map who's id does not appear in <code>played_map_ids</code>. If
 all map ids appear in the list, then pick one that appears the least
 amount of times.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def choose_map(self, played_map_ids: Iterable[int] = ()) -&gt; Map:
-    &#34;&#34;&#34;
-    Select a random map who&#39;s id does not appear in `played_map_ids`. If
-    all map ids appear in the list, then pick one that appears the least
-    amount of times.
-    &#34;&#34;&#34;
-    if not self.maps:
-        self._logger.critical(
-            &#34;Trying to choose a map from an empty map pool: %s&#34;, self.name
-        )
-        raise RuntimeError(f&#34;Map pool {self.name} not set!&#34;)
-
-    # Make sure the counter has every available map
-    counter = Counter(self.maps.keys())
-    counter.update(id_ for id_ in played_map_ids if id_ in self.maps)
-
-    least_common = counter.most_common()[::-1]
-    least_count = 1
-    for id_, count in least_common:
-        if isinstance(self.maps[id_], Map):
-            least_count = count
-            break
-
-    # Trim off the maps with higher play counts
-    for i, (_, count) in enumerate(least_common):
-        if count &gt; least_count:
-            least_common = least_common[:i]
-            break
-
-    weights = [self.maps[id_].weight for id_, _ in least_common]
-
-    map_id = random.choices(least_common, weights=weights, k=1)[0][0]
-    return self.maps[map_id].get_map()</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.MapPool.set_maps"><code class="name flex">
 <span>def <span class="ident">set_maps</span></span>(<span>self, maps: Iterable[<a title="server.types.MapPoolMap" href="../types.html#server.types.MapPoolMap">MapPoolMap</a>]) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def set_maps(self, maps: Iterable[MapPoolMap]) -&gt; None:
-    self.maps = {map_.id: map_ for map_ in maps}</code></pre>
-</details>
 </dd>
 </dl>
 </dd>
@@ -749,7 +666,7 @@ class MatchmakerQueue:
 </details>
 <h3>Instance variables</h3>
 <dl>
-<dt id="server.matchmaker.MatchmakerQueue.is_running"><code class="name">var <span class="ident">is_running</span> : bool</code></dt>
+<dt id="server.matchmaker.MatchmakerQueue.is_running"><code class="name">prop <span class="ident">is_running</span> : bool</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -761,7 +678,7 @@ def is_running(self) -&gt; bool:
     return self._is_running</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.MatchmakerQueue.num_players"><code class="name">var <span class="ident">num_players</span> : int</code></dt>
+<dt id="server.matchmaker.MatchmakerQueue.num_players"><code class="name">prop <span class="ident">num_players</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -781,18 +698,6 @@ def num_players(self) -&gt; int:
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def add_map_pool(
-    self,
-    map_pool: MapPool,
-    min_rating: Optional[int],
-    max_rating: Optional[int]
-) -&gt; None:
-    self.map_pools[map_pool.id] = (map_pool, min_rating, max_rating)</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue.find_matches"><code class="name flex">
 <span>async def <span class="ident">find_matches</span></span>(<span>self) ‑> None</span>
@@ -802,110 +707,24 @@ def num_players(self) -&gt; int:
 <p>Note that this function is synchronized such that only one instance of
 MatchmakerQueue can call this function at any given time. This is
 needed in order to safely enable multiqueuing.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@synchronized(SpinLock(sleep_duration=1))
-async def find_matches(self) -&gt; None:
-    &#34;&#34;&#34;
-    Perform the matchmaking algorithm.
-
-    Note that this function is synchronized such that only one instance of
-    MatchmakerQueue can call this function at any given time. This is
-    needed in order to safely enable multiqueuing.
-    &#34;&#34;&#34;
-    self._logger.info(&#34;Searching for matches: %s&#34;, self.name)
-
-    searches = list(self._queue.keys())
-
-    if self.num_players &lt; 2 * self.team_size:
-        self._register_unmatched_searches(searches)
-        return
-
-    # Call self.match on all matches and filter out the ones that were cancelled
-    loop = asyncio.get_running_loop()
-    proposed_matches, unmatched_searches = await loop.run_in_executor(
-        None,
-        self.matchmaker.find,
-        searches,
-        self.team_size,
-        self.rating_peak,
-    )
-
-    # filter out matches that were cancelled
-    matches: list[Match] = []
-    for match in proposed_matches:
-        if self.match(match[0], match[1]):
-            matches.append(match)
-        else:
-            unmatched_searches.extend(match)
-
-    self._register_unmatched_searches(unmatched_searches)
-
-    for search1, search2 in matches:
-        self._report_party_sizes(search1)
-        self._report_party_sizes(search2)
-
-        rating_imbalance = abs(search1.cumulative_rating - search2.cumulative_rating)
-        metrics.match_rating_imbalance.labels(self.name).observe(rating_imbalance)
-
-        ratings = search1.displayed_ratings + search2.displayed_ratings
-        rating_variety = max(ratings) - min(ratings)
-        metrics.match_rating_variety.labels(self.name).observe(rating_variety)
-
-        metrics.match_quality.labels(self.name).observe(
-            search1.quality_with(search2)
-        )
-        try:
-            self.on_match_found(search1, search2, self)
-        except Exception:
-            self._logger.exception(&#34;Match callback raised an exception!&#34;)</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue.get_game_options"><code class="name flex">
 <span>def <span class="ident">get_game_options</span></span>(<span>self) ‑> dict[str, typing.Any]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_game_options(self) -&gt; dict[str, Any]:
-    return self.params.get(&#34;GameOptions&#34;) or None</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue.get_map_pool_for_rating"><code class="name flex">
 <span>def <span class="ident">get_map_pool_for_rating</span></span>(<span>self, rating: float) ‑> Optional[<a title="server.matchmaker.map_pool.MapPool" href="map_pool.html#server.matchmaker.map_pool.MapPool">MapPool</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_map_pool_for_rating(self, rating: float) -&gt; Optional[MapPool]:
-    for map_pool, min_rating, max_rating in self.map_pools.values():
-        if min_rating is not None and rating &lt; min_rating:
-            continue
-        if max_rating is not None and rating &gt; max_rating:
-            continue
-        return map_pool</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue.initialize"><code class="name flex">
 <span>def <span class="ident">initialize</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def initialize(self):
-    asyncio.create_task(self.queue_pop_timer())</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue.match"><code class="name flex">
 <span>def <span class="ident">match</span></span>(<span>self, s1: <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, s2: <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>) ‑> bool</span>
@@ -914,60 +733,12 @@ async def find_matches(self) -&gt; None:
 <div class="desc"><p>Mark the given two searches as matched</p>
 <h1 id="returns">Returns</h1>
 <p><code>True</code> if matching succeeded or <code>False</code> if matching failed.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def match(self, s1: Search, s2: Search) -&gt; bool:
-    &#34;&#34;&#34;
-    Mark the given two searches as matched
-
-    # Returns
-    `True` if matching succeeded or `False` if matching failed.
-    &#34;&#34;&#34;
-    if s1.is_matched or s2.is_matched:
-        return False
-    if s1.is_cancelled or s2.is_cancelled:
-        return False
-    # Additional failsafe. Ideally this check will never fail.
-    if any(
-        player.state != PlayerState.SEARCHING_LADDER
-        for player in s1.players + s2.players
-    ):
-        self._logger.warning(
-            &#34;Tried to match searches %s and %s while some players had &#34;
-            &#34;invalid states: team1: %s team2: %s&#34;,
-            s1, s2,
-            list(p.state for p in s1.players),
-            list(p.state for p in s2.players)
-        )
-        return False
-
-    s1.match(s2)
-    s2.match(s1)
-    if s1 in self._queue:
-        del self._queue[s1]
-    if s2 in self._queue:
-        del self._queue[s2]
-
-    return True</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue.push"><code class="name flex">
 <span>def <span class="ident">push</span></span>(<span>self, search: <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Push the given search object onto the queue</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def push(self, search: Search):
-    &#34;&#34;&#34; Push the given search object onto the queue &#34;&#34;&#34;
-
-    self._queue[search] = None
-    self.game_service.mark_dirty(self)</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue.queue_pop_timer"><code class="name flex">
 <span>async def <span class="ident">queue_pop_timer</span></span>(<span>self) ‑> None</span>
@@ -976,41 +747,6 @@ async def find_matches(self) -&gt; None:
 <div class="desc"><p>Periodically tries to match all Searches in the queue. The amount
 of time until next queue 'pop' is determined by the number of players
 in the queue.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def queue_pop_timer(self) -&gt; None:
-    &#34;&#34;&#34; Periodically tries to match all Searches in the queue. The amount
-    of time until next queue &#39;pop&#39; is determined by the number of players
-    in the queue.
-    &#34;&#34;&#34;
-    self._logger.debug(&#34;MatchmakerQueue initialized for %s&#34;, self.name)
-    while self.is_running:
-        try:
-            await self.timer.next_pop()
-
-            await self.find_matches()
-
-            number_of_unmatched_searches = len(self._queue)
-            metrics.unmatched_searches.labels(self.name).set(
-                number_of_unmatched_searches
-            )
-
-            # Any searches in the queue at this point were unable to find a
-            # match this round and will have higher priority next round.
-
-            self.game_service.mark_dirty(self)
-        except asyncio.CancelledError:
-            break
-        except Exception:
-            self._logger.exception(
-                &#34;Unexpected error during queue pop timer loop!&#34;
-            )
-            # To avoid potential busy loops
-            await asyncio.sleep(1)
-    self._logger.info(&#34;%s queue stopped&#34;, self.name)</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue.search"><code class="name flex">
 <span>async def <span class="ident">search</span></span>(<span>self, search: <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>) ‑> None</span>
@@ -1018,76 +754,18 @@ in the queue.</p></div>
 <dd>
 <div class="desc"><p>Search for a match.</p>
 <p>Puts a search object into the queue and awaits completion.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def search(self, search: Search) -&gt; None:
-    &#34;&#34;&#34;
-    Search for a match.
-
-    Puts a search object into the queue and awaits completion.
-    &#34;&#34;&#34;
-    assert search is not None
-
-    try:
-        with MatchmakerSearchTimer(self.name):
-            self.push(search)
-            await search.await_match()
-        self._logger.debug(&#34;Search complete: %s&#34;, search)
-    except CancelledError:
-        pass
-    finally:
-        # If the queue was cancelled, or some other error occurred,
-        # make sure to clean up.
-        self.game_service.mark_dirty(self)
-        if search in self._queue:
-            del self._queue[search]</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue.shutdown"><code class="name flex">
 <span>def <span class="ident">shutdown</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def shutdown(self):
-    self._is_running = False
-    self.timer.cancel()</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue.to_dict"><code class="name flex">
 <span>def <span class="ident">to_dict</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Return a fuzzy representation of the searches currently in the queue</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def to_dict(self):
-    &#34;&#34;&#34;
-    Return a fuzzy representation of the searches currently in the queue
-    &#34;&#34;&#34;
-    return {
-        &#34;queue_name&#34;: self.name,
-        &#34;queue_pop_time&#34;: datetime.fromtimestamp(
-            self.timer.next_queue_pop, timezone.utc
-        ).isoformat(),
-        &#34;queue_pop_time_delta&#34;: round(
-            self.timer.next_queue_pop - time.time(),
-            ndigits=2
-        ),
-        &#34;num_players&#34;: self.num_players,
-        &#34;boundary_80s&#34;: [search.boundary_80 for search in self._queue.keys()],
-        &#34;boundary_75s&#34;: [search.boundary_75 for search in self._queue.keys()],
-        # TODO: Remove, the client should query the API for this
-        &#34;team_size&#34;: self.team_size,
-    }</code></pre>
-</details>
 </dd>
 </dl>
 </dd>
@@ -1208,42 +886,12 @@ class PopTimer(object):
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def cancel(self):
-    if self._wait_task:
-        self._wait_task.cancel()</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.PopTimer.next_pop"><code class="name flex">
 <span>async def <span class="ident">next_pop</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Wait for the timer to pop.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def next_pop(self):
-    &#34;&#34;&#34; Wait for the timer to pop. &#34;&#34;&#34;
-
-    time_remaining = self.next_queue_pop - time()
-    self._logger.info(&#34;Next %s wave happening in %is&#34;, self.queue.name, time_remaining)
-    metrics.matchmaker_queue_pop.labels(self.queue.name).set(int(time_remaining))
-
-    self._wait_task = asyncio.create_task(asyncio.sleep(time_remaining))
-    await self._wait_task
-
-    num_players = self.queue.num_players
-    metrics.matchmaker_players.labels(self.queue.name).set(num_players)
-
-    self._last_queue_pop = time()
-    self.next_queue_pop = self._last_queue_pop + self.time_until_next_pop(
-        num_players, time_remaining
-    )</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.PopTimer.time_until_next_pop"><code class="name flex">
 <span>def <span class="ident">time_until_next_pop</span></span>(<span>self, num_queued: int, time_queued: float) ‑> float</span>
@@ -1251,50 +899,6 @@ class PopTimer(object):
 <dd>
 <div class="desc"><p>Calculate how long we should wait for the next queue to pop based
 on the current rate of ladder queues</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def time_until_next_pop(self, num_queued: int, time_queued: float) -&gt; float:
-    &#34;&#34;&#34; Calculate how long we should wait for the next queue to pop based
-    on the current rate of ladder queues
-    &#34;&#34;&#34;
-    # Calculate moving average of player queue rate
-    self.last_queue_amounts.append(num_queued)
-    self.last_queue_times.append(time_queued)
-
-    total_players = sum(self.last_queue_amounts)
-    if total_players == 0:
-        return config.QUEUE_POP_TIME_MAX
-
-    total_times = sum(self.last_queue_times)
-    if total_times:
-        self._logger.debug(
-            &#34;Queue rate for %s: %f/s&#34;, self.queue.name,
-            total_players / total_times
-        )
-
-    players_per_match = self.queue.team_size * 2
-    desired_players = config.QUEUE_POP_DESIRED_MATCHES * players_per_match
-    # Obtained by solving $ NUM_PLAYERS = rate * time $ for time.
-    next_pop_time = desired_players * total_times / total_players
-    if next_pop_time &gt; config.QUEUE_POP_TIME_MAX:
-        self._logger.info(
-            &#34;Required time (%.2fs) for %s is larger than max pop time (%ds). &#34;
-            &#34;Consider increasing the max pop time&#34;,
-            next_pop_time, self.queue.name, config.QUEUE_POP_TIME_MAX
-        )
-        return config.QUEUE_POP_TIME_MAX
-
-    if next_pop_time &lt; config.QUEUE_POP_TIME_MIN:
-        self._logger.warning(
-            &#34;Required time (%.2fs) for %s is lower than min pop time (%ds). &#34;,
-            next_pop_time, self.queue.name, config.QUEUE_POP_TIME_MIN
-        )
-        return config.QUEUE_POP_TIME_MIN
-
-    return next_pop_time</code></pre>
-</details>
 </dd>
 </dl>
 </dd>
@@ -1580,7 +1184,7 @@ class Search:
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="server.matchmaker.Search.average_rating"><code class="name">var <span class="ident">average_rating</span> : float</code></dt>
+<dt id="server.matchmaker.Search.average_rating"><code class="name">prop <span class="ident">average_rating</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1592,7 +1196,7 @@ def average_rating(self) -&gt; float:
     return statistics.mean(self.displayed_ratings)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.Search.boundary_75"><code class="name">var <span class="ident">boundary_75</span> : tuple[int, int]</code></dt>
+<dt id="server.matchmaker.Search.boundary_75"><code class="name">prop <span class="ident">boundary_75</span> : tuple[int, int]</code></dt>
 <dd>
 <div class="desc"><p>Achieves roughly 75% quality. FIXME - why is it MORE restrictive???</p></div>
 <details class="source">
@@ -1605,7 +1209,7 @@ def boundary_75(self) -&gt; tuple[int, int]:
     return self._nearby_rating_range(100)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.Search.boundary_80"><code class="name">var <span class="ident">boundary_80</span> : tuple[int, int]</code></dt>
+<dt id="server.matchmaker.Search.boundary_80"><code class="name">prop <span class="ident">boundary_80</span> : tuple[int, int]</code></dt>
 <dd>
 <div class="desc"><p>Achieves roughly 80% quality.</p></div>
 <details class="source">
@@ -1618,7 +1222,7 @@ def boundary_80(self) -&gt; tuple[int, int]:
     return self._nearby_rating_range(200)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.Search.cumulative_rating"><code class="name">var <span class="ident">cumulative_rating</span> : float</code></dt>
+<dt id="server.matchmaker.Search.cumulative_rating"><code class="name">prop <span class="ident">cumulative_rating</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1630,7 +1234,7 @@ def cumulative_rating(self) -&gt; float:
     return sum(self.displayed_ratings)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.Search.displayed_ratings"><code class="name">var <span class="ident">displayed_ratings</span> : list[float]</code></dt>
+<dt id="server.matchmaker.Search.displayed_ratings"><code class="name">prop <span class="ident">displayed_ratings</span> : list[float]</code></dt>
 <dd>
 <div class="desc"><p>The client always displays mean - 3 * dev as a player's rating.
 So generally this is perceived as a player's true rating.</p></div>
@@ -1647,7 +1251,7 @@ def displayed_ratings(self) -&gt; list[float]:
     return [rating.displayed() for rating in self.raw_ratings]</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.Search.failed_matching_attempts"><code class="name">var <span class="ident">failed_matching_attempts</span> : int</code></dt>
+<dt id="server.matchmaker.Search.failed_matching_attempts"><code class="name">prop <span class="ident">failed_matching_attempts</span> : int</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1659,7 +1263,7 @@ def failed_matching_attempts(self) -&gt; int:
     return self._failed_matching_attempts</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.Search.is_cancelled"><code class="name">var <span class="ident">is_cancelled</span> : bool</code></dt>
+<dt id="server.matchmaker.Search.is_cancelled"><code class="name">prop <span class="ident">is_cancelled</span> : bool</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1671,7 +1275,7 @@ def is_cancelled(self) -&gt; bool:
     return self._match.cancelled()</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.Search.is_matched"><code class="name">var <span class="ident">is_matched</span> : bool</code></dt>
+<dt id="server.matchmaker.Search.is_matched"><code class="name">prop <span class="ident">is_matched</span> : bool</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1683,7 +1287,7 @@ def is_matched(self) -&gt; bool:
     return self._match.done() and not self._match.cancelled()</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.Search.match_threshold"><code class="name">var <span class="ident">match_threshold</span> : float</code></dt>
+<dt id="server.matchmaker.Search.match_threshold"><code class="name">prop <span class="ident">match_threshold</span> : float</code></dt>
 <dd>
 <div class="desc"><p>Defines the threshold for game quality</p>
 <p>The base minimum quality is determined as 80% of the quality of a game
@@ -1706,7 +1310,7 @@ def match_threshold(self) -&gt; float:
     return max(0.8 * self.quality_against_self - self.search_expansion, 0)</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.Search.ratings"><code class="name">var <span class="ident">ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
+<dt id="server.matchmaker.Search.ratings"><code class="name">prop <span class="ident">ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1724,7 +1328,7 @@ def ratings(self) -&gt; list[Rating]:
     return ratings</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.Search.raw_ratings"><code class="name">var <span class="ident">raw_ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
+<dt id="server.matchmaker.Search.raw_ratings"><code class="name">prop <span class="ident">raw_ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -1736,7 +1340,7 @@ def raw_ratings(self) -&gt; list[Rating]:
     return [player.ratings[self.rating_type] for player in self.players]</code></pre>
 </details>
 </dd>
-<dt id="server.matchmaker.Search.search_expansion"><code class="name">var <span class="ident">search_expansion</span> : float</code></dt>
+<dt id="server.matchmaker.Search.search_expansion"><code class="name">prop <span class="ident">search_expansion</span> : float</code></dt>
 <dd>
 <div class="desc"><p>Defines how much to expand the search range of game quality due to waiting
 time.</p>
@@ -1783,66 +1387,24 @@ def search_expansion(self) -&gt; float:
 </code></dt>
 <dd>
 <div class="desc"><p>Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def adjusted_rating(self, player: Player) -&gt; Rating:
-    &#34;&#34;&#34;
-    Returns an adjusted mean with a simple linear interpolation between current mean and a specified base mean
-    &#34;&#34;&#34;
-    mean, dev = player.ratings[self.rating_type]
-    game_count = player.game_count[self.rating_type]
-    adjusted_mean = ((config.NEWBIE_MIN_GAMES - game_count) * config.NEWBIE_BASE_MEAN
-                     + game_count * mean) / config.NEWBIE_MIN_GAMES
-    return Rating(adjusted_mean, dev)</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.await_match"><code class="name flex">
 <span>async def <span class="ident">await_match</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Wait for this search to complete</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def await_match(self):
-    &#34;&#34;&#34;
-    Wait for this search to complete
-    &#34;&#34;&#34;
-    await asyncio.wait_for(self._match, None)
-    return self._match</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.cancel"><code class="name flex">
 <span>def <span class="ident">cancel</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Cancel searching for a match</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def cancel(self):
-    &#34;&#34;&#34;
-    Cancel searching for a match
-    &#34;&#34;&#34;
-    self._match.cancel()</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.done"><code class="name flex">
 <span>def <span class="ident">done</span></span>(<span>self) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def done(self) -&gt; bool:
-    return self._match.done()</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.get_original_searches"><code class="name flex">
 <span>def <span class="ident">get_original_searches</span></span>(<span>self) ‑> list['<a title="server.matchmaker.Search" href="#server.matchmaker.Search">Search</a>']</span>
@@ -1850,119 +1412,42 @@ def search_expansion(self) -&gt; float:
 <dd>
 <div class="desc"><p>Returns the searches of which this Search is comprised,
 as if it were a CombinedSearch of one</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_original_searches(self) -&gt; list[&#34;Search&#34;]:
-    &#34;&#34;&#34;
-    Returns the searches of which this Search is comprised,
-    as if it were a CombinedSearch of one
-    &#34;&#34;&#34;
-    return [self]</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.has_high_rated_player"><code class="name flex">
 <span>def <span class="ident">has_high_rated_player</span></span>(<span>self) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def has_high_rated_player(self) -&gt; bool:
-    max_rating = max(self.displayed_ratings)
-    return max_rating &gt;= config.HIGH_RATED_PLAYER_MIN_RATING</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.has_newbie"><code class="name flex">
 <span>def <span class="ident">has_newbie</span></span>(<span>self) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def has_newbie(self) -&gt; bool:
-    for player in self.players:
-        if self.is_newbie(player):
-            return True
-
-    return False</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.has_top_player"><code class="name flex">
 <span>def <span class="ident">has_top_player</span></span>(<span>self) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def has_top_player(self) -&gt; bool:
-    max_rating = max(self.displayed_ratings)
-    return max_rating &gt;= config.TOP_PLAYER_MIN_RATING</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.is_newbie"><code class="name flex">
 <span>def <span class="ident">is_newbie</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def is_newbie(self, player: Player) -&gt; bool:
-    return player.game_count[self.rating_type] &lt;= config.NEWBIE_MIN_GAMES</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.is_single_party"><code class="name flex">
 <span>def <span class="ident">is_single_party</span></span>(<span>self) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def is_single_party(self) -&gt; bool:
-    return len(self.players) == 1</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.match"><code class="name flex">
 <span>def <span class="ident">match</span></span>(<span>self, other: <a title="server.matchmaker.Search" href="#server.matchmaker.Search">Search</a>)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Mark as matched with given opponent</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def match(self, other: &#34;Search&#34;):
-    &#34;&#34;&#34;
-    Mark as matched with given opponent
-    &#34;&#34;&#34;
-    self._logger.info(&#34;Matched %s with %s&#34;, self, other)
-
-    self.on_matched(self, other)
-
-    for player, raw_rating in zip(self.players, self.raw_ratings):
-        if self.is_newbie(player):
-            mean, dev = raw_rating
-            adjusted_mean, adjusted_dev = self.adjusted_rating(player)
-            self._logger.info(
-                &#34;Adjusted mean rating for %s with %d games from %.1f to %.1f&#34;,
-                player.login,
-                player.game_count[self.rating_type],
-                mean,
-                adjusted_mean
-            )
-    self._match.set_result(other)</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.matches_with"><code class="name flex">
 <span>def <span class="ident">matches_with</span></span>(<span>self, other: <a title="server.matchmaker.Search" href="#server.matchmaker.Search">Search</a>) ‑> bool</span>
@@ -1970,53 +1455,18 @@ as if it were a CombinedSearch of one</p></div>
 <dd>
 <div class="desc"><p>Determine if this search is compatible with other given search according
 to both wishes.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def matches_with(self, other: &#34;Search&#34;) -&gt; bool:
-    &#34;&#34;&#34;
-    Determine if this search is compatible with other given search according
-    to both wishes.
-    &#34;&#34;&#34;
-    if not isinstance(other, Search):
-        return False
-
-    quality = self.quality_with(other)
-    return self._match_quality_acceptable(other, quality)</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.num_newbies"><code class="name flex">
 <span>def <span class="ident">num_newbies</span></span>(<span>self) ‑> int</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def num_newbies(self) -&gt; int:
-    return sum(self.is_newbie(player) for player in self.players)</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.quality_with"><code class="name flex">
 <span>def <span class="ident">quality_with</span></span>(<span>self, other: <a title="server.matchmaker.Search" href="#server.matchmaker.Search">Search</a>) ‑> float</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def quality_with(self, other: &#34;Search&#34;) -&gt; float:
-    assert all(other.raw_ratings)
-    assert other.players
-
-    team1 = [trueskill.Rating(*rating) for rating in self.ratings]
-    team2 = [trueskill.Rating(*rating) for rating in other.ratings]
-
-    return trueskill.quality([team1, team2])</code></pre>
-</details>
 </dd>
 <dt id="server.matchmaker.Search.register_failed_matching_attempt"><code class="name flex">
 <span>def <span class="ident">register_failed_matching_attempt</span></span>(<span>self)</span>
@@ -2024,18 +1474,6 @@ to both wishes.</p></div>
 <dd>
 <div class="desc"><p>Signal that matchmaker tried to match this search but was unsuccessful
 and increase internal counter by one.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def register_failed_matching_attempt(self):
-    &#34;&#34;&#34;
-    Signal that matchmaker tried to match this search but was unsuccessful
-    and increase internal counter by one.
-    &#34;&#34;&#34;
-
-    self._failed_matching_attempts += 1</code></pre>
-</details>
 </dd>
 </dl>
 </dd>
@@ -2043,7 +1481,6 @@ and increase internal counter by one.</p></div>
 </section>
 </article>
 <nav id="sidebar">
-<h1>Index</h1>
 <div class="toc">
 <ul></ul>
 </div>
@@ -2151,7 +1588,7 @@ and increase internal counter by one.</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.0</a>.</p>
 </footer>
 </body>
 </html>
