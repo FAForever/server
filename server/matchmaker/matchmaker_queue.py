@@ -278,10 +278,17 @@ class MatchmakerQueue:
         """
         Return a fuzzy representation of the searches currently in the queue
         """
+
+        granularity = 25
+        # Average rating is based on displayed rating, while the 1v1 queue uses mean rating for matching.
         if self.team_size == 1:
-            ratings = {round(search.ratings[0].mean / 25) * 25 for search in self._queue.keys()}
+            active_rating_groups = {
+                round(search.ratings[0].mean / granularity) * granularity for search in self._queue.keys()
+            }
         else:
-            ratings = {round(search.average_rating / 25) * 25 for search in self._queue.keys()}
+            active_rating_groups = {
+                round(search.average_rating / granularity) * granularity for search in self._queue.keys()
+            }
         return {
             "queue_name": self.name,
             "queue_pop_time": datetime.fromtimestamp(
@@ -292,12 +299,13 @@ class MatchmakerQueue:
                 ndigits=2
             ),
             "num_players": self.num_players,
-            "ratings": sorted(ratings),
-            # DEPRECATED
+            "active_rating_groups": sorted(active_rating_groups),
+            # TODO: Remove deprecated keys
+            # DEPRECATED, the client is supposed to use active_rating_groups instead
             "boundary_80s": [search.boundary_80 for search in self._queue.keys()],
-            # DEPRECATED
+            # DEPRECATED, the client is supposed to use active_rating_groups instead
             "boundary_75s": [search.boundary_75 for search in self._queue.keys()],
-            # DEPRECATED TODO: Remove, the client should query the API for this
+            # DEPRECATED, the client should query the API for this
             "team_size": self.team_size,
         }
 
