@@ -509,8 +509,11 @@ class GameConnection(GpgNetServerProtocol):
 
     async def handle_launch_status(self, status: str):
         """
-        Currently is sent with status `Rejected` if a matchmaker game failed
-        to start due to players using differing game settings.
+        Represents the launch status of a peer.
+
+        # Params
+        - `status`: One of "Unknown" | "Connecting" | "Missing local peers" |
+            "Rejoining" | "Ready" | "Ejected" | "Rejected" | "Failed"
         """
         pass
 
@@ -518,6 +521,8 @@ class GameConnection(GpgNetServerProtocol):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
+
+        Example args: ["ack", "23381", "232191", "64218.4"]
         """
         pass
 
@@ -544,6 +549,25 @@ class GameConnection(GpgNetServerProtocol):
     async def handle_game_full(self):
         """
         Sent when all game slots are full
+        """
+        pass
+
+    async def handle_established_peer(self, peer_id: str):
+        """
+        Sent by the lobby when the player connectes to another peer. Can be
+        send multiple times.
+
+        # Params
+        - `peer_id`: The identifier of the peer that this connection received
+            the message from
+        """
+        pass
+
+    async def handle_disconnected_peer(self, peer_id: str):
+        """
+        Sent by the lobby when a player disconnects from a peer. This can happen
+        when a peer is rejoining in which case that peer will have reported a
+        "Rejoining" status, or if the peer has exited the game.
         """
         pass
 
@@ -623,26 +647,28 @@ class GameConnection(GpgNetServerProtocol):
 
 
 COMMAND_HANDLERS = {
-    "AIOption":             GameConnection.handle_ai_option,
-    "Bottleneck":           GameConnection.handle_bottleneck,
-    "BottleneckCleared":    GameConnection.handle_bottleneck_cleared,
-    "Chat":                 GameConnection.handle_chat,
-    "ClearSlot":            GameConnection.handle_clear_slot,
-    "Desync":               GameConnection.handle_desync,
-    "Disconnected":         GameConnection.handle_disconnected,
-    "EnforceRating":        GameConnection.handle_enforce_rating,
-    "GameEnded":            GameConnection.handle_game_ended,
-    "GameFull":             GameConnection.handle_game_full,
-    "GameMods":             GameConnection.handle_game_mods,
-    "GameOption":           GameConnection.handle_game_option,
-    "GameResult":           GameConnection.handle_game_result,
-    "GameState":            GameConnection.handle_game_state,
-    "IceMsg":               GameConnection.handle_ice_message,
-    "JsonStats":            GameConnection.handle_json_stats,
-    "LaunchStatus":         GameConnection.handle_launch_status,
-    "OperationComplete":    GameConnection.handle_operation_complete,
-    "PlayerOption":         GameConnection.handle_player_option,
-    "Rehost":               GameConnection.handle_rehost,
-    "TeamkillHappened":     GameConnection.handle_teamkill_happened,
-    "TeamkillReport":       GameConnection.handle_teamkill_report,
+    "AIOption":             GameConnection.handle_ai_option,            # Lobby message
+    "Bottleneck":           GameConnection.handle_bottleneck,           # Lobby/game message
+    "BottleneckCleared":    GameConnection.handle_bottleneck_cleared,   # Lobby/game message
+    "Chat":                 GameConnection.handle_chat,                 # Lobby message
+    "ClearSlot":            GameConnection.handle_clear_slot,           # Lobby message
+    "Desync":               GameConnection.handle_desync,               # Game message
+    "Disconnected":         GameConnection.handle_disconnected,         # Lobby message
+    "EnforceRating":        GameConnection.handle_enforce_rating,       # Game message
+    "EstablishedPeer":      GameConnection.handle_established_peer,     # Lobby message
+    "DisconnectedPeer":     GameConnection.handle_disconnected_peer,    # Lobby message
+    "GameEnded":            GameConnection.handle_game_ended,           # Game message
+    "GameFull":             GameConnection.handle_game_full,            # Lobby message
+    "GameMods":             GameConnection.handle_game_mods,            # Lobby message
+    "GameOption":           GameConnection.handle_game_option,          # Lobby message
+    "GameResult":           GameConnection.handle_game_result,          # Game message
+    "GameState":            GameConnection.handle_game_state,           # Lobby/game message
+    "IceMsg":               GameConnection.handle_ice_message,          # Lobby/Game message
+    "JsonStats":            GameConnection.handle_json_stats,           # Game message
+    "LaunchStatus":         GameConnection.handle_launch_status,        # Lobby message
+    "OperationComplete":    GameConnection.handle_operation_complete,   # Coop message
+    "PlayerOption":         GameConnection.handle_player_option,        # Lobby message
+    "Rehost":               GameConnection.handle_rehost,               # Game message
+    "TeamkillHappened":     GameConnection.handle_teamkill_happened,    # Game message
+    "TeamkillReport":       GameConnection.handle_teamkill_report,      # Game message
 }
