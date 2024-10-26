@@ -667,6 +667,12 @@ class LadderService(Service):
         try:
             await game.wait_launched(60 + 10 * len(guests))
         except asyncio.TimeoutError:
+            unconnected_players = game.get_unconnected_players_from_peer_matrix()
+            if unconnected_players is not None:
+                raise NotConnectedError(unconnected_players)
+
+            # If the connection matrix was not available, fall back to looking
+            # at who was connected to the host only.
             connected_players = game.get_connected_players()
             raise NotConnectedError([
                 player for player in guests

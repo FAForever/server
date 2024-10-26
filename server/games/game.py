@@ -17,6 +17,7 @@ from server.db.models import (
     game_stats,
     matchmaker_queue_game
 )
+from server.game_connection_matrix import ConnectionMatrix
 from server.games.game_results import (
     ArmyOutcome,
     ArmyReportedOutcome,
@@ -211,11 +212,39 @@ class Game:
 
     def get_connected_players(self) -> list[Player]:
         """
-        Get a collection of all players currently connected to the game.
+        Get a collection of all players currently connected to the host.
         """
         return [
             player for player in self._connections.keys()
             if player.id in self._configured_player_ids
+        ]
+
+    def get_unconnected_players_from_peer_matrix(
+        self,
+    ) -> Optional[list[Player]]:
+        """
+        Get a list of players who are not fully connected to the game based on
+        the established peers matrix if possible. The EstablishedPeers messages
+        might not be implemented by the game in which case this returns None.
+        """
+        if any(
+            conn.established_peer_ids is None
+            for conn in self._connections.values()
+        ):
+            return None
+
+        matrix = ConnectionMatrix(
+            established_peers={
+                player.id: conn.established_peer_ids
+                for player, conn in self._connections.items()
+            }
+        )
+        unconnected_peer_ids = matrix.get_unconnected_peer_ids()
+
+        return [
+            player
+            for player in self._connections.keys()
+            if player.id in unconnected_peer_ids
         ]
 
     def _is_observer(self, player: Player) -> bool:

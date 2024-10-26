@@ -6,7 +6,7 @@ import asyncio
 import contextlib
 import json
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import select
 
@@ -62,6 +62,10 @@ class GameConnection(GpgNetServerProtocol):
         self.player = player
         player.game_connection = self  # Set up weak reference to self
         self.game = game
+        # None if the EstablishedPeers message is not implemented by the game
+        # version/mode used by the player. For instance, matchmaker might have
+        # it, but custom games might not.
+        self.established_peer_ids: Optional[set[int]] = None
 
         self.setup_timeout = setup_timeout
 
@@ -561,7 +565,10 @@ class GameConnection(GpgNetServerProtocol):
         - `peer_id`: The identifier of the peer that this connection received
             the message from
         """
-        pass
+        if self.established_peer_ids is None:
+            self.established_peer_ids = set()
+
+        self.established_peer_ids.add(int(peer_id))
 
     async def handle_disconnected_peer(self, peer_id: str):
         """
@@ -569,7 +576,10 @@ class GameConnection(GpgNetServerProtocol):
         when a peer is rejoining in which case that peer will have reported a
         "Rejoining" status, or if the peer has exited the game.
         """
-        pass
+        if self.established_peer_ids is None:
+            self.established_peer_ids = set()
+
+        self.established_peer_ids.discard(int(peer_id))
 
     def _mark_dirty(self):
         if self.game:
