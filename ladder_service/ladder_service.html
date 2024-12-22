@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.1">
+<meta name="generator" content="pdoc3 0.11.5">
 <title>server.ladder_service.ladder_service API documentation</title>
 <meta name="description" content="Manages interactions between players and matchmakers">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -38,11 +49,9 @@ hljs.highlightAll();
 <dl>
 <dt id="server.ladder_service.ladder_service.LadderService"><code class="flex name class">
 <span>class <span class="ident">LadderService</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="../db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game_service: <a title="server.game_service.GameService" href="../game_service.html#server.game_service.GameService">GameService</a>, violation_service: <a title="server.ladder_service.violation_service.ViolationService" href="violation_service.html#server.ladder_service.violation_service.ViolationService">ViolationService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="../db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>game_service: <a title="server.game_service.GameService" href="../game_service.html#server.game_service.GameService">GameService</a>,<br>violation_service: <a title="server.ladder_service.violation_service.ViolationService" href="violation_service.html#server.ladder_service.violation_service.ViolationService">ViolationService</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Service responsible for managing the automatches. Does matchmaking, updates
-statistics, and launches the games.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -728,6 +737,8 @@ class LadderService(Service):
             for queue_name in list(searches.keys()):
                 self._cancel_search(player, queue_name)</code></pre>
 </details>
+<div class="desc"><p>Service responsible for managing the automatches. Does matchmaking, updates
+statistics, and launches the games.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="../core/service.html#server.core.service.Service">Service</a></li>
@@ -735,71 +746,568 @@ class LadderService(Service):
 <h3>Methods</h3>
 <dl>
 <dt id="server.ladder_service.ladder_service.LadderService.cancel_search"><code class="name flex">
-<span>def <span class="ident">cancel_search</span></span>(<span>self, initiator: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, queue_name: Optional[str] = None) ‑> None</span>
+<span>def <span class="ident">cancel_search</span></span>(<span>self,<br>initiator: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>,<br>queue_name: str | None = None) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cancel_search(
+    self,
+    initiator: Player,
+    queue_name: Optional[str] = None
+) -&gt; None:
+    if queue_name is None:
+        queue_names = list(self._searches[initiator].keys())
+    else:
+        queue_names = [queue_name]
+
+    for queue_name in queue_names:
+        self._cancel_search(initiator, queue_name)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ladder_service.ladder_service.LadderService.fetch_map_pools"><code class="name flex">
 <span>async def <span class="ident">fetch_map_pools</span></span>(<span>self, conn) ‑> dict[int, tuple[str, list[<a title="server.types.Map" href="../types.html#server.types.Map">Map</a>]]]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def fetch_map_pools(self, conn) -&gt; dict[int, tuple[str, list[Map]]]:
+    result = await conn.execute(
+        select(
+            map_pool.c.id,
+            map_pool.c.name,
+            map_pool_map_version.c.weight,
+            map_pool_map_version.c.map_params,
+            map_version.c.id.label(&#34;map_id&#34;),
+            map_version.c.filename,
+            map_version.c.ranked,
+        ).select_from(
+            map_pool.outerjoin(map_pool_map_version)
+            .outerjoin(map_version)
+        )
+    )
+    map_pool_maps = {}
+    for row in result:
+        id_ = row.id
+        name = row.name
+        if id_ not in map_pool_maps:
+            map_pool_maps[id_] = (name, list())
+        _, map_list = map_pool_maps[id_]
+        if row.map_id is not None:
+            # Database filenames contain the maps/ prefix and .zip suffix.
+            # This comes from the content server which hosts the files at
+            # https://content.faforever.com/maps/name.zip
+            folder_name = re.match(r&#34;maps/(.+)\.zip&#34;, row.filename).group(1)
+            map_list.append(
+                Map(
+                    id=row.map_id,
+                    folder_name=folder_name,
+                    ranked=row.ranked,
+                    weight=row.weight,
+                )
+            )
+        elif row.map_params is not None:
+            try:
+                params = json.loads(row.map_params)
+                map_type = params[&#34;type&#34;]
+                if map_type == &#34;neroxis&#34;:
+                    map_list.append(
+                        NeroxisGeneratedMap.of(params, row.weight)
+                    )
+                else:
+                    self._logger.warning(
+                        &#34;Unsupported map type %s in pool %s&#34;,
+                        map_type,
+                        row.id
+                    )
+
+            except Exception:
+                self._logger.warning(
+                    &#34;Failed to load map in map pool %d. &#34;
+                    &#34;Parameters are &#39;%s&#39;&#34;,
+                    row.id,
+                    row.map_params,
+                    exc_info=True
+                )
+
+    return map_pool_maps</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ladder_service.ladder_service.LadderService.fetch_matchmaker_queues"><code class="name flex">
 <span>async def <span class="ident">fetch_matchmaker_queues</span></span>(<span>self, conn)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def fetch_matchmaker_queues(self, conn):
+    result = await conn.execute(
+        select(
+            matchmaker_queue.c.id,
+            matchmaker_queue.c.technical_name,
+            matchmaker_queue.c.team_size,
+            matchmaker_queue.c.params,
+            matchmaker_queue_map_pool.c.map_pool_id,
+            matchmaker_queue_map_pool.c.min_rating,
+            matchmaker_queue_map_pool.c.max_rating,
+            game_featuredMods.c.gamemod,
+            leaderboard.c.technical_name.label(&#34;rating_type&#34;)
+        )
+        .select_from(
+            matchmaker_queue
+            .join(matchmaker_queue_map_pool)
+            .join(game_featuredMods)
+            .join(leaderboard)
+        ).where(matchmaker_queue.c.enabled == true())
+    )
+    # So we don&#39;t log the same error multiple times when a queue has several
+    # map pools
+    errored = set()
+    matchmaker_queues = defaultdict(lambda: defaultdict(list))
+    for row in result:
+        name = row.technical_name
+        if name in errored:
+            continue
+        info = matchmaker_queues[name]
+        try:
+            info[&#34;id&#34;] = row.id
+            info[&#34;mod&#34;] = row.gamemod
+            info[&#34;rating_type&#34;] = row.rating_type
+            info[&#34;team_size&#34;] = row.team_size
+            info[&#34;params&#34;] = json.loads(row.params) if row.params else None
+            info[&#34;map_pools&#34;].append((
+                row.map_pool_id,
+                row.min_rating,
+                row.max_rating
+            ))
+        except Exception:
+            self._logger.warning(
+                &#34;Unable to load queue &#39;%s&#39;!&#34;,
+                name,
+                exc_info=True
+            )
+            del matchmaker_queues[name]
+            errored.add(name)
+    return matchmaker_queues</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ladder_service.ladder_service.LadderService.fetch_rating_peak"><code class="name flex">
 <span>async def <span class="ident">fetch_rating_peak</span></span>(<span>self, rating_type)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def fetch_rating_peak(self, rating_type):
+    async with self._db.acquire() as conn:
+        result = await conn.execute(
+            select(
+                leaderboard_rating_journal.c.rating_mean_before,
+                leaderboard_rating_journal.c.rating_deviation_before
+            )
+            .select_from(leaderboard_rating_journal.join(leaderboard))
+            .where(leaderboard.c.technical_name == rating_type)
+            .order_by(leaderboard_rating_journal.c.id.desc())
+            .limit(1000)
+        )
+        rows = result.fetchall()
+        rowcount = len(rows)
+
+        rating_peak = 1000.0
+        if rowcount &gt; 0:
+            rating_peak = statistics.mean(
+                row.rating_mean_before - 3 * row.rating_deviation_before for row in rows
+            )
+        metrics.leaderboard_rating_peak.labels(rating_type).set(rating_peak)
+
+        if rowcount &lt; 100:
+            self._logger.warning(
+                &#34;Could only fetch %s ratings for %s queue.&#34;,
+                rowcount,
+                rating_type
+            )
+
+        if rating_peak &lt; 600 or rating_peak &gt; 1200:
+            self._logger.warning(
+                &#34;Estimated rating peak for %s is %s. This could lead to issues with matchmaking.&#34;,
+                rating_type,
+                rating_peak
+            )
+        else:
+            self._logger.info(
+                &#34;Estimated rating peak for %s is %s.&#34;,
+                rating_type,
+                rating_peak
+            )
+
+        return rating_peak</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ladder_service.ladder_service.LadderService.get_game_history"><code class="name flex">
-<span>async def <span class="ident">get_game_history</span></span>(<span>self, players: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], queue_id: int, limit: int = 3) ‑> list[int]</span>
+<span>async def <span class="ident">get_game_history</span></span>(<span>self,<br>players: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>],<br>queue_id: int,<br>limit: int = 3) ‑> list[int]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def get_game_history(
+    self,
+    players: list[Player],
+    queue_id: int,
+    limit: int = 3
+) -&gt; list[int]:
+    async with self._db.acquire() as conn:
+        result = []
+        for player in players:
+            query = select(
+                game_stats.c.mapId,
+            ).select_from(
+                game_player_stats
+                .join(game_stats)
+                .join(matchmaker_queue_game)
+            ).where(
+                and_(
+                    game_player_stats.c.playerId == player.id,
+                    game_stats.c.startTime &gt;= func.DATE_SUB(
+                        func.now(),
+                        text(&#34;interval 1 day&#34;)
+                    ),
+                    matchmaker_queue_game.c.matchmaker_queue_id == queue_id
+                )
+            ).order_by(
+                game_stats.c.startTime.desc(),
+                # Timestamps only have second resolution, so for this to
+                # work correctly in the unit tests we also need id
+                game_stats.c.id.desc()
+            ).limit(limit)
+
+            result.extend([
+                row.mapId for row in await conn.execute(query)
+            ])
+    return result</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ladder_service.ladder_service.LadderService.launch_match"><code class="name flex">
-<span>async def <span class="ident">launch_match</span></span>(<span>self, game: <a title="server.games.ladder_game.LadderGame" href="../games/ladder_game.html#server.games.ladder_game.LadderGame">LadderGame</a>, host: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, guests: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], make_game_options: Callable[[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], <a title="server.types.GameLaunchOptions" href="../types.html#server.types.GameLaunchOptions">GameLaunchOptions</a>])</span>
+<span>async def <span class="ident">launch_match</span></span>(<span>self,<br>game: <a title="server.games.ladder_game.LadderGame" href="../games/ladder_game.html#server.games.ladder_game.LadderGame">LadderGame</a>,<br>host: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>,<br>guests: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>],<br>make_game_options: Callable[[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], <a title="server.types.GameLaunchOptions" href="../types.html#server.types.GameLaunchOptions">GameLaunchOptions</a>])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def launch_match(
+    self,
+    game: LadderGame,
+    host: Player,
+    guests: list[Player],
+    make_game_options: Callable[[Player], GameLaunchOptions]
+):
+    # Launch the host
+    if host.lobby_connection is None:
+        raise NotConnectedError([host])
+
+    host.lobby_connection.write_launch_game(
+        game,
+        is_host=True,
+        options=make_game_options(host)
+    )
+
+    try:
+        await game.wait_hosted(60)
+    except asyncio.TimeoutError:
+        raise NotConnectedError([host])
+    finally:
+        # TODO: Once the client supports `match_cancelled`, don&#39;t
+        # send `launch_game` to the client if the host timed out. Until
+        # then, failing to send `launch_game` will cause the client to
+        # think it is searching for ladder, even though the server has
+        # already removed it from the queue.
+
+        # Launch the guests
+        not_connected_guests = [
+            player for player in guests
+            if player.lobby_connection is None
+        ]
+        if not_connected_guests:
+            raise NotConnectedError(not_connected_guests)
+
+        for guest in guests:
+            assert guest.lobby_connection is not None
+
+            guest.lobby_connection.write_launch_game(
+                game,
+                is_host=False,
+                options=make_game_options(guest)
+            )
+    try:
+        await game.wait_launched(60 + 10 * len(guests))
+    except asyncio.TimeoutError:
+        connected_players = game.get_connected_players()
+        raise NotConnectedError([
+            player for player in guests
+            if player not in connected_players
+        ])</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ladder_service.ladder_service.LadderService.on_match_found"><code class="name flex">
-<span>def <span class="ident">on_match_found</span></span>(<span>self, s1: <a title="server.matchmaker.search.Search" href="../matchmaker/search.html#server.matchmaker.search.Search">Search</a>, s2: <a title="server.matchmaker.search.Search" href="../matchmaker/search.html#server.matchmaker.search.Search">Search</a>, queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="../matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> None</span>
+<span>def <span class="ident">on_match_found</span></span>(<span>self,<br>s1: <a title="server.matchmaker.search.Search" href="../matchmaker/search.html#server.matchmaker.search.Search">Search</a>,<br>s2: <a title="server.matchmaker.search.Search" href="../matchmaker/search.html#server.matchmaker.search.Search">Search</a>,<br>queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="../matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def on_match_found(
+    self,
+    s1: Search,
+    s2: Search,
+    queue: MatchmakerQueue
+) -&gt; None:
+    &#34;&#34;&#34;
+    Callback for when a match is generated by a matchmaker queue.
+
+    NOTE: This function is called while the matchmaker search lock is held,
+    so it should only perform fast operations.
+    &#34;&#34;&#34;
+    try:
+        msg = {&#34;command&#34;: &#34;match_found&#34;, &#34;queue_name&#34;: queue.name}
+
+        for player in s1.players + s2.players:
+            player.state = PlayerState.STARTING_AUTOMATCH
+            player.write_message(msg)
+
+            # Cancel any other searches
+            queue_names = list(
+                name for name in self._searches[player].keys()
+                if name != queue.name
+            )
+            for queue_name in queue_names:
+                self._cancel_search(player, queue_name)
+
+            self._clear_search(player, queue.name)
+
+        asyncio.create_task(self.start_game(s1.players, s2.players, queue))
+    except Exception:
+        self._logger.exception(
+            &#34;Error processing match between searches %s, and %s&#34;,
+            s1, s2
+        )</code></pre>
+</details>
 <div class="desc"><p>Callback for when a match is generated by a matchmaker queue.</p>
 <p>NOTE: This function is called while the matchmaker search lock is held,
 so it should only perform fast operations.</p></div>
 </dd>
 <dt id="server.ladder_service.ladder_service.LadderService.start_game"><code class="name flex">
-<span>def <span class="ident">start_game</span></span>(<span>self, team1: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], team2: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="../matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> Awaitable[None]</span>
+<span>def <span class="ident">start_game</span></span>(<span>self,<br>team1: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>],<br>team2: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>],<br>queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="../matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> Awaitable[None]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def start_game(
+    self,
+    team1: list[Player],
+    team2: list[Player],
+    queue: MatchmakerQueue
+) -&gt; Awaitable[None]:
+    # We want assertion errors to trigger when the caller attempts to
+    # create the async function, not when the function starts executing.
+    assert len(team1) == len(team2)
+
+    return self._start_game(team1, team2, queue)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ladder_service.ladder_service.LadderService.start_search"><code class="name flex">
-<span>def <span class="ident">start_search</span></span>(<span>self, players: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>], queue_name: str, on_matched: Callable[[ForwardRef('Search'), ForwardRef('Search')], Any] = &lt;function LadderService.&lt;lambda&gt;&gt;)</span>
+<span>def <span class="ident">start_search</span></span>(<span>self,<br>players: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>],<br>queue_name: str,<br>on_matched: Callable[[ForwardRef('Search'), ForwardRef('Search')], Any] = &lt;function LadderService.&lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def start_search(
+    self,
+    players: list[Player],
+    queue_name: str,
+    on_matched: OnMatchedCallback = lambda _1, _2: None
+):
+    if not self._allow_new_searches:
+        raise DisabledError()
+
+    timeouts = self.violation_service.get_violations(players)
+    if timeouts:
+        self._logger.debug(&#34;timeouts: %s&#34;, timeouts)
+        times = [
+            {
+                &#34;player&#34;: p.id,
+                &#34;expires_at&#34;: violation.get_ban_expiration().isoformat()
+            }
+            for p, violation in timeouts.items()
+        ]
+        for player in players:
+            player.write_message({
+                &#34;command&#34;: &#34;search_timeout&#34;,
+                &#34;timeouts&#34;: times
+            })
+            # TODO: Do we need this or is `search_timeout` enough?
+            player.write_message({
+                &#34;command&#34;: &#34;search_info&#34;,
+                &#34;queue_name&#34;: queue_name,
+                &#34;state&#34;: &#34;stop&#34;
+            })
+            # For compatibility with clients that don&#39;t understand
+            # `search_timeout` only. This may be removed at any time.
+            if len(times) == 1:
+                s = &#34;&#34;
+                are = &#34;is&#34;
+            else:
+                s = &#34;s&#34;
+                are = &#34;are&#34;
+            names = &#34;, &#34;.join(p.login for p in timeouts)
+            max_time = humanize.naturaldelta(
+                max(
+                    timeouts.values(),
+                    key=lambda v: v.get_ban_expiration()
+                ).get_remaining()
+            )
+            player.write_message({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;info&#34;,
+                &#34;text&#34;: f&#34;Player{s} {names} {are} timed out for {max_time}&#34;
+            })
+        return
+    # Cancel any existing searches that players have for this queue
+    for player in players:
+        if queue_name in self._searches[player]:
+            self._cancel_search(player, queue_name)
+
+    queue = self.queues[queue_name]
+    search = Search(
+        players,
+        rating_type=queue.rating_type,
+        on_matched=on_matched
+    )
+
+    for player in players:
+        player.state = PlayerState.SEARCHING_LADDER
+
+        self.write_rating_progress(player, queue.rating_type)
+
+        player.write_message({
+            &#34;command&#34;: &#34;search_info&#34;,
+            &#34;queue_name&#34;: queue_name,
+            &#34;state&#34;: &#34;start&#34;
+        })
+
+        self._searches[player][queue_name] = search
+
+    self._logger.info(&#34;%s started searching for %s&#34;, search, queue_name)
+
+    asyncio.create_task(queue.search(search))</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ladder_service.ladder_service.LadderService.update_data"><code class="name flex">
 <span>async def <span class="ident">update_data</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def update_data(self) -&gt; None:
+    async with self._db.acquire() as conn:
+        map_pool_maps = await self.fetch_map_pools(conn)
+        db_queues = await self.fetch_matchmaker_queues(conn)
+
+    for name, info in db_queues.items():
+        if name not in self.queues:
+            queue = MatchmakerQueue(
+                self.game_service,
+                self.on_match_found,
+                name=name,
+                queue_id=info[&#34;id&#34;],
+                featured_mod=info[&#34;mod&#34;],
+                rating_type=info[&#34;rating_type&#34;],
+                team_size=info[&#34;team_size&#34;],
+                params=info.get(&#34;params&#34;)
+            )
+            self.queues[name] = queue
+            queue.initialize()
+        else:
+            queue = self.queues[name]
+            queue.featured_mod = info[&#34;mod&#34;]
+            queue.rating_type = info[&#34;rating_type&#34;]
+            queue.team_size = info[&#34;team_size&#34;]
+            queue.rating_peak = await self.fetch_rating_peak(info[&#34;rating_type&#34;])
+        queue.map_pools.clear()
+        for map_pool_id, min_rating, max_rating in info[&#34;map_pools&#34;]:
+            map_pool_name, map_list = map_pool_maps[map_pool_id]
+            if not map_list:
+                self._logger.warning(
+                    &#34;Map pool &#39;%s&#39; is empty! Some %s games will &#34;
+                    &#34;likely fail to start!&#34;,
+                    map_pool_name,
+                    name
+                )
+            queue.add_map_pool(
+                MapPool(map_pool_id, map_pool_name, map_list),
+                min_rating,
+                max_rating
+            )
+    # Remove queues that don&#39;t exist anymore
+    for queue_name in list(self.queues.keys()):
+        if queue_name not in db_queues:
+            self.queues[queue_name].shutdown()
+            del self.queues[queue_name]</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ladder_service.ladder_service.LadderService.write_rating_progress"><code class="name flex">
-<span>def <span class="ident">write_rating_progress</span></span>(<span>self, player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>, rating_type: str) ‑> None</span>
+<span>def <span class="ident">write_rating_progress</span></span>(<span>self,<br>player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>,<br>rating_type: str) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_rating_progress(self, player: Player, rating_type: str) -&gt; None:
+    if player not in self._informed_players:
+        self._informed_players.add(player)
+        _, deviation = player.ratings[rating_type]
+
+        if deviation &gt; 490:
+            player.write_message({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;info&#34;,
+                &#34;text&#34;: (
+                    &#34;&lt;i&gt;Welcome to the matchmaker&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;The &#34;
+                    &#34;matchmaking system needs to calibrate your skill level; &#34;
+                    &#34;your first few games may be more imbalanced as the &#34;
+                    &#34;system attempts to learn your capability as a player.&#34;
+                    &#34;&lt;/b&gt;&lt;br&gt;&lt;b&gt;&#34;
+                    &#34;Afterwards, you&#39;ll be more reliably matched up with &#34;
+                    &#34;people of your skill level: so don&#39;t worry if your &#34;
+                    &#34;first few games are uneven. This will improve as you &#34;
+                    &#34;play!&lt;/b&gt;&#34;
+                )
+            })</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -820,7 +1328,6 @@ so it should only perform fast operations.</p></div>
 <span>(</span><span>players: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>The operation exceeded the given deadline.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -829,6 +1336,7 @@ so it should only perform fast operations.</p></div>
     def __init__(self, players: list[Player]):
         self.players = players</code></pre>
 </details>
+<div class="desc"><p>The operation exceeded the given deadline.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>asyncio.exceptions.TimeoutError</li>
@@ -876,7 +1384,7 @@ so it should only perform fast operations.</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
 </footer>
 </body>
 </html>

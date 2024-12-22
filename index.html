@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.1">
+<meta name="generator" content="pdoc3 0.11.5">
 <title>server API documentation</title>
 <meta name="description" content="Forged Alliance Forever lobby server …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -257,10 +268,9 @@ that go into more detail.</p>
 <dl>
 <dt id="server.BroadcastService"><code class="flex name class">
 <span>class <span class="ident">BroadcastService</span></span>
-<span>(</span><span>server: <a title="server.ServerInstance" href="#server.ServerInstance">ServerInstance</a>, message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>, game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>, player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>)</span>
+<span>(</span><span>server: <a title="server.ServerInstance" href="#server.ServerInstance">ServerInstance</a>,<br>message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>,<br>game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>,<br>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Broadcast updates about changed entities.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -426,6 +436,7 @@ class BroadcastService(Service):
             )
         })</code></pre>
 </details>
+<div class="desc"><p>Broadcast updates about changed entities.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -436,12 +447,95 @@ class BroadcastService(Service):
 <span>def <span class="ident">broadcast_ping</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def broadcast_ping(self):
+    self.server.write_broadcast({&#34;command&#34;: &#34;ping&#34;})</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.BroadcastService.report_dirties"><code class="name flex">
 <span>async def <span class="ident">report_dirties</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def report_dirties(self):
+    &#34;&#34;&#34;
+    Send updates about any dirty (changed) entities to connected players.
+    This function is called at a fixed interval, which guarantees that any
+    given object will not be written out to the clients more than once per
+    interval.
+    &#34;&#34;&#34;
+    self.game_service.update_active_game_metrics()
+    dirty_games = self.game_service.pop_dirty_games()
+    dirty_queues = self.game_service.pop_dirty_queues()
+    dirty_players = self.player_service.pop_dirty_players()
+
+    if dirty_queues:
+        matchmaker_info = {
+            &#34;command&#34;: &#34;matchmaker_info&#34;,
+            &#34;queues&#34;: [queue.to_dict() for queue in dirty_queues]
+        }
+        self.server.write_broadcast(matchmaker_info)
+
+    if dirty_players:
+        player_info = {
+            &#34;command&#34;: &#34;player_info&#34;,
+            &#34;players&#34;: [player.to_dict() for player in dirty_players]
+        }
+        self.server.write_broadcast(player_info)
+
+    game_info = {
+        &#34;command&#34;: &#34;game_info&#34;,
+        &#34;games&#34;: []
+    }
+    # TODO: This spams squillions of messages: we should implement per-
+    # connection message aggregation at the next abstraction layer down :P
+    for game in dirty_games:
+        if game.state == GameState.ENDED:
+            self.game_service.remove_game(game)
+
+        # So we&#39;re going to be broadcasting this to _somebody_...
+        message = game.to_dict()
+        game_info[&#34;games&#34;].append(message)
+
+        self.server.write_broadcast(
+            message,
+            lambda conn: (
+                conn.authenticated
+                and game.is_visible_to_player(conn.player)
+            )
+        )
+
+    if dirty_queues:
+        await self.message_queue_service.publish(
+            config.MQ_EXCHANGE_NAME,
+            &#34;broadcast.matchmakerInfo.update&#34;,
+            matchmaker_info,
+            delivery_mode=DeliveryMode.NOT_PERSISTENT
+        )
+
+    if dirty_players:
+        await self.message_queue_service.publish(
+            config.MQ_EXCHANGE_NAME,
+            &#34;broadcast.playerInfo.update&#34;,
+            player_info,
+            delivery_mode=DeliveryMode.NOT_PERSISTENT
+        )
+
+    if dirty_games:
+        await self.message_queue_service.publish(
+            config.MQ_EXCHANGE_NAME,
+            &#34;broadcast.gameInfo.update&#34;,
+            game_info,
+            delivery_mode=DeliveryMode.NOT_PERSISTENT
+        )</code></pre>
+</details>
 <div class="desc"><p>Send updates about any dirty (changed) entities to connected players.
 This function is called at a fixed interval, which guarantees that any
 given object will not be written out to the clients more than once per
@@ -451,6 +545,19 @@ interval.</p></div>
 <span>async def <span class="ident">wait_report_dirtes</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def wait_report_dirtes(self):
+    &#34;&#34;&#34;
+    Wait for the current report_dirties task to complete.
+    &#34;&#34;&#34;
+    if self._report_dirties_event is None:
+        return
+
+    await self._report_dirties_event.wait()</code></pre>
+</details>
 <div class="desc"><p>Wait for the current report_dirties task to complete.</p></div>
 </dd>
 </dl>
@@ -470,8 +577,6 @@ interval.</p></div>
 <span>class <span class="ident">ConfigurationService</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>All services should inherit from this class.</p>
-<p>Services are singleton objects which manage some server task.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -503,6 +608,8 @@ class ConfigurationService(Service):
             self._task.cancel()
         self._task = None</code></pre>
 </details>
+<div class="desc"><p>All services should inherit from this class.</p>
+<p>Services are singleton objects which manage some server task.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -521,11 +628,9 @@ class ConfigurationService(Service):
 </dd>
 <dt id="server.GameConnection"><code class="flex name class">
 <span>class <span class="ident">GameConnection</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, protocol: <a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>, player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, games: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>, state: <a title="server.games.typedefs.GameConnectionState" href="games/typedefs.html#server.games.typedefs.GameConnectionState">GameConnectionState</a> = GameConnectionState.INITIALIZING, setup_timeout: int = 60)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>protocol: <a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>,<br>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>,<br>games: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>,<br>state: <a title="server.games.typedefs.GameConnectionState" href="games/typedefs.html#server.games.typedefs.GameConnectionState">GameConnectionState</a> = GameConnectionState.INITIALIZING,<br>setup_timeout: int = 60)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Responsible for connections to the game, using the GPGNet protocol</p>
-<p>Construct a new GameConnection</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1122,6 +1227,8 @@ class ConfigurationService(Service):
     def __str__(self):
         return f&#34;GameConnection({self.player}, {self.game})&#34;</code></pre>
 </details>
+<div class="desc"><p>Responsible for connections to the game, using the GPGNet protocol</p>
+<p>Construct a new GameConnection</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.protocol.gpgnet.GpgNetServerProtocol" href="protocol/gpgnet.html#server.protocol.gpgnet.GpgNetServerProtocol">GpgNetServerProtocol</a></li>
@@ -1130,7 +1237,6 @@ class ConfigurationService(Service):
 <dl>
 <dt id="server.GameConnection.state"><code class="name">prop <span class="ident">state</span> : <a title="server.games.typedefs.GameConnectionState" href="games/typedefs.html#server.games.typedefs.GameConnectionState">GameConnectionState</a></code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1139,6 +1245,7 @@ class ConfigurationService(Service):
 def state(self) -&gt; GameConnectionState:
     return self._state</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -1147,44 +1254,192 @@ def state(self) -&gt; GameConnectionState:
 <span>async def <span class="ident">abort</span></span>(<span>self, log_message: str = '')</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def abort(self, log_message: str = &#34;&#34;):
+    &#34;&#34;&#34;
+    Abort the connection
+
+    Removes the GameConnection object from the any associated Game object,
+    and deletes references to Player and Game held by this object.
+    &#34;&#34;&#34;
+    try:
+        if self._state is GameConnectionState.ENDED:
+            return
+
+        self._logger.debug(&#34;%s.abort(%s)&#34;, self, log_message)
+
+        if self.game.state is GameState.LOBBY:
+            await self.disconnect_all_peers()
+
+        self._state = GameConnectionState.ENDED
+        await self.game.remove_game_connection(self)
+        self._mark_dirty()
+        self.player.state = PlayerState.IDLE
+        if self.player.lobby_connection:
+            self.player.lobby_connection.game_connection = None
+        del self.player.game
+        del self.player.game_connection
+    except Exception as ex:  # pragma: no cover
+        self._logger.debug(&#34;Exception in abort(): %s&#34;, ex)</code></pre>
+</details>
 <div class="desc"><p>Abort the connection</p>
 <p>Removes the GameConnection object from the any associated Game object,
 and deletes references to Player and Game held by this object.</p></div>
 </dd>
 <dt id="server.GameConnection.connect_to_host"><code class="name flex">
-<span>async def <span class="ident">connect_to_host</span></span>(<span>self, peer: <a title="server.GameConnection" href="#server.GameConnection">GameConnection</a>)</span>
+<span>async def <span class="ident">connect_to_host</span></span>(<span>self,<br>peer: <a title="server.GameConnection" href="#server.GameConnection">GameConnection</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def connect_to_host(self, peer: &#34;GameConnection&#34;):
+    &#34;&#34;&#34;
+    Connect self to a given peer (host)
+    &#34;&#34;&#34;
+    if not peer or peer.player.state != PlayerState.HOSTING:
+        await self.abort(&#34;The host left the lobby&#34;)
+        return
+
+    await self.send_JoinGame(peer.player.login, peer.player.id)
+
+    if not peer:
+        await self.abort(&#34;The host left the lobby&#34;)
+        return
+
+    await peer.send_ConnectToPeer(
+        player_name=self.player.login,
+        player_uid=self.player.id,
+        offer=True
+    )</code></pre>
+</details>
 <div class="desc"><p>Connect self to a given peer (host)</p></div>
 </dd>
 <dt id="server.GameConnection.connect_to_peer"><code class="name flex">
-<span>async def <span class="ident">connect_to_peer</span></span>(<span>self, peer: <a title="server.GameConnection" href="#server.GameConnection">GameConnection</a>)</span>
+<span>async def <span class="ident">connect_to_peer</span></span>(<span>self,<br>peer: <a title="server.GameConnection" href="#server.GameConnection">GameConnection</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def connect_to_peer(self, peer: &#34;GameConnection&#34;):
+    &#34;&#34;&#34;
+    Connect two peers
+    &#34;&#34;&#34;
+    if peer is not None:
+        await self.send_ConnectToPeer(
+            player_name=peer.player.login,
+            player_uid=peer.player.id,
+            offer=True
+        )
+
+    if peer is not None:
+        with contextlib.suppress(DisconnectedError):
+            await peer.send_ConnectToPeer(
+                player_name=self.player.login,
+                player_uid=self.player.id,
+                offer=False
+            )</code></pre>
+</details>
 <div class="desc"><p>Connect two peers</p></div>
 </dd>
 <dt id="server.GameConnection.disconnect_all_peers"><code class="name flex">
 <span>async def <span class="ident">disconnect_all_peers</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def disconnect_all_peers(self):
+    tasks = []
+    for peer in self.game.connections:
+        if peer == self:
+            continue
+
+        tasks.append(peer.send_DisconnectFromPeer(self.player.id))
+
+    for fut in asyncio.as_completed(tasks):
+        try:
+            await fut
+        except Exception:
+            self._logger.debug(
+                &#34;peer_sendDisconnectFromPeer failed for player %i&#34;,
+                self.player.id,
+                exc_info=True
+            )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_action"><code class="name flex">
 <span>async def <span class="ident">handle_action</span></span>(<span>self, command: str, args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_action(self, command: str, args: list[Any]):
+    &#34;&#34;&#34;
+    Handle GpgNetSend messages, wrapped in the JSON protocol
+    &#34;&#34;&#34;
+    try:
+        await COMMAND_HANDLERS[command](self, *args)
+    except KeyError:
+        self._logger.warning(
+            &#34;Unrecognized command %s: %s from player %s&#34;,
+            command, args, self.player
+        )
+    except (TypeError, ValueError):
+        self._logger.exception(&#34;Bad command arguments&#34;)
+    except ConnectionError as e:
+        raise e
+    except Exception as e:  # pragma: no cover
+        self._logger.exception(
+            &#34;Something awful happened in a game thread! %s&#34;,
+            e
+        )
+        await self.abort()</code></pre>
+</details>
 <div class="desc"><p>Handle GpgNetSend messages, wrapped in the JSON protocol</p></div>
 </dd>
 <dt id="server.GameConnection.handle_ai_option"><code class="name flex">
 <span>async def <span class="ident">handle_ai_option</span></span>(<span>self, name: Any, key: Any, value: Any)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_ai_option(self, name: Any, key: Any, value: Any):
+    if not self.is_host():
+        return
+
+    self.game.set_ai_option(str(name), key, value)
+    self._mark_dirty()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_bottleneck"><code class="name flex">
 <span>async def <span class="ident">handle_bottleneck</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_bottleneck(self, *args: list[Any]):
+    &#34;&#34;&#34;
+    Not sure what this command means. This is currently unused but
+    included for documentation purposes.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
 included for documentation purposes.</p></div>
 </dd>
@@ -1192,6 +1447,17 @@ included for documentation purposes.</p></div>
 <span>async def <span class="ident">handle_bottleneck_cleared</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_bottleneck_cleared(self, *args: list[Any]):
+    &#34;&#34;&#34;
+    Not sure what this command means. This is currently unused but
+    included for documentation purposes.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
 included for documentation purposes.</p></div>
 </dd>
@@ -1199,24 +1465,63 @@ included for documentation purposes.</p></div>
 <span>async def <span class="ident">handle_chat</span></span>(<span>self, message: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_chat(self, message: str):
+    &#34;&#34;&#34;
+    Whenever the player sends a chat message during the game lobby.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Whenever the player sends a chat message during the game lobby.</p></div>
 </dd>
 <dt id="server.GameConnection.handle_clear_slot"><code class="name flex">
 <span>async def <span class="ident">handle_clear_slot</span></span>(<span>self, slot: Any)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_clear_slot(self, slot: Any):
+    if not self.is_host():
+        return
+
+    self.game.clear_slot(int(slot))
+    self._mark_dirty()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_desync"><code class="name flex">
 <span>async def <span class="ident">handle_desync</span></span>(<span>self, *_args)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_desync(self, *_args):  # pragma: no cover
+    self.game.desyncs += 1</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_disconnected"><code class="name flex">
 <span>async def <span class="ident">handle_disconnected</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_disconnected(self, *args: list[Any]):
+    &#34;&#34;&#34;
+    Not sure what this command means. This is currently unused but
+    included for documentation purposes.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
 included for documentation purposes.</p></div>
 </dd>
@@ -1224,60 +1529,258 @@ included for documentation purposes.</p></div>
 <span>async def <span class="ident">handle_enforce_rating</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_enforce_rating(self):
+    self.game.enforce_rating = True</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_game_ended"><code class="name flex">
 <span>async def <span class="ident">handle_game_ended</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_game_ended(self, *args: list[Any]):
+    &#34;&#34;&#34;
+    Signals that the simulation has ended.
+    &#34;&#34;&#34;
+    self.finished_sim = True
+    await self.game.check_game_finish(self.player)</code></pre>
+</details>
 <div class="desc"><p>Signals that the simulation has ended.</p></div>
 </dd>
 <dt id="server.GameConnection.handle_game_full"><code class="name flex">
 <span>async def <span class="ident">handle_game_full</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_game_full(self):
+    &#34;&#34;&#34;
+    Sent when all game slots are full
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Sent when all game slots are full</p></div>
 </dd>
 <dt id="server.GameConnection.handle_game_mods"><code class="name flex">
 <span>async def <span class="ident">handle_game_mods</span></span>(<span>self, mode: Any, args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_game_mods(self, mode: Any, args: list[Any]):
+    if not self.is_host():
+        return
+
+    if mode == &#34;activated&#34;:
+        # In this case args is the number of mods
+        if int(args) == 0:
+            self.game.mods = {}
+
+    elif mode == &#34;uids&#34;:
+        uids = str(args).split()
+        self.game.mods = {uid: &#34;Unknown sim mod&#34; for uid in uids}
+        async with self._db.acquire() as conn:
+            rows = await conn.execute(
+                &#34;SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids&#34;,
+                ids=tuple(uids)
+            )
+            for row in rows:
+                self.game.mods[row.uid] = row.name
+    else:
+        self._logger.warning(&#34;Ignoring game mod: %s, %s&#34;, mode, args)
+        return
+
+    self._mark_dirty()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_game_option"><code class="name flex">
 <span>async def <span class="ident">handle_game_option</span></span>(<span>self, key: str, value: Any)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_game_option(self, key: str, value: Any):
+    if not self.is_host():
+        return
+
+    await self.game.game_options.set_option(key, value)
+
+    self._mark_dirty()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_game_result"><code class="name flex">
 <span>async def <span class="ident">handle_game_result</span></span>(<span>self, army: Any, result: Any)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_game_result(self, army: Any, result: Any):
+    army = int(army)
+    result = str(result).lower()
+
+    try:
+        *metadata, result_type, score = result.split()
+    except ValueError:
+        self._logger.warning(&#34;Invalid result for %s reported: %s&#34;, army, result)
+    else:
+        await self.game.add_result(
+            self.player.id,
+            army,
+            result_type,
+            int(score),
+            frozenset(metadata),
+        )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_game_state"><code class="name flex">
 <span>async def <span class="ident">handle_game_state</span></span>(<span>self, state: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_game_state(self, state: str):
+    &#34;&#34;&#34;
+    Changes in game state
+    &#34;&#34;&#34;
+
+    if state == &#34;Idle&#34;:
+        await self._handle_idle_state()
+        # Don&#39;t mark as dirty
+        return
+
+    elif state == &#34;Lobby&#34;:
+        # TODO: Do we still need to schedule with `ensure_future`?
+        #
+        # We do not yield from the task, since we
+        # need to keep processing other commands while it runs
+        await self._handle_lobby_state()
+
+    elif state == &#34;Launching&#34;:
+        if self.player.state != PlayerState.HOSTING:
+            return
+
+        if self.game.state is not GameState.LOBBY:
+            self._logger.warning(
+                &#34;Trying to launch game %s in invalid state %s&#34;,
+                self.game,
+                self.game.state
+            )
+            return
+
+        self._logger.info(&#34;Launching game %s&#34;, self.game)
+
+        await self.game.launch()
+
+        if len(self.game.mods.keys()) &gt; 0:
+            async with self._db.acquire() as conn:
+                uids = list(self.game.mods.keys())
+                await conn.execute(
+                    &#34;UPDATE mod_stats s JOIN mod_version v ON &#34;
+                    &#34;v.mod_id = s.mod_id &#34;
+                    &#34;SET s.times_played = s.times_played + 1 &#34;
+                    &#34;WHERE v.uid in :ids&#34;,
+                    ids=tuple(uids)
+                )
+    # Signals that the FA executable has been closed
+    elif state == &#34;Ended&#34;:
+        await self.on_connection_closed()
+    self._mark_dirty()</code></pre>
+</details>
 <div class="desc"><p>Changes in game state</p></div>
 </dd>
 <dt id="server.GameConnection.handle_ice_message"><code class="name flex">
 <span>async def <span class="ident">handle_ice_message</span></span>(<span>self, receiver_id: Any, ice_msg: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_ice_message(self, receiver_id: Any, ice_msg: str):
+    receiver_id = int(receiver_id)
+    peer = self.player_service.get_player(receiver_id)
+    if not peer:
+        self._logger.debug(
+            &#34;Ignoring ICE message for unknown player: %s&#34;, receiver_id
+        )
+        return
+
+    game_connection = peer.game_connection
+    if not game_connection:
+        self._logger.debug(
+            &#34;Ignoring ICE message for player without game connection: %s&#34;, receiver_id
+        )
+        return
+
+    try:
+        await game_connection.send({
+            &#34;command&#34;: &#34;IceMsg&#34;,
+            &#34;args&#34;: [int(self.player.id), ice_msg]
+        })
+    except DisconnectedError:
+        self._logger.debug(
+            &#34;Failed to send ICE message to player due to a disconnect: %s&#34;,
+            receiver_id
+        )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_json_stats"><code class="name flex">
 <span>async def <span class="ident">handle_json_stats</span></span>(<span>self, stats: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_json_stats(self, stats: str):
+    try:
+        self.game.report_army_stats(stats)
+    except json.JSONDecodeError as e:
+        self._logger.warning(
+            &#34;Malformed game stats reported by %s: &#39;...%s...&#39;&#34;,
+            self.player.login,
+            stats[e.pos-20:e.pos+20]
+        )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_launch_status"><code class="name flex">
 <span>async def <span class="ident">handle_launch_status</span></span>(<span>self, status: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_launch_status(self, status: str):
+    &#34;&#34;&#34;
+    Currently is sent with status `Rejected` if a matchmaker game failed
+    to start due to players using differing game settings.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Currently is sent with status <code>Rejected</code> if a matchmaker game failed
 to start due to players using differing game settings.</p></div>
 </dd>
@@ -1285,6 +1788,64 @@ to start due to players using differing game settings.</p></div>
 <span>async def <span class="ident">handle_operation_complete</span></span>(<span>self, primary: Any, secondary: Any, delta: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_operation_complete(
+    self, primary: Any, secondary: Any, delta: str
+):
+    &#34;&#34;&#34;
+    # Params
+    - `primary`: are primary mission objectives complete?
+    - `secondary`: are secondary mission objectives complete?
+    - `delta`: the time it took to complete the mission
+    &#34;&#34;&#34;
+    primary = FA.ENABLED == primary
+    secondary = FA.ENABLED == secondary
+
+    if not primary:
+        return
+
+    if not isinstance(self.game, CoopGame):
+        self._logger.warning(
+            &#34;OperationComplete called for non-coop game: %s&#34;, self.game.id
+        )
+        return
+
+    if self.game.validity != ValidityState.COOP_NOT_RANKED:
+        return
+
+    secondary, delta = secondary, str(delta)
+    async with self._db.acquire() as conn:
+        result = await conn.execute(
+            select(coop_map.c.id).where(
+                coop_map.c.filename == self.game.map.file_path
+            )
+        )
+        row = result.fetchone()
+        if not row:
+            self._logger.debug(
+                &#34;can&#39;t find coop map: %s&#34;, self.game.map.file_path
+            )
+            return
+        mission = row.id
+
+        # Each player in a co-op game will send the OperationComplete
+        # message but we only need to perform this insert once
+        async with self.game.leaderboard_lock:
+            if not self.game.leaderboard_saved:
+                await conn.execute(
+                    coop_leaderboard.insert().values(
+                        mission=mission,
+                        gameuid=self.game.id,
+                        secondary=secondary,
+                        time=delta,
+                        player_count=len(self.game.players),
+                    )
+                )
+                self.game.leaderboard_saved = True</code></pre>
+</details>
 <div class="desc"><h1 id="params">Params</h1>
 <ul>
 <li><code>primary</code>: are primary mission objectives complete?</li>
@@ -1296,19 +1857,83 @@ to start due to players using differing game settings.</p></div>
 <span>async def <span class="ident">handle_player_option</span></span>(<span>self, player_id: Any, key: Any, value: Any)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_player_option(
+    self, player_id: Any, key: Any, value: Any
+):
+    if not self.is_host():
+        return
+
+    self.game.set_player_option(int(player_id), key, value)
+    self._mark_dirty()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_rehost"><code class="name flex">
 <span>async def <span class="ident">handle_rehost</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_rehost(self, *args: list[Any]):
+    &#34;&#34;&#34;
+    Signals that the user has rehosted the game. This is currently unused but
+    included for documentation purposes.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Signals that the user has rehosted the game. This is currently unused but
 included for documentation purposes.</p></div>
 </dd>
 <dt id="server.GameConnection.handle_teamkill_happened"><code class="name flex">
-<span>async def <span class="ident">handle_teamkill_happened</span></span>(<span>self, gametime: Any, victim_id: Any, victim_name: str, teamkiller_id: Any, teamkiller_name: str)</span>
+<span>async def <span class="ident">handle_teamkill_happened</span></span>(<span>self,<br>gametime: Any,<br>victim_id: Any,<br>victim_name: str,<br>teamkiller_id: Any,<br>teamkiller_name: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_teamkill_happened(
+    self,
+    gametime: Any,
+    victim_id: Any,
+    victim_name: str,
+    teamkiller_id: Any,
+    teamkiller_name: str,
+):
+    &#34;&#34;&#34;
+    Send automatically by the game whenever a teamkill happens. Takes
+    the same parameters as TeamkillReport.
+
+    # Params
+    - `gametime`: seconds of gametime when kill happened
+    - `victim_id`: victim id
+    - `victim_name`: victim nickname (for debug purpose only)
+    - `teamkiller_id`: teamkiller id
+    - `teamkiller_name`: teamkiller nickname (for debug purpose only)
+    &#34;&#34;&#34;
+    victim_id = int(victim_id)
+    teamkiller_id = int(teamkiller_id)
+
+    if 0 in (victim_id, teamkiller_id):
+        self._logger.debug(&#34;Ignoring teamkill for AI player&#34;)
+        return
+
+    async with self._db.acquire() as conn:
+        await conn.execute(
+            teamkills.insert().values(
+                teamkiller=teamkiller_id,
+                victim=victim_id,
+                game_id=self.game.id,
+                gametime=gametime,
+            )
+        )</code></pre>
+</details>
 <div class="desc"><p>Send automatically by the game whenever a teamkill happens. Takes
 the same parameters as TeamkillReport.</p>
 <h1 id="params">Params</h1>
@@ -1321,9 +1946,33 @@ the same parameters as TeamkillReport.</p>
 </ul></div>
 </dd>
 <dt id="server.GameConnection.handle_teamkill_report"><code class="name flex">
-<span>async def <span class="ident">handle_teamkill_report</span></span>(<span>self, gametime: Any, reporter_id: Any, reporter_name: str, teamkiller_id: Any, teamkiller_name: str)</span>
+<span>async def <span class="ident">handle_teamkill_report</span></span>(<span>self,<br>gametime: Any,<br>reporter_id: Any,<br>reporter_name: str,<br>teamkiller_id: Any,<br>teamkiller_name: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_teamkill_report(
+    self,
+    gametime: Any,
+    reporter_id: Any,
+    reporter_name: str,
+    teamkiller_id: Any,
+    teamkiller_name: str,
+):
+    &#34;&#34;&#34;
+    Sent when a player is teamkilled and clicks the &#39;Report&#39; button.
+
+    # Params
+    - `gametime`: seconds of gametime when kill happened
+    - `reporter_id`: reporter id
+    - `reporter_name`: reporter nickname (for debug purpose only)
+    - `teamkiller_id`: teamkiller id
+    - `teamkiller_name`: teamkiller nickname (for debug purpose only)
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Sent when a player is teamkilled and clicks the 'Report' button.</p>
 <h1 id="params">Params</h1>
 <ul>
@@ -1338,24 +1987,87 @@ the same parameters as TeamkillReport.</p>
 <span>def <span class="ident">is_host</span></span>(<span>self) ‑> bool</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_host(self) -&gt; bool:
+    if not self.game or not self.player:
+        return False
+
+    return (
+        self.player.state == PlayerState.HOSTING and
+        self.player == self.game.host
+    )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.on_connection_closed"><code class="name flex">
 <span>async def <span class="ident">on_connection_closed</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def on_connection_closed(self):
+    &#34;&#34;&#34;
+    The connection is closed by the player.
+    &#34;&#34;&#34;
+    try:
+        await self.game.disconnect_player(self.player)
+    except Exception as e:  # pragma: no cover
+        self._logger.exception(e)
+    finally:
+        await self.abort()</code></pre>
+</details>
 <div class="desc"><p>The connection is closed by the player.</p></div>
 </dd>
 <dt id="server.GameConnection.on_connection_lost"><code class="name flex">
 <span>async def <span class="ident">on_connection_lost</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def on_connection_lost(self):
+    &#34;&#34;&#34;
+    The connection is lost due to a disconnect from the lobby server.
+    &#34;&#34;&#34;
+    try:
+        await self.game.remove_game_connection(self)
+    except Exception as e:  # pragma: no cover
+        self._logger.exception(e)
+    finally:
+        await self.abort()</code></pre>
+</details>
 <div class="desc"><p>The connection is lost due to a disconnect from the lobby server.</p></div>
 </dd>
 <dt id="server.GameConnection.send"><code class="name flex">
 <span>async def <span class="ident">send</span></span>(<span>self, message)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send(self, message):
+    &#34;&#34;&#34;
+    Send a game message to the client.
+
+    # Errors
+    May raise `DisconnectedError`
+
+    NOTE: When calling this on a connection other than `self` make sure to
+    handle `DisconnectedError`, otherwise failure to send the message will
+    cause the caller to be disconnected as well.
+    &#34;&#34;&#34;
+    message[&#34;target&#34;] = &#34;game&#34;
+
+    self._logger.log(TRACE, &#34;&gt;&gt; %s: %s&#34;, self.player.login, message)
+    await self.protocol.send_message(message)</code></pre>
+</details>
 <div class="desc"><p>Send a game message to the client.</p>
 <h1 id="errors">Errors</h1>
 <p>May raise <code>DisconnectedError</code></p>
@@ -1367,6 +2079,16 @@ cause the caller to be disconnected as well.</p></div>
 <span>async def <span class="ident">timeout_game_connection</span></span>(<span>self, timeout)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def timeout_game_connection(self, timeout):
+    await asyncio.sleep(timeout)
+    if self.state is GameConnectionState.INITIALIZING:
+        self._logger.debug(&#34;GameConection timed out...&#34;)
+        await self.abort(&#34;Player took too long to start the game&#34;)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -1384,10 +2106,9 @@ cause the caller to be disconnected as well.</p></div>
 </dd>
 <dt id="server.GameService"><code class="flex name class">
 <span>class <span class="ident">GameService</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, player_service, game_stats_service, rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>, message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>player_service,<br>game_stats_service,<br>rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>,<br>message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Utility class for maintaining lifecycle of games</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1721,6 +2442,7 @@ class GameService(Service):
                 })
                 await game_connection.abort()</code></pre>
 </details>
+<div class="desc"><p>Utility class for maintaining lifecycle of games</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -1729,7 +2451,6 @@ class GameService(Service):
 <dl>
 <dt id="server.GameService.all_games"><code class="name">prop <span class="ident">all_games</span> : ValuesView[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1738,10 +2459,10 @@ class GameService(Service):
 def all_games(self) -&gt; ValuesView[Game]:
     return self._games.values()</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 <dt id="server.GameService.live_games"><code class="name">prop <span class="ident">live_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1754,17 +2475,10 @@ def live_games(self) -&gt; list[Game]:
         if game.state is GameState.LIVE
     ]</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 <dt id="server.GameService.open_games"><code class="name">prop <span class="ident">open_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
-<div class="desc"><p>Return all games that meet the client's definition of "not closed".
-Server game states are mapped to client game states as follows:</p>
-<pre><code>GameState.LOBBY: "open",
-GameState.LIVE: "playing",
-GameState.ENDED: "closed",
-GameState.INITIALIZING: "closed",
-</code></pre>
-<p>The client ignores everything "closed". This property fetches all such not-closed games.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1788,10 +2502,17 @@ def open_games(self) -&gt; list[Game]:
         if game.state in (GameState.LOBBY, GameState.LIVE)
     ]</code></pre>
 </details>
+<div class="desc"><p>Return all games that meet the client's definition of "not closed".
+Server game states are mapped to client game states as follows:</p>
+<pre><code>GameState.LOBBY: "open",
+GameState.LIVE: "playing",
+GameState.ENDED: "closed",
+GameState.INITIALIZING: "closed",
+</code></pre>
+<p>The client ignores everything "closed". This property fetches all such not-closed games.</p></div>
 </dd>
 <dt id="server.GameService.pending_games"><code class="name">prop <span class="ident">pending_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1804,6 +2525,7 @@ def pending_games(self) -&gt; list[Game]:
         if game.state in (GameState.LOBBY, GameState.INITIALIZING)
     ]</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -1812,78 +2534,364 @@ def pending_games(self) -&gt; list[Game]:
 <span>async def <span class="ident">close_lobby_games</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def close_lobby_games(self):
+    self._logger.info(&#34;Closing all games currently in lobby&#34;)
+    for game in self.pending_games:
+        for game_connection in list(game.connections):
+            # Tell the client to kill the FA process
+            game_connection.player.write_message({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;kill&#34;
+            })
+            await game_connection.abort()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameService.create_game"><code class="name flex">
-<span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame, visibility=VisibilityState.PUBLIC, host: Optional[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>] = None, name: Optional[str] = None, map: <a title="server.types.Map" href="types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1), password: Optional[str] = None, matchmaker_queue_id: Optional[int] = None, **kwargs)</span>
+<span>def <span class="ident">create_game</span></span>(<span>self,<br>game_mode: str,<br>game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame,<br>visibility=VisibilityState.PUBLIC,<br>host: <a title="server.players.Player" href="players.html#server.players.Player">Player</a> | None = None,<br>name: str | None = None,<br>map: <a title="server.types.Map" href="types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1),<br>password: str | None = None,<br>matchmaker_queue_id: int | None = None,<br>**kwargs)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_game(
+    self,
+    game_mode: str,
+    game_class: type[Game] = CustomGame,
+    visibility=VisibilityState.PUBLIC,
+    host: Optional[Player] = None,
+    name: Optional[str] = None,
+    map: Map = MAP_DEFAULT,
+    password: Optional[str] = None,
+    matchmaker_queue_id: Optional[int] = None,
+    **kwargs
+):
+    &#34;&#34;&#34;
+    Main entrypoint for creating new games
+    &#34;&#34;&#34;
+    if not self._allow_new_games:
+        raise DisabledError()
+
+    game_id = self.create_uid()
+    game_args = {
+        &#34;database&#34;: self._db,
+        &#34;id&#34;: game_id,
+        &#34;host&#34;: host,
+        &#34;name&#34;: name,
+        &#34;map&#34;: map,
+        &#34;game_mode&#34;: game_mode,
+        &#34;game_service&#34;: self,
+        &#34;game_stats_service&#34;: self.game_stats_service,
+        &#34;matchmaker_queue_id&#34;: matchmaker_queue_id,
+    }
+    game_args.update(kwargs)
+    game = game_class(**game_args)
+
+    self._games[game_id] = game
+
+    game.visibility = visibility
+    game.password = password
+
+    self.mark_dirty(game)
+    return game</code></pre>
+</details>
 <div class="desc"><p>Main entrypoint for creating new games</p></div>
 </dd>
 <dt id="server.GameService.create_uid"><code class="name flex">
 <span>def <span class="ident">create_uid</span></span>(<span>self) ‑> int</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_uid(self) -&gt; int:
+    self.game_id_counter += 1
+
+    return self.game_id_counter</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameService.drain_games"><code class="name flex">
 <span>async def <span class="ident">drain_games</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def drain_games(self):
+    &#34;&#34;&#34;
+    Wait for all games to finish.
+    &#34;&#34;&#34;
+    if not self._games:
+        return
+
+    if not self._drain_event:
+        self._drain_event = asyncio.Event()
+
+    await self._drain_event.wait()</code></pre>
+</details>
 <div class="desc"><p>Wait for all games to finish.</p></div>
 </dd>
 <dt id="server.GameService.get_map"><code class="name flex">
 <span>async def <span class="ident">get_map</span></span>(<span>self, folder_name: str) ‑> <a title="server.types.Map" href="types.html#server.types.Map">Map</a></span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def get_map(self, folder_name: str) -&gt; Map:
+    folder_name = folder_name.lower()
+    filename = f&#34;maps/{folder_name}.zip&#34;
+
+    map = self.map_info_cache.get(filename)
+    if map is not None:
+        return map
+
+    async with self._db.acquire() as conn:
+        result = await conn.execute(
+            select(
+                map_version.c.id,
+                map_version.c.filename,
+                map_version.c.ranked,
+            )
+            .where(
+                func.lower(map_version.c.filename) == filename
+            )
+        )
+        row = result.fetchone()
+        if not row:
+            # The map requested is not in the database. This is fine as
+            # players may be using privately shared or generated maps that
+            # are not in the vault.
+            return Map(
+                id=None,
+                folder_name=folder_name,
+                ranked=NeroxisGeneratedMap.is_neroxis_map(folder_name),
+            )
+
+        map = Map(
+            id=row.id,
+            folder_name=folder_name,
+            ranked=row.ranked
+        )
+        self.map_info_cache[filename] = map
+        return map</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameService.initialise_game_counter"><code class="name flex">
 <span>async def <span class="ident">initialise_game_counter</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def initialise_game_counter(self):
+    async with self._db.acquire() as conn:
+        # InnoDB, unusually, doesn&#39;t allow insertion of values greater than the next expected
+        # value into an auto_increment field. We&#39;d like to do that, because we no longer insert
+        # games into the database when they don&#39;t start, so game ids aren&#39;t contiguous (as
+        # unstarted games consume ids that never get written out).
+        # So, id has to just be an integer primary key, no auto-increment: we handle its
+        # incrementing here in game service, but have to do this slightly expensive query on
+        # startup (though the primary key index probably makes it super fast anyway).
+        # This is definitely a better choice than inserting useless rows when games are created,
+        # doing LAST_UPDATE_ID to get the id number, and then doing an UPDATE when the actual
+        # data to go into the row becomes available: we now only do a single insert for each
+        # game, and don&#39;t end up with 800,000 junk rows in the database.
+        sql = &#34;SELECT MAX(id) FROM game_stats&#34;
+        self.game_id_counter = await conn.scalar(sql) or 0</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameService.mark_dirty"><code class="name flex">
-<span>def <span class="ident">mark_dirty</span></span>(<span>self, obj: Union[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>, <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>])</span>
+<span>def <span class="ident">mark_dirty</span></span>(<span>self,<br>obj: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a> | <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
+    if isinstance(obj, Game):
+        self._dirty_games.add(obj)
+    elif isinstance(obj, MatchmakerQueue):
+        self._dirty_queues.add(obj)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameService.pop_dirty_games"><code class="name flex">
 <span>def <span class="ident">pop_dirty_games</span></span>(<span>self) ‑> set[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pop_dirty_games(self) -&gt; set[Game]:
+    dirty_games = self._dirty_games
+    self._dirty_games = set()
+
+    return dirty_games</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameService.pop_dirty_queues"><code class="name flex">
 <span>def <span class="ident">pop_dirty_queues</span></span>(<span>self) ‑> set[<a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pop_dirty_queues(self) -&gt; set[MatchmakerQueue]:
+    dirty_queues = self._dirty_queues
+    self._dirty_queues = set()
+
+    return dirty_queues</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameService.publish_game_results"><code class="name flex">
-<span>async def <span class="ident">publish_game_results</span></span>(<span>self, game_results: <a title="server.games.typedefs.EndedGameInfo" href="games/typedefs.html#server.games.typedefs.EndedGameInfo">EndedGameInfo</a>)</span>
+<span>async def <span class="ident">publish_game_results</span></span>(<span>self,<br>game_results: <a title="server.games.typedefs.EndedGameInfo" href="games/typedefs.html#server.games.typedefs.EndedGameInfo">EndedGameInfo</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def publish_game_results(self, game_results: EndedGameInfo):
+    result_dict = game_results.to_dict()
+    await self._message_queue_service.publish(
+        config.MQ_EXCHANGE_NAME,
+        &#34;success.gameResults.create&#34;,
+        result_dict,
+    )
+
+    if (
+        game_results.validity is ValidityState.VALID
+        and game_results.rating_type is not None
+    ):
+        metrics.rated_games.labels(game_results.rating_type).inc()
+        # TODO: Remove when rating service starts listening to message queue
+        await self._rating_service.enqueue(result_dict)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameService.remove_game"><code class="name flex">
-<span>def <span class="ident">remove_game</span></span>(<span>self, game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>)</span>
+<span>def <span class="ident">remove_game</span></span>(<span>self,<br>game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_game(self, game: Game):
+    if game.id in self._games:
+        self._logger.debug(&#34;Removing game %s&#34;, game)
+        del self._games[game.id]
+
+    if (
+        self._drain_event is not None
+        and not self._drain_event.is_set()
+        and not self._games
+    ):
+        self._drain_event.set()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameService.update_active_game_metrics"><code class="name flex">
 <span>def <span class="ident">update_active_game_metrics</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_active_game_metrics(self):
+    modes = list(self.featured_mods.keys())
+
+    game_counter = Counter(
+        (
+            game.game_mode if game.game_mode in modes else &#34;other&#34;,
+            game.state
+        )
+        for game in self._games.values()
+    )
+
+    for state in GameState:
+        for mode in modes + [&#34;other&#34;]:
+            metrics.active_games.labels(mode, state.name).set(
+                game_counter[(mode, state)]
+            )
+
+    rating_type_counter = Counter(
+        (
+            game.rating_type,
+            game.state
+        )
+        for game in self._games.values()
+    )
+
+    for state in GameState:
+        for rating_type in rating_type_counter.keys():
+            metrics.active_games_by_rating_type.labels(rating_type, state.name).set(
+                rating_type_counter[(rating_type, state)]
+            )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameService.update_data"><code class="name flex">
 <span>async def <span class="ident">update_data</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def update_data(self):
+    &#34;&#34;&#34;
+    Loads from the database the mostly-constant things that it doesn&#39;t make sense to query every
+    time we need, but which can in principle change over time.
+    &#34;&#34;&#34;
+    async with self._db.acquire() as conn:
+        rows = await conn.execute(
+            select(
+                game_featuredMods.c.id,
+                game_featuredMods.c.gamemod,
+                game_featuredMods.c.name,
+                game_featuredMods.c.description,
+                game_featuredMods.c.publish,
+                game_featuredMods.c.order
+            )
+        )
+
+        for row in rows:
+            self.featured_mods[row.gamemod] = FeaturedMod(
+                row.id,
+                row.gamemod,
+                row.name,
+                row.description,
+                row.publish,
+                row.order
+            )
+
+        result = await conn.execute(
+            &#34;SELECT uid FROM table_mod WHERE ranked = 1&#34;
+        )
+
+        # Turn resultset into a list of uids
+        self.ranked_mods = {row.uid for row in result}</code></pre>
+</details>
 <div class="desc"><p>Loads from the database the mostly-constant things that it doesn't make sense to query every
 time we need, but which can in principle change over time.</p></div>
 </dd>
@@ -1902,11 +2910,9 @@ time we need, but which can in principle change over time.</p></div>
 </dd>
 <dt id="server.GameStatsService"><code class="flex name class">
 <span>class <span class="ident">GameStatsService</span></span>
-<span>(</span><span>event_service: <a title="server.stats.event_service.EventService" href="stats/event_service.html#server.stats.event_service.EventService">EventService</a>, achievement_service: <a title="server.stats.achievement_service.AchievementService" href="stats/achievement_service.html#server.stats.achievement_service.AchievementService">AchievementService</a>)</span>
+<span>(</span><span>event_service: <a title="server.stats.event_service.EventService" href="stats/event_service.html#server.stats.event_service.EventService">EventService</a>,<br>achievement_service: <a title="server.stats.achievement_service.AchievementService" href="stats/achievement_service.html#server.stats.achievement_service.AchievementService">AchievementService</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>All services should inherit from this class.</p>
-<p>Services are singleton objects which manage some server task.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2204,6 +3210,8 @@ class GameStatsService(Service):
     def _record_event(self, event_id, count, events_queue):
         self._event_service.record_event(event_id, count, events_queue)</code></pre>
 </details>
+<div class="desc"><p>All services should inherit from this class.</p>
+<p>Services are singleton objects which manage some server task.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -2211,9 +3219,30 @@ class GameStatsService(Service):
 <h3>Methods</h3>
 <dl>
 <dt id="server.GameStatsService.process_game_stats"><code class="name flex">
-<span>async def <span class="ident">process_game_stats</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>, army_stats_list: list)</span>
+<span>async def <span class="ident">process_game_stats</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>,<br>army_stats_list: list)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def process_game_stats(
+    self,
+    player: Player,
+    game: Game,
+    army_stats_list: list
+):
+    try:
+        await self._process_game_stats(player, game, army_stats_list)
+    except KeyError as e:
+        self._logger.info(&#34;Malformed game stats. KeyError: %s&#34;, e)
+    except Exception:
+        self._logger.exception(
+            &#34;Error processing game stats for %s in game %d&#34;,
+            player.login,
+            game.id
+        )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -2233,10 +3262,6 @@ class GameStatsService(Service):
 <span>class <span class="ident">GeoIpService</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Service for managing the GeoIp database. This includes an asyncio crontab
-which periodically checks if the current file is out of date. If it is, then
-the service will try to download a new file from tue url in <code><a title="server.config" href="config.html">server.config</a></code>.</p>
-<p>Provides an interface for getting data out of the database.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2451,6 +3476,10 @@ class GeoIpService(Service):
         if self.db is not None:
             self.db.close()</code></pre>
 </details>
+<div class="desc"><p>Service for managing the GeoIp database. This includes an asyncio crontab
+which periodically checks if the current file is out of date. If it is, then
+the service will try to download a new file from tue url in <code><a title="server.config" href="config.html">server.config</a></code>.</p>
+<p>Provides an interface for getting data out of the database.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -2461,6 +3490,31 @@ class GeoIpService(Service):
 <span>def <span class="ident">check_geoip_db_file_updated</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_geoip_db_file_updated(self):
+    &#34;&#34;&#34;
+    Checks if the local database file has been updated by a server admin
+    and loads it if it has.
+    &#34;&#34;&#34;
+    if not os.path.isfile(self.file_path):
+        return
+
+    if self.db is None:
+        # We haven&#39;t loaded the file before
+        self.load_db()
+    else:
+        assert self.db_update_time is not None
+        # We have loaded the file, so check if it has been updated
+
+        date_modified = datetime.fromtimestamp(
+            os.path.getmtime(self.file_path)
+        )
+        if date_modified &gt; self.db_update_time:
+            self.load_db()</code></pre>
+</details>
 <div class="desc"><p>Checks if the local database file has been updated by a server admin
 and loads it if it has.</p></div>
 </dd>
@@ -2468,18 +3522,107 @@ and loads it if it has.</p></div>
 <span>async def <span class="ident">check_update_geoip_db</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def check_update_geoip_db(self) -&gt; None:
+    &#34;&#34;&#34;
+    Check if the geoip database is old and update it if so.
+    &#34;&#34;&#34;
+    if not config.GEO_IP_LICENSE_KEY:
+        self._logger.warning(
+            &#34;GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!&#34;
+        )
+        return
+
+    self._logger.debug(&#34;Checking if geoip database needs updating&#34;)
+    try:
+        date_modified = datetime.fromtimestamp(
+            os.path.getmtime(self.file_path)
+        )
+        delta = datetime.now() - date_modified
+
+        if delta.days &gt; config.GEO_IP_DATABASE_MAX_AGE_DAYS:
+            self._logger.info(&#34;Geoip database is out of date&#34;)
+            await self.download_geoip_db()
+    except FileNotFoundError:    # pragma: no cover
+        self._logger.warning(&#34;Geoip database is missing...&#34;)
+        await self.download_geoip_db()
+    except asyncio.TimeoutError:    # pragma: no cover
+        self._logger.warning(
+            &#34;Failed to download database file! &#34;
+            &#34;Check the network connection and try again&#34;
+        )
+    except Exception as e:    # pragma: no cover
+        self._logger.exception(e)
+        raise e
+
+    self.load_db()</code></pre>
+</details>
 <div class="desc"><p>Check if the geoip database is old and update it if so.</p></div>
 </dd>
 <dt id="server.GeoIpService.country"><code class="name flex">
 <span>def <span class="ident">country</span></span>(<span>self, address: str) ‑> str</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def country(self, address: str) -&gt; str:
+    &#34;&#34;&#34;
+    Look up an ip address in the db and return it&#39;s country code.
+    &#34;&#34;&#34;
+    default_value = &#34;&#34;
+    if self.db is None:
+        return default_value
+
+    entry = self.db.get(address)
+    if entry is None:
+        return default_value
+
+    return str(entry.get(&#34;country&#34;, {}).get(&#34;iso_code&#34;, default_value))</code></pre>
+</details>
 <div class="desc"><p>Look up an ip address in the db and return it's country code.</p></div>
 </dd>
 <dt id="server.GeoIpService.download_geoip_db"><code class="name flex">
 <span>async def <span class="ident">download_geoip_db</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def download_geoip_db(self) -&gt; None:
+    &#34;&#34;&#34;
+    Download the geoip database to a file. If the downloaded file is not
+    a valid gzip file, then it does NOT overwrite the old file.
+    &#34;&#34;&#34;
+    assert config.GEO_IP_LICENSE_KEY is not None
+
+    self._logger.info(&#34;Downloading new geoip database&#34;)
+
+    # Download new file to a temp location
+    with TemporaryFile() as temp_file:
+        await self._download_file(
+            config.GEO_IP_DATABASE_URL,
+            config.GEO_IP_LICENSE_KEY,
+            temp_file
+        )
+        temp_file.seek(0)
+
+        # Unzip the archive and overwrite the old file
+        try:
+            with tarfile.open(fileobj=temp_file, mode=&#34;r:gz&#34;) as tar:
+                with open(self.file_path, &#34;wb&#34;) as f_out:
+                    f_in = extract_file(tar, &#34;GeoLite2-Country.mmdb&#34;)
+                    shutil.copyfileobj(f_in, f_out)
+        except (tarfile.TarError) as e:    # pragma: no cover
+            self._logger.warning(&#34;Failed to extract downloaded file!&#34;)
+            raise e
+    self._logger.info(&#34;New database download complete&#34;)</code></pre>
+</details>
 <div class="desc"><p>Download the geoip database to a file. If the downloaded file is not
 a valid gzip file, then it does NOT overwrite the old file.</p></div>
 </dd>
@@ -2487,12 +3630,46 @@ a valid gzip file, then it does NOT overwrite the old file.</p></div>
 <span>def <span class="ident">load_db</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_db(self) -&gt; None:
+    &#34;&#34;&#34;
+    Loads the database into memory.
+    &#34;&#34;&#34;
+    # Set the time first, if the file is corrupted we don&#39;t need to try
+    # loading it again anyways
+    self.db_update_time = datetime.now()
+
+    try:
+        new_db = maxminddb.open_database(self.file_path)
+    except (InvalidDatabaseError, OSError, ValueError):
+        self._logger.exception(
+            &#34;Failed to load maxmind db! Maybe the download was interrupted&#34;
+        )
+    else:
+        if self.db is not None:
+            self.db.close()
+
+        self.db = new_db
+        self._logger.info(
+            &#34;File loaded successfully from %s&#34;, self.file_path
+        )</code></pre>
+</details>
 <div class="desc"><p>Loads the database into memory.</p></div>
 </dd>
 <dt id="server.GeoIpService.refresh_file_path"><code class="name flex">
 <span>def <span class="ident">refresh_file_path</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def refresh_file_path(self):
+    self.file_path = config.GEO_IP_DATABASE_PATH</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -2510,11 +3687,9 @@ a valid gzip file, then it does NOT overwrite the old file.</p></div>
 </dd>
 <dt id="server.LadderService"><code class="flex name class">
 <span>class <span class="ident">LadderService</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>, violation_service: <a title="server.ladder_service.violation_service.ViolationService" href="ladder_service/violation_service.html#server.ladder_service.violation_service.ViolationService">ViolationService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>,<br>violation_service: <a title="server.ladder_service.violation_service.ViolationService" href="ladder_service/violation_service.html#server.ladder_service.violation_service.ViolationService">ViolationService</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Service responsible for managing the automatches. Does matchmaking, updates
-statistics, and launches the games.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3200,6 +4375,8 @@ class LadderService(Service):
             for queue_name in list(searches.keys()):
                 self._cancel_search(player, queue_name)</code></pre>
 </details>
+<div class="desc"><p>Service responsible for managing the automatches. Does matchmaking, updates
+statistics, and launches the games.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -3207,71 +4384,568 @@ class LadderService(Service):
 <h3>Methods</h3>
 <dl>
 <dt id="server.LadderService.cancel_search"><code class="name flex">
-<span>def <span class="ident">cancel_search</span></span>(<span>self, initiator: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, queue_name: Optional[str] = None) ‑> None</span>
+<span>def <span class="ident">cancel_search</span></span>(<span>self,<br>initiator: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>queue_name: str | None = None) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cancel_search(
+    self,
+    initiator: Player,
+    queue_name: Optional[str] = None
+) -&gt; None:
+    if queue_name is None:
+        queue_names = list(self._searches[initiator].keys())
+    else:
+        queue_names = [queue_name]
+
+    for queue_name in queue_names:
+        self._cancel_search(initiator, queue_name)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.LadderService.fetch_map_pools"><code class="name flex">
 <span>async def <span class="ident">fetch_map_pools</span></span>(<span>self, conn) ‑> dict[int, tuple[str, list[<a title="server.types.Map" href="types.html#server.types.Map">Map</a>]]]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def fetch_map_pools(self, conn) -&gt; dict[int, tuple[str, list[Map]]]:
+    result = await conn.execute(
+        select(
+            map_pool.c.id,
+            map_pool.c.name,
+            map_pool_map_version.c.weight,
+            map_pool_map_version.c.map_params,
+            map_version.c.id.label(&#34;map_id&#34;),
+            map_version.c.filename,
+            map_version.c.ranked,
+        ).select_from(
+            map_pool.outerjoin(map_pool_map_version)
+            .outerjoin(map_version)
+        )
+    )
+    map_pool_maps = {}
+    for row in result:
+        id_ = row.id
+        name = row.name
+        if id_ not in map_pool_maps:
+            map_pool_maps[id_] = (name, list())
+        _, map_list = map_pool_maps[id_]
+        if row.map_id is not None:
+            # Database filenames contain the maps/ prefix and .zip suffix.
+            # This comes from the content server which hosts the files at
+            # https://content.faforever.com/maps/name.zip
+            folder_name = re.match(r&#34;maps/(.+)\.zip&#34;, row.filename).group(1)
+            map_list.append(
+                Map(
+                    id=row.map_id,
+                    folder_name=folder_name,
+                    ranked=row.ranked,
+                    weight=row.weight,
+                )
+            )
+        elif row.map_params is not None:
+            try:
+                params = json.loads(row.map_params)
+                map_type = params[&#34;type&#34;]
+                if map_type == &#34;neroxis&#34;:
+                    map_list.append(
+                        NeroxisGeneratedMap.of(params, row.weight)
+                    )
+                else:
+                    self._logger.warning(
+                        &#34;Unsupported map type %s in pool %s&#34;,
+                        map_type,
+                        row.id
+                    )
+
+            except Exception:
+                self._logger.warning(
+                    &#34;Failed to load map in map pool %d. &#34;
+                    &#34;Parameters are &#39;%s&#39;&#34;,
+                    row.id,
+                    row.map_params,
+                    exc_info=True
+                )
+
+    return map_pool_maps</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.LadderService.fetch_matchmaker_queues"><code class="name flex">
 <span>async def <span class="ident">fetch_matchmaker_queues</span></span>(<span>self, conn)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def fetch_matchmaker_queues(self, conn):
+    result = await conn.execute(
+        select(
+            matchmaker_queue.c.id,
+            matchmaker_queue.c.technical_name,
+            matchmaker_queue.c.team_size,
+            matchmaker_queue.c.params,
+            matchmaker_queue_map_pool.c.map_pool_id,
+            matchmaker_queue_map_pool.c.min_rating,
+            matchmaker_queue_map_pool.c.max_rating,
+            game_featuredMods.c.gamemod,
+            leaderboard.c.technical_name.label(&#34;rating_type&#34;)
+        )
+        .select_from(
+            matchmaker_queue
+            .join(matchmaker_queue_map_pool)
+            .join(game_featuredMods)
+            .join(leaderboard)
+        ).where(matchmaker_queue.c.enabled == true())
+    )
+    # So we don&#39;t log the same error multiple times when a queue has several
+    # map pools
+    errored = set()
+    matchmaker_queues = defaultdict(lambda: defaultdict(list))
+    for row in result:
+        name = row.technical_name
+        if name in errored:
+            continue
+        info = matchmaker_queues[name]
+        try:
+            info[&#34;id&#34;] = row.id
+            info[&#34;mod&#34;] = row.gamemod
+            info[&#34;rating_type&#34;] = row.rating_type
+            info[&#34;team_size&#34;] = row.team_size
+            info[&#34;params&#34;] = json.loads(row.params) if row.params else None
+            info[&#34;map_pools&#34;].append((
+                row.map_pool_id,
+                row.min_rating,
+                row.max_rating
+            ))
+        except Exception:
+            self._logger.warning(
+                &#34;Unable to load queue &#39;%s&#39;!&#34;,
+                name,
+                exc_info=True
+            )
+            del matchmaker_queues[name]
+            errored.add(name)
+    return matchmaker_queues</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.LadderService.fetch_rating_peak"><code class="name flex">
 <span>async def <span class="ident">fetch_rating_peak</span></span>(<span>self, rating_type)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def fetch_rating_peak(self, rating_type):
+    async with self._db.acquire() as conn:
+        result = await conn.execute(
+            select(
+                leaderboard_rating_journal.c.rating_mean_before,
+                leaderboard_rating_journal.c.rating_deviation_before
+            )
+            .select_from(leaderboard_rating_journal.join(leaderboard))
+            .where(leaderboard.c.technical_name == rating_type)
+            .order_by(leaderboard_rating_journal.c.id.desc())
+            .limit(1000)
+        )
+        rows = result.fetchall()
+        rowcount = len(rows)
+
+        rating_peak = 1000.0
+        if rowcount &gt; 0:
+            rating_peak = statistics.mean(
+                row.rating_mean_before - 3 * row.rating_deviation_before for row in rows
+            )
+        metrics.leaderboard_rating_peak.labels(rating_type).set(rating_peak)
+
+        if rowcount &lt; 100:
+            self._logger.warning(
+                &#34;Could only fetch %s ratings for %s queue.&#34;,
+                rowcount,
+                rating_type
+            )
+
+        if rating_peak &lt; 600 or rating_peak &gt; 1200:
+            self._logger.warning(
+                &#34;Estimated rating peak for %s is %s. This could lead to issues with matchmaking.&#34;,
+                rating_type,
+                rating_peak
+            )
+        else:
+            self._logger.info(
+                &#34;Estimated rating peak for %s is %s.&#34;,
+                rating_type,
+                rating_peak
+            )
+
+        return rating_peak</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.LadderService.get_game_history"><code class="name flex">
-<span>async def <span class="ident">get_game_history</span></span>(<span>self, players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue_id: int, limit: int = 3) ‑> list[int]</span>
+<span>async def <span class="ident">get_game_history</span></span>(<span>self,<br>players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>],<br>queue_id: int,<br>limit: int = 3) ‑> list[int]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def get_game_history(
+    self,
+    players: list[Player],
+    queue_id: int,
+    limit: int = 3
+) -&gt; list[int]:
+    async with self._db.acquire() as conn:
+        result = []
+        for player in players:
+            query = select(
+                game_stats.c.mapId,
+            ).select_from(
+                game_player_stats
+                .join(game_stats)
+                .join(matchmaker_queue_game)
+            ).where(
+                and_(
+                    game_player_stats.c.playerId == player.id,
+                    game_stats.c.startTime &gt;= func.DATE_SUB(
+                        func.now(),
+                        text(&#34;interval 1 day&#34;)
+                    ),
+                    matchmaker_queue_game.c.matchmaker_queue_id == queue_id
+                )
+            ).order_by(
+                game_stats.c.startTime.desc(),
+                # Timestamps only have second resolution, so for this to
+                # work correctly in the unit tests we also need id
+                game_stats.c.id.desc()
+            ).limit(limit)
+
+            result.extend([
+                row.mapId for row in await conn.execute(query)
+            ])
+    return result</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.LadderService.launch_match"><code class="name flex">
-<span>async def <span class="ident">launch_match</span></span>(<span>self, game: <a title="server.games.ladder_game.LadderGame" href="games/ladder_game.html#server.games.ladder_game.LadderGame">LadderGame</a>, host: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, guests: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], make_game_options: Callable[[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], <a title="server.types.GameLaunchOptions" href="types.html#server.types.GameLaunchOptions">GameLaunchOptions</a>])</span>
+<span>async def <span class="ident">launch_match</span></span>(<span>self,<br>game: <a title="server.games.ladder_game.LadderGame" href="games/ladder_game.html#server.games.ladder_game.LadderGame">LadderGame</a>,<br>host: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>guests: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>],<br>make_game_options: Callable[[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], <a title="server.types.GameLaunchOptions" href="types.html#server.types.GameLaunchOptions">GameLaunchOptions</a>])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def launch_match(
+    self,
+    game: LadderGame,
+    host: Player,
+    guests: list[Player],
+    make_game_options: Callable[[Player], GameLaunchOptions]
+):
+    # Launch the host
+    if host.lobby_connection is None:
+        raise NotConnectedError([host])
+
+    host.lobby_connection.write_launch_game(
+        game,
+        is_host=True,
+        options=make_game_options(host)
+    )
+
+    try:
+        await game.wait_hosted(60)
+    except asyncio.TimeoutError:
+        raise NotConnectedError([host])
+    finally:
+        # TODO: Once the client supports `match_cancelled`, don&#39;t
+        # send `launch_game` to the client if the host timed out. Until
+        # then, failing to send `launch_game` will cause the client to
+        # think it is searching for ladder, even though the server has
+        # already removed it from the queue.
+
+        # Launch the guests
+        not_connected_guests = [
+            player for player in guests
+            if player.lobby_connection is None
+        ]
+        if not_connected_guests:
+            raise NotConnectedError(not_connected_guests)
+
+        for guest in guests:
+            assert guest.lobby_connection is not None
+
+            guest.lobby_connection.write_launch_game(
+                game,
+                is_host=False,
+                options=make_game_options(guest)
+            )
+    try:
+        await game.wait_launched(60 + 10 * len(guests))
+    except asyncio.TimeoutError:
+        connected_players = game.get_connected_players()
+        raise NotConnectedError([
+            player for player in guests
+            if player not in connected_players
+        ])</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.LadderService.on_match_found"><code class="name flex">
-<span>def <span class="ident">on_match_found</span></span>(<span>self, s1: <a title="server.matchmaker.search.Search" href="matchmaker/search.html#server.matchmaker.search.Search">Search</a>, s2: <a title="server.matchmaker.search.Search" href="matchmaker/search.html#server.matchmaker.search.Search">Search</a>, queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> None</span>
+<span>def <span class="ident">on_match_found</span></span>(<span>self,<br>s1: <a title="server.matchmaker.search.Search" href="matchmaker/search.html#server.matchmaker.search.Search">Search</a>,<br>s2: <a title="server.matchmaker.search.Search" href="matchmaker/search.html#server.matchmaker.search.Search">Search</a>,<br>queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def on_match_found(
+    self,
+    s1: Search,
+    s2: Search,
+    queue: MatchmakerQueue
+) -&gt; None:
+    &#34;&#34;&#34;
+    Callback for when a match is generated by a matchmaker queue.
+
+    NOTE: This function is called while the matchmaker search lock is held,
+    so it should only perform fast operations.
+    &#34;&#34;&#34;
+    try:
+        msg = {&#34;command&#34;: &#34;match_found&#34;, &#34;queue_name&#34;: queue.name}
+
+        for player in s1.players + s2.players:
+            player.state = PlayerState.STARTING_AUTOMATCH
+            player.write_message(msg)
+
+            # Cancel any other searches
+            queue_names = list(
+                name for name in self._searches[player].keys()
+                if name != queue.name
+            )
+            for queue_name in queue_names:
+                self._cancel_search(player, queue_name)
+
+            self._clear_search(player, queue.name)
+
+        asyncio.create_task(self.start_game(s1.players, s2.players, queue))
+    except Exception:
+        self._logger.exception(
+            &#34;Error processing match between searches %s, and %s&#34;,
+            s1, s2
+        )</code></pre>
+</details>
 <div class="desc"><p>Callback for when a match is generated by a matchmaker queue.</p>
 <p>NOTE: This function is called while the matchmaker search lock is held,
 so it should only perform fast operations.</p></div>
 </dd>
 <dt id="server.LadderService.start_game"><code class="name flex">
-<span>def <span class="ident">start_game</span></span>(<span>self, team1: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], team2: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> Awaitable[None]</span>
+<span>def <span class="ident">start_game</span></span>(<span>self,<br>team1: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>],<br>team2: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>],<br>queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> Awaitable[None]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def start_game(
+    self,
+    team1: list[Player],
+    team2: list[Player],
+    queue: MatchmakerQueue
+) -&gt; Awaitable[None]:
+    # We want assertion errors to trigger when the caller attempts to
+    # create the async function, not when the function starts executing.
+    assert len(team1) == len(team2)
+
+    return self._start_game(team1, team2, queue)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.LadderService.start_search"><code class="name flex">
-<span>def <span class="ident">start_search</span></span>(<span>self, players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>], queue_name: str, on_matched: Callable[[ForwardRef('Search'), ForwardRef('Search')], Any] = &lt;function LadderService.&lt;lambda&gt;&gt;)</span>
+<span>def <span class="ident">start_search</span></span>(<span>self,<br>players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>],<br>queue_name: str,<br>on_matched: Callable[[ForwardRef('Search'), ForwardRef('Search')], Any] = &lt;function LadderService.&lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def start_search(
+    self,
+    players: list[Player],
+    queue_name: str,
+    on_matched: OnMatchedCallback = lambda _1, _2: None
+):
+    if not self._allow_new_searches:
+        raise DisabledError()
+
+    timeouts = self.violation_service.get_violations(players)
+    if timeouts:
+        self._logger.debug(&#34;timeouts: %s&#34;, timeouts)
+        times = [
+            {
+                &#34;player&#34;: p.id,
+                &#34;expires_at&#34;: violation.get_ban_expiration().isoformat()
+            }
+            for p, violation in timeouts.items()
+        ]
+        for player in players:
+            player.write_message({
+                &#34;command&#34;: &#34;search_timeout&#34;,
+                &#34;timeouts&#34;: times
+            })
+            # TODO: Do we need this or is `search_timeout` enough?
+            player.write_message({
+                &#34;command&#34;: &#34;search_info&#34;,
+                &#34;queue_name&#34;: queue_name,
+                &#34;state&#34;: &#34;stop&#34;
+            })
+            # For compatibility with clients that don&#39;t understand
+            # `search_timeout` only. This may be removed at any time.
+            if len(times) == 1:
+                s = &#34;&#34;
+                are = &#34;is&#34;
+            else:
+                s = &#34;s&#34;
+                are = &#34;are&#34;
+            names = &#34;, &#34;.join(p.login for p in timeouts)
+            max_time = humanize.naturaldelta(
+                max(
+                    timeouts.values(),
+                    key=lambda v: v.get_ban_expiration()
+                ).get_remaining()
+            )
+            player.write_message({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;info&#34;,
+                &#34;text&#34;: f&#34;Player{s} {names} {are} timed out for {max_time}&#34;
+            })
+        return
+    # Cancel any existing searches that players have for this queue
+    for player in players:
+        if queue_name in self._searches[player]:
+            self._cancel_search(player, queue_name)
+
+    queue = self.queues[queue_name]
+    search = Search(
+        players,
+        rating_type=queue.rating_type,
+        on_matched=on_matched
+    )
+
+    for player in players:
+        player.state = PlayerState.SEARCHING_LADDER
+
+        self.write_rating_progress(player, queue.rating_type)
+
+        player.write_message({
+            &#34;command&#34;: &#34;search_info&#34;,
+            &#34;queue_name&#34;: queue_name,
+            &#34;state&#34;: &#34;start&#34;
+        })
+
+        self._searches[player][queue_name] = search
+
+    self._logger.info(&#34;%s started searching for %s&#34;, search, queue_name)
+
+    asyncio.create_task(queue.search(search))</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.LadderService.update_data"><code class="name flex">
 <span>async def <span class="ident">update_data</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def update_data(self) -&gt; None:
+    async with self._db.acquire() as conn:
+        map_pool_maps = await self.fetch_map_pools(conn)
+        db_queues = await self.fetch_matchmaker_queues(conn)
+
+    for name, info in db_queues.items():
+        if name not in self.queues:
+            queue = MatchmakerQueue(
+                self.game_service,
+                self.on_match_found,
+                name=name,
+                queue_id=info[&#34;id&#34;],
+                featured_mod=info[&#34;mod&#34;],
+                rating_type=info[&#34;rating_type&#34;],
+                team_size=info[&#34;team_size&#34;],
+                params=info.get(&#34;params&#34;)
+            )
+            self.queues[name] = queue
+            queue.initialize()
+        else:
+            queue = self.queues[name]
+            queue.featured_mod = info[&#34;mod&#34;]
+            queue.rating_type = info[&#34;rating_type&#34;]
+            queue.team_size = info[&#34;team_size&#34;]
+            queue.rating_peak = await self.fetch_rating_peak(info[&#34;rating_type&#34;])
+        queue.map_pools.clear()
+        for map_pool_id, min_rating, max_rating in info[&#34;map_pools&#34;]:
+            map_pool_name, map_list = map_pool_maps[map_pool_id]
+            if not map_list:
+                self._logger.warning(
+                    &#34;Map pool &#39;%s&#39; is empty! Some %s games will &#34;
+                    &#34;likely fail to start!&#34;,
+                    map_pool_name,
+                    name
+                )
+            queue.add_map_pool(
+                MapPool(map_pool_id, map_pool_name, map_list),
+                min_rating,
+                max_rating
+            )
+    # Remove queues that don&#39;t exist anymore
+    for queue_name in list(self.queues.keys()):
+        if queue_name not in db_queues:
+            self.queues[queue_name].shutdown()
+            del self.queues[queue_name]</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.LadderService.write_rating_progress"><code class="name flex">
-<span>def <span class="ident">write_rating_progress</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, rating_type: str) ‑> None</span>
+<span>def <span class="ident">write_rating_progress</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>rating_type: str) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_rating_progress(self, player: Player, rating_type: str) -&gt; None:
+    if player not in self._informed_players:
+        self._informed_players.add(player)
+        _, deviation = player.ratings[rating_type]
+
+        if deviation &gt; 490:
+            player.write_message({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;info&#34;,
+                &#34;text&#34;: (
+                    &#34;&lt;i&gt;Welcome to the matchmaker&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;The &#34;
+                    &#34;matchmaking system needs to calibrate your skill level; &#34;
+                    &#34;your first few games may be more imbalanced as the &#34;
+                    &#34;system attempts to learn your capability as a player.&#34;
+                    &#34;&lt;/b&gt;&lt;br&gt;&lt;b&gt;&#34;
+                    &#34;Afterwards, you&#39;ll be more reliably matched up with &#34;
+                    &#34;people of your skill level: so don&#39;t worry if your &#34;
+                    &#34;first few games are uneven. This will improve as you &#34;
+                    &#34;play!&lt;/b&gt;&#34;
+                )
+            })</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -3291,8 +4965,6 @@ so it should only perform fast operations.</p></div>
 <span>class <span class="ident">MessageQueueService</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Service handling connection to the message queue
-and providing an interface to publish messages.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3468,6 +5140,8 @@ class MessageQueueService(Service):
             )
         self._is_ready = True</code></pre>
 </details>
+<div class="desc"><p>Service handling connection to the message queue
+and providing an interface to publish messages.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -3475,27 +5149,124 @@ class MessageQueueService(Service):
 <h3>Methods</h3>
 <dl>
 <dt id="server.MessageQueueService.declare_exchange"><code class="name flex">
-<span>async def <span class="ident">declare_exchange</span></span>(<span>self, exchange_name: str, exchange_type: aio_pika.abc.ExchangeType = ExchangeType.TOPIC, durable: bool = True) ‑> None</span>
+<span>async def <span class="ident">declare_exchange</span></span>(<span>self,<br>exchange_name: str,<br>exchange_type: aio_pika.abc.ExchangeType = ExchangeType.TOPIC,<br>durable: bool = True) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def declare_exchange(
+    self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC, durable: bool = True
+) -&gt; None:
+    await self.initialize()
+    if not self._is_ready:
+        self._logger.warning(
+            &#34;Not connected to RabbitMQ, unable to declare exchange.&#34;
+        )
+        return
+
+    await self._declare_exchange(exchange_name, exchange_type, durable)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.MessageQueueService.publish"><code class="name flex">
-<span>async def <span class="ident">publish</span></span>(<span>self, exchange_name: str, routing: str, payload: dict, mandatory: bool = False, delivery_mode: aio_pika.abc.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
+<span>async def <span class="ident">publish</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payload: dict,<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def publish(
+    self,
+    exchange_name: str,
+    routing: str,
+    payload: dict,
+    mandatory: bool = False,
+    delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+) -&gt; None:
+    await self.publish_many(
+        exchange_name,
+        routing,
+        [payload],
+        mandatory=mandatory,
+        delivery_mode=delivery_mode
+    )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.MessageQueueService.publish_many"><code class="name flex">
-<span>async def <span class="ident">publish_many</span></span>(<span>self, exchange_name: str, routing: str, payloads: Iterable[dict], mandatory: bool = False, delivery_mode: aio_pika.abc.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
+<span>async def <span class="ident">publish_many</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payloads: Iterable[dict],<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def publish_many(
+    self,
+    exchange_name: str,
+    routing: str,
+    payloads: Iterable[dict],
+    mandatory: bool = False,
+    delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+) -&gt; None:
+    if not self._is_ready:
+        self._logger.warning(
+            &#34;Not connected to RabbitMQ, unable to publish message.&#34;
+        )
+        return
+
+    exchange = self._exchanges.get(exchange_name)
+    if exchange is None:
+        raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
+
+    async with self._channel.transaction():
+        for payload in payloads:
+            message = aio_pika.Message(
+                json.dumps(payload).encode(),
+                delivery_mode=delivery_mode
+            )
+            await exchange.publish(
+                message,
+                routing_key=routing,
+                mandatory=mandatory
+            )
+            self._logger.log(
+                TRACE,
+                &#34;Published message %s to %s/%s&#34;,
+                payload,
+                exchange_name,
+                routing
+            )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.MessageQueueService.reconnect"><code class="name flex">
 <span>async def <span class="ident">reconnect</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@synchronizedmethod(&#34;initialization_lock&#34;)
+async def reconnect(self) -&gt; None:
+    self._is_ready = False
+    await self._shutdown()
+
+    try:
+        await self._connect()
+    except ConnectionAttemptFailed:
+        return
+
+    for exchange_name in list(self._exchanges.keys()):
+        await self._declare_exchange(
+            exchange_name, self._exchange_types[exchange_name]
+        )
+    self._is_ready = True</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -3515,7 +5286,6 @@ class MessageQueueService(Service):
 <span>class <span class="ident">OAuthService</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Service for managing the OAuth token logins and verification.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3603,6 +5373,7 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
         except (InvalidTokenError, KeyError, ValueError):
             raise AuthenticationError(&#34;Token signature was invalid&#34;, &#34;token&#34;)</code></pre>
 </details>
+<div class="desc"><p>Service for managing the OAuth token logins and verification.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -3613,18 +5384,95 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
 <span>async def <span class="ident">get_player_id_from_token</span></span>(<span>self, token: str) ‑> int</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def get_player_id_from_token(self, token: str) -&gt; int:
+    &#34;&#34;&#34;
+    Decode the JWT to get the player_id
+    &#34;&#34;&#34;
+    # Ensures that if we&#39;re missing the jwks we will try to fetch them on
+    # each new login request. This way our login functionality will be
+    # restored as soon as possible
+    keys = await self.get_public_keys()
+    try:
+        kid = jwt.get_unverified_header(token)[&#34;kid&#34;]
+        key = keys[kid]
+        decoded = jwt.decode(
+            token,
+            key=key,
+            algorithms=&#34;RS256&#34;,
+            options={&#34;verify_aud&#34;: False}
+        )
+
+        if &#34;lobby&#34; not in decoded[&#34;scp&#34;]:
+            raise AuthenticationError(
+                &#34;Token does not have permission to login to the lobby server&#34;,
+                &#34;token&#34;
+            )
+
+        return int(decoded[&#34;sub&#34;])
+    except (InvalidTokenError, KeyError, ValueError):
+        raise AuthenticationError(&#34;Token signature was invalid&#34;, &#34;token&#34;)</code></pre>
+</details>
 <div class="desc"><p>Decode the JWT to get the player_id</p></div>
 </dd>
 <dt id="server.OAuthService.get_public_keys"><code class="name flex">
 <span>async def <span class="ident">get_public_keys</span></span>(<span>self) ‑> dict</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@synchronizedmethod
+async def get_public_keys(self) -&gt; dict:
+    &#34;&#34;&#34;
+    Return cached keys, or fetch them if they&#39;re missing
+    &#34;&#34;&#34;
+    if not self.public_keys:
+        # Rate limit requests so we don&#39;t spam the endpoint when it&#39;s down
+        if (
+            not self._last_key_fetch_time or
+            time.monotonic() - self._last_key_fetch_time &gt; 5
+        ):
+            await self.retrieve_public_keys()
+
+        if not self.public_keys:
+            raise RuntimeError(&#34;jwks could not be retrieved&#34;)
+
+    return self.public_keys</code></pre>
+</details>
 <div class="desc"><p>Return cached keys, or fetch them if they're missing</p></div>
 </dd>
 <dt id="server.OAuthService.retrieve_public_keys"><code class="name flex">
 <span>async def <span class="ident">retrieve_public_keys</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def retrieve_public_keys(self) -&gt; None:
+    &#34;&#34;&#34;
+    Get the latest jwks from the hydra endpoint
+    &#34;&#34;&#34;
+    self._last_key_fetch_time = time.monotonic()
+    try:
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(config.HYDRA_JWKS_URI) as resp:
+                jwks = await resp.json()
+                self.public_keys = {
+                    jwk[&#34;kid&#34;]: RSAAlgorithm.from_jwk(jwk)
+                    for jwk in jwks[&#34;keys&#34;]
+                }
+        self._logger.info(&#34;Got public keys from %s&#34;, config.HYDRA_JWKS_URI)
+    except Exception:
+        self._logger.exception(
+            &#34;Unable to retrieve jwks, token login will be unavailable!&#34;
+        )</code></pre>
+</details>
 <div class="desc"><p>Get the latest jwks from the hydra endpoint</p></div>
 </dd>
 </dl>
@@ -3645,9 +5493,6 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
 <span>(</span><span>game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Service responsible for managing the player parties.</p>
-<p>Logically, we consider players to always be in a party, either alone, or
-with other players.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3832,6 +5677,9 @@ class PartyService(Service):
             self.player_parties[conn.player]
         )</code></pre>
 </details>
+<div class="desc"><p>Service responsible for managing the player parties.</p>
+<p>Logically, we consider players to always be in a party, either alone, or
+with other players.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -3839,64 +5687,245 @@ class PartyService(Service):
 <h3>Methods</h3>
 <dl>
 <dt id="server.PartyService.accept_invite"><code class="name flex">
-<span>async def <span class="ident">accept_invite</span></span>(<span>self, recipient: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, sender: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
+<span>async def <span class="ident">accept_invite</span></span>(<span>self,<br>recipient: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>sender: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def accept_invite(self, recipient: Player, sender: Player):
+    party = self.player_parties.get(sender)
+    if (
+        not party or
+        recipient not in party.invited_players or
+        party.invited_players[recipient].is_expired()
+    ):
+        # TODO: Localize with a proper message
+        raise ClientError(&#34;You are not invited to that party (anymore)&#34;, recoverable=True)
+
+    if sender.state is PlayerState.SEARCHING_LADDER:
+        # TODO: Localize with a proper message
+        raise ClientError(&#34;That party is already in queue&#34;, recoverable=True)
+
+    old_party = self.player_parties.get(recipient)
+    if old_party is not None:
+        # Preserve state (like faction selection) from the old party
+        member = old_party.get_member_by_player(recipient)
+        assert member is not None
+
+        await self.leave_party(recipient)
+        party.add_member(member)
+    else:
+        party.add_player(recipient)
+
+    self.player_parties[recipient] = party
+    self.mark_dirty(party)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PartyService.get_party"><code class="name flex">
-<span>def <span class="ident">get_party</span></span>(<span>self, owner: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>) ‑> <a title="server.team_matchmaker.player_party.PlayerParty" href="team_matchmaker/player_party.html#server.team_matchmaker.player_party.PlayerParty">PlayerParty</a></span>
+<span>def <span class="ident">get_party</span></span>(<span>self,<br>owner: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>) ‑> <a title="server.team_matchmaker.player_party.PlayerParty" href="team_matchmaker/player_party.html#server.team_matchmaker.player_party.PlayerParty">PlayerParty</a></span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_party(self, owner: Player) -&gt; PlayerParty:
+    party = self.player_parties.get(owner)
+    if not party:
+        party = PlayerParty(owner)
+        self.player_parties[owner] = party
+
+    return party</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PartyService.invite_player_to_party"><code class="name flex">
-<span>def <span class="ident">invite_player_to_party</span></span>(<span>self, sender: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, recipient: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
+<span>def <span class="ident">invite_player_to_party</span></span>(<span>self,<br>sender: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>recipient: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def invite_player_to_party(self, sender: Player, recipient: Player):
+    &#34;&#34;&#34;
+    Creates a new party for `sender` if one doesn&#39;t exist, and invites
+    `recipient` to that party.
+    &#34;&#34;&#34;
+    if sender not in self.player_parties:
+        self.player_parties[sender] = PlayerParty(sender)
+
+    party = self.player_parties[sender]
+
+    if party.owner != sender:
+        raise ClientError(&#34;You do not own this party.&#34;, recoverable=True)
+
+    party.add_invited_player(recipient)
+    recipient.write_message({
+        &#34;command&#34;: &#34;party_invite&#34;,
+        &#34;sender&#34;: sender.id
+    })</code></pre>
+</details>
 <div class="desc"><p>Creates a new party for <code>sender</code> if one doesn't exist, and invites
 <code>recipient</code> to that party.</p></div>
 </dd>
 <dt id="server.PartyService.kick_player_from_party"><code class="name flex">
-<span>async def <span class="ident">kick_player_from_party</span></span>(<span>self, owner: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, kicked_player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
+<span>async def <span class="ident">kick_player_from_party</span></span>(<span>self,<br>owner: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>kicked_player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def kick_player_from_party(self, owner: Player, kicked_player: Player):
+    if owner not in self.player_parties:
+        raise ClientError(&#34;You are not in a party.&#34;, recoverable=True)
+
+    party = self.player_parties[owner]
+
+    if party.owner != owner:
+        raise ClientError(&#34;You do not own that party.&#34;, recoverable=True)
+
+    if kicked_player not in party:
+        # Client state appears to be out of date
+        await party.send_party(owner)
+        return
+
+    party.remove_player(kicked_player)
+    del self.player_parties[kicked_player]
+
+    kicked_player.write_message({&#34;command&#34;: &#34;kicked_from_party&#34;})
+
+    self.mark_dirty(party)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PartyService.leave_party"><code class="name flex">
-<span>async def <span class="ident">leave_party</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
+<span>async def <span class="ident">leave_party</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def leave_party(self, player: Player):
+    if player not in self.player_parties:
+        raise ClientError(&#34;You are not in a party.&#34;, recoverable=True)
+
+    party = self.player_parties[player]
+    self._remove_player_from_party(player, party)
+    # TODO: Remove?
+    await party.send_party(player)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PartyService.mark_dirty"><code class="name flex">
-<span>def <span class="ident">mark_dirty</span></span>(<span>self, party: <a title="server.team_matchmaker.player_party.PlayerParty" href="team_matchmaker/player_party.html#server.team_matchmaker.player_party.PlayerParty">PlayerParty</a>)</span>
+<span>def <span class="ident">mark_dirty</span></span>(<span>self,<br>party: <a title="server.team_matchmaker.player_party.PlayerParty" href="team_matchmaker/player_party.html#server.team_matchmaker.player_party.PlayerParty">PlayerParty</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mark_dirty(self, party: PlayerParty):
+    self._dirty_parties.add(party)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PartyService.remove_party"><code class="name flex">
 <span>def <span class="ident">remove_party</span></span>(<span>self, party)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_party(self, party):
+    # Remove all players who were in the party
+    for member in party:
+        self._logger.info(&#34;Removing party for player %s&#34;, member.player)
+        if party == self.player_parties.get(member.player):
+            del self.player_parties[member.player]
+        else:
+            self._logger.warning(
+                &#34;Player %s was in two parties at once!&#34;, member.player
+            )
+
+    members = party.members
+    party.clear()
+    # TODO: Send a special &#34;disbanded&#34; command?
+    self.write_broadcast_party(party, members=members)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PartyService.set_factions"><code class="name flex">
-<span>def <span class="ident">set_factions</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, factions: list[<a title="server.factions.Faction" href="factions.html#server.factions.Faction">Faction</a>])</span>
+<span>def <span class="ident">set_factions</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>factions: list[<a title="server.factions.Faction" href="factions.html#server.factions.Faction">Faction</a>])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_factions(self, player: Player, factions: list[Faction]):
+    if player not in self.player_parties:
+        self.player_parties[player] = PlayerParty(player)
+
+    party = self.player_parties[player]
+    party.set_factions(player, factions)
+    self.mark_dirty(party)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PartyService.update_dirties"><code class="name flex">
 <span>async def <span class="ident">update_dirties</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def update_dirties(self):
+    if not self._dirty_parties:
+        return
+
+    dirty_parties = self._dirty_parties
+    self._dirty_parties = set()
+
+    for party in dirty_parties:
+        try:
+            self.write_broadcast_party(party)
+        except Exception:  # pragma: no cover
+            self._logger.exception(
+                &#34;Unexpected exception while sending party updates!&#34;
+            )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PartyService.write_broadcast_party"><code class="name flex">
 <span>def <span class="ident">write_broadcast_party</span></span>(<span>self, party, members=None)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_broadcast_party(self, party, members=None):
+    &#34;&#34;&#34;
+    Send a party update to all players in the party
+    &#34;&#34;&#34;
+    if not members:
+        members = iter(party)
+    msg = {
+        &#34;command&#34;: &#34;update_party&#34;,
+        **party.to_dict()
+    }
+    for member in members:
+        # Will re-encode the message for each player
+        member.player.write_message(msg)</code></pre>
+</details>
 <div class="desc"><p>Send a party update to all players in the party</p></div>
 </dd>
 </dl>
@@ -3917,8 +5946,6 @@ class PartyService(Service):
 <span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>All services should inherit from this class.</p>
-<p>Services are singleton objects which manage some server task.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4135,6 +6162,8 @@ class PlayerService(Service):
         if config.SHUTDOWN_KICK_IDLE_PLAYERS:
             self._kick_idle_task = at_interval(1, self.kick_idle_players)</code></pre>
 </details>
+<div class="desc"><p>All services should inherit from this class.</p>
+<p>Services are singleton objects which manage some server task.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -4143,7 +6172,6 @@ class PlayerService(Service):
 <dl>
 <dt id="server.PlayerService.all_players"><code class="name">prop <span class="ident">all_players</span> : ValuesView[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]</code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4152,6 +6180,7 @@ class PlayerService(Service):
 def all_players(self) -&gt; ValuesView[Player]:
     return self._players.values()</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -4160,60 +6189,238 @@ def all_players(self) -&gt; ValuesView[Player]:
 <span>async def <span class="ident">fetch_player_data</span></span>(<span>self, player)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def fetch_player_data(self, player):
+    async with self._db.acquire() as conn:
+        result = await conn.execute(
+            select(user_group.c.technical_name)
+            .select_from(user_group_assignment.join(user_group))
+            .where(user_group_assignment.c.user_id == player.id)
+        )
+        player.user_groups = {row.technical_name for row in result}
+
+        sql = select(
+            avatars_list.c.url,
+            avatars_list.c.tooltip,
+            clan.c.tag
+        ).select_from(
+            login
+            .outerjoin(clan_membership)
+            .outerjoin(clan)
+            .outerjoin(
+                avatars,
+                onclause=and_(
+                    avatars.c.idUser == login.c.id,
+                    avatars.c.selected == 1
+                )
+            )
+            .outerjoin(avatars_list)
+        ).where(login.c.id == player.id)  # yapf: disable
+
+        result = await conn.execute(sql)
+        row = result.fetchone()
+        if not row:
+            self._logger.warning(
+                &#34;Did not find data for player with id %i&#34;,
+                player.id
+            )
+            return
+
+        row = row._mapping
+        player.clan = row.get(clan.c.tag)
+
+        url, tooltip = (
+            row.get(avatars_list.c.url),
+            row.get(avatars_list.c.tooltip)
+        )
+        if url and tooltip:
+            player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
+
+        await self._fetch_player_ratings(player, conn)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.get_player"><code class="name flex">
-<span>def <span class="ident">get_player</span></span>(<span>self, player_id: int) ‑> Optional[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]</span>
+<span>def <span class="ident">get_player</span></span>(<span>self, player_id: int) ‑> <a title="server.players.Player" href="players.html#server.players.Player">Player</a> | None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_player(self, player_id: int) -&gt; Optional[Player]:
+    return self._players.get(player_id)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.has_permission_role"><code class="name flex">
-<span>async def <span class="ident">has_permission_role</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, role_name: str) ‑> bool</span>
+<span>async def <span class="ident">has_permission_role</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>role_name: str) ‑> bool</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def has_permission_role(self, player: Player, role_name: str) -&gt; bool:
+    async with self._db.acquire() as conn:
+        result = await conn.execute(
+            select(group_permission.c.id)
+            .select_from(
+                user_group_assignment
+                .join(group_permission_assignment, onclause=(
+                    user_group_assignment.c.group_id ==
+                    group_permission_assignment.c.group_id
+                ))
+                .join(group_permission)
+            )
+            .where(
+                and_(
+                    user_group_assignment.c.user_id == player.id,
+                    group_permission.c.technical_name == role_name
+                )
+            )
+        )
+        row = result.fetchone()
+        return row is not None</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.is_uniqueid_exempt"><code class="name flex">
 <span>def <span class="ident">is_uniqueid_exempt</span></span>(<span>self, user_id: int) ‑> bool</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_uniqueid_exempt(self, user_id: int) -&gt; bool:
+    return user_id in self.uniqueid_exempt</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.kick_idle_players"><code class="name flex">
 <span>async def <span class="ident">kick_idle_players</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def kick_idle_players(self):
+    for fut in asyncio.as_completed([
+        player.lobby_connection.abort(&#34;Graceful shutdown.&#34;)
+        for player in self.all_players
+        if player.state == PlayerState.IDLE
+        if player.lobby_connection is not None
+    ]):
+        try:
+            await fut
+        except Exception:
+            self._logger.debug(
+                &#34;Error while aborting connection&#34;,
+                exc_info=True
+            )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.mark_dirty"><code class="name flex">
-<span>def <span class="ident">mark_dirty</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
+<span>def <span class="ident">mark_dirty</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mark_dirty(self, player: Player):
+    self._dirty_players.add(player)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.pop_dirty_players"><code class="name flex">
 <span>def <span class="ident">pop_dirty_players</span></span>(<span>self) ‑> set[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pop_dirty_players(self) -&gt; set[Player]:
+    dirty_players = self._dirty_players
+    self._dirty_players = set()
+
+    return dirty_players</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.remove_player"><code class="name flex">
-<span>def <span class="ident">remove_player</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
+<span>def <span class="ident">remove_player</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_player(self, player: Player):
+    if player.id in self._players:
+        # This signals that the player is now disconnected
+        del player.lobby_connection
+        del self._players[player.id]
+        metrics.players_online.set(len(self._players))
+        self.mark_dirty(player)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.signal_player_rating_change"><code class="name flex">
 <span>def <span class="ident">signal_player_rating_change</span></span>(<span>self, player_id: int, rating_type: str, new_rating: trueskill.Rating) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def signal_player_rating_change(
+    self, player_id: int, rating_type: str, new_rating: Rating
+) -&gt; None:
+    player = self.get_player(player_id)
+    if player is None:
+        self._logger.debug(
+            &#34;Received rating change for player with id %i not in PlayerService.&#34;,
+            player_id
+        )
+        return
+
+    self._logger.debug(
+        &#34;Received rating change for player %s.&#34;, player
+    )
+    player.ratings[rating_type] = new_rating
+    player.game_count[rating_type] += 1
+    self.mark_dirty(player)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.update_data"><code class="name flex">
 <span>async def <span class="ident">update_data</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def update_data(self):
+    &#34;&#34;&#34;
+    Update rarely-changing data, such as the admin list and the list of users exempt from the
+    uniqueid check.
+    &#34;&#34;&#34;
+    async with self._db.acquire() as conn:
+        # UniqueID-exempt users.
+        result = await conn.execute(
+            &#34;SELECT `user_id` FROM uniqueid_exempt&#34;
+        )
+        self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))</code></pre>
+</details>
 <div class="desc"><p>Update rarely-changing data, such as the admin list and the list of users exempt from the
 uniqueid check.</p></div>
 </dd>
@@ -4232,12 +6439,9 @@ uniqueid check.</p></div>
 </dd>
 <dt id="server.RatingService"><code class="flex name class">
 <span>class <span class="ident">RatingService</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>,<br>message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Service responsible for calculating and saving trueskill rating updates.
-To avoid race conditions, rating updates from a single game ought to be
-atomic.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4732,6 +6936,9 @@ class RatingService(Service):
             self._task.cancel()
             self._task = None</code></pre>
 </details>
+<div class="desc"><p>Service responsible for calculating and saving trueskill rating updates.
+To avoid race conditions, rating updates from a single game ought to be
+atomic.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -4742,24 +6949,107 @@ class RatingService(Service):
 <span>async def <span class="ident">enqueue</span></span>(<span>self, game_info: dict[str]) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def enqueue(self, game_info: dict[str]) -&gt; None:
+    if not self._accept_input:
+        self._logger.warning(&#34;Dropped rating request %s&#34;, game_info)
+        raise ServiceNotReadyError(
+            &#34;RatingService not yet initialized or shutting down.&#34;
+        )
+
+    summary = GameRatingSummary.from_game_info_dict(game_info)
+    self._logger.debug(&#34;Queued up rating request %s&#34;, summary)
+    await self._queue.put(summary)
+    rating_service_backlog.set(self._queue.qsize())</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.RatingService.kill"><code class="name flex">
 <span>def <span class="ident">kill</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def kill(self) -&gt; None:
+    &#34;&#34;&#34;
+    Exit without waiting for the queue to join.
+    &#34;&#34;&#34;
+    self._accept_input = False
+    if self._task is not None:
+        self._task.cancel()
+        self._task = None</code></pre>
+</details>
 <div class="desc"><p>Exit without waiting for the queue to join.</p></div>
 </dd>
 <dt id="server.RatingService.shutdown"><code class="name flex">
 <span>async def <span class="ident">shutdown</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def shutdown(self) -&gt; None:
+    &#34;&#34;&#34;
+    Finish rating all remaining games, then exit.
+    &#34;&#34;&#34;
+    self._accept_input = False
+    self._logger.debug(
+        &#34;Shutdown initiated. Waiting on current queue: %s&#34;, self._queue
+    )
+    if self._queue.empty() and self._task:
+        self._task.cancel()
+    await self._queue.join()
+    self._task = None
+    self._logger.debug(&#34;Queue emptied: %s&#34;, self._queue)</code></pre>
+</details>
 <div class="desc"><p>Finish rating all remaining games, then exit.</p></div>
 </dd>
 <dt id="server.RatingService.update_data"><code class="name flex">
 <span>async def <span class="ident">update_data</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def update_data(self):
+    async with self._db.acquire() as conn:
+        initializer = leaderboard.alias()
+        sql = select(
+            leaderboard.c.id,
+            leaderboard.c.technical_name,
+            initializer.c.technical_name.label(&#34;initializer&#34;)
+        ).select_from(
+            leaderboard.outerjoin(
+                initializer,
+                leaderboard.c.initializer_id == initializer.c.id
+            )
+        )
+        result = await conn.execute(sql)
+        rows = result.fetchall()
+
+        self.leaderboards.clear()
+        self._rating_type_ids = {}
+        for row in rows:
+            self.leaderboards[row.technical_name] = Leaderboard(
+                row.id,
+                row.technical_name
+            )
+            self._rating_type_ids[row.technical_name] = row.id
+
+        # Link the initializers
+        for row in rows:
+            current = self.leaderboards[row.technical_name]
+            init = self.leaderboards.get(row.initializer)
+            if init:
+                current.initializer = init</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -4776,12 +7066,9 @@ class RatingService(Service):
 </dd>
 <dt id="server.ServerInstance"><code class="flex name class">
 <span>class <span class="ident">ServerInstance</span></span>
-<span>(</span><span>name: str, database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, loop: asyncio.base_events.BaseEventLoop)</span>
+<span>(</span><span>name: str,<br>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>loop: asyncio.base_events.BaseEventLoop)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A class representing a shared server state. Each <code><a title="server.ServerInstance" href="#server.ServerInstance">ServerInstance</a></code> may be
-exposed on multiple ports, but each port will share the same internal server
-state, i.e. the same players, games, etc.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4989,27 +7276,118 @@ state, i.e. the same players, games, etc.</p></div>
             msg=&#34;when shutting down context &#34;
         )</code></pre>
 </details>
+<div class="desc"><p>A class representing a shared server state. Each <code><a title="server.ServerInstance" href="#server.ServerInstance">ServerInstance</a></code> may be
+exposed on multiple ports, but each port will share the same internal server
+state, i.e. the same players, games, etc.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.ServerInstance.drain"><code class="name flex">
 <span>async def <span class="ident">drain</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def drain(self):
+    &#34;&#34;&#34;
+    Wait for all games to end.
+    &#34;&#34;&#34;
+    game_service: GameService = self.services[&#34;game_service&#34;]
+    broadcast_service: BroadcastService = self.services[&#34;broadcast_service&#34;]
+    try:
+        await asyncio.wait_for(
+            game_service.drain_games(),
+            timeout=config.SHUTDOWN_GRACE_PERIOD
+        )
+    except asyncio.CancelledError:
+        self._logger.debug(
+            &#34;Stopped waiting for games to end due to forced shutdown&#34;
+        )
+    except asyncio.TimeoutError:
+        self._logger.warning(
+            &#34;Graceful shutdown period ended! %s games are still live!&#34;,
+            len(game_service.live_games)
+        )
+    finally:
+        # The report_dirties loop is responsible for clearing dirty games
+        # and broadcasting the update messages to players and to RabbitMQ.
+        # We need to wait here for that loop to complete otherwise it is
+        # possible for the services to be shut down inbetween clearing the
+        # games and posting the messages, causing the posts to fail.
+        await broadcast_service.wait_report_dirtes()</code></pre>
+</details>
 <div class="desc"><p>Wait for all games to end.</p></div>
 </dd>
 <dt id="server.ServerInstance.graceful_shutdown"><code class="name flex">
 <span>async def <span class="ident">graceful_shutdown</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def graceful_shutdown(self):
+    &#34;&#34;&#34;
+    Start a graceful shut down of the server.
+
+    1. Notify all services of graceful shutdown
+    &#34;&#34;&#34;
+    self._logger.info(&#34;Initiating graceful shutdown&#34;)
+
+    await map_suppress(
+        lambda service: service.graceful_shutdown(),
+        self.services.values(),
+        logger=self._logger,
+        msg=&#34;when starting graceful shutdown of service &#34;
+    )</code></pre>
+</details>
 <div class="desc"><p>Start a graceful shut down of the server.</p>
 <ol>
 <li>Notify all services of graceful shutdown</li>
 </ol></div>
 </dd>
 <dt id="server.ServerInstance.listen"><code class="name flex">
-<span>async def <span class="ident">listen</span></span>(<span>self, address: tuple[str, int], name: Optional[str] = None, protocol_class: type[<a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>] = server.protocol.qdatastream.QDataStreamProtocol, proxy: bool = False) ‑> <a title="server.servercontext.ServerContext" href="servercontext.html#server.servercontext.ServerContext">ServerContext</a></span>
+<span>async def <span class="ident">listen</span></span>(<span>self,<br>address: tuple[str, int],<br>name: str | None = None,<br>protocol_class: type[<a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>] = server.protocol.qdatastream.QDataStreamProtocol,<br>proxy: bool = False) ‑> <a title="server.servercontext.ServerContext" href="servercontext.html#server.servercontext.ServerContext">ServerContext</a></span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def listen(
+    self,
+    address: tuple[str, int],
+    name: Optional[str] = None,
+    protocol_class: type[Protocol] = QDataStreamProtocol,
+    proxy: bool = False,
+) -&gt; ServerContext:
+    &#34;&#34;&#34;
+    Start listening on a new address.
+
+    # Params
+    - `address`: Tuple indicating the host, port to listen on.
+    - `name`: String used to identify this context in log messages. The
+        default is to use the `protocol_class` name.
+    - `protocol_class`: The protocol class implementation to use.
+    - `proxy`: Boolean indicating whether or not to use the PROXY protocol.
+        See: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+    &#34;&#34;&#34;
+    if not self.started:
+        await self.start_services()
+
+    ctx = ServerContext(
+        f&#34;{self.name}[{name or protocol_class.__name__}]&#34;,
+        self.connection_factory,
+        list(self.services.values()),
+        protocol_class
+    )
+    await ctx.listen(*address, proxy=proxy)
+
+    self.contexts.add(ctx)
+
+    return ctx</code></pre>
+</details>
 <div class="desc"><p>Start listening on a new address.</p>
 <h1 id="params">Params</h1>
 <ul>
@@ -5025,6 +7403,27 @@ See: <a href="https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">https
 <span>async def <span class="ident">shutdown</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def shutdown(self):
+    &#34;&#34;&#34;
+    Immediately shutdown the server.
+
+    1. Stop accepting new connections
+    2. Stop all services
+    3. Close all existing connections
+    &#34;&#34;&#34;
+    self._logger.info(&#34;Initiating full shutdown&#34;)
+
+    await self._stop_contexts()
+    await self._shutdown_services()
+    await self._shutdown_contexts()
+
+    self.contexts.clear()
+    self.started = False</code></pre>
+</details>
 <div class="desc"><p>Immediately shutdown the server.</p>
 <ol>
 <li>Stop accepting new connections</li>
@@ -5036,12 +7435,65 @@ See: <a href="https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">https
 <span>async def <span class="ident">start_services</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@synchronizedmethod
+async def start_services(self) -&gt; None:
+    if self.started:
+        return
+
+    num_services = len(self.services)
+    self._logger.debug(&#34;Initializing %s services&#34;, num_services)
+
+    async def initialize(service):
+        start = time.perf_counter()
+        await service.initialize()
+        service._logger.debug(
+            &#34;%s initialized in %0.2f seconds&#34;,
+            service.__class__.__name__,
+            time.perf_counter() - start
+        )
+
+    await asyncio.gather(*[
+        initialize(service) for service in self.services.values()
+    ])
+
+    self._logger.debug(&#34;Initialized %s services&#34;, num_services)
+
+    self.started = True</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ServerInstance.write_broadcast"><code class="name flex">
 <span>def <span class="ident">write_broadcast</span></span>(<span>self, message, predicate=&lt;function ServerInstance.&lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_broadcast(
+    self,
+    message,
+    predicate=lambda conn: conn.authenticated
+):
+    &#34;&#34;&#34;
+    Queue a message to be sent to all connected clients.
+    &#34;&#34;&#34;
+    self._logger.log(TRACE, &#34;]]: %s&#34;, message)
+    metrics.server_broadcasts.inc()
+
+    for ctx in self.contexts:
+        try:
+            ctx.write_broadcast(message, predicate)
+        except Exception:
+            self._logger.exception(
+                &#34;Error writing &#39;%s&#39;&#34;,
+                message.get(&#34;command&#34;, message)
+            )</code></pre>
+</details>
 <div class="desc"><p>Queue a message to be sent to all connected clients.</p></div>
 </dd>
 </dl>
@@ -5050,10 +7502,6 @@ See: <a href="https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">https
 <span>class <span class="ident">ViolationService</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Track who is banned from searching and for how long. Apply progressive
-discipline for repeated violations.</p>
-<p>A violation could be anything, but it is usually any time a player fails
-to connect to a game.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5142,6 +7590,10 @@ class ViolationService(Service):
         )
         del self._violations[player.id]</code></pre>
 </details>
+<div class="desc"><p>Track who is banned from searching and for how long. Apply progressive
+discipline for repeated violations.</p>
+<p>A violation could be anything, but it is usually any time a player fails
+to connect to a game.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -5152,30 +7604,108 @@ class ViolationService(Service):
 <span>def <span class="ident">clear_expired</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def clear_expired(self):
+    now = datetime_now()
+    for player, violation in list(self._violations.values()):
+        if violation.is_expired(now):
+            self._clear_violation(player)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ViolationService.get_violation"><code class="name flex">
-<span>def <span class="ident">get_violation</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>) ‑> Optional[<a title="server.ladder_service.violation_service.Violation" href="ladder_service/violation_service.html#server.ladder_service.violation_service.Violation">Violation</a>]</span>
+<span>def <span class="ident">get_violation</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>) ‑> <a title="server.ladder_service.violation_service.Violation" href="ladder_service/violation_service.html#server.ladder_service.violation_service.Violation">Violation</a> | None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_violation(self, player: Player) -&gt; Optional[Violation]:
+    _, violation = self._violations.get(player.id, (None, None))
+    return violation</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ViolationService.get_violations"><code class="name flex">
-<span>def <span class="ident">get_violations</span></span>(<span>self, players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]) ‑> dict[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>, <a title="server.ladder_service.violation_service.Violation" href="ladder_service/violation_service.html#server.ladder_service.violation_service.Violation">Violation</a>]</span>
+<span>def <span class="ident">get_violations</span></span>(<span>self,<br>players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]) ‑> dict[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>, <a title="server.ladder_service.violation_service.Violation" href="ladder_service/violation_service.html#server.ladder_service.violation_service.Violation">Violation</a>]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_violations(self, players: list[Player]) -&gt; dict[Player, Violation]:
+    now = datetime_now()
+    result = {}
+    for player in players:
+        violation = self.get_violation(player)
+        if not violation:
+            continue
+        elif violation.get_ban_expiration() &gt; now:
+            result[player] = violation
+        elif violation.is_expired(now):
+            self._clear_violation(player)
+
+    return result</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ViolationService.register_violations"><code class="name flex">
-<span>def <span class="ident">register_violations</span></span>(<span>self, players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>])</span>
+<span>def <span class="ident">register_violations</span></span>(<span>self,<br>players: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def register_violations(self, players: list[Player]):
+    now = datetime_now()
+    for player in players:
+        violation = self.get_violation(player)
+        if violation is None or violation.is_expired(now):
+            violation = Violation(time=now)
+            self.set_violation(player, violation)
+        else:
+            violation.register()
+
+        player.write_message({
+            &#34;command&#34;: &#34;search_violation&#34;,
+            **violation.to_dict()
+        })
+        extra_text = &#34;&#34;
+        if violation.count &gt; 1:
+            delta_text = humanize.precisedelta(
+                violation.get_ban_expiration() - now
+            )
+            extra_text = f&#34; You can queue again in {delta_text}&#34;
+        player.write_message({
+            &#34;command&#34;: &#34;notice&#34;,
+            &#34;style&#34;: &#34;info&#34;,
+            &#34;text&#34;: (
+                f&#34;You have caused a matchmaking connection failure {violation.count} time(s). &#34;
+                &#34;Multiple failures result in temporary time-outs from matchmaker. &#34;
+                &#34;Please seek support on the forums or discord for persistent issues.&#34; +
+                extra_text
+            )
+        })</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.ViolationService.set_violation"><code class="name flex">
-<span>def <span class="ident">set_violation</span></span>(<span>self, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, violation: <a title="server.ladder_service.violation_service.Violation" href="ladder_service/violation_service.html#server.ladder_service.violation_service.Violation">Violation</a>)</span>
+<span>def <span class="ident">set_violation</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>violation: <a title="server.ladder_service.violation_service.Violation" href="ladder_service/violation_service.html#server.ladder_service.violation_service.Violation">Violation</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_violation(self, player: Player, violation: Violation):
+    self._violations[player.id] = (player, violation)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -5445,7 +7975,7 @@ class ViolationService(Service):
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
 </footer>
 </body>
 </html>

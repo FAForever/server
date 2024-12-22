@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.1">
+<meta name="generator" content="pdoc3 0.11.5">
 <title>server.protocol API documentation</title>
 <meta name="description" content="Protocol format definitions">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -60,7 +71,6 @@ hljs.highlightAll();
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>For signaling that a protocol has lost connection to the remote.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -68,6 +78,7 @@ hljs.highlightAll();
 <pre><code class="python">class DisconnectedError(ConnectionError):
     &#34;&#34;&#34;For signaling that a protocol has lost connection to the remote.&#34;&#34;&#34;</code></pre>
 </details>
+<div class="desc"><p>For signaling that a protocol has lost connection to the remote.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.ConnectionError</li>
@@ -80,7 +91,6 @@ hljs.highlightAll();
 <span>class <span class="ident">GpgNetClientProtocol</span></span>
 </code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -96,18 +106,37 @@ hljs.highlightAll();
     def send_gpgnet_message(self, command_id, arguments: list[Union[int, str, bool]]) -&gt; None:
         pass  # pragma: no cover</code></pre>
 </details>
+<div class="desc"></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.protocol.GpgNetClientProtocol.send_GameState"><code class="name flex">
-<span>def <span class="ident">send_GameState</span></span>(<span>self, arguments: list[typing.Union[int, str, bool]]) ‑> None</span>
+<span>def <span class="ident">send_GameState</span></span>(<span>self, arguments: list[int | str | bool]) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def send_GameState(self, arguments: list[Union[int, str, bool]]) -&gt; None:
+    &#34;&#34;&#34;
+    Sent by the client when the state of LobbyComm changes
+    &#34;&#34;&#34;
+    self.send_gpgnet_message(&#34;GameState&#34;, arguments)</code></pre>
+</details>
 <div class="desc"><p>Sent by the client when the state of LobbyComm changes</p></div>
 </dd>
 <dt id="server.protocol.GpgNetClientProtocol.send_gpgnet_message"><code class="name flex">
-<span>def <span class="ident">send_gpgnet_message</span></span>(<span>self, command_id, arguments: list[typing.Union[int, str, bool]]) ‑> None</span>
+<span>def <span class="ident">send_gpgnet_message</span></span>(<span>self, command_id, arguments: list[int | str | bool]) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def send_gpgnet_message(self, command_id, arguments: list[Union[int, str, bool]]) -&gt; None:
+    pass  # pragma: no cover</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -116,7 +145,6 @@ hljs.highlightAll();
 <span>class <span class="ident">GpgNetServerProtocol</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Defines an interface for the server side GPGNet protocol</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -165,6 +193,7 @@ hljs.highlightAll();
     async def send(self, message):
         pass  # pragma: no cover</code></pre>
 </details>
+<div class="desc"><p>Defines an interface for the server side GPGNet protocol</p></div>
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="server.gameconnection.GameConnection" href="../gameconnection.html#server.gameconnection.GameConnection">GameConnection</a></li>
@@ -175,12 +204,35 @@ hljs.highlightAll();
 <span>async def <span class="ident">send</span></span>(<span>self, message)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+async def send(self, message):
+    pass  # pragma: no cover</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.protocol.GpgNetServerProtocol.send_ConnectToPeer"><code class="name flex">
 <span>async def <span class="ident">send_ConnectToPeer</span></span>(<span>self, player_name: str, player_uid: int, offer: bool)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send_ConnectToPeer(self, player_name: str, player_uid: int, offer: bool):
+    &#34;&#34;&#34;
+    Tells a client that has a listening LobbyComm instance to connect to the
+    given peer
+
+    # Params
+    - `player_name`: Remote player name
+    - `player_uid`: Remote player identifier
+    &#34;&#34;&#34;
+    await self.send_gpgnet_message(&#34;ConnectToPeer&#34;, [player_name, player_uid, offer])</code></pre>
+</details>
 <div class="desc"><p>Tells a client that has a listening LobbyComm instance to connect to the
 given peer</p>
 <h1 id="params">Params</h1>
@@ -193,12 +245,35 @@ given peer</p>
 <span>async def <span class="ident">send_DisconnectFromPeer</span></span>(<span>self, id: int)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send_DisconnectFromPeer(self, id: int):
+    &#34;&#34;&#34;
+    Instructs the game to disconnect from the peer given by id
+    &#34;&#34;&#34;
+    await self.send_gpgnet_message(&#34;DisconnectFromPeer&#34;, [id])</code></pre>
+</details>
 <div class="desc"><p>Instructs the game to disconnect from the peer given by id</p></div>
 </dd>
 <dt id="server.protocol.GpgNetServerProtocol.send_HostGame"><code class="name flex">
 <span>async def <span class="ident">send_HostGame</span></span>(<span>self, map_path: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send_HostGame(self, map_path: str):
+    &#34;&#34;&#34;
+    Tells the game to start listening for incoming connections as a host
+
+    # Params
+    - `map_path`: Which scenario to use
+    &#34;&#34;&#34;
+    await self.send_gpgnet_message(&#34;HostGame&#34;, [str(map_path)])</code></pre>
+</details>
 <div class="desc"><p>Tells the game to start listening for incoming connections as a host</p>
 <h1 id="params">Params</h1>
 <ul>
@@ -209,12 +284,30 @@ given peer</p>
 <span>async def <span class="ident">send_JoinGame</span></span>(<span>self, remote_player_name: str, remote_player_uid: int)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send_JoinGame(self, remote_player_name: str, remote_player_uid: int):
+    &#34;&#34;&#34;
+    Tells the game to join the given peer by ID
+    &#34;&#34;&#34;
+    await self.send_gpgnet_message(&#34;JoinGame&#34;, [remote_player_name, remote_player_uid])</code></pre>
+</details>
 <div class="desc"><p>Tells the game to join the given peer by ID</p></div>
 </dd>
 <dt id="server.protocol.GpgNetServerProtocol.send_gpgnet_message"><code class="name flex">
-<span>async def <span class="ident">send_gpgnet_message</span></span>(<span>self, command_id: str, arguments: list[typing.Union[int, str, bool]])</span>
+<span>async def <span class="ident">send_gpgnet_message</span></span>(<span>self, command_id: str, arguments: list[int | str | bool])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send_gpgnet_message(self, command_id: str, arguments: list[Union[int, str, bool]]):
+    message = {&#34;command&#34;: command_id, &#34;args&#34;: arguments}
+    await self.send(message)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -224,7 +317,6 @@ given peer</p>
 <span>(</span><span>reader: asyncio.streams.StreamReader, writer: asyncio.streams.StreamWriter)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -377,6 +469,7 @@ given peer</p>
             await self.close()
             raise DisconnectedError(&#34;Protocol connection lost!&#34;) from e</code></pre>
 </details>
+<div class="desc"></div>
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="server.protocol.qdatastream.QDataStreamProtocol" href="qdatastream.html#server.protocol.qdatastream.QDataStreamProtocol">QDataStreamProtocol</a></li>
@@ -388,12 +481,36 @@ given peer</p>
 <span>def <span class="ident">decode_message</span></span>(<span>data: bytes) ‑> dict</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+@abstractmethod
+def decode_message(data: bytes) -&gt; dict:
+    &#34;&#34;&#34;
+    Decode a message from raw bytes.
+    &#34;&#34;&#34;
+    pass  # pragma: no cover</code></pre>
+</details>
 <div class="desc"><p>Decode a message from raw bytes.</p></div>
 </dd>
 <dt id="server.protocol.Protocol.encode_message"><code class="name flex">
 <span>def <span class="ident">encode_message</span></span>(<span>message: dict) ‑> bytes</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+@abstractmethod
+def encode_message(message: dict) -&gt; bytes:
+    &#34;&#34;&#34;
+    Encode a message as raw bytes. Can be used along with `*_raw` methods.
+    &#34;&#34;&#34;
+    pass  # pragma: no cover</code></pre>
+</details>
 <div class="desc"><p>Encode a message as raw bytes. Can be used along with <code>*_raw</code> methods.</p></div>
 </dd>
 </dl>
@@ -403,12 +520,36 @@ given peer</p>
 <span>def <span class="ident">abort</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def abort(self) -&gt; None:
+    # SelectorTransport only
+    self.writer.transport.abort()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.protocol.Protocol.close"><code class="name flex">
 <span>async def <span class="ident">close</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def close(self) -&gt; None:
+    &#34;&#34;&#34;
+    Close the underlying writer as soon as the buffer has emptied.
+
+    # Errors
+    Never raises. Any exceptions that occur while waiting to close are
+    ignored.
+    &#34;&#34;&#34;
+    self.writer.close()
+    with contextlib.suppress(Exception):
+        await self.writer.wait_closed()</code></pre>
+</details>
 <div class="desc"><p>Close the underlying writer as soon as the buffer has emptied.</p>
 <h1 id="errors">Errors</h1>
 <p>Never raises. Any exceptions that occur while waiting to close are
@@ -418,6 +559,29 @@ ignored.</p></div>
 <span>async def <span class="ident">drain</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@synchronizedmethod
+async def drain(self) -&gt; None:
+    &#34;&#34;&#34;
+    Await the write buffer to empty.
+    See StreamWriter.drain()
+
+    # Errors
+    Raises `DisconnectedError` if the client disconnects while waiting for
+    the write buffer to empty.
+    &#34;&#34;&#34;
+    # Method needs to be synchronized as drain() cannot be called
+    # concurrently by multiple coroutines:
+    # http://bugs.python.org/issue29930.
+    try:
+        await self.writer.drain()
+    except Exception as e:
+        await self.close()
+        raise DisconnectedError(&#34;Protocol connection lost!&#34;) from e</code></pre>
+</details>
 <div class="desc"><p>Await the write buffer to empty.
 See StreamWriter.drain()</p>
 <h1 id="errors">Errors</h1>
@@ -428,12 +592,39 @@ the write buffer to empty.</p></div>
 <span>def <span class="ident">is_connected</span></span>(<span>self) ‑> bool</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_connected(self) -&gt; bool:
+    &#34;&#34;&#34;
+    Return whether or not the connection is still alive
+    &#34;&#34;&#34;
+    return not self.writer.is_closing()</code></pre>
+</details>
 <div class="desc"><p>Return whether or not the connection is still alive</p></div>
 </dd>
 <dt id="server.protocol.Protocol.read_message"><code class="name flex">
 <span>async def <span class="ident">read_message</span></span>(<span>self) ‑> dict</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+async def read_message(self) -&gt; dict:
+    &#34;&#34;&#34;
+    Asynchronously read a message from the stream
+
+    # Returns
+    The parsed message
+
+    # Errors
+    May raise `IncompleteReadError`.
+    &#34;&#34;&#34;
+    pass  # pragma: no cover</code></pre>
+</details>
 <div class="desc"><p>Asynchronously read a message from the stream</p>
 <h1 id="returns">Returns</h1>
 <p>The parsed message</p>
@@ -444,6 +635,19 @@ the write buffer to empty.</p></div>
 <span>async def <span class="ident">send_message</span></span>(<span>self, message: dict) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send_message(self, message: dict) -&gt; None:
+    &#34;&#34;&#34;
+    Send a single message in the form of a dictionary
+
+    # Errors
+    May raise `DisconnectedError`.
+    &#34;&#34;&#34;
+    await self.send_raw(self.encode_message(message))</code></pre>
+</details>
 <div class="desc"><p>Send a single message in the form of a dictionary</p>
 <h1 id="errors">Errors</h1>
 <p>May raise <code><a title="server.protocol.DisconnectedError" href="#server.protocol.DisconnectedError">DisconnectedError</a></code>.</p></div>
@@ -452,6 +656,22 @@ the write buffer to empty.</p></div>
 <span>async def <span class="ident">send_messages</span></span>(<span>self, messages: list[dict]) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send_messages(self, messages: list[dict]) -&gt; None:
+    &#34;&#34;&#34;
+    Send multiple messages in the form of a list of dictionaries.
+
+    May be more optimal than sending a single message.
+
+    # Errors
+    May raise `DisconnectedError`.
+    &#34;&#34;&#34;
+    self.write_messages(messages)
+    await self.drain()</code></pre>
+</details>
 <div class="desc"><p>Send multiple messages in the form of a list of dictionaries.</p>
 <p>May be more optimal than sending a single message.</p>
 <h1 id="errors">Errors</h1>
@@ -461,6 +681,20 @@ the write buffer to empty.</p></div>
 <span>async def <span class="ident">send_raw</span></span>(<span>self, data: bytes) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send_raw(self, data: bytes) -&gt; None:
+    &#34;&#34;&#34;
+    Send raw bytes. Should generally not be used.
+
+    # Errors
+    May raise `DisconnectedError`.
+    &#34;&#34;&#34;
+    self.write_raw(data)
+    await self.drain()</code></pre>
+</details>
 <div class="desc"><p>Send raw bytes. Should generally not be used.</p>
 <h1 id="errors">Errors</h1>
 <p>May raise <code><a title="server.protocol.DisconnectedError" href="#server.protocol.DisconnectedError">DisconnectedError</a></code>.</p></div>
@@ -469,6 +703,24 @@ the write buffer to empty.</p></div>
 <span>def <span class="ident">write_message</span></span>(<span>self, message: dict) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_message(self, message: dict) -&gt; None:
+    &#34;&#34;&#34;
+    Write a single message into the message buffer. Should be used when
+    sending broadcasts or when sending messages that are triggered by
+    incoming messages from other players.
+
+    # Errors
+    May raise `DisconnectedError`.
+    &#34;&#34;&#34;
+    if not self.is_connected():
+        raise DisconnectedError(&#34;Protocol is not connected!&#34;)
+
+    self.write_raw(self.encode_message(message))</code></pre>
+</details>
 <div class="desc"><p>Write a single message into the message buffer. Should be used when
 sending broadcasts or when sending messages that are triggered by
 incoming messages from other players.</p>
@@ -479,6 +731,23 @@ incoming messages from other players.</p>
 <span>def <span class="ident">write_messages</span></span>(<span>self, messages: list[dict]) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_messages(self, messages: list[dict]) -&gt; None:
+    &#34;&#34;&#34;
+    Write multiple message into the message buffer.
+
+    # Errors
+    May raise `DisconnectedError`.
+    &#34;&#34;&#34;
+    metrics.sent_messages.labels(self.__class__.__name__).inc()
+    if not self.is_connected():
+        raise DisconnectedError(&#34;Protocol is not connected!&#34;)
+
+    self.writer.writelines([self.encode_message(msg) for msg in messages])</code></pre>
+</details>
 <div class="desc"><p>Write multiple message into the message buffer.</p>
 <h1 id="errors">Errors</h1>
 <p>May raise <code><a title="server.protocol.DisconnectedError" href="#server.protocol.DisconnectedError">DisconnectedError</a></code>.</p></div>
@@ -487,6 +756,23 @@ incoming messages from other players.</p>
 <span>def <span class="ident">write_raw</span></span>(<span>self, data: bytes) ‑> None</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_raw(self, data: bytes) -&gt; None:
+    &#34;&#34;&#34;
+    Write raw bytes into the message buffer. Should generally not be used.
+
+    # Errors
+    May raise `DisconnectedError`.
+    &#34;&#34;&#34;
+    metrics.sent_messages.labels(self.__class__.__name__).inc()
+    if not self.is_connected():
+        raise DisconnectedError(&#34;Protocol is not connected!&#34;)
+
+    self.writer.write(data)</code></pre>
+</details>
 <div class="desc"><p>Write raw bytes into the message buffer. Should generally not be used.</p>
 <h1 id="errors">Errors</h1>
 <p>May raise <code><a title="server.protocol.DisconnectedError" href="#server.protocol.DisconnectedError">DisconnectedError</a></code>.</p></div>
@@ -498,7 +784,6 @@ incoming messages from other players.</p>
 <span>(</span><span>reader: asyncio.streams.StreamReader, writer: asyncio.streams.StreamWriter)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Implements the legacy QDataStream-based encoding scheme</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -614,6 +899,7 @@ class QDataStreamProtocol(Protocol):
 
         return QDataStreamProtocol.decode_message(block)</code></pre>
 </details>
+<div class="desc"><p>Implements the legacy QDataStream-based encoding scheme</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.protocol.protocol.Protocol" href="protocol.html#server.protocol.protocol.Protocol">Protocol</a></li>
@@ -624,36 +910,126 @@ class QDataStreamProtocol(Protocol):
 <span>def <span class="ident">encode_message</span></span>(<span>message: dict) ‑> bytes</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def encode_message(message: dict) -&gt; bytes:
+    &#34;&#34;&#34;
+    Encodes a python object as a block of QStrings
+    &#34;&#34;&#34;
+    command = message.get(&#34;command&#34;)
+    if command == &#34;ping&#34;:
+        return PING_MSG
+    elif command == &#34;pong&#34;:
+        return PONG_MSG
+
+    return QDataStreamProtocol.pack_message(json_encoder.encode(message))</code></pre>
+</details>
 <div class="desc"><p>Encodes a python object as a block of QStrings</p></div>
 </dd>
 <dt id="server.protocol.QDataStreamProtocol.pack_block"><code class="name flex">
 <span>def <span class="ident">pack_block</span></span>(<span>block: bytes) ‑> bytes</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def pack_block(block: bytes) -&gt; bytes:
+    return struct.pack(&#34;!I&#34;, len(block)) + block</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.protocol.QDataStreamProtocol.pack_message"><code class="name flex">
 <span>def <span class="ident">pack_message</span></span>(<span>*args: str) ‑> bytes</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def pack_message(*args: str) -&gt; bytes:
+    &#34;&#34;&#34;
+    For sending a bunch of QStrings packed together in a &#39;block&#39;
+    &#34;&#34;&#34;
+    msg = bytearray()
+    for arg in args:
+        if not isinstance(arg, str):
+            raise NotImplementedError(&#34;Only string serialization is supported&#34;)
+
+        msg += QDataStreamProtocol.pack_qstring(arg)
+    return QDataStreamProtocol.pack_block(msg)</code></pre>
+</details>
 <div class="desc"><p>For sending a bunch of QStrings packed together in a 'block'</p></div>
 </dd>
 <dt id="server.protocol.QDataStreamProtocol.pack_qstring"><code class="name flex">
 <span>def <span class="ident">pack_qstring</span></span>(<span>message: str) ‑> bytes</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def pack_qstring(message: str) -&gt; bytes:
+    encoded = message.encode(&#34;UTF-16BE&#34;)
+    return struct.pack(&#34;!i&#34;, len(encoded)) + encoded</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.protocol.QDataStreamProtocol.read_block"><code class="name flex">
 <span>def <span class="ident">read_block</span></span>(<span>data)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def read_block(data):
+    buffer_pos = 0
+    while len(data[buffer_pos:]) &gt; 4:
+        buffer_pos, msg = QDataStreamProtocol.read_qstring(data, buffer_pos)
+        yield msg</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.protocol.QDataStreamProtocol.read_qstring"><code class="name flex">
 <span>def <span class="ident">read_qstring</span></span>(<span>buffer: bytes, pos: int = 0) ‑> tuple[int, str]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def read_qstring(buffer: bytes, pos: int = 0) -&gt; tuple[int, str]:
+    &#34;&#34;&#34;
+    Parse a serialized QString from buffer (A bytes like object) at given
+    position.
+
+    Requires `len(buffer[pos:]) &gt;= 4`.
+
+    Pos is added to buffer_pos.
+
+    # Returns
+    The new buffer position and the message.
+    &#34;&#34;&#34;
+    chunk = buffer[pos:pos + 4]
+    rest = buffer[pos + 4:]
+    assert len(chunk) == 4
+
+    (size, ) = struct.unpack(&#34;!I&#34;, chunk)
+    if len(rest) &lt; size:
+        raise ValueError(
+            &#34;Malformed QString: Claims length {} but actually {}. Entire buffer: {}&#34;
+            .format(size, len(rest), base64.b64encode(buffer)))
+    return size + pos + 4, (buffer[pos + 4:pos + 4 + size]).decode(&#34;UTF-16BE&#34;)</code></pre>
+</details>
 <div class="desc"><p>Parse a serialized QString from buffer (A bytes like object) at given
 position.</p>
 <p>Requires <code>len(buffer[pos:]) &gt;= 4</code>.</p>
@@ -668,6 +1044,28 @@ position.</p>
 <span>async def <span class="ident">read_message</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def read_message(self):
+    &#34;&#34;&#34;
+    Read a message from the stream
+
+    # Errors
+    Raises `IncompleteReadError` on malformed stream.
+    &#34;&#34;&#34;
+    try:
+        length, *_ = struct.unpack(&#34;!I&#34;, await self.reader.readexactly(4))
+        block = await self.reader.readexactly(length)
+    except IncompleteReadError as e:
+        if self.reader.at_eof() and not e.partial:
+            raise DisconnectedError()
+        # Otherwise reraise
+        raise
+
+    return QDataStreamProtocol.decode_message(block)</code></pre>
+</details>
 <div class="desc"><p>Read a message from the stream</p>
 <h1 id="errors">Errors</h1>
 <p>Raises <code>IncompleteReadError</code> on malformed stream.</p></div>
@@ -696,7 +1094,6 @@ position.</p>
 <span>(</span><span>reader: asyncio.streams.StreamReader, writer: asyncio.streams.StreamWriter)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -716,6 +1113,7 @@ position.</p>
             raise DisconnectedError()
         return SimpleJsonProtocol.decode_message(line)</code></pre>
 </details>
+<div class="desc"></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.protocol.protocol.Protocol" href="protocol.html#server.protocol.protocol.Protocol">Protocol</a></li>
@@ -823,7 +1221,7 @@ position.</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
 </footer>
 </body>
 </html>

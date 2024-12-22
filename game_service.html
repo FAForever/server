@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.1">
+<meta name="generator" content="pdoc3 0.11.5">
 <title>server.game_service API documentation</title>
 <meta name="description" content="Manages the lifecycle of active games">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -38,10 +49,9 @@ hljs.highlightAll();
 <dl>
 <dt id="server.game_service.GameService"><code class="flex name class">
 <span>class <span class="ident">GameService</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, player_service, game_stats_service, rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>, message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>player_service,<br>game_stats_service,<br>rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>,<br>message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Utility class for maintaining lifecycle of games</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -375,6 +385,7 @@ class GameService(Service):
                 })
                 await game_connection.abort()</code></pre>
 </details>
+<div class="desc"><p>Utility class for maintaining lifecycle of games</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
@@ -383,7 +394,6 @@ class GameService(Service):
 <dl>
 <dt id="server.game_service.GameService.all_games"><code class="name">prop <span class="ident">all_games</span> : ValuesView[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -392,10 +402,10 @@ class GameService(Service):
 def all_games(self) -&gt; ValuesView[Game]:
     return self._games.values()</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.live_games"><code class="name">prop <span class="ident">live_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -408,17 +418,10 @@ def live_games(self) -&gt; list[Game]:
         if game.state is GameState.LIVE
     ]</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.open_games"><code class="name">prop <span class="ident">open_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
-<div class="desc"><p>Return all games that meet the client's definition of "not closed".
-Server game states are mapped to client game states as follows:</p>
-<pre><code>GameState.LOBBY: "open",
-GameState.LIVE: "playing",
-GameState.ENDED: "closed",
-GameState.INITIALIZING: "closed",
-</code></pre>
-<p>The client ignores everything "closed". This property fetches all such not-closed games.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -442,10 +445,17 @@ def open_games(self) -&gt; list[Game]:
         if game.state in (GameState.LOBBY, GameState.LIVE)
     ]</code></pre>
 </details>
+<div class="desc"><p>Return all games that meet the client's definition of "not closed".
+Server game states are mapped to client game states as follows:</p>
+<pre><code>GameState.LOBBY: "open",
+GameState.LIVE: "playing",
+GameState.ENDED: "closed",
+GameState.INITIALIZING: "closed",
+</code></pre>
+<p>The client ignores everything "closed". This property fetches all such not-closed games.</p></div>
 </dd>
 <dt id="server.game_service.GameService.pending_games"><code class="name">prop <span class="ident">pending_games</span> : list[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -458,6 +468,7 @@ def pending_games(self) -&gt; list[Game]:
         if game.state in (GameState.LOBBY, GameState.INITIALIZING)
     ]</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -466,78 +477,364 @@ def pending_games(self) -&gt; list[Game]:
 <span>async def <span class="ident">close_lobby_games</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def close_lobby_games(self):
+    self._logger.info(&#34;Closing all games currently in lobby&#34;)
+    for game in self.pending_games:
+        for game_connection in list(game.connections):
+            # Tell the client to kill the FA process
+            game_connection.player.write_message({
+                &#34;command&#34;: &#34;notice&#34;,
+                &#34;style&#34;: &#34;kill&#34;
+            })
+            await game_connection.abort()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.create_game"><code class="name flex">
-<span>def <span class="ident">create_game</span></span>(<span>self, game_mode: str, game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame, visibility=VisibilityState.PUBLIC, host: Optional[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>] = None, name: Optional[str] = None, map: <a title="server.types.Map" href="types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1), password: Optional[str] = None, matchmaker_queue_id: Optional[int] = None, **kwargs)</span>
+<span>def <span class="ident">create_game</span></span>(<span>self,<br>game_mode: str,<br>game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame,<br>visibility=VisibilityState.PUBLIC,<br>host: <a title="server.players.Player" href="players.html#server.players.Player">Player</a> | None = None,<br>name: str | None = None,<br>map: <a title="server.types.Map" href="types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1),<br>password: str | None = None,<br>matchmaker_queue_id: int | None = None,<br>**kwargs)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_game(
+    self,
+    game_mode: str,
+    game_class: type[Game] = CustomGame,
+    visibility=VisibilityState.PUBLIC,
+    host: Optional[Player] = None,
+    name: Optional[str] = None,
+    map: Map = MAP_DEFAULT,
+    password: Optional[str] = None,
+    matchmaker_queue_id: Optional[int] = None,
+    **kwargs
+):
+    &#34;&#34;&#34;
+    Main entrypoint for creating new games
+    &#34;&#34;&#34;
+    if not self._allow_new_games:
+        raise DisabledError()
+
+    game_id = self.create_uid()
+    game_args = {
+        &#34;database&#34;: self._db,
+        &#34;id&#34;: game_id,
+        &#34;host&#34;: host,
+        &#34;name&#34;: name,
+        &#34;map&#34;: map,
+        &#34;game_mode&#34;: game_mode,
+        &#34;game_service&#34;: self,
+        &#34;game_stats_service&#34;: self.game_stats_service,
+        &#34;matchmaker_queue_id&#34;: matchmaker_queue_id,
+    }
+    game_args.update(kwargs)
+    game = game_class(**game_args)
+
+    self._games[game_id] = game
+
+    game.visibility = visibility
+    game.password = password
+
+    self.mark_dirty(game)
+    return game</code></pre>
+</details>
 <div class="desc"><p>Main entrypoint for creating new games</p></div>
 </dd>
 <dt id="server.game_service.GameService.create_uid"><code class="name flex">
 <span>def <span class="ident">create_uid</span></span>(<span>self) ‑> int</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_uid(self) -&gt; int:
+    self.game_id_counter += 1
+
+    return self.game_id_counter</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.drain_games"><code class="name flex">
 <span>async def <span class="ident">drain_games</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def drain_games(self):
+    &#34;&#34;&#34;
+    Wait for all games to finish.
+    &#34;&#34;&#34;
+    if not self._games:
+        return
+
+    if not self._drain_event:
+        self._drain_event = asyncio.Event()
+
+    await self._drain_event.wait()</code></pre>
+</details>
 <div class="desc"><p>Wait for all games to finish.</p></div>
 </dd>
 <dt id="server.game_service.GameService.get_map"><code class="name flex">
 <span>async def <span class="ident">get_map</span></span>(<span>self, folder_name: str) ‑> <a title="server.types.Map" href="types.html#server.types.Map">Map</a></span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def get_map(self, folder_name: str) -&gt; Map:
+    folder_name = folder_name.lower()
+    filename = f&#34;maps/{folder_name}.zip&#34;
+
+    map = self.map_info_cache.get(filename)
+    if map is not None:
+        return map
+
+    async with self._db.acquire() as conn:
+        result = await conn.execute(
+            select(
+                map_version.c.id,
+                map_version.c.filename,
+                map_version.c.ranked,
+            )
+            .where(
+                func.lower(map_version.c.filename) == filename
+            )
+        )
+        row = result.fetchone()
+        if not row:
+            # The map requested is not in the database. This is fine as
+            # players may be using privately shared or generated maps that
+            # are not in the vault.
+            return Map(
+                id=None,
+                folder_name=folder_name,
+                ranked=NeroxisGeneratedMap.is_neroxis_map(folder_name),
+            )
+
+        map = Map(
+            id=row.id,
+            folder_name=folder_name,
+            ranked=row.ranked
+        )
+        self.map_info_cache[filename] = map
+        return map</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.initialise_game_counter"><code class="name flex">
 <span>async def <span class="ident">initialise_game_counter</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def initialise_game_counter(self):
+    async with self._db.acquire() as conn:
+        # InnoDB, unusually, doesn&#39;t allow insertion of values greater than the next expected
+        # value into an auto_increment field. We&#39;d like to do that, because we no longer insert
+        # games into the database when they don&#39;t start, so game ids aren&#39;t contiguous (as
+        # unstarted games consume ids that never get written out).
+        # So, id has to just be an integer primary key, no auto-increment: we handle its
+        # incrementing here in game service, but have to do this slightly expensive query on
+        # startup (though the primary key index probably makes it super fast anyway).
+        # This is definitely a better choice than inserting useless rows when games are created,
+        # doing LAST_UPDATE_ID to get the id number, and then doing an UPDATE when the actual
+        # data to go into the row becomes available: we now only do a single insert for each
+        # game, and don&#39;t end up with 800,000 junk rows in the database.
+        sql = &#34;SELECT MAX(id) FROM game_stats&#34;
+        self.game_id_counter = await conn.scalar(sql) or 0</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.mark_dirty"><code class="name flex">
-<span>def <span class="ident">mark_dirty</span></span>(<span>self, obj: Union[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>, <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>])</span>
+<span>def <span class="ident">mark_dirty</span></span>(<span>self,<br>obj: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a> | <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
+    if isinstance(obj, Game):
+        self._dirty_games.add(obj)
+    elif isinstance(obj, MatchmakerQueue):
+        self._dirty_queues.add(obj)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.pop_dirty_games"><code class="name flex">
 <span>def <span class="ident">pop_dirty_games</span></span>(<span>self) ‑> set[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pop_dirty_games(self) -&gt; set[Game]:
+    dirty_games = self._dirty_games
+    self._dirty_games = set()
+
+    return dirty_games</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.pop_dirty_queues"><code class="name flex">
 <span>def <span class="ident">pop_dirty_queues</span></span>(<span>self) ‑> set[<a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>]</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def pop_dirty_queues(self) -&gt; set[MatchmakerQueue]:
+    dirty_queues = self._dirty_queues
+    self._dirty_queues = set()
+
+    return dirty_queues</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.publish_game_results"><code class="name flex">
-<span>async def <span class="ident">publish_game_results</span></span>(<span>self, game_results: <a title="server.games.typedefs.EndedGameInfo" href="games/typedefs.html#server.games.typedefs.EndedGameInfo">EndedGameInfo</a>)</span>
+<span>async def <span class="ident">publish_game_results</span></span>(<span>self,<br>game_results: <a title="server.games.typedefs.EndedGameInfo" href="games/typedefs.html#server.games.typedefs.EndedGameInfo">EndedGameInfo</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def publish_game_results(self, game_results: EndedGameInfo):
+    result_dict = game_results.to_dict()
+    await self._message_queue_service.publish(
+        config.MQ_EXCHANGE_NAME,
+        &#34;success.gameResults.create&#34;,
+        result_dict,
+    )
+
+    if (
+        game_results.validity is ValidityState.VALID
+        and game_results.rating_type is not None
+    ):
+        metrics.rated_games.labels(game_results.rating_type).inc()
+        # TODO: Remove when rating service starts listening to message queue
+        await self._rating_service.enqueue(result_dict)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.remove_game"><code class="name flex">
-<span>def <span class="ident">remove_game</span></span>(<span>self, game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>)</span>
+<span>def <span class="ident">remove_game</span></span>(<span>self,<br>game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_game(self, game: Game):
+    if game.id in self._games:
+        self._logger.debug(&#34;Removing game %s&#34;, game)
+        del self._games[game.id]
+
+    if (
+        self._drain_event is not None
+        and not self._drain_event.is_set()
+        and not self._games
+    ):
+        self._drain_event.set()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.update_active_game_metrics"><code class="name flex">
 <span>def <span class="ident">update_active_game_metrics</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_active_game_metrics(self):
+    modes = list(self.featured_mods.keys())
+
+    game_counter = Counter(
+        (
+            game.game_mode if game.game_mode in modes else &#34;other&#34;,
+            game.state
+        )
+        for game in self._games.values()
+    )
+
+    for state in GameState:
+        for mode in modes + [&#34;other&#34;]:
+            metrics.active_games.labels(mode, state.name).set(
+                game_counter[(mode, state)]
+            )
+
+    rating_type_counter = Counter(
+        (
+            game.rating_type,
+            game.state
+        )
+        for game in self._games.values()
+    )
+
+    for state in GameState:
+        for rating_type in rating_type_counter.keys():
+            metrics.active_games_by_rating_type.labels(rating_type, state.name).set(
+                rating_type_counter[(rating_type, state)]
+            )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.update_data"><code class="name flex">
 <span>async def <span class="ident">update_data</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def update_data(self):
+    &#34;&#34;&#34;
+    Loads from the database the mostly-constant things that it doesn&#39;t make sense to query every
+    time we need, but which can in principle change over time.
+    &#34;&#34;&#34;
+    async with self._db.acquire() as conn:
+        rows = await conn.execute(
+            select(
+                game_featuredMods.c.id,
+                game_featuredMods.c.gamemod,
+                game_featuredMods.c.name,
+                game_featuredMods.c.description,
+                game_featuredMods.c.publish,
+                game_featuredMods.c.order
+            )
+        )
+
+        for row in rows:
+            self.featured_mods[row.gamemod] = FeaturedMod(
+                row.id,
+                row.gamemod,
+                row.name,
+                row.description,
+                row.publish,
+                row.order
+            )
+
+        result = await conn.execute(
+            &#34;SELECT uid FROM table_mod WHERE ranked = 1&#34;
+        )
+
+        # Turn resultset into a list of uids
+        self.ranked_mods = {row.uid for row in result}</code></pre>
+</details>
 <div class="desc"><p>Loads from the database the mostly-constant things that it doesn't make sense to query every
 time we need, but which can in principle change over time.</p></div>
 </dd>
@@ -597,7 +894,7 @@ time we need, but which can in principle change over time.</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
 </footer>
 </body>
 </html>

@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.1">
+<meta name="generator" content="pdoc3 0.11.5">
 <title>server.gameconnection API documentation</title>
 <meta name="description" content="Game communication over GpgNet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -38,11 +49,9 @@ hljs.highlightAll();
 <dl>
 <dt id="server.gameconnection.GameConnection"><code class="flex name class">
 <span>class <span class="ident">GameConnection</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>, game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>, player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>, protocol: <a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>, player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>, games: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>, state: <a title="server.games.typedefs.GameConnectionState" href="games/typedefs.html#server.games.typedefs.GameConnectionState">GameConnectionState</a> = GameConnectionState.INITIALIZING, setup_timeout: int = 60)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>protocol: <a title="server.protocol.protocol.Protocol" href="protocol/protocol.html#server.protocol.protocol.Protocol">Protocol</a>,<br>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>,<br>games: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>,<br>state: <a title="server.games.typedefs.GameConnectionState" href="games/typedefs.html#server.games.typedefs.GameConnectionState">GameConnectionState</a> = GameConnectionState.INITIALIZING,<br>setup_timeout: int = 60)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Responsible for connections to the game, using the GPGNet protocol</p>
-<p>Construct a new GameConnection</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -639,6 +648,8 @@ hljs.highlightAll();
     def __str__(self):
         return f&#34;GameConnection({self.player}, {self.game})&#34;</code></pre>
 </details>
+<div class="desc"><p>Responsible for connections to the game, using the GPGNet protocol</p>
+<p>Construct a new GameConnection</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="server.protocol.gpgnet.GpgNetServerProtocol" href="protocol/gpgnet.html#server.protocol.gpgnet.GpgNetServerProtocol">GpgNetServerProtocol</a></li>
@@ -647,7 +658,6 @@ hljs.highlightAll();
 <dl>
 <dt id="server.gameconnection.GameConnection.state"><code class="name">prop <span class="ident">state</span> : <a title="server.games.typedefs.GameConnectionState" href="games/typedefs.html#server.games.typedefs.GameConnectionState">GameConnectionState</a></code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -656,6 +666,7 @@ hljs.highlightAll();
 def state(self) -&gt; GameConnectionState:
     return self._state</code></pre>
 </details>
+<div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -664,44 +675,192 @@ def state(self) -&gt; GameConnectionState:
 <span>async def <span class="ident">abort</span></span>(<span>self, log_message: str = '')</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def abort(self, log_message: str = &#34;&#34;):
+    &#34;&#34;&#34;
+    Abort the connection
+
+    Removes the GameConnection object from the any associated Game object,
+    and deletes references to Player and Game held by this object.
+    &#34;&#34;&#34;
+    try:
+        if self._state is GameConnectionState.ENDED:
+            return
+
+        self._logger.debug(&#34;%s.abort(%s)&#34;, self, log_message)
+
+        if self.game.state is GameState.LOBBY:
+            await self.disconnect_all_peers()
+
+        self._state = GameConnectionState.ENDED
+        await self.game.remove_game_connection(self)
+        self._mark_dirty()
+        self.player.state = PlayerState.IDLE
+        if self.player.lobby_connection:
+            self.player.lobby_connection.game_connection = None
+        del self.player.game
+        del self.player.game_connection
+    except Exception as ex:  # pragma: no cover
+        self._logger.debug(&#34;Exception in abort(): %s&#34;, ex)</code></pre>
+</details>
 <div class="desc"><p>Abort the connection</p>
 <p>Removes the GameConnection object from the any associated Game object,
 and deletes references to Player and Game held by this object.</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.connect_to_host"><code class="name flex">
-<span>async def <span class="ident">connect_to_host</span></span>(<span>self, peer: <a title="server.gameconnection.GameConnection" href="#server.gameconnection.GameConnection">GameConnection</a>)</span>
+<span>async def <span class="ident">connect_to_host</span></span>(<span>self,<br>peer: <a title="server.gameconnection.GameConnection" href="#server.gameconnection.GameConnection">GameConnection</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def connect_to_host(self, peer: &#34;GameConnection&#34;):
+    &#34;&#34;&#34;
+    Connect self to a given peer (host)
+    &#34;&#34;&#34;
+    if not peer or peer.player.state != PlayerState.HOSTING:
+        await self.abort(&#34;The host left the lobby&#34;)
+        return
+
+    await self.send_JoinGame(peer.player.login, peer.player.id)
+
+    if not peer:
+        await self.abort(&#34;The host left the lobby&#34;)
+        return
+
+    await peer.send_ConnectToPeer(
+        player_name=self.player.login,
+        player_uid=self.player.id,
+        offer=True
+    )</code></pre>
+</details>
 <div class="desc"><p>Connect self to a given peer (host)</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.connect_to_peer"><code class="name flex">
-<span>async def <span class="ident">connect_to_peer</span></span>(<span>self, peer: <a title="server.gameconnection.GameConnection" href="#server.gameconnection.GameConnection">GameConnection</a>)</span>
+<span>async def <span class="ident">connect_to_peer</span></span>(<span>self,<br>peer: <a title="server.gameconnection.GameConnection" href="#server.gameconnection.GameConnection">GameConnection</a>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def connect_to_peer(self, peer: &#34;GameConnection&#34;):
+    &#34;&#34;&#34;
+    Connect two peers
+    &#34;&#34;&#34;
+    if peer is not None:
+        await self.send_ConnectToPeer(
+            player_name=peer.player.login,
+            player_uid=peer.player.id,
+            offer=True
+        )
+
+    if peer is not None:
+        with contextlib.suppress(DisconnectedError):
+            await peer.send_ConnectToPeer(
+                player_name=self.player.login,
+                player_uid=self.player.id,
+                offer=False
+            )</code></pre>
+</details>
 <div class="desc"><p>Connect two peers</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.disconnect_all_peers"><code class="name flex">
 <span>async def <span class="ident">disconnect_all_peers</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def disconnect_all_peers(self):
+    tasks = []
+    for peer in self.game.connections:
+        if peer == self:
+            continue
+
+        tasks.append(peer.send_DisconnectFromPeer(self.player.id))
+
+    for fut in asyncio.as_completed(tasks):
+        try:
+            await fut
+        except Exception:
+            self._logger.debug(
+                &#34;peer_sendDisconnectFromPeer failed for player %i&#34;,
+                self.player.id,
+                exc_info=True
+            )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_action"><code class="name flex">
 <span>async def <span class="ident">handle_action</span></span>(<span>self, command: str, args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_action(self, command: str, args: list[Any]):
+    &#34;&#34;&#34;
+    Handle GpgNetSend messages, wrapped in the JSON protocol
+    &#34;&#34;&#34;
+    try:
+        await COMMAND_HANDLERS[command](self, *args)
+    except KeyError:
+        self._logger.warning(
+            &#34;Unrecognized command %s: %s from player %s&#34;,
+            command, args, self.player
+        )
+    except (TypeError, ValueError):
+        self._logger.exception(&#34;Bad command arguments&#34;)
+    except ConnectionError as e:
+        raise e
+    except Exception as e:  # pragma: no cover
+        self._logger.exception(
+            &#34;Something awful happened in a game thread! %s&#34;,
+            e
+        )
+        await self.abort()</code></pre>
+</details>
 <div class="desc"><p>Handle GpgNetSend messages, wrapped in the JSON protocol</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_ai_option"><code class="name flex">
 <span>async def <span class="ident">handle_ai_option</span></span>(<span>self, name: Any, key: Any, value: Any)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_ai_option(self, name: Any, key: Any, value: Any):
+    if not self.is_host():
+        return
+
+    self.game.set_ai_option(str(name), key, value)
+    self._mark_dirty()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_bottleneck"><code class="name flex">
 <span>async def <span class="ident">handle_bottleneck</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_bottleneck(self, *args: list[Any]):
+    &#34;&#34;&#34;
+    Not sure what this command means. This is currently unused but
+    included for documentation purposes.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
 included for documentation purposes.</p></div>
 </dd>
@@ -709,6 +868,17 @@ included for documentation purposes.</p></div>
 <span>async def <span class="ident">handle_bottleneck_cleared</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_bottleneck_cleared(self, *args: list[Any]):
+    &#34;&#34;&#34;
+    Not sure what this command means. This is currently unused but
+    included for documentation purposes.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
 included for documentation purposes.</p></div>
 </dd>
@@ -716,24 +886,63 @@ included for documentation purposes.</p></div>
 <span>async def <span class="ident">handle_chat</span></span>(<span>self, message: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_chat(self, message: str):
+    &#34;&#34;&#34;
+    Whenever the player sends a chat message during the game lobby.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Whenever the player sends a chat message during the game lobby.</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_clear_slot"><code class="name flex">
 <span>async def <span class="ident">handle_clear_slot</span></span>(<span>self, slot: Any)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_clear_slot(self, slot: Any):
+    if not self.is_host():
+        return
+
+    self.game.clear_slot(int(slot))
+    self._mark_dirty()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_desync"><code class="name flex">
 <span>async def <span class="ident">handle_desync</span></span>(<span>self, *_args)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_desync(self, *_args):  # pragma: no cover
+    self.game.desyncs += 1</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_disconnected"><code class="name flex">
 <span>async def <span class="ident">handle_disconnected</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_disconnected(self, *args: list[Any]):
+    &#34;&#34;&#34;
+    Not sure what this command means. This is currently unused but
+    included for documentation purposes.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
 included for documentation purposes.</p></div>
 </dd>
@@ -741,60 +950,258 @@ included for documentation purposes.</p></div>
 <span>async def <span class="ident">handle_enforce_rating</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_enforce_rating(self):
+    self.game.enforce_rating = True</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_game_ended"><code class="name flex">
 <span>async def <span class="ident">handle_game_ended</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_game_ended(self, *args: list[Any]):
+    &#34;&#34;&#34;
+    Signals that the simulation has ended.
+    &#34;&#34;&#34;
+    self.finished_sim = True
+    await self.game.check_game_finish(self.player)</code></pre>
+</details>
 <div class="desc"><p>Signals that the simulation has ended.</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_game_full"><code class="name flex">
 <span>async def <span class="ident">handle_game_full</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_game_full(self):
+    &#34;&#34;&#34;
+    Sent when all game slots are full
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Sent when all game slots are full</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_game_mods"><code class="name flex">
 <span>async def <span class="ident">handle_game_mods</span></span>(<span>self, mode: Any, args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_game_mods(self, mode: Any, args: list[Any]):
+    if not self.is_host():
+        return
+
+    if mode == &#34;activated&#34;:
+        # In this case args is the number of mods
+        if int(args) == 0:
+            self.game.mods = {}
+
+    elif mode == &#34;uids&#34;:
+        uids = str(args).split()
+        self.game.mods = {uid: &#34;Unknown sim mod&#34; for uid in uids}
+        async with self._db.acquire() as conn:
+            rows = await conn.execute(
+                &#34;SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids&#34;,
+                ids=tuple(uids)
+            )
+            for row in rows:
+                self.game.mods[row.uid] = row.name
+    else:
+        self._logger.warning(&#34;Ignoring game mod: %s, %s&#34;, mode, args)
+        return
+
+    self._mark_dirty()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_game_option"><code class="name flex">
 <span>async def <span class="ident">handle_game_option</span></span>(<span>self, key: str, value: Any)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_game_option(self, key: str, value: Any):
+    if not self.is_host():
+        return
+
+    await self.game.game_options.set_option(key, value)
+
+    self._mark_dirty()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_game_result"><code class="name flex">
 <span>async def <span class="ident">handle_game_result</span></span>(<span>self, army: Any, result: Any)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_game_result(self, army: Any, result: Any):
+    army = int(army)
+    result = str(result).lower()
+
+    try:
+        *metadata, result_type, score = result.split()
+    except ValueError:
+        self._logger.warning(&#34;Invalid result for %s reported: %s&#34;, army, result)
+    else:
+        await self.game.add_result(
+            self.player.id,
+            army,
+            result_type,
+            int(score),
+            frozenset(metadata),
+        )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_game_state"><code class="name flex">
 <span>async def <span class="ident">handle_game_state</span></span>(<span>self, state: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_game_state(self, state: str):
+    &#34;&#34;&#34;
+    Changes in game state
+    &#34;&#34;&#34;
+
+    if state == &#34;Idle&#34;:
+        await self._handle_idle_state()
+        # Don&#39;t mark as dirty
+        return
+
+    elif state == &#34;Lobby&#34;:
+        # TODO: Do we still need to schedule with `ensure_future`?
+        #
+        # We do not yield from the task, since we
+        # need to keep processing other commands while it runs
+        await self._handle_lobby_state()
+
+    elif state == &#34;Launching&#34;:
+        if self.player.state != PlayerState.HOSTING:
+            return
+
+        if self.game.state is not GameState.LOBBY:
+            self._logger.warning(
+                &#34;Trying to launch game %s in invalid state %s&#34;,
+                self.game,
+                self.game.state
+            )
+            return
+
+        self._logger.info(&#34;Launching game %s&#34;, self.game)
+
+        await self.game.launch()
+
+        if len(self.game.mods.keys()) &gt; 0:
+            async with self._db.acquire() as conn:
+                uids = list(self.game.mods.keys())
+                await conn.execute(
+                    &#34;UPDATE mod_stats s JOIN mod_version v ON &#34;
+                    &#34;v.mod_id = s.mod_id &#34;
+                    &#34;SET s.times_played = s.times_played + 1 &#34;
+                    &#34;WHERE v.uid in :ids&#34;,
+                    ids=tuple(uids)
+                )
+    # Signals that the FA executable has been closed
+    elif state == &#34;Ended&#34;:
+        await self.on_connection_closed()
+    self._mark_dirty()</code></pre>
+</details>
 <div class="desc"><p>Changes in game state</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_ice_message"><code class="name flex">
 <span>async def <span class="ident">handle_ice_message</span></span>(<span>self, receiver_id: Any, ice_msg: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_ice_message(self, receiver_id: Any, ice_msg: str):
+    receiver_id = int(receiver_id)
+    peer = self.player_service.get_player(receiver_id)
+    if not peer:
+        self._logger.debug(
+            &#34;Ignoring ICE message for unknown player: %s&#34;, receiver_id
+        )
+        return
+
+    game_connection = peer.game_connection
+    if not game_connection:
+        self._logger.debug(
+            &#34;Ignoring ICE message for player without game connection: %s&#34;, receiver_id
+        )
+        return
+
+    try:
+        await game_connection.send({
+            &#34;command&#34;: &#34;IceMsg&#34;,
+            &#34;args&#34;: [int(self.player.id), ice_msg]
+        })
+    except DisconnectedError:
+        self._logger.debug(
+            &#34;Failed to send ICE message to player due to a disconnect: %s&#34;,
+            receiver_id
+        )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_json_stats"><code class="name flex">
 <span>async def <span class="ident">handle_json_stats</span></span>(<span>self, stats: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_json_stats(self, stats: str):
+    try:
+        self.game.report_army_stats(stats)
+    except json.JSONDecodeError as e:
+        self._logger.warning(
+            &#34;Malformed game stats reported by %s: &#39;...%s...&#39;&#34;,
+            self.player.login,
+            stats[e.pos-20:e.pos+20]
+        )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_launch_status"><code class="name flex">
 <span>async def <span class="ident">handle_launch_status</span></span>(<span>self, status: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_launch_status(self, status: str):
+    &#34;&#34;&#34;
+    Currently is sent with status `Rejected` if a matchmaker game failed
+    to start due to players using differing game settings.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Currently is sent with status <code>Rejected</code> if a matchmaker game failed
 to start due to players using differing game settings.</p></div>
 </dd>
@@ -802,6 +1209,64 @@ to start due to players using differing game settings.</p></div>
 <span>async def <span class="ident">handle_operation_complete</span></span>(<span>self, primary: Any, secondary: Any, delta: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_operation_complete(
+    self, primary: Any, secondary: Any, delta: str
+):
+    &#34;&#34;&#34;
+    # Params
+    - `primary`: are primary mission objectives complete?
+    - `secondary`: are secondary mission objectives complete?
+    - `delta`: the time it took to complete the mission
+    &#34;&#34;&#34;
+    primary = FA.ENABLED == primary
+    secondary = FA.ENABLED == secondary
+
+    if not primary:
+        return
+
+    if not isinstance(self.game, CoopGame):
+        self._logger.warning(
+            &#34;OperationComplete called for non-coop game: %s&#34;, self.game.id
+        )
+        return
+
+    if self.game.validity != ValidityState.COOP_NOT_RANKED:
+        return
+
+    secondary, delta = secondary, str(delta)
+    async with self._db.acquire() as conn:
+        result = await conn.execute(
+            select(coop_map.c.id).where(
+                coop_map.c.filename == self.game.map.file_path
+            )
+        )
+        row = result.fetchone()
+        if not row:
+            self._logger.debug(
+                &#34;can&#39;t find coop map: %s&#34;, self.game.map.file_path
+            )
+            return
+        mission = row.id
+
+        # Each player in a co-op game will send the OperationComplete
+        # message but we only need to perform this insert once
+        async with self.game.leaderboard_lock:
+            if not self.game.leaderboard_saved:
+                await conn.execute(
+                    coop_leaderboard.insert().values(
+                        mission=mission,
+                        gameuid=self.game.id,
+                        secondary=secondary,
+                        time=delta,
+                        player_count=len(self.game.players),
+                    )
+                )
+                self.game.leaderboard_saved = True</code></pre>
+</details>
 <div class="desc"><h1 id="params">Params</h1>
 <ul>
 <li><code>primary</code>: are primary mission objectives complete?</li>
@@ -813,19 +1278,83 @@ to start due to players using differing game settings.</p></div>
 <span>async def <span class="ident">handle_player_option</span></span>(<span>self, player_id: Any, key: Any, value: Any)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_player_option(
+    self, player_id: Any, key: Any, value: Any
+):
+    if not self.is_host():
+        return
+
+    self.game.set_player_option(int(player_id), key, value)
+    self._mark_dirty()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_rehost"><code class="name flex">
 <span>async def <span class="ident">handle_rehost</span></span>(<span>self, *args: list[typing.Any])</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_rehost(self, *args: list[Any]):
+    &#34;&#34;&#34;
+    Signals that the user has rehosted the game. This is currently unused but
+    included for documentation purposes.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Signals that the user has rehosted the game. This is currently unused but
 included for documentation purposes.</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_teamkill_happened"><code class="name flex">
-<span>async def <span class="ident">handle_teamkill_happened</span></span>(<span>self, gametime: Any, victim_id: Any, victim_name: str, teamkiller_id: Any, teamkiller_name: str)</span>
+<span>async def <span class="ident">handle_teamkill_happened</span></span>(<span>self,<br>gametime: Any,<br>victim_id: Any,<br>victim_name: str,<br>teamkiller_id: Any,<br>teamkiller_name: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_teamkill_happened(
+    self,
+    gametime: Any,
+    victim_id: Any,
+    victim_name: str,
+    teamkiller_id: Any,
+    teamkiller_name: str,
+):
+    &#34;&#34;&#34;
+    Send automatically by the game whenever a teamkill happens. Takes
+    the same parameters as TeamkillReport.
+
+    # Params
+    - `gametime`: seconds of gametime when kill happened
+    - `victim_id`: victim id
+    - `victim_name`: victim nickname (for debug purpose only)
+    - `teamkiller_id`: teamkiller id
+    - `teamkiller_name`: teamkiller nickname (for debug purpose only)
+    &#34;&#34;&#34;
+    victim_id = int(victim_id)
+    teamkiller_id = int(teamkiller_id)
+
+    if 0 in (victim_id, teamkiller_id):
+        self._logger.debug(&#34;Ignoring teamkill for AI player&#34;)
+        return
+
+    async with self._db.acquire() as conn:
+        await conn.execute(
+            teamkills.insert().values(
+                teamkiller=teamkiller_id,
+                victim=victim_id,
+                game_id=self.game.id,
+                gametime=gametime,
+            )
+        )</code></pre>
+</details>
 <div class="desc"><p>Send automatically by the game whenever a teamkill happens. Takes
 the same parameters as TeamkillReport.</p>
 <h1 id="params">Params</h1>
@@ -838,9 +1367,33 @@ the same parameters as TeamkillReport.</p>
 </ul></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_teamkill_report"><code class="name flex">
-<span>async def <span class="ident">handle_teamkill_report</span></span>(<span>self, gametime: Any, reporter_id: Any, reporter_name: str, teamkiller_id: Any, teamkiller_name: str)</span>
+<span>async def <span class="ident">handle_teamkill_report</span></span>(<span>self,<br>gametime: Any,<br>reporter_id: Any,<br>reporter_name: str,<br>teamkiller_id: Any,<br>teamkiller_name: str)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def handle_teamkill_report(
+    self,
+    gametime: Any,
+    reporter_id: Any,
+    reporter_name: str,
+    teamkiller_id: Any,
+    teamkiller_name: str,
+):
+    &#34;&#34;&#34;
+    Sent when a player is teamkilled and clicks the &#39;Report&#39; button.
+
+    # Params
+    - `gametime`: seconds of gametime when kill happened
+    - `reporter_id`: reporter id
+    - `reporter_name`: reporter nickname (for debug purpose only)
+    - `teamkiller_id`: teamkiller id
+    - `teamkiller_name`: teamkiller nickname (for debug purpose only)
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
 <div class="desc"><p>Sent when a player is teamkilled and clicks the 'Report' button.</p>
 <h1 id="params">Params</h1>
 <ul>
@@ -855,24 +1408,87 @@ the same parameters as TeamkillReport.</p>
 <span>def <span class="ident">is_host</span></span>(<span>self) ‑> bool</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_host(self) -&gt; bool:
+    if not self.game or not self.player:
+        return False
+
+    return (
+        self.player.state == PlayerState.HOSTING and
+        self.player == self.game.host
+    )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.on_connection_closed"><code class="name flex">
 <span>async def <span class="ident">on_connection_closed</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def on_connection_closed(self):
+    &#34;&#34;&#34;
+    The connection is closed by the player.
+    &#34;&#34;&#34;
+    try:
+        await self.game.disconnect_player(self.player)
+    except Exception as e:  # pragma: no cover
+        self._logger.exception(e)
+    finally:
+        await self.abort()</code></pre>
+</details>
 <div class="desc"><p>The connection is closed by the player.</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.on_connection_lost"><code class="name flex">
 <span>async def <span class="ident">on_connection_lost</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def on_connection_lost(self):
+    &#34;&#34;&#34;
+    The connection is lost due to a disconnect from the lobby server.
+    &#34;&#34;&#34;
+    try:
+        await self.game.remove_game_connection(self)
+    except Exception as e:  # pragma: no cover
+        self._logger.exception(e)
+    finally:
+        await self.abort()</code></pre>
+</details>
 <div class="desc"><p>The connection is lost due to a disconnect from the lobby server.</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.send"><code class="name flex">
 <span>async def <span class="ident">send</span></span>(<span>self, message)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def send(self, message):
+    &#34;&#34;&#34;
+    Send a game message to the client.
+
+    # Errors
+    May raise `DisconnectedError`
+
+    NOTE: When calling this on a connection other than `self` make sure to
+    handle `DisconnectedError`, otherwise failure to send the message will
+    cause the caller to be disconnected as well.
+    &#34;&#34;&#34;
+    message[&#34;target&#34;] = &#34;game&#34;
+
+    self._logger.log(TRACE, &#34;&gt;&gt; %s: %s&#34;, self.player.login, message)
+    await self.protocol.send_message(message)</code></pre>
+</details>
 <div class="desc"><p>Send a game message to the client.</p>
 <h1 id="errors">Errors</h1>
 <p>May raise <code>DisconnectedError</code></p>
@@ -884,6 +1500,16 @@ cause the caller to be disconnected as well.</p></div>
 <span>async def <span class="ident">timeout_game_connection</span></span>(<span>self, timeout)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def timeout_game_connection(self, timeout):
+    await asyncio.sleep(timeout)
+    if self.state is GameConnectionState.INITIALIZING:
+        self._logger.debug(&#34;GameConection timed out...&#34;)
+        await self.abort(&#34;Player took too long to start the game&#34;)</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -958,7 +1584,7 @@ cause the caller to be disconnected as well.</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
 </footer>
 </body>
 </html>

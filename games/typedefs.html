@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.1">
+<meta name="generator" content="pdoc3 0.11.5">
 <title>server.games.typedefs API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -37,15 +48,9 @@ hljs.highlightAll();
 <dl>
 <dt id="server.games.typedefs.BasicGameInfo"><code class="flex name class">
 <span>class <span class="ident">BasicGameInfo</span></span>
-<span>(</span><span>game_id: int, rating_type: Optional[str], map_id: int, game_mode: str, mods: list[int], teams: list[set[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]])</span>
+<span>(</span><span>game_id: int,<br>rating_type: str | None,<br>map_id: int,<br>game_mode: str,<br>mods: list[int],<br>teams: list[set[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Holds basic information about a game that does not change after launch.
-Fields:
-- game_id: id of the game
-- rating_type: str (e.g. "ladder1v1")
-- map_id: id of the map used
-- game_mode: name of the featured mod</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -67,6 +72,12 @@ Fields:
     mods: list[int]
     teams: list[set[Player]]</code></pre>
 </details>
+<div class="desc"><p>Holds basic information about a game that does not change after launch.
+Fields:
+- game_id: id of the game
+- rating_type: str (e.g. "ladder1v1")
+- map_id: id of the map used
+- game_mode: name of the featured mod</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.tuple</li>
@@ -75,44 +86,161 @@ Fields:
 <dl>
 <dt id="server.games.typedefs.BasicGameInfo.game_id"><code class="name">var <span class="ident">game_id</span> : int</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BasicGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds basic information about a game that does not change after launch.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    teams: list[set[Player]]</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 0</p></div>
 </dd>
 <dt id="server.games.typedefs.BasicGameInfo.game_mode"><code class="name">var <span class="ident">game_mode</span> : str</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BasicGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds basic information about a game that does not change after launch.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    teams: list[set[Player]]</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 3</p></div>
 </dd>
 <dt id="server.games.typedefs.BasicGameInfo.map_id"><code class="name">var <span class="ident">map_id</span> : int</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BasicGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds basic information about a game that does not change after launch.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    teams: list[set[Player]]</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 2</p></div>
 </dd>
 <dt id="server.games.typedefs.BasicGameInfo.mods"><code class="name">var <span class="ident">mods</span> : list[int]</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BasicGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds basic information about a game that does not change after launch.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    teams: list[set[Player]]</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 4</p></div>
 </dd>
-<dt id="server.games.typedefs.BasicGameInfo.rating_type"><code class="name">var <span class="ident">rating_type</span> : Optional[str]</code></dt>
+<dt id="server.games.typedefs.BasicGameInfo.rating_type"><code class="name">var <span class="ident">rating_type</span> : str | None</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BasicGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds basic information about a game that does not change after launch.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    teams: list[set[Player]]</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 1</p></div>
 </dd>
 <dt id="server.games.typedefs.BasicGameInfo.teams"><code class="name">var <span class="ident">teams</span> : list[set[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]]</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BasicGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds basic information about a game that does not change after launch.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    teams: list[set[Player]]</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 5</p></div>
 </dd>
 </dl>
 </dd>
 <dt id="server.games.typedefs.EndedGameInfo"><code class="flex name class">
 <span>class <span class="ident">EndedGameInfo</span></span>
-<span>(</span><span>game_id: int, rating_type: Optional[str], map_id: int, game_mode: str, mods: list[int], commander_kills: dict[str, int], validity: <a title="server.games.typedefs.ValidityState" href="#server.games.typedefs.ValidityState">ValidityState</a>, team_summaries: list[<a title="server.games.typedefs.TeamRatingSummary" href="#server.games.typedefs.TeamRatingSummary">TeamRatingSummary</a>])</span>
+<span>(</span><span>game_id: int,<br>rating_type: str | None,<br>map_id: int,<br>game_mode: str,<br>mods: list[int],<br>commander_kills: dict[str, int],<br>validity: <a title="server.games.typedefs.ValidityState" href="#server.games.typedefs.ValidityState">ValidityState</a>,<br>team_summaries: list[<a title="server.games.typedefs.TeamRatingSummary" href="#server.games.typedefs.TeamRatingSummary">TeamRatingSummary</a>])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Holds the outcome of an ended game.
-Fields:
-- game_id: id of the game
-- rating_type: str (e.g. "ladder1v1")
-- map_id: id of the map used
-- game_mode: name of the featured mod
-- validity: ValidityState (e.g. VALID or TOO_SHORT)
-- team_summaries: a list of TeamRatingSummaries containing IDs of players
-on the team and the team's outcome</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -196,6 +324,15 @@ on the team and the team's outcome</p></div>
             ],
         }</code></pre>
 </details>
+<div class="desc"><p>Holds the outcome of an ended game.
+Fields:
+- game_id: id of the game
+- rating_type: str (e.g. "ladder1v1")
+- map_id: id of the map used
+- game_mode: name of the featured mod
+- validity: ValidityState (e.g. VALID or TOO_SHORT)
+- team_summaries: a list of TeamRatingSummaries containing IDs of players
+on the team and the team's outcome</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.tuple</li>
@@ -203,7 +340,7 @@ on the team and the team's outcome</p></div>
 <h3>Static methods</h3>
 <dl>
 <dt id="server.games.typedefs.EndedGameInfo.from_basic"><code class="name flex">
-<span>def <span class="ident">from_basic</span></span>(<span>basic_info: <a title="server.games.typedefs.BasicGameInfo" href="#server.games.typedefs.BasicGameInfo">BasicGameInfo</a>, validity: <a title="server.games.typedefs.ValidityState" href="#server.games.typedefs.ValidityState">ValidityState</a>, team_outcomes: list[<a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>], commander_kills: dict[str, int], team_army_results: list[list[<a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a>]]) ‑> <a title="server.games.typedefs.EndedGameInfo" href="#server.games.typedefs.EndedGameInfo">EndedGameInfo</a></span>
+<span>def <span class="ident">from_basic</span></span>(<span>basic_info: <a title="server.games.typedefs.BasicGameInfo" href="#server.games.typedefs.BasicGameInfo">BasicGameInfo</a>,<br>validity: <a title="server.games.typedefs.ValidityState" href="#server.games.typedefs.ValidityState">ValidityState</a>,<br>team_outcomes: list[<a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>],<br>commander_kills: dict[str, int],<br>team_army_results: list[list[<a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a>]]) ‑> <a title="server.games.typedefs.EndedGameInfo" href="#server.games.typedefs.EndedGameInfo">EndedGameInfo</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -213,34 +350,698 @@ on the team and the team's outcome</p></div>
 <dl>
 <dt id="server.games.typedefs.EndedGameInfo.commander_kills"><code class="name">var <span class="ident">commander_kills</span> : dict[str, int]</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EndedGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds the outcome of an ended game.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+     - validity: ValidityState (e.g. VALID or TOO_SHORT)
+     - team_summaries: a list of TeamRatingSummaries containing IDs of players
+       on the team and the team&#39;s outcome
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    commander_kills: dict[str, int]
+    validity: ValidityState
+    team_summaries: list[TeamRatingSummary]
+
+    @classmethod
+    def from_basic(
+        cls,
+        basic_info: BasicGameInfo,
+        validity: ValidityState,
+        team_outcomes: list[GameOutcome],
+        commander_kills: dict[str, int],
+        team_army_results: list[list[ArmyResult]],
+    ) -&gt; &#34;EndedGameInfo&#34;:
+        if len(basic_info.teams) != len(team_outcomes):
+            raise ValueError(
+                &#34;Team sets of basic_info and team outcomes must refer to the &#34;
+                &#34;same number of teams in the same order.&#34;
+            )
+
+        return cls(
+            basic_info.game_id,
+            basic_info.rating_type,
+            basic_info.map_id,
+            basic_info.game_mode,
+            basic_info.mods,
+            commander_kills,
+            validity,
+            [
+                TeamRatingSummary(outcome, set(player.id for player in team), army_results)
+                for outcome, team, army_results
+                in zip(team_outcomes, basic_info.teams, team_army_results)
+            ],
+        )
+
+    def to_dict(self):
+        return {
+            &#34;game_id&#34;: self.game_id,
+            &#34;rating_type&#34;: self.rating_type
+            if self.rating_type is not None
+            else &#34;None&#34;,
+            &#34;map_id&#34;: self.map_id,
+            &#34;featured_mod&#34;: self.game_mode,
+            &#34;sim_mod_ids&#34;: self.mods,
+            &#34;commander_kills&#34;: self.commander_kills,
+            &#34;validity&#34;: self.validity.name,
+            &#34;teams&#34;: [
+                {
+                    &#34;outcome&#34;: team_summary.outcome.name,
+                    &#34;player_ids&#34;: list(team_summary.player_ids),
+                    &#34;army_results&#34;: [
+                        result._asdict()
+                        for result in sorted(
+                            team_summary.army_results,
+                            key=lambda x: x.player_id
+                        )
+                    ],
+                }
+                for team_summary in self.team_summaries
+            ],
+        }</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 5</p></div>
 </dd>
 <dt id="server.games.typedefs.EndedGameInfo.game_id"><code class="name">var <span class="ident">game_id</span> : int</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EndedGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds the outcome of an ended game.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+     - validity: ValidityState (e.g. VALID or TOO_SHORT)
+     - team_summaries: a list of TeamRatingSummaries containing IDs of players
+       on the team and the team&#39;s outcome
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    commander_kills: dict[str, int]
+    validity: ValidityState
+    team_summaries: list[TeamRatingSummary]
+
+    @classmethod
+    def from_basic(
+        cls,
+        basic_info: BasicGameInfo,
+        validity: ValidityState,
+        team_outcomes: list[GameOutcome],
+        commander_kills: dict[str, int],
+        team_army_results: list[list[ArmyResult]],
+    ) -&gt; &#34;EndedGameInfo&#34;:
+        if len(basic_info.teams) != len(team_outcomes):
+            raise ValueError(
+                &#34;Team sets of basic_info and team outcomes must refer to the &#34;
+                &#34;same number of teams in the same order.&#34;
+            )
+
+        return cls(
+            basic_info.game_id,
+            basic_info.rating_type,
+            basic_info.map_id,
+            basic_info.game_mode,
+            basic_info.mods,
+            commander_kills,
+            validity,
+            [
+                TeamRatingSummary(outcome, set(player.id for player in team), army_results)
+                for outcome, team, army_results
+                in zip(team_outcomes, basic_info.teams, team_army_results)
+            ],
+        )
+
+    def to_dict(self):
+        return {
+            &#34;game_id&#34;: self.game_id,
+            &#34;rating_type&#34;: self.rating_type
+            if self.rating_type is not None
+            else &#34;None&#34;,
+            &#34;map_id&#34;: self.map_id,
+            &#34;featured_mod&#34;: self.game_mode,
+            &#34;sim_mod_ids&#34;: self.mods,
+            &#34;commander_kills&#34;: self.commander_kills,
+            &#34;validity&#34;: self.validity.name,
+            &#34;teams&#34;: [
+                {
+                    &#34;outcome&#34;: team_summary.outcome.name,
+                    &#34;player_ids&#34;: list(team_summary.player_ids),
+                    &#34;army_results&#34;: [
+                        result._asdict()
+                        for result in sorted(
+                            team_summary.army_results,
+                            key=lambda x: x.player_id
+                        )
+                    ],
+                }
+                for team_summary in self.team_summaries
+            ],
+        }</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 0</p></div>
 </dd>
 <dt id="server.games.typedefs.EndedGameInfo.game_mode"><code class="name">var <span class="ident">game_mode</span> : str</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EndedGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds the outcome of an ended game.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+     - validity: ValidityState (e.g. VALID or TOO_SHORT)
+     - team_summaries: a list of TeamRatingSummaries containing IDs of players
+       on the team and the team&#39;s outcome
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    commander_kills: dict[str, int]
+    validity: ValidityState
+    team_summaries: list[TeamRatingSummary]
+
+    @classmethod
+    def from_basic(
+        cls,
+        basic_info: BasicGameInfo,
+        validity: ValidityState,
+        team_outcomes: list[GameOutcome],
+        commander_kills: dict[str, int],
+        team_army_results: list[list[ArmyResult]],
+    ) -&gt; &#34;EndedGameInfo&#34;:
+        if len(basic_info.teams) != len(team_outcomes):
+            raise ValueError(
+                &#34;Team sets of basic_info and team outcomes must refer to the &#34;
+                &#34;same number of teams in the same order.&#34;
+            )
+
+        return cls(
+            basic_info.game_id,
+            basic_info.rating_type,
+            basic_info.map_id,
+            basic_info.game_mode,
+            basic_info.mods,
+            commander_kills,
+            validity,
+            [
+                TeamRatingSummary(outcome, set(player.id for player in team), army_results)
+                for outcome, team, army_results
+                in zip(team_outcomes, basic_info.teams, team_army_results)
+            ],
+        )
+
+    def to_dict(self):
+        return {
+            &#34;game_id&#34;: self.game_id,
+            &#34;rating_type&#34;: self.rating_type
+            if self.rating_type is not None
+            else &#34;None&#34;,
+            &#34;map_id&#34;: self.map_id,
+            &#34;featured_mod&#34;: self.game_mode,
+            &#34;sim_mod_ids&#34;: self.mods,
+            &#34;commander_kills&#34;: self.commander_kills,
+            &#34;validity&#34;: self.validity.name,
+            &#34;teams&#34;: [
+                {
+                    &#34;outcome&#34;: team_summary.outcome.name,
+                    &#34;player_ids&#34;: list(team_summary.player_ids),
+                    &#34;army_results&#34;: [
+                        result._asdict()
+                        for result in sorted(
+                            team_summary.army_results,
+                            key=lambda x: x.player_id
+                        )
+                    ],
+                }
+                for team_summary in self.team_summaries
+            ],
+        }</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 3</p></div>
 </dd>
 <dt id="server.games.typedefs.EndedGameInfo.map_id"><code class="name">var <span class="ident">map_id</span> : int</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EndedGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds the outcome of an ended game.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+     - validity: ValidityState (e.g. VALID or TOO_SHORT)
+     - team_summaries: a list of TeamRatingSummaries containing IDs of players
+       on the team and the team&#39;s outcome
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    commander_kills: dict[str, int]
+    validity: ValidityState
+    team_summaries: list[TeamRatingSummary]
+
+    @classmethod
+    def from_basic(
+        cls,
+        basic_info: BasicGameInfo,
+        validity: ValidityState,
+        team_outcomes: list[GameOutcome],
+        commander_kills: dict[str, int],
+        team_army_results: list[list[ArmyResult]],
+    ) -&gt; &#34;EndedGameInfo&#34;:
+        if len(basic_info.teams) != len(team_outcomes):
+            raise ValueError(
+                &#34;Team sets of basic_info and team outcomes must refer to the &#34;
+                &#34;same number of teams in the same order.&#34;
+            )
+
+        return cls(
+            basic_info.game_id,
+            basic_info.rating_type,
+            basic_info.map_id,
+            basic_info.game_mode,
+            basic_info.mods,
+            commander_kills,
+            validity,
+            [
+                TeamRatingSummary(outcome, set(player.id for player in team), army_results)
+                for outcome, team, army_results
+                in zip(team_outcomes, basic_info.teams, team_army_results)
+            ],
+        )
+
+    def to_dict(self):
+        return {
+            &#34;game_id&#34;: self.game_id,
+            &#34;rating_type&#34;: self.rating_type
+            if self.rating_type is not None
+            else &#34;None&#34;,
+            &#34;map_id&#34;: self.map_id,
+            &#34;featured_mod&#34;: self.game_mode,
+            &#34;sim_mod_ids&#34;: self.mods,
+            &#34;commander_kills&#34;: self.commander_kills,
+            &#34;validity&#34;: self.validity.name,
+            &#34;teams&#34;: [
+                {
+                    &#34;outcome&#34;: team_summary.outcome.name,
+                    &#34;player_ids&#34;: list(team_summary.player_ids),
+                    &#34;army_results&#34;: [
+                        result._asdict()
+                        for result in sorted(
+                            team_summary.army_results,
+                            key=lambda x: x.player_id
+                        )
+                    ],
+                }
+                for team_summary in self.team_summaries
+            ],
+        }</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 2</p></div>
 </dd>
 <dt id="server.games.typedefs.EndedGameInfo.mods"><code class="name">var <span class="ident">mods</span> : list[int]</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EndedGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds the outcome of an ended game.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+     - validity: ValidityState (e.g. VALID or TOO_SHORT)
+     - team_summaries: a list of TeamRatingSummaries containing IDs of players
+       on the team and the team&#39;s outcome
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    commander_kills: dict[str, int]
+    validity: ValidityState
+    team_summaries: list[TeamRatingSummary]
+
+    @classmethod
+    def from_basic(
+        cls,
+        basic_info: BasicGameInfo,
+        validity: ValidityState,
+        team_outcomes: list[GameOutcome],
+        commander_kills: dict[str, int],
+        team_army_results: list[list[ArmyResult]],
+    ) -&gt; &#34;EndedGameInfo&#34;:
+        if len(basic_info.teams) != len(team_outcomes):
+            raise ValueError(
+                &#34;Team sets of basic_info and team outcomes must refer to the &#34;
+                &#34;same number of teams in the same order.&#34;
+            )
+
+        return cls(
+            basic_info.game_id,
+            basic_info.rating_type,
+            basic_info.map_id,
+            basic_info.game_mode,
+            basic_info.mods,
+            commander_kills,
+            validity,
+            [
+                TeamRatingSummary(outcome, set(player.id for player in team), army_results)
+                for outcome, team, army_results
+                in zip(team_outcomes, basic_info.teams, team_army_results)
+            ],
+        )
+
+    def to_dict(self):
+        return {
+            &#34;game_id&#34;: self.game_id,
+            &#34;rating_type&#34;: self.rating_type
+            if self.rating_type is not None
+            else &#34;None&#34;,
+            &#34;map_id&#34;: self.map_id,
+            &#34;featured_mod&#34;: self.game_mode,
+            &#34;sim_mod_ids&#34;: self.mods,
+            &#34;commander_kills&#34;: self.commander_kills,
+            &#34;validity&#34;: self.validity.name,
+            &#34;teams&#34;: [
+                {
+                    &#34;outcome&#34;: team_summary.outcome.name,
+                    &#34;player_ids&#34;: list(team_summary.player_ids),
+                    &#34;army_results&#34;: [
+                        result._asdict()
+                        for result in sorted(
+                            team_summary.army_results,
+                            key=lambda x: x.player_id
+                        )
+                    ],
+                }
+                for team_summary in self.team_summaries
+            ],
+        }</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 4</p></div>
 </dd>
-<dt id="server.games.typedefs.EndedGameInfo.rating_type"><code class="name">var <span class="ident">rating_type</span> : Optional[str]</code></dt>
+<dt id="server.games.typedefs.EndedGameInfo.rating_type"><code class="name">var <span class="ident">rating_type</span> : str | None</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EndedGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds the outcome of an ended game.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+     - validity: ValidityState (e.g. VALID or TOO_SHORT)
+     - team_summaries: a list of TeamRatingSummaries containing IDs of players
+       on the team and the team&#39;s outcome
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    commander_kills: dict[str, int]
+    validity: ValidityState
+    team_summaries: list[TeamRatingSummary]
+
+    @classmethod
+    def from_basic(
+        cls,
+        basic_info: BasicGameInfo,
+        validity: ValidityState,
+        team_outcomes: list[GameOutcome],
+        commander_kills: dict[str, int],
+        team_army_results: list[list[ArmyResult]],
+    ) -&gt; &#34;EndedGameInfo&#34;:
+        if len(basic_info.teams) != len(team_outcomes):
+            raise ValueError(
+                &#34;Team sets of basic_info and team outcomes must refer to the &#34;
+                &#34;same number of teams in the same order.&#34;
+            )
+
+        return cls(
+            basic_info.game_id,
+            basic_info.rating_type,
+            basic_info.map_id,
+            basic_info.game_mode,
+            basic_info.mods,
+            commander_kills,
+            validity,
+            [
+                TeamRatingSummary(outcome, set(player.id for player in team), army_results)
+                for outcome, team, army_results
+                in zip(team_outcomes, basic_info.teams, team_army_results)
+            ],
+        )
+
+    def to_dict(self):
+        return {
+            &#34;game_id&#34;: self.game_id,
+            &#34;rating_type&#34;: self.rating_type
+            if self.rating_type is not None
+            else &#34;None&#34;,
+            &#34;map_id&#34;: self.map_id,
+            &#34;featured_mod&#34;: self.game_mode,
+            &#34;sim_mod_ids&#34;: self.mods,
+            &#34;commander_kills&#34;: self.commander_kills,
+            &#34;validity&#34;: self.validity.name,
+            &#34;teams&#34;: [
+                {
+                    &#34;outcome&#34;: team_summary.outcome.name,
+                    &#34;player_ids&#34;: list(team_summary.player_ids),
+                    &#34;army_results&#34;: [
+                        result._asdict()
+                        for result in sorted(
+                            team_summary.army_results,
+                            key=lambda x: x.player_id
+                        )
+                    ],
+                }
+                for team_summary in self.team_summaries
+            ],
+        }</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 1</p></div>
 </dd>
 <dt id="server.games.typedefs.EndedGameInfo.team_summaries"><code class="name">var <span class="ident">team_summaries</span> : list[<a title="server.games.typedefs.TeamRatingSummary" href="#server.games.typedefs.TeamRatingSummary">TeamRatingSummary</a>]</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EndedGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds the outcome of an ended game.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+     - validity: ValidityState (e.g. VALID or TOO_SHORT)
+     - team_summaries: a list of TeamRatingSummaries containing IDs of players
+       on the team and the team&#39;s outcome
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    commander_kills: dict[str, int]
+    validity: ValidityState
+    team_summaries: list[TeamRatingSummary]
+
+    @classmethod
+    def from_basic(
+        cls,
+        basic_info: BasicGameInfo,
+        validity: ValidityState,
+        team_outcomes: list[GameOutcome],
+        commander_kills: dict[str, int],
+        team_army_results: list[list[ArmyResult]],
+    ) -&gt; &#34;EndedGameInfo&#34;:
+        if len(basic_info.teams) != len(team_outcomes):
+            raise ValueError(
+                &#34;Team sets of basic_info and team outcomes must refer to the &#34;
+                &#34;same number of teams in the same order.&#34;
+            )
+
+        return cls(
+            basic_info.game_id,
+            basic_info.rating_type,
+            basic_info.map_id,
+            basic_info.game_mode,
+            basic_info.mods,
+            commander_kills,
+            validity,
+            [
+                TeamRatingSummary(outcome, set(player.id for player in team), army_results)
+                for outcome, team, army_results
+                in zip(team_outcomes, basic_info.teams, team_army_results)
+            ],
+        )
+
+    def to_dict(self):
+        return {
+            &#34;game_id&#34;: self.game_id,
+            &#34;rating_type&#34;: self.rating_type
+            if self.rating_type is not None
+            else &#34;None&#34;,
+            &#34;map_id&#34;: self.map_id,
+            &#34;featured_mod&#34;: self.game_mode,
+            &#34;sim_mod_ids&#34;: self.mods,
+            &#34;commander_kills&#34;: self.commander_kills,
+            &#34;validity&#34;: self.validity.name,
+            &#34;teams&#34;: [
+                {
+                    &#34;outcome&#34;: team_summary.outcome.name,
+                    &#34;player_ids&#34;: list(team_summary.player_ids),
+                    &#34;army_results&#34;: [
+                        result._asdict()
+                        for result in sorted(
+                            team_summary.army_results,
+                            key=lambda x: x.player_id
+                        )
+                    ],
+                }
+                for team_summary in self.team_summaries
+            ],
+        }</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 7</p></div>
 </dd>
 <dt id="server.games.typedefs.EndedGameInfo.validity"><code class="name">var <span class="ident">validity</span> : <a title="server.games.typedefs.ValidityState" href="#server.games.typedefs.ValidityState">ValidityState</a></code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EndedGameInfo(NamedTuple):
+    &#34;&#34;&#34;
+    Holds the outcome of an ended game.
+    Fields:
+     - game_id: id of the game
+     - rating_type: str (e.g. &#34;ladder1v1&#34;)
+     - map_id: id of the map used
+     - game_mode: name of the featured mod
+     - validity: ValidityState (e.g. VALID or TOO_SHORT)
+     - team_summaries: a list of TeamRatingSummaries containing IDs of players
+       on the team and the team&#39;s outcome
+    &#34;&#34;&#34;
+
+    game_id: int
+    rating_type: Optional[str]
+    map_id: int
+    game_mode: str
+    mods: list[int]
+    commander_kills: dict[str, int]
+    validity: ValidityState
+    team_summaries: list[TeamRatingSummary]
+
+    @classmethod
+    def from_basic(
+        cls,
+        basic_info: BasicGameInfo,
+        validity: ValidityState,
+        team_outcomes: list[GameOutcome],
+        commander_kills: dict[str, int],
+        team_army_results: list[list[ArmyResult]],
+    ) -&gt; &#34;EndedGameInfo&#34;:
+        if len(basic_info.teams) != len(team_outcomes):
+            raise ValueError(
+                &#34;Team sets of basic_info and team outcomes must refer to the &#34;
+                &#34;same number of teams in the same order.&#34;
+            )
+
+        return cls(
+            basic_info.game_id,
+            basic_info.rating_type,
+            basic_info.map_id,
+            basic_info.game_mode,
+            basic_info.mods,
+            commander_kills,
+            validity,
+            [
+                TeamRatingSummary(outcome, set(player.id for player in team), army_results)
+                for outcome, team, army_results
+                in zip(team_outcomes, basic_info.teams, team_army_results)
+            ],
+        )
+
+    def to_dict(self):
+        return {
+            &#34;game_id&#34;: self.game_id,
+            &#34;rating_type&#34;: self.rating_type
+            if self.rating_type is not None
+            else &#34;None&#34;,
+            &#34;map_id&#34;: self.map_id,
+            &#34;featured_mod&#34;: self.game_mode,
+            &#34;sim_mod_ids&#34;: self.mods,
+            &#34;commander_kills&#34;: self.commander_kills,
+            &#34;validity&#34;: self.validity.name,
+            &#34;teams&#34;: [
+                {
+                    &#34;outcome&#34;: team_summary.outcome.name,
+                    &#34;player_ids&#34;: list(team_summary.player_ids),
+                    &#34;army_results&#34;: [
+                        result._asdict()
+                        for result in sorted(
+                            team_summary.army_results,
+                            key=lambda x: x.player_id
+                        )
+                    ],
+                }
+                for team_summary in self.team_summaries
+            ],
+        }</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 6</p></div>
 </dd>
 </dl>
@@ -250,6 +1051,37 @@ on the team and the team's outcome</p></div>
 <span>def <span class="ident">to_dict</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_dict(self):
+    return {
+        &#34;game_id&#34;: self.game_id,
+        &#34;rating_type&#34;: self.rating_type
+        if self.rating_type is not None
+        else &#34;None&#34;,
+        &#34;map_id&#34;: self.map_id,
+        &#34;featured_mod&#34;: self.game_mode,
+        &#34;sim_mod_ids&#34;: self.mods,
+        &#34;commander_kills&#34;: self.commander_kills,
+        &#34;validity&#34;: self.validity.name,
+        &#34;teams&#34;: [
+            {
+                &#34;outcome&#34;: team_summary.outcome.name,
+                &#34;player_ids&#34;: list(team_summary.player_ids),
+                &#34;army_results&#34;: [
+                    result._asdict()
+                    for result in sorted(
+                        team_summary.army_results,
+                        key=lambda x: x.player_id
+                    )
+                ],
+            }
+            for team_summary in self.team_summaries
+        ],
+    }</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -258,7 +1090,6 @@ on the team and the team's outcome</p></div>
 <span>class <span class="ident">FA</span></span>
 </code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -269,6 +1100,7 @@ on the team and the team's outcome</p></div>
     ENABLED = _FAEnabled()
     DISABLED = _FADisabled()</code></pre>
 </details>
+<div class="desc"></div>
 <h3>Class variables</h3>
 <dl>
 <dt id="server.games.typedefs.FA.DISABLED"><code class="name">var <span class="ident">DISABLED</span></code></dt>
@@ -285,7 +1117,6 @@ on the team and the team's outcome</p></div>
 <span>class <span class="ident">FeaturedModType</span></span>
 </code></dt>
 <dd>
-<div class="desc"><p>String constants for featured mod technical_name</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -300,6 +1131,7 @@ on the team and the team's outcome</p></div>
     FAFBETA = &#34;fafbeta&#34;
     LADDER_1V1 = &#34;ladder1v1&#34;</code></pre>
 </details>
+<div class="desc"><p>String constants for featured mod technical_name</p></div>
 <h3>Class variables</h3>
 <dl>
 <dt id="server.games.typedefs.FeaturedModType.COOP"><code class="name">var <span class="ident">COOP</span></code></dt>
@@ -325,7 +1157,6 @@ on the team and the team's outcome</p></div>
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>An enumeration.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -337,6 +1168,7 @@ class GameConnectionState(Enum):
     CONNECTED_TO_HOST = 2
     ENDED = 3</code></pre>
 </details>
+<div class="desc"><p>An enumeration.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>enum.Enum</li>
@@ -366,7 +1198,6 @@ class GameConnectionState(Enum):
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>An enumeration.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -378,6 +1209,7 @@ class GameState(Enum):
     LIVE = 2
     ENDED = 3</code></pre>
 </details>
+<div class="desc"><p>An enumeration.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>enum.Enum</li>
@@ -407,7 +1239,6 @@ class GameState(Enum):
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>An enumeration.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -418,6 +1249,7 @@ class GameType(Enum):
     CUSTOM = &#34;custom&#34;
     MATCHMAKER = &#34;matchmaker&#34;</code></pre>
 </details>
+<div class="desc"><p>An enumeration.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>enum.Enum</li>
@@ -443,7 +1275,6 @@ class GameType(Enum):
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>An enumeration.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -453,6 +1284,7 @@ class InitMode(Enum):
     NORMAL_LOBBY = 0
     AUTO_LOBBY = 1</code></pre>
 </details>
+<div class="desc"><p>An enumeration.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>enum.Enum</li>
@@ -471,10 +1303,9 @@ class InitMode(Enum):
 </dd>
 <dt id="server.games.typedefs.TeamRatingSummary"><code class="flex name class">
 <span>class <span class="ident">TeamRatingSummary</span></span>
-<span>(</span><span>outcome: <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>, player_ids: set[int], army_results: list[<a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a>])</span>
+<span>(</span><span>outcome: <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a>,<br>player_ids: set[int],<br>army_results: list[<a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a>])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>TeamRatingSummary(outcome, player_ids, army_results)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -484,6 +1315,7 @@ class InitMode(Enum):
     player_ids: set[int]
     army_results: list[ArmyResult]</code></pre>
 </details>
+<div class="desc"><p>TeamRatingSummary(outcome, player_ids, army_results)</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.tuple</li>
@@ -492,14 +1324,41 @@ class InitMode(Enum):
 <dl>
 <dt id="server.games.typedefs.TeamRatingSummary.army_results"><code class="name">var <span class="ident">army_results</span> : list[<a title="server.games.game_results.ArmyResult" href="game_results.html#server.games.game_results.ArmyResult">ArmyResult</a>]</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class TeamRatingSummary(NamedTuple):
+    outcome: GameOutcome
+    player_ids: set[int]
+    army_results: list[ArmyResult]</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 2</p></div>
 </dd>
 <dt id="server.games.typedefs.TeamRatingSummary.outcome"><code class="name">var <span class="ident">outcome</span> : <a title="server.db.typedefs.GameOutcome" href="../db/typedefs.html#server.db.typedefs.GameOutcome">GameOutcome</a></code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class TeamRatingSummary(NamedTuple):
+    outcome: GameOutcome
+    player_ids: set[int]
+    army_results: list[ArmyResult]</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 0</p></div>
 </dd>
 <dt id="server.games.typedefs.TeamRatingSummary.player_ids"><code class="name">var <span class="ident">player_ids</span> : set[int]</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class TeamRatingSummary(NamedTuple):
+    outcome: GameOutcome
+    player_ids: set[int]
+    army_results: list[ArmyResult]</code></pre>
+</details>
 <div class="desc"><p>Alias for field number 1</p></div>
 </dd>
 </dl>
@@ -509,7 +1368,6 @@ class InitMode(Enum):
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>An enumeration.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -543,6 +1401,7 @@ class ValidityState(Enum):
     OTHER_UNRANK = 24
     HOST_SET_UNRANKED = 25</code></pre>
 </details>
+<div class="desc"><p>An enumeration.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>enum.Enum</li>
@@ -660,7 +1519,6 @@ class ValidityState(Enum):
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>An enumeration.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -672,6 +1530,7 @@ class Victory(Enum):
     ERADICATION = 2
     SANDBOX = 3</code></pre>
 </details>
+<div class="desc"><p>An enumeration.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>enum.Enum</li>
@@ -701,7 +1560,6 @@ class Victory(Enum):
 <span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>An enumeration.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -711,6 +1569,7 @@ class VisibilityState(Enum):
     PUBLIC = &#34;public&#34;
     FRIENDS = &#34;friends&#34;</code></pre>
 </details>
+<div class="desc"><p>An enumeration.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>enum.Enum</li>
@@ -878,7 +1737,7 @@ class VisibilityState(Enum):
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
 </footer>
 </body>
 </html>

@@ -3,19 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.1">
+<meta name="generator" content="pdoc3 0.11.5">
 <title>server.db API documentation</title>
 <meta name="description" content="Database interaction">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
-<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => {
 hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
 hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
 })</script>
 </head>
 <body>
@@ -49,6 +60,21 @@ hljs.highlightAll();
 <span>def <span class="ident">stat_db_errors</span></span>(<span>)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@contextmanager
+def stat_db_errors():
+    &#34;&#34;&#34;
+    Collect metrics on errors thrown
+    &#34;&#34;&#34;
+    try:
+        yield
+    except DBAPIError as e:
+        db_exceptions.labels(e.__class__.__name__, e.code).inc()
+        raise e</code></pre>
+</details>
 <div class="desc"><p>Collect metrics on errors thrown</p></div>
 </dd>
 </dl>
@@ -58,22 +84,9 @@ hljs.highlightAll();
 <dl>
 <dt id="server.db.AsyncConnection"><code class="flex name class">
 <span>class <span class="ident">AsyncConnection</span></span>
-<span>(</span><span>async_engine: <a title="server.db.AsyncEngine" href="#server.db.AsyncEngine">AsyncEngine</a>, sync_connection: Optional[Connection] = None)</span>
+<span>(</span><span>async_engine: <a title="server.db.AsyncEngine" href="#server.db.AsyncEngine">AsyncEngine</a>,<br>sync_connection: Optional[Connection] = None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>An asyncio proxy for a :class:<code>_engine.Connection</code>.</p>
-<p>:class:<code>_asyncio.AsyncConnection</code> is acquired using the
-:meth:<code>_asyncio.AsyncEngine.connect</code>
-method of :class:<code>_asyncio.AsyncEngine</code>::</p>
-<pre><code>from sqlalchemy.ext.asyncio import create_async_engine
-engine = create_async_engine("postgresql+asyncpg://user:pass@host/dbname")
-
-async with engine.connect() as conn:
-    result = await conn.execute(select(table))
-</code></pre>
-<div class="admonition versionadded">
-<p class="admonition-title">Added in version:&ensp;1.4</p>
-</div></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -211,6 +224,19 @@ async with engine.connect() as conn:
             **kwargs
         )</code></pre>
 </details>
+<div class="desc"><p>An asyncio proxy for a :class:<code>_engine.Connection</code>.</p>
+<p>:class:<code>_asyncio.AsyncConnection</code> is acquired using the
+:meth:<code>_asyncio.AsyncEngine.connect</code>
+method of :class:<code>_asyncio.AsyncEngine</code>::</p>
+<pre><code>from sqlalchemy.ext.asyncio import create_async_engine
+engine = create_async_engine("postgresql+asyncpg://user:pass@host/dbname")
+
+async with engine.connect() as conn:
+    result = await conn.execute(select(table))
+</code></pre>
+<div class="admonition versionadded">
+<p class="admonition-title">Added in version:&ensp;1.4</p>
+</div></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>sqlalchemy.ext.asyncio.engine.AsyncConnection</li>
@@ -225,15 +251,55 @@ async with engine.connect() as conn:
 <h3>Methods</h3>
 <dl>
 <dt id="server.db.AsyncConnection.deadlock_retry_execute"><code class="name flex">
-<span>async def <span class="ident">deadlock_retry_execute</span></span>(<span>self, statement, parameters=None, execution_options=immutabledict({}), max_attempts=3, **kwargs)</span>
+<span>async def <span class="ident">deadlock_retry_execute</span></span>(<span>self,<br>statement,<br>parameters=None,<br>execution_options=immutabledict({}),<br>max_attempts=3,<br>**kwargs)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def deadlock_retry_execute(
+    self,
+    statement,
+    parameters=None,
+    execution_options=EMPTY_DICT,
+    max_attempts=3,
+    **kwargs
+):
+    with stat_db_errors():
+        return await self._deadlock_retry_execute(
+            statement,
+            parameters=parameters,
+            execution_options=execution_options,
+            max_attempts=max_attempts,
+            **kwargs
+        )</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.db.AsyncConnection.execute"><code class="name flex">
 <span>async def <span class="ident">execute</span></span>(<span>self, statement, parameters=None, execution_options=immutabledict({}), **kwargs)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def execute(
+    self,
+    statement,
+    parameters=None,
+    execution_options=EMPTY_DICT,
+    **kwargs
+):
+    with stat_db_errors():
+        return await self._execute(
+            statement,
+            parameters=parameters,
+            execution_options=execution_options,
+            **kwargs
+        )</code></pre>
+</details>
 <div class="desc"><p>Executes a SQL statement construct and return a buffered
 :class:<code>_engine.Result</code>.</p>
 <p>:param object: The statement to be executed.
@@ -268,6 +334,25 @@ by :meth:<code>_engine.Connection.execution_options</code>.</p>
 <span>async def <span class="ident">stream</span></span>(<span>self, statement, parameters=None, execution_options=immutabledict({}), **kwargs)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def stream(
+    self,
+    statement,
+    parameters=None,
+    execution_options=EMPTY_DICT,
+    **kwargs
+):
+    with stat_db_errors():
+        return await self._stream(
+            statement,
+            parameters=parameters,
+            execution_options=execution_options,
+            **kwargs
+        )</code></pre>
+</details>
 <div class="desc"><p>Execute a statement and return an awaitable yielding a
 :class:<code>_asyncio.AsyncResult</code> object.</p>
 <p>E.g.::</p>
@@ -305,9 +390,6 @@ and the function may be called in either an <code>async with fn():</code> or
 <span>(</span><span>sync_engine: Engine)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>For overriding the connection class used to execute statements.</p>
-<p>This could also be done by changing engine._connection_cls, however this
-is undocumented and probably more fragile so we subclass instead.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -323,6 +405,9 @@ is undocumented and probably more fragile so we subclass instead.</p></div>
     def connect(self):
         return AsyncConnection(self)</code></pre>
 </details>
+<div class="desc"><p>For overriding the connection class used to execute statements.</p>
+<p>This could also be done by changing engine._connection_cls, however this
+is undocumented and probably more fragile so we subclass instead.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>sqlalchemy.ext.asyncio.engine.AsyncEngine</li>
@@ -337,6 +422,13 @@ is undocumented and probably more fragile so we subclass instead.</p></div>
 <span>def <span class="ident">connect</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def connect(self):
+    return AsyncConnection(self)</code></pre>
+</details>
 <div class="desc"><p>Return an :class:<code>_asyncio.AsyncConnection</code> object.</p>
 <p>The :class:<code>_asyncio.AsyncConnection</code> will procure a database
 connection from the underlying connection pool when it is entered
@@ -352,10 +444,9 @@ method.</p></div>
 </dd>
 <dt id="server.db.FAFDatabase"><code class="flex name class">
 <span>class <span class="ident">FAFDatabase</span></span>
-<span>(</span><span>host: str = 'localhost', port: int = 3306, user: str = 'root', password: str = '', db: str = 'faf_test', **kwargs)</span>
+<span>(</span><span>host: str = 'localhost',<br>port: int = 3306,<br>user: str = 'root',<br>password: str = '',<br>db: str = 'faf_test',<br>**kwargs)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -384,18 +475,33 @@ method.</p></div>
     async def close(self):
         await self.engine.dispose()</code></pre>
 </details>
+<div class="desc"></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.db.FAFDatabase.acquire"><code class="name flex">
 <span>def <span class="ident">acquire</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def acquire(self):
+    return self.engine.begin()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 <dt id="server.db.FAFDatabase.close"><code class="name flex">
 <span>async def <span class="ident">close</span></span>(<span>self)</span>
 </code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def close(self):
+    await self.engine.dispose()</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -453,7 +559,7 @@ method.</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
 </footer>
 </body>
 </html>
