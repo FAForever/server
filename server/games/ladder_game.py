@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from functools import cached_property
 from typing import Optional
 
 from server.config import config
@@ -27,9 +28,9 @@ class LadderGame(Game):
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
 
-    def __init__(self, id, *args, **kwargs):
-        super().__init__(id, *args, **kwargs)
-        self._launch_future: asyncio.Future[None] = asyncio.Future()
+    @cached_property
+    def _launch_future(self) -> asyncio.Future:
+        return asyncio.get_running_loop().create_future()
 
     async def wait_hosted(self, timeout: float):
         return await asyncio.wait_for(
