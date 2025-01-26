@@ -66,7 +66,7 @@ class NeroxisGeneratedMap(NamedTuple):
     weight: int = 1
 
     _NAME_PATTERN = re.compile(
-        "neroxis_map_generator_([0-9.]+)_([a-z2-7]+)_([a-z2-7]+)"
+        "neroxis_map_generator_([0-9.]+)_.+"
     )
 
     @classmethod
