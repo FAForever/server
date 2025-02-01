@@ -757,7 +757,7 @@ class Game:
         # In some cases, games can be invalidated while running: we check for
         # those cases when the game ends and update this record as appropriate.
 
-        game_type = str(self.game_options.get("Victory").value)
+        game_type = self.game_options.get("Victory")
 
         async with self._db.acquire() as conn:
             await conn.execute(
