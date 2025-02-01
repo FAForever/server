@@ -28,6 +28,7 @@ async def host_game(
     *,
     mod: str = "faf",
     visibility: str = "public",
+    game_options: dict = {},
     **kwargs
 ) -> int:
     await proto.send_message({
@@ -41,6 +42,13 @@ async def host_game(
 
     await open_fa(proto)
     await read_until_command(proto, "HostGame", target="game")
+
+    for option, value in game_options.items():
+        await proto.send_message({
+            "target": "game",
+            "command": "GameOption",
+            "args": [option, value],
+        })
 
     return game_id
 
@@ -62,10 +70,16 @@ async def setup_game_1v1(
     guest_proto: Protocol,
     guest_id: int,
     mod: str = "faf",
+    game_options: dict = {},
     **kwargs,
 ):
     # Set up the game
-    game_id = await host_game(host_proto, mod=mod, **kwargs)
+    game_id = await host_game(
+        host_proto,
+        mod=mod,
+        game_options=game_options,
+        **kwargs,
+    )
     await join_game(guest_proto, game_id)
     # Set player options
     await send_player_options(
@@ -552,7 +566,7 @@ async def test_game_ended_broadcasts_rating_update(lobby_server, channel):
 
 
 @fast_forward(60)
-async def test_neroxis_map_generator_rates_game(lobby_server):
+async def test_neroxis_map_generator_game_rated(lobby_server):
     host_id, _, host_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
@@ -568,6 +582,72 @@ async def test_neroxis_map_generator_rates_game(lobby_server):
         guest_proto,
         guest_id,
         mapname="neroxis_map_generator_1.9.0_vtz4hwq7uqsj2_byiaeaati43euqd7cq",
+    )
+    await host_proto.send_message({
+        "target": "game",
+        "command": "EnforceRating",
+        "args": []
+    })
+
+    # End the game
+    # Reports results
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [1, "victory 10"]
+        })
+        await proto.send_message({
+            "target": "game",
+            "command": "GameResult",
+            "args": [2, "defeat -10"]
+        })
+    # Report GameEnded
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameEnded",
+            "args": []
+        })
+
+    # Check that the ratings were updated
+    new_ratings = await get_player_ratings(host_proto, "test", "Rhiza")
+
+    assert ratings["test"][0] < new_ratings["test"][0]
+    assert ratings["Rhiza"][0] > new_ratings["Rhiza"][0]
+
+    # Now disconnect both players
+    for proto in (host_proto, guest_proto):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Ended"]
+        })
+
+    # The game should only be rated once
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(host_proto, "player_info", timeout=10)
+
+
+@fast_forward(60)
+async def test_decapitation_game_rated(lobby_server):
+    host_id, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(guest_proto, "game_info")
+    ratings = await get_player_ratings(host_proto, "test", "Rhiza")
+
+    await setup_game_1v1(
+        host_proto,
+        host_id,
+        guest_proto,
+        guest_id,
+        game_options={
+            "Victory": "decapitation",
+        }
     )
     await host_proto.send_message({
         "target": "game",
