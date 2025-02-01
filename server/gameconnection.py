@@ -311,9 +311,7 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         if not isinstance(self.game, CoopGame):
-            self._logger.warning(
-                "OperationComplete called for non-coop game: %s", self.game.id
-            )
+            self._logger.warning("OperationComplete called for non-coop game")
             return
 
         if self.game.validity != ValidityState.COOP_NOT_RANKED:
@@ -338,6 +336,13 @@ class GameConnection(GpgNetServerProtocol):
             # message but we only need to perform this insert once
             async with self.game.leaderboard_lock:
                 if not self.game.leaderboard_saved:
+                    self._logger.debug(
+                        "Updating coop leaderboard: mission: %s, secondary: %s, "
+                        "time %s",
+                        mission,
+                        secondary,
+                        delta,
+                    )
                     await conn.execute(
                         coop_leaderboard.insert().values(
                             mission=mission,

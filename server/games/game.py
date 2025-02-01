@@ -661,9 +661,6 @@ class Game:
         if self.is_multi_team:
             await self.mark_invalid(ValidityState.MULTI_TEAM)
             return
-        if self.is_ffa:
-            await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
-            return
         valid_options = {
             "AIReplacement": (FA.DISABLED, ValidityState.HAS_AI_PLAYERS),
             "FogOfWar": ("explored", ValidityState.NO_FOG_OF_WAR),
@@ -683,6 +680,10 @@ class Game:
         """
         A subset of checks that need to be overridden in coop games.
         """
+        if self.is_ffa:
+            await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
+            return
+
         if len(self.players) < 2:
             await self.mark_invalid(ValidityState.SINGLE_PLAYER)
             return
