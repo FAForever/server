@@ -917,9 +917,7 @@ class ConfigurationService(Service):
             return
 
         if not isinstance(self.game, CoopGame):
-            self._logger.warning(
-                &#34;OperationComplete called for non-coop game: %s&#34;, self.game.id
-            )
+            self._logger.warning(&#34;OperationComplete called for non-coop game&#34;)
             return
 
         if self.game.validity != ValidityState.COOP_NOT_RANKED:
@@ -944,6 +942,13 @@ class ConfigurationService(Service):
             # message but we only need to perform this insert once
             async with self.game.leaderboard_lock:
                 if not self.game.leaderboard_saved:
+                    self._logger.debug(
+                        &#34;Updating coop leaderboard: mission: %s, secondary: %s, &#34;
+                        &#34;time %s&#34;,
+                        mission,
+                        secondary,
+                        delta,
+                    )
                     await conn.execute(
                         coop_leaderboard.insert().values(
                             mission=mission,
@@ -1808,9 +1813,7 @@ to start due to players using differing game settings.</p></div>
         return
 
     if not isinstance(self.game, CoopGame):
-        self._logger.warning(
-            &#34;OperationComplete called for non-coop game: %s&#34;, self.game.id
-        )
+        self._logger.warning(&#34;OperationComplete called for non-coop game&#34;)
         return
 
     if self.game.validity != ValidityState.COOP_NOT_RANKED:
@@ -1835,6 +1838,13 @@ to start due to players using differing game settings.</p></div>
         # message but we only need to perform this insert once
         async with self.game.leaderboard_lock:
             if not self.game.leaderboard_saved:
+                self._logger.debug(
+                    &#34;Updating coop leaderboard: mission: %s, secondary: %s, &#34;
+                    &#34;time %s&#34;,
+                    mission,
+                    secondary,
+                    delta,
+                )
                 await conn.execute(
                     coop_leaderboard.insert().values(
                         mission=mission,

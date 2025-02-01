@@ -665,9 +665,6 @@ el.replaceWith(d);
         if self.is_multi_team:
             await self.mark_invalid(ValidityState.MULTI_TEAM)
             return
-        if self.is_ffa:
-            await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
-            return
         valid_options = {
             &#34;AIReplacement&#34;: (FA.DISABLED, ValidityState.HAS_AI_PLAYERS),
             &#34;FogOfWar&#34;: (&#34;explored&#34;, ValidityState.NO_FOG_OF_WAR),
@@ -687,6 +684,10 @@ el.replaceWith(d);
         &#34;&#34;&#34;
         A subset of checks that need to be overridden in coop games.
         &#34;&#34;&#34;
+        if self.is_ffa:
+            await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
+            return
+
         if len(self.players) &lt; 2:
             await self.mark_invalid(ValidityState.SINGLE_PLAYER)
             return
@@ -2140,6 +2141,10 @@ care about recording stats for, after all).</p></div>
     &#34;&#34;&#34;
     A subset of checks that need to be overridden in coop games.
     &#34;&#34;&#34;
+    if self.is_ffa:
+        await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
+        return
+
     if len(self.players) &lt; 2:
         await self.mark_invalid(ValidityState.SINGLE_PLAYER)
         return
@@ -2179,9 +2184,6 @@ care about recording stats for, after all).</p></div>
         return
     if self.is_multi_team:
         await self.mark_invalid(ValidityState.MULTI_TEAM)
-        return
-    if self.is_ffa:
-        await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
         return
     valid_options = {
         &#34;AIReplacement&#34;: (FA.DISABLED, ValidityState.HAS_AI_PLAYERS),
