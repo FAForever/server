@@ -314,7 +314,9 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.warning("OperationComplete called for non-coop game")
             return
 
-        if self.game.validity != ValidityState.COOP_NOT_RANKED:
+        validity = self.game.get_validity()
+        if validity is not ValidityState.COOP_NOT_RANKED:
+            self._logger.info("Game was not valid: %s", validity)
             return
 
         secondary, delta = secondary, str(delta)
@@ -461,10 +463,6 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         elif state == "Lobby":
-            # TODO: Do we still need to schedule with `ensure_future`?
-            #
-            # We do not yield from the task, since we
-            # need to keep processing other commands while it runs
             await self._handle_lobby_state()
 
         elif state == "Launching":

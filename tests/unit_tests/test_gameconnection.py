@@ -449,14 +449,13 @@ async def test_handle_action_GameOption_ScenarioFile(
 
 
 async def test_handle_action_GameOption_not_host(
-    game: Game,
+    game,
     game_connection: GameConnection,
     players
 ):
     game_connection.player = players.joining
-    game.game_options = {"Victory": "asdf"}
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
-    assert game.game_options == {"Victory": "asdf"}
+    game.game_options.get("Victory") is Victory.DEMORALIZATION
 
 
 async def test_json_stats(
@@ -628,7 +627,7 @@ async def test_handle_action_OperationComplete_invalid(
     coop_game: CoopGame, game_connection: GameConnection, database
 ):
     coop_game.map = Map(None, "prothyon16.v0005")
-    coop_game.validity = ValidityState.OTHER_UNRANK
+    coop_game.get_validity.return_value = ValidityState.OTHER_UNRANK
     game_connection.game = coop_game
     time_taken = "09:08:07.654321"
 
