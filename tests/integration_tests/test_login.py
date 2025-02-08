@@ -61,7 +61,7 @@ async def test_server_ban_token(lobby_server, user, jwk_priv_key, jwk_kid):
         "version": "1.0.0-dev",
         "user_agent": "faf-client",
         "token": jwt.encode({
-            "sub": user_id,
+            "sub": str(user_id),
             "user_name": user_name,
             "scp": ["lobby"],
             "exp": int(time() + 1000),
@@ -288,7 +288,7 @@ async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid, fix
         "version": "1.0.0-dev",
         "user_agent": "faf-client",
         "token": jwt.encode({
-            "sub": 3,
+            "sub": "3",
             "user_name": "Rhiza",
             "scp": ["lobby"],
             "exp": int(time() + 1000),
@@ -352,7 +352,7 @@ async def test_server_login_token_bad_id(lobby_server, jwk_priv_key, jwk_kid):
         "version": "1.0.0-dev",
         "user_agent": "faf-client",
         "token": jwt.encode({
-            "sub": -1,
+            "sub": "-1",
             "user_name": "Rhiza",
             "scp": ["lobby"],
             "exp": int(time() + 1000),
@@ -378,7 +378,7 @@ async def test_server_login_token_expired(lobby_server, jwk_priv_key, jwk_kid):
         "version": "1.0.0-dev",
         "user_agent": "faf-client",
         "token": jwt.encode({
-            "sub": 1,
+            "sub": "1",
             "scp": ["lobby"],
             "user_name": "test",
             "exp": int(time() - 10)
@@ -428,7 +428,7 @@ async def test_server_login_token_lobby_scope_missing(
         "version": "1.0.0-dev",
         "user_agent": "faf-client",
         "token": jwt.encode({
-            "sub": 3,
+            "sub": "3",
             "user_name": "Rhiza",
             "scp": [],
             "exp": int(time() + 1000),
