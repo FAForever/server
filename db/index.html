@@ -229,6 +229,7 @@ def stat_db_errors():
 :meth:<code>_asyncio.AsyncEngine.connect</code>
 method of :class:<code>_asyncio.AsyncEngine</code>::</p>
 <pre><code>from sqlalchemy.ext.asyncio import create_async_engine
+
 engine = create_async_engine("postgresql+asyncpg://user:pass@host/dbname")
 
 async with engine.connect() as conn:
@@ -356,7 +357,7 @@ by :meth:<code>_engine.Connection.execution_options</code>.</p>
 <div class="desc"><p>Execute a statement and return an awaitable yielding a
 :class:<code>_asyncio.AsyncResult</code> object.</p>
 <p>E.g.::</p>
-<pre><code>result = await conn.stream(stmt):
+<pre><code>result = await conn.stream(stmt)
 async for row in result:
     print(f"{row}")
 </code></pre>
