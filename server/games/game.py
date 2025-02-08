@@ -692,10 +692,12 @@ class Game:
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
             return
 
-        valid_options = {
-            "Victory": (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
-        }
-        await self._validate_game_options(valid_options)
+        if self.game_options.get("Victory") not in (
+            Victory.DEMORALIZATION,
+            Victory.DECAPITATION,
+        ):
+            await self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
+            return
 
     async def _validate_game_options(
         self,
@@ -757,7 +759,7 @@ class Game:
         # In some cases, games can be invalidated while running: we check for
         # those cases when the game ends and update this record as appropriate.
 
-        game_type = str(self.game_options.get("Victory").value)
+        game_type = self.game_options.get("Victory")
 
         async with self._db.acquire() as conn:
             await conn.execute(
