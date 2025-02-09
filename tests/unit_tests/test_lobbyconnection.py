@@ -397,6 +397,7 @@ async def test_command_game_join_without_password(
     game_stats_service
 ):
     lobbyconnection.send = mock.AsyncMock()
+    lobbyconnection.version = "2024.8.0"
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game)
     game.state = GameState.LOBBY
@@ -416,10 +417,9 @@ async def test_command_game_join_without_password(
         **test_game_info
     })
     lobbyconnection.send.assert_called_once_with({
-        "command": "game_join_failed",
+        "command": "notice",
         "style": "info",
-        "text": "Bad password (it's case sensitive).",
-        "uid": 42
+        "text": "Bad password (it's case sensitive)."
     })
 
 
@@ -431,6 +431,31 @@ async def test_command_game_join_game_not_found(
 ):
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
+    lobbyconnection.version = "2024.8.0"
+    lobbyconnection.player = players.joining
+    players.joining.state = PlayerState.IDLE
+    test_game_info["uid"] = 42
+
+    await lobbyconnection.on_message_received({
+        "command": "game_join",
+        **test_game_info
+    })
+    lobbyconnection.send.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": "The host has left the game."
+    })
+
+
+async def test_command_game_join_game_not_found_higher_version(
+    lobbyconnection,
+    game_service,
+    test_game_info,
+    players
+):
+    lobbyconnection.send = mock.AsyncMock()
+    lobbyconnection.game_service = game_service
+    lobbyconnection.version = "2025.2.0"
     lobbyconnection.player = players.joining
     players.joining.state = PlayerState.IDLE
     test_game_info["uid"] = 42
@@ -470,10 +495,9 @@ async def test_command_game_join_game_bad_init_mode(
         **test_game_info
     })
     lobbyconnection.send.assert_called_once_with({
-        "command": "game_join_failed",
+        "command": "notice",
         "style": "error",
-        "text": "The game cannot be joined in this way.",
-        "uid": 42
+        "text": "The game cannot be joined in this way."
     })
 
 

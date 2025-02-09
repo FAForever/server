@@ -35,8 +35,7 @@ from .exceptions import (
     AuthenticationError,
     BanError,
     ClientError,
-    DisabledError,
-    GameJoinError
+    DisabledError
 )
 from .factions import Faction
 from .game_service import GameService
@@ -61,10 +60,13 @@ from .protocol import DisconnectedError, Protocol
 from .rating import InclusiveRange, RatingType
 from .rating_service import RatingService
 from .types import Address, GameLaunchOptions
+from .version_util import is_version_less_or_equal_than
 
 
 @with_logger
 class LobbyConnection:
+    CLIENT_VERSION_NOTICE_COMPATIBLE = "2025.1.0"
+
     @timed()
     def __init__(
         self,
@@ -203,18 +205,6 @@ class LobbyConnection:
             })
             if not e.recoverable:
                 await self.abort(e.message)
-        except GameJoinError as e:
-            self._logger.warning(
-                "GameJoinError[%s]: %s",
-                self.user_agent,
-                e.message,
-            )
-            await self.send({
-                "command": "game_join_failed",
-                "style": "error",
-                "text": e.message,
-                "uid": e.uid
-            })
         except (KeyError, ValueError) as e:
             self._logger.exception(e)
             await self.abort(f"Garbage command: {message}")
@@ -970,40 +960,60 @@ class LobbyConnection:
         try:
             game = self.game_service[uuid]
         except KeyError:
-            await self.send({
-                "command": "game_join_failed",
-                "style": "info",
-                "text": "The host has left the game.",
-                "uid": uuid
-            })
+            await self.send_game_join_failed_response({
+                  "command": "game_join_failed",
+                  "style": "info",
+                  "text": "The host has left the game.",
+                  "uid": uuid
+                }, {
+                  "command": "notice",
+                  "style": "info",
+                  "text": "The host has left the game."
+                })
             return
 
         if self.player.id in game.host.foes:
-            raise GameJoinError("You cannot join games hosted by this player.", uuid)
+            raise ClientError("You cannot join games hosted by this player.")
 
         if not game or game.state is not GameState.LOBBY:
             self._logger.debug("Game not in lobby state: %s state %s", game, game.state)
-            await self.send({
-                "command": "game_join_failed",
-                "style": "info",
-                "text": "The game you are trying to join is not ready.",
-                "uid": uuid
-            })
+            await self.send_game_join_failed_response({
+                  "command": "game_join_failed",
+                  "style": "info",
+                  "text": "The game you are trying to join is not ready.",
+                  "uid": uuid
+                }, {
+                  "command": "notice",
+                  "style": "info",
+                  "text": "The game you are trying to join is not ready."
+                })
             return
 
         if game.init_mode != InitMode.NORMAL_LOBBY:
-            raise GameJoinError("The game cannot be joined in this way.", uuid)
+            raise ClientError("The game cannot be joined in this way.")
 
         if game.password != password:
-            await self.send({
-                "command": "game_join_failed",
-                "style": "info",
-                "text": "Bad password (it's case sensitive).",
-                "uid": uuid
-            })
+            await self.send_game_join_failed_response({
+                  "command": "game_join_failed",
+                  "style": "info",
+                  "text": "Bad password (it's case sensitive).",
+                  "uid": uuid
+                }, {
+                  "command": "notice",
+                  "style": "info",
+                  "text": "Bad password (it's case sensitive)."
+                })
             return
 
         await self.launch_game(game, is_host=False)
+
+    async def send_game_join_failed_response(self, new_message, legacy_message):
+        # For backwards compatibility
+        if is_version_less_or_equal_than(self.CLIENT_VERSION_NOTICE_COMPATIBLE,
+                                         self.version):
+            await self.send(legacy_message)
+        else:
+            await self.send(new_message)
 
     @ice_only
     async def command_game_matchmaking(self, message):
