@@ -350,6 +350,28 @@ async def test_handle_action_AIOption_not_host(
     game.set_ai_option.assert_not_called()
 
 
+async def test_handle_action_Bottleneck(game_connection: GameConnection):
+    args = ["ack", "17654", "466996,436136,443631,402513,302866", "14222.5"]
+    await game_connection.handle_action("Bottleneck", args)
+    await game_connection.handle_bottleneck(*args)
+
+    # 517268,516974,344419 are the player ids of other players (not the sender)
+    # 5980.1 is an increasing value, maybe total data sent?
+    args = ["data", "19508", "517268,516974,344419", "5980.1"]
+    await game_connection.handle_action("Bottleneck", args)
+    await game_connection.handle_bottleneck(*args)
+
+    args = ["readiness", "1", "234112", "5220.7"]
+    await game_connection.handle_action("Bottleneck", args)
+    await game_connection.handle_bottleneck(*args)
+
+
+async def test_handle_action_BottleneckCleared(game_connection: GameConnection):
+    args = []
+    await game_connection.handle_action("BottleneckCleared", args)
+    await game_connection.handle_bottleneck_cleared(*args)
+
+
 async def test_handle_action_ClearSlot(
     game: Game,
     game_connection: GameConnection
@@ -724,8 +746,6 @@ async def test_handle_action_IceMsg_for_non_connected(
 
 @pytest.mark.parametrize("action", (
     "Rehost",
-    "Bottleneck",
-    "BottleneckCleared",
     "Disconnected",
     "Chat",
     "GameFull"

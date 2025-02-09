@@ -521,17 +521,26 @@ class GameConnection(GpgNetServerProtocol):
 
     async def handle_bottleneck(self, code: str, *args: str):
         """
-        Not sure what this command means. This is currently unused but
-        included for documentation purposes.
+        Not entirely sure what this command means. Seems to be sent when a
+        player is getting behind on data, slowing down the game.
+
+        Example:
+        ```python
+        {
+            "command": "Bottleneck",
+            "target": "game",
+            "args": ["data", "19508", "517268,516974,344419", "5980.1"],
+        }
+        ```
         """
-        pass
+        self._logger.debug("Bottleneck: %s", list((code, *args)))
 
     async def handle_bottleneck_cleared(self):
         """
-        Not sure what this command means. This is currently unused but
-        included for documentation purposes.
+        Not entirely sure what this command means. Probably sent when the game
+        is no longer being slowed down due to players being behind on data.
         """
-        pass
+        self._logger.debug("BottleneckCleared")
 
     async def handle_disconnected(self, *args: Any):
         """
