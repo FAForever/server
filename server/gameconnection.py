@@ -505,7 +505,7 @@ class GameConnection(GpgNetServerProtocol):
         self.finished_sim = True
         await self.game.check_game_finish(self.player)
 
-    async def handle_rehost(self, *args: list[Any]):
+    async def handle_rehost(self, *args: Any):
         """
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
@@ -519,21 +519,21 @@ class GameConnection(GpgNetServerProtocol):
         """
         pass
 
-    async def handle_bottleneck(self, *args: list[Any]):
+    async def handle_bottleneck(self, code: str, *args: str):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         """
         pass
 
-    async def handle_bottleneck_cleared(self, *args: list[Any]):
+    async def handle_bottleneck_cleared(self):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         """
         pass
 
-    async def handle_disconnected(self, *args: list[Any]):
+    async def handle_disconnected(self, *args: Any):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
