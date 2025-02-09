@@ -35,7 +35,8 @@ from .exceptions import (
     AuthenticationError,
     BanError,
     ClientError,
-    DisabledError, GameJoinError
+    DisabledError,
+    GameJoinError
 )
 from .factions import Faction
 from .game_service import GameService

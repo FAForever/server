@@ -75,5 +75,6 @@ class GameJoinError(Exception):
     """
 
     def __init__(self, message, uid, *args, **kwargs):
-        super().__init__(message, *args, **kwargs)
+        super().__init__(*args, **kwargs)
+        self.message = message
         self.uid = uid
