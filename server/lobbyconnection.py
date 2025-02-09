@@ -35,7 +35,7 @@ from .exceptions import (
     AuthenticationError,
     BanError,
     ClientError,
-    DisabledError
+    DisabledError, GameJoinError
 )
 from .factions import Faction
 from .game_service import GameService
@@ -202,6 +202,18 @@ class LobbyConnection:
             })
             if not e.recoverable:
                 await self.abort(e.message)
+        except GameJoinError as e:
+            self._logger.warning(
+                "GameJoinError[%s]: %s",
+                self.user_agent,
+                e.message,
+            )
+            await self.send({
+                "command": "game_join_failed",
+                "style": "error",
+                "text": e.message,
+                "uid": e.uid
+            })
         except (KeyError, ValueError) as e:
             self._logger.exception(e)
             await self.abort(f"Garbage command: {message}")
@@ -958,32 +970,35 @@ class LobbyConnection:
             game = self.game_service[uuid]
         except KeyError:
             await self.send({
-                "command": "notice",
+                "command": "game_join_failed",
                 "style": "info",
-                "text": "The host has left the game."
+                "text": "The host has left the game.",
+                "uid": uuid
             })
             return
 
         if self.player.id in game.host.foes:
-            raise ClientError("You cannot join games hosted by this player.")
+            raise GameJoinError("You cannot join games hosted by this player.", uuid)
 
         if not game or game.state is not GameState.LOBBY:
             self._logger.debug("Game not in lobby state: %s state %s", game, game.state)
             await self.send({
-                "command": "notice",
+                "command": "game_join_failed",
                 "style": "info",
-                "text": "The game you are trying to join is not ready."
+                "text": "The game you are trying to join is not ready.",
+                "uid": uuid
             })
             return
 
         if game.init_mode != InitMode.NORMAL_LOBBY:
-            raise ClientError("The game cannot be joined in this way.")
+            raise GameJoinError("The game cannot be joined in this way.", uuid)
 
         if game.password != password:
             await self.send({
-                "command": "notice",
+                "command": "game_join_failed",
                 "style": "info",
-                "text": "Bad password (it's case sensitive)."
+                "text": "Bad password (it's case sensitive).",
+                "uid": uuid
             })
             return
 

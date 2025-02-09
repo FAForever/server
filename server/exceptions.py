@@ -65,3 +65,15 @@ class DisabledError(Exception):
     """
     The operation is disabled due to an impending server shutdown.
     """
+
+
+class GameJoinError(Exception):
+    """
+    Represents an error occurring when a client tries to join a game.
+
+    uid is an integer representing the requested game ID.
+    """
+
+    def __init__(self, message, uid, *args, **kwargs):
+        super().__init__(message, *args, **kwargs)
+        self.uid = uid

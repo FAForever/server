@@ -416,9 +416,10 @@ async def test_command_game_join_without_password(
         **test_game_info
     })
     lobbyconnection.send.assert_called_once_with({
-        "command": "notice",
+        "command": "game_join_failed",
         "style": "info",
-        "text": "Bad password (it's case sensitive)."
+        "text": "Bad password (it's case sensitive).",
+        "uid": 42
     })
 
 
@@ -439,9 +440,10 @@ async def test_command_game_join_game_not_found(
         **test_game_info
     })
     lobbyconnection.send.assert_called_once_with({
-        "command": "notice",
+        "command": "game_join_failed",
         "style": "info",
-        "text": "The host has left the game."
+        "text": "The host has left the game.",
+        "uid": 42
     })
 
 
@@ -468,9 +470,10 @@ async def test_command_game_join_game_bad_init_mode(
         **test_game_info
     })
     lobbyconnection.send.assert_called_once_with({
-        "command": "notice",
+        "command": "game_join_failed",
         "style": "error",
-        "text": "The game cannot be joined in this way."
+        "text": "The game cannot be joined in this way.",
+        "uid": 42
     })
 
 
