@@ -961,15 +961,15 @@ class LobbyConnection:
             game = self.game_service[uuid]
         except KeyError:
             await self.send_game_join_failed_response({
-                  "command": "game_join_failed",
-                  "style": "info",
-                  "text": "The host has left the game.",
-                  "uid": uuid
-                }, {
-                  "command": "notice",
-                  "style": "info",
-                  "text": "The host has left the game."
-                })
+                "command": "game_join_failed",
+                "style": "info",
+                "text": "The host has left the game.",
+                "uid": uuid
+            }, {
+                "command": "notice",
+                "style": "info",
+                "text": "The host has left the game."
+            })
             return
 
         if self.player.id in game.host.foes:
@@ -978,15 +978,15 @@ class LobbyConnection:
         if not game or game.state is not GameState.LOBBY:
             self._logger.debug("Game not in lobby state: %s state %s", game, game.state)
             await self.send_game_join_failed_response({
-                  "command": "game_join_failed",
-                  "style": "info",
-                  "text": "The game you are trying to join is not ready.",
-                  "uid": uuid
-                }, {
-                  "command": "notice",
-                  "style": "info",
-                  "text": "The game you are trying to join is not ready."
-                })
+                "command": "game_join_failed",
+                "style": "info",
+                "text": "The game you are trying to join is not ready.",
+                "uid": uuid
+            }, {
+                "command": "notice",
+                "style": "info",
+                "text": "The game you are trying to join is not ready."
+            })
             return
 
         if game.init_mode != InitMode.NORMAL_LOBBY:
@@ -994,15 +994,15 @@ class LobbyConnection:
 
         if game.password != password:
             await self.send_game_join_failed_response({
-                  "command": "game_join_failed",
-                  "style": "info",
-                  "text": "Bad password (it's case sensitive).",
-                  "uid": uuid
-                }, {
-                  "command": "notice",
-                  "style": "info",
-                  "text": "Bad password (it's case sensitive)."
-                })
+                "command": "game_join_failed",
+                "style": "info",
+                "text": "Bad password (it's case sensitive).",
+                "uid": uuid
+            }, {
+                "command": "notice",
+                "style": "info",
+                "text": "Bad password (it's case sensitive)."
+            })
             return
 
         await self.launch_game(game, is_host=False)
