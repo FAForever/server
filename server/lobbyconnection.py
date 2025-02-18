@@ -27,6 +27,7 @@ from .db.models import (
     ban,
     coop_map,
     friends_and_foes,
+    game_join_log,
     lobby_ban
 )
 from .db.models import login as t_login
@@ -952,6 +953,17 @@ class LobbyConnection:
 
         uuid = int(message["uid"])
         password = message.get("password")
+
+        async with self._db.acquire() as conn:
+            try:
+                await conn.execute(
+                    game_join_log.insert().values(
+                        player_id=player_id,
+                        game_id=uuid,
+                    )
+                )
+            except DBAPIError:
+                self._logger.exception("writing to game join log failed")
 
         self._logger.debug("joining: %d with pw: %s", uuid, password)
         try:
