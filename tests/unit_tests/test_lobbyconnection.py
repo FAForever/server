@@ -397,7 +397,6 @@ async def test_command_game_join_without_password(
     game_stats_service
 ):
     lobbyconnection.send = mock.AsyncMock()
-    lobbyconnection.version = "2024.8.0"
     lobbyconnection.game_service = game_service
     game = mock.create_autospec(Game)
     game.state = GameState.LOBBY
@@ -416,11 +415,18 @@ async def test_command_game_join_without_password(
         "command": "game_join",
         **test_game_info
     })
-    lobbyconnection.send.assert_called_once_with({
-        "command": "notice",
-        "style": "info",
-        "text": "Bad password (it's case sensitive)."
-    })
+    lobbyconnection.send.assert_has_calls([
+        mock.call({
+            "command": "game_join_failed",
+            "reason": "BAD_PASSWORD",
+            "uid": 42
+        }),
+        mock.call({
+            "command": "notice",
+            "style": "info",
+            "text": "Bad password (it's case sensitive)."
+        })
+    ])
 
 
 async def test_command_game_join_game_not_found(
@@ -431,7 +437,6 @@ async def test_command_game_join_game_not_found(
 ):
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
-    lobbyconnection.version = "2024.8.0"
     lobbyconnection.player = players.joining
     players.joining.state = PlayerState.IDLE
     test_game_info["uid"] = 42
@@ -440,36 +445,46 @@ async def test_command_game_join_game_not_found(
         "command": "game_join",
         **test_game_info
     })
-    lobbyconnection.send.assert_called_once_with({
-        "command": "notice",
-        "style": "info",
-        "text": "The host has left the game."
-    })
+    lobbyconnection.send.assert_has_calls([
+        mock.call({
+            "command": "game_join_failed",
+            "reason": "HOST_LEFT_GAME",
+            "uid": 42
+        }),
+        mock.call({
+            "command": "notice",
+            "style": "info",
+            "text": "The host has left the game."
+        })])
 
 
-async def test_command_game_join_game_not_found_higher_version(
+async def test_send_game_join_failed_response(
     lobbyconnection,
     game_service,
-    test_game_info,
     players
 ):
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
-    lobbyconnection.version = "2025.2.0"
     lobbyconnection.player = players.joining
     players.joining.state = PlayerState.IDLE
-    test_game_info["uid"] = 42
 
-    await lobbyconnection.on_message_received({
-        "command": "game_join",
-        **test_game_info
-    })
-    lobbyconnection.send.assert_called_once_with({
+    new_message = {
         "command": "game_join_failed",
-        "style": "info",
-        "text": "The host has left the game.",
+        "reason": "BAD_PASSWORD",
         "uid": 42
-    })
+    }
+    legacy_message = {
+        "command": "notice",
+        "style": "info",
+        "text": "Bad password (it's case sensitive)."
+    }
+
+    await lobbyconnection.send_game_join_failed_response(new_message, legacy_message)
+
+    lobbyconnection.send.assert_has_calls([
+        mock.call(new_message),
+        mock.call(legacy_message)
+    ])
 
 
 async def test_command_game_join_game_bad_init_mode(

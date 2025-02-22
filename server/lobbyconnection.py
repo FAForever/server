@@ -60,13 +60,10 @@ from .protocol import DisconnectedError, Protocol
 from .rating import InclusiveRange, RatingType
 from .rating_service import RatingService
 from .types import Address, GameLaunchOptions
-from .version_util import is_version_less_or_equal_than
 
 
 @with_logger
 class LobbyConnection:
-    CLIENT_VERSION_NOTICE_COMPATIBLE = "2025.1.0"
-
     @timed()
     def __init__(
         self,
@@ -962,8 +959,7 @@ class LobbyConnection:
         except KeyError:
             await self.send_game_join_failed_response({
                 "command": "game_join_failed",
-                "style": "info",
-                "text": "The host has left the game.",
+                "reason": "HOST_LEFT_GAME",
                 "uid": uuid
             }, {
                 "command": "notice",
@@ -979,8 +975,7 @@ class LobbyConnection:
             self._logger.debug("Game not in lobby state: %s state %s", game, game.state)
             await self.send_game_join_failed_response({
                 "command": "game_join_failed",
-                "style": "info",
-                "text": "The game you are trying to join is not ready.",
+                "reason": "GAME_NOT_READY",
                 "uid": uuid
             }, {
                 "command": "notice",
@@ -995,8 +990,7 @@ class LobbyConnection:
         if game.password != password:
             await self.send_game_join_failed_response({
                 "command": "game_join_failed",
-                "style": "info",
-                "text": "Bad password (it's case sensitive).",
+                "reason": "BAD_PASSWORD",
                 "uid": uuid
             }, {
                 "command": "notice",
@@ -1008,12 +1002,9 @@ class LobbyConnection:
         await self.launch_game(game, is_host=False)
 
     async def send_game_join_failed_response(self, new_message, legacy_message):
+        await self.send(new_message)
         # For backwards compatibility
-        if is_version_less_or_equal_than(self.CLIENT_VERSION_NOTICE_COMPATIBLE,
-                                         self.version):
-            await self.send(legacy_message)
-        else:
-            await self.send(new_message)
+        await self.send(legacy_message)
 
     @ice_only
     async def command_game_matchmaking(self, message):
