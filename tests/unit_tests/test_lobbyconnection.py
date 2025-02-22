@@ -697,6 +697,57 @@ async def test_command_social_add_friend_idempotent(lobbyconnection, database):
     assert lobbyconnection.player.friends == {2}
 
 
+async def test_command_social_add_friend_while_hosting(
+    lobbyconnection,
+    database,
+    game_service,
+    game_stats_service,
+):
+    lobbyconnection.player.id = 1
+    game = Game(42, database, game_service, game_stats_service)
+    game.host = lobbyconnection.player
+    lobbyconnection.player.game = game
+
+    friends = await get_friends(lobbyconnection.player.id, database)
+    assert friends == []
+    assert lobbyconnection.player.friends == set()
+
+    await lobbyconnection.command_social_add({
+        "command": "social_add",
+        "friend": 2
+    })
+
+    friends = await get_friends(lobbyconnection.player.id, database)
+    assert friends == [2]
+    assert lobbyconnection.player.friends == {2}
+
+
+async def test_command_social_add_friend_while_hosting_offline(
+    lobbyconnection,
+    database,
+    game_service,
+    game_stats_service,
+):
+    lobbyconnection.player.id = 1
+    game = Game(42, database, game_service, game_stats_service)
+    game.host = lobbyconnection.player
+    lobbyconnection.player.game = game
+    lobbyconnection.player_service.get_player.return_value = None
+
+    friends = await get_friends(lobbyconnection.player.id, database)
+    assert friends == []
+    assert lobbyconnection.player.friends == set()
+
+    await lobbyconnection.command_social_add({
+        "command": "social_add",
+        "friend": 2
+    })
+
+    friends = await get_friends(lobbyconnection.player.id, database)
+    assert friends == [2]
+    assert lobbyconnection.player.friends == {2}
+
+
 async def test_command_social_remove_friend(lobbyconnection, database):
     lobbyconnection.player.id = 2
 
@@ -726,6 +777,57 @@ async def test_command_social_remove_friend_idempotent(lobbyconnection, database
             "command": "social_remove",
             "friend": 1
         })
+
+    friends = await get_friends(lobbyconnection.player.id, database)
+    assert friends == []
+    assert lobbyconnection.player.friends == set()
+
+
+async def test_command_social_remove_friend_while_hosting(
+    lobbyconnection,
+    database,
+    game_service,
+    game_stats_service,
+):
+    lobbyconnection.player.id = 2
+    game = Game(42, database, game_service, game_stats_service)
+    game.host = lobbyconnection.player
+    lobbyconnection.player.game = game
+
+    friends = await get_friends(lobbyconnection.player.id, database)
+    assert friends == [1]
+    lobbyconnection.player.friends = {1}
+
+    await lobbyconnection.command_social_remove({
+        "command": "social_remove",
+        "friend": 1
+    })
+
+    friends = await get_friends(lobbyconnection.player.id, database)
+    assert friends == []
+    assert lobbyconnection.player.friends == set()
+
+
+async def test_command_social_remove_friend_while_hosting_offline(
+    lobbyconnection,
+    database,
+    game_service,
+    game_stats_service,
+):
+    lobbyconnection.player.id = 2
+    game = Game(42, database, game_service, game_stats_service)
+    game.host = lobbyconnection.player
+    lobbyconnection.player.game = game
+    lobbyconnection.player_service.get_player.return_value = None
+
+    friends = await get_friends(lobbyconnection.player.id, database)
+    assert friends == [1]
+    lobbyconnection.player.friends = {1}
+
+    await lobbyconnection.command_social_remove({
+        "command": "social_remove",
+        "friend": 1
+    })
 
     friends = await get_friends(lobbyconnection.player.id, database)
     assert friends == []

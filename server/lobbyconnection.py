@@ -333,19 +333,7 @@ class LobbyConnection:
                 friends_and_foes.c.subject_id == subject_id
             )))
 
-        game = self.player.game
-        visibility_context_manager = contextlib.nullcontext()
-
-        if game and game.host == self.player:
-            # If the player is currently hosting a game, we need to make sure
-            # that the visibility change is sent to the subject
-            subject = self.player_service.get_player(subject_id)
-            visibility_context_manager = self._write_visibility_change_context(
-                game,
-                subject,
-            )
-
-        with visibility_context_manager:
+        with self._get_visibility_context_manager(subject_id):
             player_attr.discard(subject_id)
 
     async def command_social_add(self, message):
@@ -370,20 +358,25 @@ class LobbyConnection:
                 subject_id=subject_id,
             ))
 
+        with self._get_visibility_context_manager(subject_id):
+            player_attr.add(subject_id)
+
+    def _get_visibility_context_manager(self, subject_id: int):
         game = self.player.game
-        visibility_context_manager = contextlib.nullcontext()
 
         if game and game.host == self.player:
             # If the player is currently hosting a game, we need to make sure
             # that the visibility change is sent to the subject
             subject = self.player_service.get_player(subject_id)
-            visibility_context_manager = self._write_visibility_change_context(
+            if subject is None:
+                return contextlib.nullcontext()
+
+            return self._write_visibility_change_context(
                 game,
                 subject,
             )
 
-        with visibility_context_manager:
-            player_attr.add(subject_id)
+        return contextlib.nullcontext()
 
     @contextlib.contextmanager
     def _write_visibility_change_context(
