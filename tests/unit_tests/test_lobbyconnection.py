@@ -458,6 +458,42 @@ async def test_command_game_join_game_not_found(
         })])
 
 
+async def test_command_game_join_game_not_ready(
+    lobbyconnection,
+    game_service,
+    test_game_info,
+    players
+):
+    lobbyconnection.send = mock.AsyncMock()
+    lobbyconnection.game_service = game_service
+    game = mock.create_autospec(Game)
+    game.state = GameState.INITIALIZING
+    game.init_mode = InitMode.NORMAL_LOBBY
+    game.game_mode = "faf"
+    game.id = 42
+    game.host = players.hosting
+    game_service._games[42] = game
+    lobbyconnection.player = players.joining
+    players.joining.state = PlayerState.IDLE
+    test_game_info["uid"] = 42
+
+    await lobbyconnection.on_message_received({
+        "command": "game_join",
+        **test_game_info
+    })
+    lobbyconnection.send.assert_has_calls([
+        mock.call({
+            "command": "game_join_failed",
+            "reason": "GAME_NOT_READY",
+            "uid": 42
+        }),
+        mock.call({
+            "command": "notice",
+            "style": "info",
+            "text": "The game you are trying to join is not ready."
+        })])
+
+
 async def test_command_game_join_game_bad_init_mode(
     lobbyconnection,
     game_service,
