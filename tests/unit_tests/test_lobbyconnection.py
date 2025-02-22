@@ -458,35 +458,6 @@ async def test_command_game_join_game_not_found(
         })])
 
 
-async def test_send_game_join_failed_response(
-    lobbyconnection,
-    game_service,
-    players
-):
-    lobbyconnection.send = mock.AsyncMock()
-    lobbyconnection.game_service = game_service
-    lobbyconnection.player = players.joining
-    players.joining.state = PlayerState.IDLE
-
-    new_message = {
-        "command": "game_join_failed",
-        "reason": "BAD_PASSWORD",
-        "uid": 42
-    }
-    legacy_message = {
-        "command": "notice",
-        "style": "info",
-        "text": "Bad password (it's case sensitive)."
-    }
-
-    await lobbyconnection.send_game_join_failed_response(new_message, legacy_message)
-
-    lobbyconnection.send.assert_has_calls([
-        mock.call(new_message),
-        mock.call(legacy_message)
-    ])
-
-
 async def test_command_game_join_game_bad_init_mode(
     lobbyconnection,
     game_service,
