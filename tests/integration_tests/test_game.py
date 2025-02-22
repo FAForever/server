@@ -294,7 +294,7 @@ async def test_game_join_nonexistent(lobby_server):
     msg = await read_until_command(proto, "game_join_failed", timeout=5)
     assert msg == {
         "command": "game_join_failed",
-        "reason": "HOST_LEFT_GAME",
+        "reason": "host_left_game",
         "uid": 42,
     }
 
@@ -332,7 +332,7 @@ async def test_game_join_not_ready(lobby_server):
     msg = await read_until_command(guest_proto, "game_join_failed", timeout=5)
     assert msg == {
         "command": "game_join_failed",
-        "reason": "GAME_NOT_READY",
+        "reason": "game_not_ready",
         "uid": game_id,
     }
 
@@ -364,7 +364,7 @@ async def test_game_join_bad_password(lobby_server):
     msg = await read_until_command(guest_proto, "game_join_failed", timeout=5)
     assert msg == {
         "command": "game_join_failed",
-        "reason": "BAD_PASSWORD",
+        "reason": "bad_password",
         "uid": game_id,
     }
 

@@ -422,7 +422,7 @@ async def test_command_game_join_without_password(
     lobbyconnection.send.assert_has_calls([
         mock.call({
             "command": "game_join_failed",
-            "reason": "BAD_PASSWORD",
+            "reason": "bad_password",
             "uid": 42
         }),
         mock.call({
@@ -452,7 +452,7 @@ async def test_command_game_join_game_not_found(
     lobbyconnection.send.assert_has_calls([
         mock.call({
             "command": "game_join_failed",
-            "reason": "HOST_LEFT_GAME",
+            "reason": "host_left_game",
             "uid": 42
         }),
         mock.call({
@@ -488,7 +488,7 @@ async def test_command_game_join_game_not_ready(
     lobbyconnection.send.assert_has_calls([
         mock.call({
             "command": "game_join_failed",
-            "reason": "GAME_NOT_READY",
+            "reason": "game_not_ready",
             "uid": 42
         }),
         mock.call({
