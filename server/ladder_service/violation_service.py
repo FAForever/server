@@ -103,6 +103,7 @@ class ViolationService(Service):
                     violation.get_ban_expiration() - now
                 )
                 extra_text = f" You can queue again in {delta_text}"
+            # DEPRECATED: Use `search_violation` instead
             player.write_message({
                 "command": "notice",
                 "style": "info",
