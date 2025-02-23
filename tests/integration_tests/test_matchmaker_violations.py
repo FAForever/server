@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timezone
 
+from server.config import config
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
@@ -254,3 +255,30 @@ async def test_violation_persisted_across_parties(mocker, lobby_server):
             "expires_at": "2022-02-05T00:10:00+00:00"
         }]
     }
+
+
+@fast_forward(360)
+async def test_violation_config_disabled(mocker, monkeypatch, lobby_server):
+    monkeypatch.setattr(config, "LADDER_VIOLATIONS_ENABLED", False)
+    mocker.patch(
+        "server.ladder_service.violation_service.datetime_now",
+        return_value=datetime(2022, 2, 5, tzinfo=timezone.utc)
+    )
+    _, host, _, guest = await queue_players_for_matchmaking(lobby_server)
+
+    # Players never receive a timeout for failing matches
+    for _ in range(5):
+        await read_until_command(host, "match_cancelled", timeout=120)
+        await read_until_command(guest, "match_cancelled", timeout=10)
+        await read_until_command(host, "game_info", timeout=10, state="closed")
+        # DEPRECATED: Because the game sends a game_launch to the guest after the
+        # host times out, we need to simulate opening and closing the game before
+        # we can queue again. If we wait for the timeout, our violations expire.
+        await open_fa(guest)
+        await guest.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Ended"]
+        })
+        await start_search(host)
+        await start_search(guest)

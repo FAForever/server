@@ -4,6 +4,7 @@ from typing import Optional
 
 import humanize
 
+from server.config import config
 from server.core import Service
 from server.decorators import with_logger
 from server.players import Player
@@ -24,13 +25,17 @@ class Violation:
         self.time = datetime_now()
 
     def get_ban_expiration(self) -> datetime:
-        if self.count < 2:
+        if self.count < config.LADDER_VIOLATIONS_BAN_THRESHOLD:
             # No ban, expires as soon as it's registered
             return self.time
-        elif self.count == 2:
-            return self.time + timedelta(minutes=10)
+        elif self.count == config.LADDER_VIOLATIONS_BAN_THRESHOLD:
+            return self.time + timedelta(
+                seconds=config.LADDER_VIOLATIONS_FIRST_BAN_DURATION,
+            )
         else:
-            return self.time + timedelta(minutes=30)
+            return self.time + timedelta(
+                seconds=config.LADDER_VIOLATIONS_BAN_DURATION,
+            )
 
     def get_remaining(self, now: Optional[datetime] = None) -> timedelta:
         return self.get_ban_expiration() - (now or datetime_now())
@@ -42,8 +47,8 @@ class Violation:
         `get_ban_expiration`.
         """
         now = now or datetime_now()
-        # TODO: Config?
-        return self.time + timedelta(hours=1) <= now
+        exp = self.time + timedelta(seconds=config.LADDER_VIOLATIONS_RESET_TIME)
+        return exp <= now
 
     def to_dict(self) -> dict:
         return {
@@ -76,6 +81,9 @@ class ViolationService(Service):
                 self._clear_violation(player)
 
     def register_violations(self, players: list[Player]):
+        if not config.LADDER_VIOLATIONS_ENABLED:
+            return
+
         now = datetime_now()
         for player in players:
             violation = self.get_violation(player)
@@ -107,6 +115,9 @@ class ViolationService(Service):
             })
 
     def get_violations(self, players: list[Player]) -> dict[Player, Violation]:
+        if not config.LADDER_VIOLATIONS_ENABLED:
+            return {}
+
         now = datetime_now()
         result = {}
         for player in players:
