@@ -24,6 +24,7 @@ import server
 from server import info
 from server.config import config
 from server.control import ControlServer
+from server.db import FAFDatabase, get_and_validate_database_version
 from server.game_service import GameService
 from server.health import HealthServer
 from server.player_service import PlayerService
@@ -69,12 +70,17 @@ async def main():
     signal.signal(signal.SIGTERM, done_handler)
     signal.signal(signal.SIGINT, done_handler)
 
-    database = server.db.FAFDatabase(
+    database = FAFDatabase(
         host=config.DB_SERVER,
         port=int(config.DB_PORT),
         user=config.DB_LOGIN,
         password=config.DB_PASSWORD,
-        db=config.DB_NAME
+        db=config.DB_NAME,
+    )
+    database_version = await get_and_validate_database_version(database)
+    logger.info(
+        "Database version is %s",
+        f"v{database_version}" if database_version is not None else "unknown",
     )
 
     # Set up services
