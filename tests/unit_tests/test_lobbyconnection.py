@@ -249,7 +249,10 @@ async def test_double_login_disconnected(lobbyconnection, mock_players, player_f
 
 
 async def test_command_game_host_creates_game(
-    lobbyconnection, mock_games, test_game_info, players
+    lobbyconnection,
+    mock_games,
+    test_game_info,
+    players,
 ):
     players.hosting.state = PlayerState.IDLE
     lobbyconnection.player = players.hosting
@@ -292,7 +295,11 @@ async def test_launch_game(lobbyconnection, game, player_factory):
 
 
 async def test_command_game_host_creates_correct_game(
-        lobbyconnection, game_service, test_game_info, players):
+    lobbyconnection,
+    game_service,
+    test_game_info,
+    players,
+):
     lobbyconnection.player = players.hosting
     players.hosting.state = PlayerState.IDLE
 
@@ -349,7 +356,6 @@ async def test_command_game_join_calls_join_game(
 
 
 async def test_command_game_join_uid_as_str(
-    mocker,
     database,
     lobbyconnection,
     game_service,
@@ -390,11 +396,9 @@ async def test_command_game_join_uid_as_str(
 
 async def test_command_game_join_without_password(
     lobbyconnection,
-    database,
     game_service,
     test_game_info,
     players,
-    game_stats_service
 ):
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
@@ -415,11 +419,18 @@ async def test_command_game_join_without_password(
         "command": "game_join",
         **test_game_info
     })
-    lobbyconnection.send.assert_called_once_with({
-        "command": "notice",
-        "style": "info",
-        "text": "Bad password (it's case sensitive)."
-    })
+    lobbyconnection.send.assert_has_calls([
+        mock.call({
+            "command": "game_join_failed",
+            "reason": "bad_password",
+            "uid": 42
+        }),
+        mock.call({
+            "command": "notice",
+            "style": "info",
+            "text": "Bad password (it's case sensitive)."
+        })
+    ])
 
 
 async def test_command_game_join_game_not_found(
@@ -438,11 +449,53 @@ async def test_command_game_join_game_not_found(
         "command": "game_join",
         **test_game_info
     })
-    lobbyconnection.send.assert_called_once_with({
-        "command": "notice",
-        "style": "info",
-        "text": "The host has left the game."
+    lobbyconnection.send.assert_has_calls([
+        mock.call({
+            "command": "game_join_failed",
+            "reason": "host_left_game",
+            "uid": 42
+        }),
+        mock.call({
+            "command": "notice",
+            "style": "info",
+            "text": "The host has left the game."
+        })])
+
+
+async def test_command_game_join_game_not_ready(
+    lobbyconnection,
+    game_service,
+    test_game_info,
+    players
+):
+    lobbyconnection.send = mock.AsyncMock()
+    lobbyconnection.game_service = game_service
+    game = mock.create_autospec(Game)
+    game.state = GameState.INITIALIZING
+    game.init_mode = InitMode.NORMAL_LOBBY
+    game.game_mode = "faf"
+    game.id = 42
+    game.host = players.hosting
+    game_service._games[42] = game
+    lobbyconnection.player = players.joining
+    players.joining.state = PlayerState.IDLE
+    test_game_info["uid"] = 42
+
+    await lobbyconnection.on_message_received({
+        "command": "game_join",
+        **test_game_info
     })
+    lobbyconnection.send.assert_has_calls([
+        mock.call({
+            "command": "game_join_failed",
+            "reason": "game_not_ready",
+            "uid": 42
+        }),
+        mock.call({
+            "command": "notice",
+            "style": "info",
+            "text": "The game you are trying to join is not ready."
+        })])
 
 
 async def test_command_game_join_game_bad_init_mode(
@@ -475,7 +528,9 @@ async def test_command_game_join_game_bad_init_mode(
 
 
 async def test_command_game_host_calls_host_game_invalid_title(
-    lobbyconnection, mock_games, test_game_info_invalid
+    lobbyconnection,
+    mock_games,
+    test_game_info_invalid,
 ):
     lobbyconnection.send = mock.AsyncMock()
     mock_games.create_game = mock.Mock()
@@ -488,7 +543,7 @@ async def test_command_game_host_calls_host_game_invalid_title(
         dict(command="notice", style="error", text="Title must contain only ascii characters."))
 
 
-async def test_abort(mocker, lobbyconnection):
+async def test_abort(lobbyconnection):
     lobbyconnection.protocol.close = mock.AsyncMock()
     await lobbyconnection.abort()
 
@@ -511,7 +566,7 @@ async def test_send_game_list(mocker, database, lobbyconnection, game_stats_serv
     })
 
 
-async def test_coop_list(mocker, lobbyconnection):
+async def test_coop_list(lobbyconnection):
     await lobbyconnection.command_coop_list({})
 
     args = lobbyconnection.protocol.write_message.call_args_list
@@ -563,7 +618,7 @@ async def test_coop_list(mocker, lobbyconnection):
     ]
 
 
-async def test_command_admin_closelobby(mocker, lobbyconnection, player_factory):
+async def test_command_admin_closelobby(lobbyconnection, player_factory):
     player = lobbyconnection.player
     player.id = 1
     tuna = player_factory("Tuna", player_id=55, lobby_connection_spec="auto")
@@ -618,7 +673,7 @@ async def test_game_subscription(lobbyconnection: LobbyConnection):
     game.handle_action.assert_called_with("test", ["foo", 42])
 
 
-async def test_command_avatar_list(mocker, lobbyconnection: LobbyConnection):
+async def test_command_avatar_list(lobbyconnection: LobbyConnection):
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.player.id = 2  # Dostya test user
 
@@ -917,7 +972,9 @@ async def test_broadcast_connection_error(lobbyconnection: LobbyConnection, play
     player.lobby_connection.write_warning.assert_called_with("This is a test message")
 
 
-async def test_game_connection_not_restored_if_no_such_game_exists(lobbyconnection: LobbyConnection, mocker):
+async def test_game_connection_not_restored_if_no_such_game_exists(
+    lobbyconnection: LobbyConnection,
+):
     del lobbyconnection.player.game_connection
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.player.state = PlayerState.IDLE
@@ -1100,7 +1157,6 @@ async def test_command_match_ready(lobbyconnection):
 
 async def test_command_matchmaker_info(
     lobbyconnection,
-    ladder_service,
     queue_factory,
     player_factory,
     mocker

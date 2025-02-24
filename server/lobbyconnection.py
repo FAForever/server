@@ -958,6 +958,12 @@ class LobbyConnection:
             game = self.game_service[uuid]
         except KeyError:
             await self.send({
+                "command": "game_join_failed",
+                "reason": "host_left_game",
+                "uid": uuid
+            })
+            # DEPRECATED: use `game_join_failed` instead
+            await self.send({
                 "command": "notice",
                 "style": "info",
                 "text": "The host has left the game."
@@ -970,6 +976,12 @@ class LobbyConnection:
         if not game or game.state is not GameState.LOBBY:
             self._logger.debug("Game not in lobby state: %s state %s", game, game.state)
             await self.send({
+                "command": "game_join_failed",
+                "reason": "game_not_ready",
+                "uid": uuid
+            })
+            # DEPRECATED: use `game_join_failed` instead
+            await self.send({
                 "command": "notice",
                 "style": "info",
                 "text": "The game you are trying to join is not ready."
@@ -980,6 +992,12 @@ class LobbyConnection:
             raise ClientError("The game cannot be joined in this way.")
 
         if game.password != password:
+            await self.send({
+                "command": "game_join_failed",
+                "reason": "bad_password",
+                "uid": uuid
+            })
+            # DEPRECATED: use `game_join_failed` instead
             await self.send({
                 "command": "notice",
                 "style": "info",
