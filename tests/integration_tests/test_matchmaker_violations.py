@@ -1,11 +1,21 @@
 import asyncio
 from datetime import datetime, timezone
 
+import pytest
+
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
-from .test_game import open_fa, queue_players_for_matchmaking, start_search
+from .test_game import (
+    client_response,
+    open_fa,
+    queue_players_for_matchmaking,
+    send_player_options,
+    start_search
+)
 from .test_parties import accept_party_invite, invite_to_party
+from .test_teammatchmaker import \
+    queue_players_for_matchmaking as queue_players_for_matchmaking_2v2
 
 
 @fast_forward(360)
@@ -18,8 +28,7 @@ async def test_violation_for_guest_timeout(mocker, lobby_server):
 
     # The player that queued last will be the host
     async def launch_game_and_timeout_guest():
-        await read_until_command(host, "game_launch")
-        await open_fa(host)
+        await client_response(host, timeout=60)
         await read_until_command(host, "game_info")
 
         await read_until_command(guest, "game_launch")
@@ -108,6 +117,126 @@ async def test_violation_for_guest_timeout(mocker, lobby_server):
         "style": "info",
         "text": "Player ladder2 is timed out for 30 minutes"
     }
+
+
+@fast_forward(360)
+async def test_violation_established_peer(mocker, lobby_server):
+    mocker.patch(
+        "server.ladder_service.violation_service.datetime_now",
+        return_value=datetime(2022, 2, 5, tzinfo=timezone.utc)
+    )
+    protos, ids = await queue_players_for_matchmaking_2v2(lobby_server)
+    host, guest1, guest2, guest3 = protos
+    host_id, guest1_id, guest2_id, guest3_id = ids
+
+    # Connect all players to the host
+    await asyncio.gather(*[
+        client_response(proto, timeout=60)
+        for proto in protos
+    ])
+    await send_player_options(
+        host,
+        [host_id, "Color", 1],
+        [guest1_id, "Color", 2],
+        [guest2_id, "Color", 3],
+        [guest3_id, "Color", 4],
+    )
+
+    # Set up connection matrix
+    for id in (guest1_id, guest2_id, guest3_id):
+        await host.send_message({
+            "target": "game",
+            "command": "EstablishedPeer",
+            "args": [id],
+        })
+    for id in (host_id, guest2_id):
+        await guest1.send_message({
+            "target": "game",
+            "command": "EstablishedPeer",
+            "args": [id],
+        })
+    for id in (host_id, guest1_id):
+        await guest2.send_message({
+            "target": "game",
+            "command": "EstablishedPeer",
+            "args": [id],
+        })
+    # Guest3 only connects to the host
+    await guest3.send_message({
+        "target": "game",
+        "command": "EstablishedPeer",
+        "args": [host_id],
+    })
+
+    await read_until_command(host, "match_cancelled", timeout=120)
+    msg = await read_until_command(guest3, "search_violation", timeout=10)
+    assert msg == {
+        "command": "search_violation",
+        "count": 1,
+        "time": "2022-02-05T00:00:00+00:00",
+    }
+    for proto in (host, guest1, guest2):
+        with pytest.raises(asyncio.TimeoutError):
+            await read_until_command(proto, "search_violation", timeout=10)
+
+
+@fast_forward(360)
+async def test_violation_established_peer_multiple(mocker, lobby_server):
+    mocker.patch(
+        "server.ladder_service.violation_service.datetime_now",
+        return_value=datetime(2022, 2, 5, tzinfo=timezone.utc)
+    )
+    protos, ids = await queue_players_for_matchmaking_2v2(lobby_server)
+    host, guest1, guest2, guest3 = protos
+    host_id, guest1_id, guest2_id, guest3_id = ids
+
+    # Connect all players to the host
+    await asyncio.gather(*[
+        client_response(proto, timeout=60)
+        for proto in protos
+    ])
+    await send_player_options(
+        host,
+        [host_id, "Color", 1],
+        [guest1_id, "Color", 2],
+        [guest2_id, "Color", 3],
+        [guest3_id, "Color", 4],
+    )
+
+    # Set up connection matrix
+    for id in (guest1_id, guest2_id, guest3_id):
+        await host.send_message({
+            "target": "game",
+            "command": "EstablishedPeer",
+            "args": [id],
+        })
+    # Guests only connect to the host
+    await guest1.send_message({
+        "target": "game",
+        "command": "EstablishedPeer",
+        "args": [host_id],
+    })
+    await guest2.send_message({
+        "target": "game",
+        "command": "EstablishedPeer",
+        "args": [host_id],
+    })
+    await guest3.send_message({
+        "target": "game",
+        "command": "EstablishedPeer",
+        "args": [host_id],
+    })
+
+    await read_until_command(host, "match_cancelled", timeout=120)
+    for proto in (guest1, guest2, guest3):
+        msg = await read_until_command(proto, "search_violation", timeout=10)
+        assert msg == {
+            "command": "search_violation",
+            "count": 1,
+            "time": "2022-02-05T00:00:00+00:00",
+        }
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(host, "search_violation", timeout=10)
 
 
 @fast_forward(360)
