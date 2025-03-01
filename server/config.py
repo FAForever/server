@@ -157,6 +157,17 @@ class ConfigurationStore:
         # How many previous queue sizes to consider
         self.QUEUE_POP_TIME_MOVING_AVG_SIZE = 5
 
+        self.LADDER_VIOLATIONS_ENABLED = True
+        # How many violations are needed to trigger a temporary ban from queuing
+        self.LADDER_VIOLATIONS_BAN_THRESHOLD = 2
+        # Number of seconds that each temporary ban lasts
+        self.LADDER_VIOLATIONS_BAN_DURATION = 1800
+        # Number of seconds that the first temporary ban lasts. By default the
+        # ban for the first violation is shorter than the following bans.
+        self.LADDER_VIOLATIONS_FIRST_BAN_DURATION = 600
+        # Number of seconds needed since last violation to reset the counter
+        self.LADDER_VIOLATIONS_RESET_TIME = 3600
+
         self._defaults = {
             key: value
             for key, value in vars(self).items()
