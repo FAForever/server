@@ -3976,6 +3976,7 @@ class LadderService(Service):
                         key=lambda v: v.get_ban_expiration()
                     ).get_remaining()
                 )
+                # DEPRECATED: Use `search_timeout` instead
                 player.write_message({
                     &#34;command&#34;: &#34;notice&#34;,
                     &#34;style&#34;: &#34;info&#34;,
@@ -4833,6 +4834,7 @@ so it should only perform fast operations.</p></div>
                     key=lambda v: v.get_ban_expiration()
                 ).get_remaining()
             )
+            # DEPRECATED: Use `search_timeout` instead
             player.write_message({
                 &#34;command&#34;: &#34;notice&#34;,
                 &#34;style&#34;: &#34;info&#34;,
@@ -7540,6 +7542,9 @@ class ViolationService(Service):
                 self._clear_violation(player)
 
     def register_violations(self, players: list[Player]):
+        if not config.LADDER_VIOLATIONS_ENABLED:
+            return
+
         now = datetime_now()
         for player in players:
             violation = self.get_violation(player)
@@ -7559,6 +7564,7 @@ class ViolationService(Service):
                     violation.get_ban_expiration() - now
                 )
                 extra_text = f&#34; You can queue again in {delta_text}&#34;
+            # DEPRECATED: Use `search_violation` instead
             player.write_message({
                 &#34;command&#34;: &#34;notice&#34;,
                 &#34;style&#34;: &#34;info&#34;,
@@ -7571,6 +7577,9 @@ class ViolationService(Service):
             })
 
     def get_violations(self, players: list[Player]) -&gt; dict[Player, Violation]:
+        if not config.LADDER_VIOLATIONS_ENABLED:
+            return {}
+
         now = datetime_now()
         result = {}
         for player in players:
@@ -7649,6 +7658,9 @@ to connect to a game.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_violations(self, players: list[Player]) -&gt; dict[Player, Violation]:
+    if not config.LADDER_VIOLATIONS_ENABLED:
+        return {}
+
     now = datetime_now()
     result = {}
     for player in players:
@@ -7673,6 +7685,9 @@ to connect to a game.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def register_violations(self, players: list[Player]):
+    if not config.LADDER_VIOLATIONS_ENABLED:
+        return
+
     now = datetime_now()
     for player in players:
         violation = self.get_violation(player)
@@ -7692,6 +7707,7 @@ to connect to a game.</p></div>
                 violation.get_ban_expiration() - now
             )
             extra_text = f&#34; You can queue again in {delta_text}&#34;
+        # DEPRECATED: Use `search_violation` instead
         player.write_message({
             &#34;command&#34;: &#34;notice&#34;,
             &#34;style&#34;: &#34;info&#34;,

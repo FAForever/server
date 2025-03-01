@@ -69,13 +69,17 @@ class Violation:
         self.time = datetime_now()
 
     def get_ban_expiration(self) -&gt; datetime:
-        if self.count &lt; 2:
+        if self.count &lt; config.LADDER_VIOLATIONS_BAN_THRESHOLD:
             # No ban, expires as soon as it&#39;s registered
             return self.time
-        elif self.count == 2:
-            return self.time + timedelta(minutes=10)
+        elif self.count == config.LADDER_VIOLATIONS_BAN_THRESHOLD:
+            return self.time + timedelta(
+                seconds=config.LADDER_VIOLATIONS_FIRST_BAN_DURATION,
+            )
         else:
-            return self.time + timedelta(minutes=30)
+            return self.time + timedelta(
+                seconds=config.LADDER_VIOLATIONS_BAN_DURATION,
+            )
 
     def get_remaining(self, now: Optional[datetime] = None) -&gt; timedelta:
         return self.get_ban_expiration() - (now or datetime_now())
@@ -87,8 +91,8 @@ class Violation:
         `get_ban_expiration`.
         &#34;&#34;&#34;
         now = now or datetime_now()
-        # TODO: Config?
-        return self.time + timedelta(hours=1) &lt;= now
+        exp = self.time + timedelta(seconds=config.LADDER_VIOLATIONS_RESET_TIME)
+        return exp &lt;= now
 
     def to_dict(self) -&gt; dict:
         return {
@@ -119,13 +123,17 @@ class Violation:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_ban_expiration(self) -&gt; datetime:
-    if self.count &lt; 2:
+    if self.count &lt; config.LADDER_VIOLATIONS_BAN_THRESHOLD:
         # No ban, expires as soon as it&#39;s registered
         return self.time
-    elif self.count == 2:
-        return self.time + timedelta(minutes=10)
+    elif self.count == config.LADDER_VIOLATIONS_BAN_THRESHOLD:
+        return self.time + timedelta(
+            seconds=config.LADDER_VIOLATIONS_FIRST_BAN_DURATION,
+        )
     else:
-        return self.time + timedelta(minutes=30)</code></pre>
+        return self.time + timedelta(
+            seconds=config.LADDER_VIOLATIONS_BAN_DURATION,
+        )</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -157,8 +165,8 @@ class Violation:
     `get_ban_expiration`.
     &#34;&#34;&#34;
     now = now or datetime_now()
-    # TODO: Config?
-    return self.time + timedelta(hours=1) &lt;= now</code></pre>
+    exp = self.time + timedelta(seconds=config.LADDER_VIOLATIONS_RESET_TIME)
+    return exp &lt;= now</code></pre>
 </details>
 <div class="desc"><p>Whether the violation history should be reset. This is different from
 the ban expiration time which should be checked by calling
@@ -228,6 +236,9 @@ class ViolationService(Service):
                 self._clear_violation(player)
 
     def register_violations(self, players: list[Player]):
+        if not config.LADDER_VIOLATIONS_ENABLED:
+            return
+
         now = datetime_now()
         for player in players:
             violation = self.get_violation(player)
@@ -247,6 +258,7 @@ class ViolationService(Service):
                     violation.get_ban_expiration() - now
                 )
                 extra_text = f&#34; You can queue again in {delta_text}&#34;
+            # DEPRECATED: Use `search_violation` instead
             player.write_message({
                 &#34;command&#34;: &#34;notice&#34;,
                 &#34;style&#34;: &#34;info&#34;,
@@ -259,6 +271,9 @@ class ViolationService(Service):
             })
 
     def get_violations(self, players: list[Player]) -&gt; dict[Player, Violation]:
+        if not config.LADDER_VIOLATIONS_ENABLED:
+            return {}
+
         now = datetime_now()
         result = {}
         for player in players:
@@ -337,6 +352,9 @@ to connect to a game.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_violations(self, players: list[Player]) -&gt; dict[Player, Violation]:
+    if not config.LADDER_VIOLATIONS_ENABLED:
+        return {}
+
     now = datetime_now()
     result = {}
     for player in players:
@@ -361,6 +379,9 @@ to connect to a game.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def register_violations(self, players: list[Player]):
+    if not config.LADDER_VIOLATIONS_ENABLED:
+        return
+
     now = datetime_now()
     for player in players:
         violation = self.get_violation(player)
@@ -380,6 +401,7 @@ to connect to a game.</p></div>
                 violation.get_ban_expiration() - now
             )
             extra_text = f&#34; You can queue again in {delta_text}&#34;
+        # DEPRECATED: Use `search_violation` instead
         player.write_message({
             &#34;command&#34;: &#34;notice&#34;,
             &#34;style&#34;: &#34;info&#34;,

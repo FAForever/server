@@ -328,6 +328,7 @@ class LadderService(Service):
                         key=lambda v: v.get_ban_expiration()
                     ).get_remaining()
                 )
+                # DEPRECATED: Use `search_timeout` instead
                 player.write_message({
                     &#34;command&#34;: &#34;notice&#34;,
                     &#34;style&#34;: &#34;info&#34;,
@@ -1185,6 +1186,7 @@ so it should only perform fast operations.</p></div>
                     key=lambda v: v.get_ban_expiration()
                 ).get_remaining()
             )
+            # DEPRECATED: Use `search_timeout` instead
             player.write_message({
                 &#34;command&#34;: &#34;notice&#34;,
                 &#34;style&#34;: &#34;info&#34;,
