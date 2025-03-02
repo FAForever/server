@@ -505,7 +505,7 @@ class GameConnection(GpgNetServerProtocol):
         self.finished_sim = True
         await self.game.check_game_finish(self.player)
 
-    async def handle_rehost(self, *args: list[Any]):
+    async def handle_rehost(self, *args: Any):
         """
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
@@ -519,26 +519,35 @@ class GameConnection(GpgNetServerProtocol):
         """
         pass
 
-    async def handle_bottleneck(self, *args: list[Any]):
+    async def handle_bottleneck(self, code: str, *args: str):
         """
-        Not sure what this command means. This is currently unused but
-        included for documentation purposes.
-        """
-        pass
+        Not entirely sure what this command means. Seems to be sent when a
+        player is getting behind on data, slowing down the game.
 
-    async def handle_bottleneck_cleared(self, *args: list[Any]):
+        Example:
+        ```python
+        {
+            "command": "Bottleneck",
+            "target": "game",
+            "args": ["data", "19508", "517268,516974,344419", "5980.1"],
+        }
+        ```
         """
-        Not sure what this command means. This is currently unused but
-        included for documentation purposes.
-        """
-        pass
+        self._logger.debug("Bottleneck: %s", list((code, *args)))
 
-    async def handle_disconnected(self, *args: list[Any]):
+    async def handle_bottleneck_cleared(self):
+        """
+        Not entirely sure what this command means. Probably sent when the game
+        is no longer being slowed down due to players being behind on data.
+        """
+        self._logger.debug("BottleneckCleared")
+
+    async def handle_disconnected(self, *args: Any):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         """
-        pass
+        self._logger.debug("Disconnected: %s", list(args))
 
     async def handle_chat(self, message: str):
         """
