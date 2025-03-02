@@ -1111,7 +1111,7 @@ class ConfigurationService(Service):
         self.finished_sim = True
         await self.game.check_game_finish(self.player)
 
-    async def handle_rehost(self, *args: list[Any]):
+    async def handle_rehost(self, *args: Any):
         &#34;&#34;&#34;
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
@@ -1125,26 +1125,35 @@ class ConfigurationService(Service):
         &#34;&#34;&#34;
         pass
 
-    async def handle_bottleneck(self, *args: list[Any]):
+    async def handle_bottleneck(self, code: str, *args: str):
         &#34;&#34;&#34;
-        Not sure what this command means. This is currently unused but
-        included for documentation purposes.
-        &#34;&#34;&#34;
-        pass
+        Not entirely sure what this command means. Seems to be sent when a
+        player is getting behind on data, slowing down the game.
 
-    async def handle_bottleneck_cleared(self, *args: list[Any]):
+        Example:
+        ```python
+        {
+            &#34;command&#34;: &#34;Bottleneck&#34;,
+            &#34;target&#34;: &#34;game&#34;,
+            &#34;args&#34;: [&#34;data&#34;, &#34;19508&#34;, &#34;517268,516974,344419&#34;, &#34;5980.1&#34;],
+        }
+        ```
         &#34;&#34;&#34;
-        Not sure what this command means. This is currently unused but
-        included for documentation purposes.
-        &#34;&#34;&#34;
-        pass
+        self._logger.debug(&#34;Bottleneck: %s&#34;, list((code, *args)))
 
-    async def handle_disconnected(self, *args: list[Any]):
+    async def handle_bottleneck_cleared(self):
+        &#34;&#34;&#34;
+        Not entirely sure what this command means. Probably sent when the game
+        is no longer being slowed down due to players being behind on data.
+        &#34;&#34;&#34;
+        self._logger.debug(&#34;BottleneckCleared&#34;)
+
+    async def handle_disconnected(self, *args: Any):
         &#34;&#34;&#34;
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         &#34;&#34;&#34;
-        pass
+        self._logger.debug(&#34;Disconnected: %s&#34;, list(args))
 
     async def handle_chat(self, message: str):
         &#34;&#34;&#34;
@@ -1431,40 +1440,56 @@ and deletes references to Player and Game held by this object.</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_bottleneck"><code class="name flex">
-<span>async def <span class="ident">handle_bottleneck</span></span>(<span>self, *args: list[typing.Any])</span>
+<span>async def <span class="ident">handle_bottleneck</span></span>(<span>self, code: str, *args: str)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_bottleneck(self, *args: list[Any]):
+<pre><code class="python">async def handle_bottleneck(self, code: str, *args: str):
     &#34;&#34;&#34;
-    Not sure what this command means. This is currently unused but
-    included for documentation purposes.
+    Not entirely sure what this command means. Seems to be sent when a
+    player is getting behind on data, slowing down the game.
+
+    Example:
+    ```python
+    {
+        &#34;command&#34;: &#34;Bottleneck&#34;,
+        &#34;target&#34;: &#34;game&#34;,
+        &#34;args&#34;: [&#34;data&#34;, &#34;19508&#34;, &#34;517268,516974,344419&#34;, &#34;5980.1&#34;],
+    }
+    ```
     &#34;&#34;&#34;
-    pass</code></pre>
+    self._logger.debug(&#34;Bottleneck: %s&#34;, list((code, *args)))</code></pre>
 </details>
-<div class="desc"><p>Not sure what this command means. This is currently unused but
-included for documentation purposes.</p></div>
+<div class="desc"><p>Not entirely sure what this command means. Seems to be sent when a
+player is getting behind on data, slowing down the game.</p>
+<p>Example:</p>
+<pre><code class="language-python">{
+    &quot;command&quot;: &quot;Bottleneck&quot;,
+    &quot;target&quot;: &quot;game&quot;,
+    &quot;args&quot;: [&quot;data&quot;, &quot;19508&quot;, &quot;517268,516974,344419&quot;, &quot;5980.1&quot;],
+}
+</code></pre></div>
 </dd>
 <dt id="server.GameConnection.handle_bottleneck_cleared"><code class="name flex">
-<span>async def <span class="ident">handle_bottleneck_cleared</span></span>(<span>self, *args: list[typing.Any])</span>
+<span>async def <span class="ident">handle_bottleneck_cleared</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_bottleneck_cleared(self, *args: list[Any]):
+<pre><code class="python">async def handle_bottleneck_cleared(self):
     &#34;&#34;&#34;
-    Not sure what this command means. This is currently unused but
-    included for documentation purposes.
+    Not entirely sure what this command means. Probably sent when the game
+    is no longer being slowed down due to players being behind on data.
     &#34;&#34;&#34;
-    pass</code></pre>
+    self._logger.debug(&#34;BottleneckCleared&#34;)</code></pre>
 </details>
-<div class="desc"><p>Not sure what this command means. This is currently unused but
-included for documentation purposes.</p></div>
+<div class="desc"><p>Not entirely sure what this command means. Probably sent when the game
+is no longer being slowed down due to players being behind on data.</p></div>
 </dd>
 <dt id="server.GameConnection.handle_chat"><code class="name flex">
 <span>async def <span class="ident">handle_chat</span></span>(<span>self, message: str)</span>
@@ -1513,19 +1538,19 @@ included for documentation purposes.</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_disconnected"><code class="name flex">
-<span>async def <span class="ident">handle_disconnected</span></span>(<span>self, *args: list[typing.Any])</span>
+<span>async def <span class="ident">handle_disconnected</span></span>(<span>self, *args: Any)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_disconnected(self, *args: list[Any]):
+<pre><code class="python">async def handle_disconnected(self, *args: Any):
     &#34;&#34;&#34;
     Not sure what this command means. This is currently unused but
     included for documentation purposes.
     &#34;&#34;&#34;
-    pass</code></pre>
+    self._logger.debug(&#34;Disconnected: %s&#34;, list(args))</code></pre>
 </details>
 <div class="desc"><p>Not sure what this command means. This is currently unused but
 included for documentation purposes.</p></div>
@@ -1883,14 +1908,14 @@ to start due to players using differing game settings.</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="server.GameConnection.handle_rehost"><code class="name flex">
-<span>async def <span class="ident">handle_rehost</span></span>(<span>self, *args: list[typing.Any])</span>
+<span>async def <span class="ident">handle_rehost</span></span>(<span>self, *args: Any)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_rehost(self, *args: list[Any]):
+<pre><code class="python">async def handle_rehost(self, *args: Any):
     &#34;&#34;&#34;
     Signals that the user has rehosted the game. This is currently unused but
     included for documentation purposes.
