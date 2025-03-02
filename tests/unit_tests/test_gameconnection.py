@@ -372,6 +372,12 @@ async def test_handle_action_BottleneckCleared(game_connection: GameConnection):
     await game_connection.handle_bottleneck_cleared(*args)
 
 
+async def test_handle_action_Chat(game_connection: GameConnection):
+    args = ["Hello World!"]
+    await game_connection.handle_action("Chat", args)
+    await game_connection.handle_chat(*args)
+
+
 async def test_handle_action_ClearSlot(
     game: Game,
     game_connection: GameConnection
@@ -390,6 +396,18 @@ async def test_handle_action_ClearSlot_not_host(
     game_connection.player = players.joining
     await game_connection.handle_action("ClearSlot", [1])
     game.clear_slot.assert_not_called()
+
+
+async def test_handle_action_Disconnected(game_connection: GameConnection):
+    args = ["foo", "bar"]
+    await game_connection.handle_action("Disconnected", args)
+    await game_connection.handle_disconnected(*args)
+
+
+async def test_handle_action_GameFull(game_connection: GameConnection):
+    args = []
+    await game_connection.handle_action("GameFull", args)
+    await game_connection.handle_game_full(*args)
 
 
 async def test_handle_action_GameResult_calls_add_result(
@@ -511,6 +529,12 @@ async def test_handle_action_EnforceRating(
 ):
     await game_connection.handle_action("EnforceRating", [])
     assert game.enforce_rating is True
+
+
+async def test_handle_action_Rehost(game_connection: GameConnection):
+    args = ["foo", "bar"]
+    await game_connection.handle_action("Rehost", args)
+    await game_connection.handle_rehost(*args)
 
 
 async def test_handle_action_TeamkillReport(
@@ -742,17 +766,6 @@ async def test_handle_action_IceMsg_for_non_connected(
     player_service[peer.id] = peer
     # No exceptions raised
     await game_connection.handle_action("IceMsg", [2, "the message"])
-
-
-@pytest.mark.parametrize("action", (
-    "Rehost",
-    "Disconnected",
-    "Chat",
-    "GameFull"
-))
-async def test_handle_action_ignored(game_connection: GameConnection, action):
-    # No exceptions raised
-    await game_connection.handle_action(action, [])
 
 
 async def test_handle_action_invalid(game_connection: GameConnection):
