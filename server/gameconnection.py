@@ -547,7 +547,7 @@ class GameConnection(GpgNetServerProtocol):
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         """
-        pass
+        self._logger.debug("Disconnected: %s", list(args))
 
     async def handle_chat(self, message: str):
         """
