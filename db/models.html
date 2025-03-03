@@ -42,6 +42,28 @@ el.replaceWith(d);
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="server.db.models.get_flyway_schema_history_table"><code class="name flex">
+<span>def <span class="ident">get_flyway_schema_history_table</span></span>(<span>table_name: str) ‑> sqlalchemy.sql.schema.Table</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_flyway_schema_history_table(table_name: str) -&gt; Table:
+    return Table(
+        table_name, metadata,
+        Column(&#34;version&#34;, String(50)),
+        Column(&#34;success&#34;, Boolean),
+        # For interaction with unit tests
+        extend_existing=True,
+    )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
 </section>
 <section>
 </section>
@@ -54,6 +76,11 @@ el.replaceWith(d);
 <li><h3>Super-module</h3>
 <ul>
 <li><code><a title="server.db" href="index.html">server.db</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="server.db.models.get_flyway_schema_history_table" href="#server.db.models.get_flyway_schema_history_table">get_flyway_schema_history_table</a></code></li>
 </ul>
 </li>
 </ul>

@@ -56,6 +56,50 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
+<dt id="server.db.get_and_validate_database_version"><code class="name flex">
+<span>async def <span class="ident">get_and_validate_database_version</span></span>(<span>db: <a title="server.db.FAFDatabase" href="#server.db.FAFDatabase">FAFDatabase</a>) ‑> int | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def get_and_validate_database_version(db: FAFDatabase) -&gt; Optional[int]:
+    if not config.DB_FLYWAY_TABLE:
+        return None
+
+    flyway_schema_history = get_flyway_schema_history_table(
+        config.DB_FLYWAY_TABLE,
+    )
+
+    async with db.acquire() as conn:
+        result = await conn.execute(
+            select(
+                flyway_schema_history.c.version,
+            ).where(
+                and_(
+                    flyway_schema_history.c.success == true(),
+                    flyway_schema_history.c.version.is_not(None),
+                ),
+            ),
+        )
+        version = max((int(row.version) for row in result), default=None)
+
+    if version is None:
+        raise RuntimeError(
+            &#34;No successful database migrations found! Unable to determine &#34;
+            &#34;database version&#34;,
+        )
+    if version &lt; FLYWAY_MINIMUM_REQUIRED_VERSION:
+        raise RuntimeError(
+            f&#34;Database version v{version} does not meet minimum requirement &#34;
+            f&#34;v{FLYWAY_MINIMUM_REQUIRED_VERSION}&#34;,
+        )
+
+    return version</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="server.db.stat_db_errors"><code class="name flex">
 <span>def <span class="ident">stat_db_errors</span></span>(<span>)</span>
 </code></dt>
@@ -528,6 +572,7 @@ method.</p></div>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
+<li><code><a title="server.db.get_and_validate_database_version" href="#server.db.get_and_validate_database_version">get_and_validate_database_version</a></code></li>
 <li><code><a title="server.db.stat_db_errors" href="#server.db.stat_db_errors">stat_db_errors</a></code></li>
 </ul>
 </li>

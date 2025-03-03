@@ -122,6 +122,8 @@ class ConfigurationStore:
         self.DB_LOGIN = &#34;root&#34;
         self.DB_PASSWORD = &#34;banana&#34;
         self.DB_NAME = &#34;faf&#34;
+        # An empty value will disable the database version check
+        self.DB_FLYWAY_TABLE = &#34;flyway_schema_history&#34;
 
         self.API_CLIENT_ID = &#34;client_id&#34;
         self.API_CLIENT_SECRET = &#34;banana&#34;
