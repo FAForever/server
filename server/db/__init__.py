@@ -5,16 +5,22 @@ Database interaction
 import asyncio
 import logging
 from contextlib import contextmanager
+from typing import Optional
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import and_, create_engine, select, text, true
 from sqlalchemy.exc import DBAPIError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncConnection as _AsyncConnection
 from sqlalchemy.ext.asyncio import AsyncEngine as _AsyncEngine
 from sqlalchemy.util import EMPTY_DICT
 
+from server.config import config
+from server.db.models import get_flyway_schema_history_table
 from server.metrics import db_exceptions
 
 logger = logging.getLogger(__name__)
+
+
+FLYWAY_MINIMUM_REQUIRED_VERSION = 136
 
 
 @contextmanager
@@ -198,3 +204,38 @@ class AsyncConnection(_AsyncConnection):
             execution_options=execution_options,
             **kwargs
         )
+
+
+async def get_and_validate_database_version(db: FAFDatabase) -> Optional[int]:
+    if not config.DB_FLYWAY_TABLE:
+        return None
+
+    flyway_schema_history = get_flyway_schema_history_table(
+        config.DB_FLYWAY_TABLE,
+    )
+
+    async with db.acquire() as conn:
+        result = await conn.execute(
+            select(
+                flyway_schema_history.c.version,
+            ).where(
+                and_(
+                    flyway_schema_history.c.success == true(),
+                    flyway_schema_history.c.version.is_not(None),
+                ),
+            ),
+        )
+        version = max((int(row.version) for row in result), default=None)
+
+    if version is None:
+        raise RuntimeError(
+            "No successful database migrations found! Unable to determine "
+            "database version",
+        )
+    if version < FLYWAY_MINIMUM_REQUIRED_VERSION:
+        raise RuntimeError(
+            f"Database version v{version} does not meet minimum requirement "
+            f"v{FLYWAY_MINIMUM_REQUIRED_VERSION}",
+        )
+
+    return version
