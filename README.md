@@ -8,6 +8,13 @@
 
 This is the source code for the
 [Forged Alliance Forever](https://www.faforever.com/) lobby server.
+Click here to go to the
+[Server Python API Documentation](https://faforever.github.io/server/).
+
+-   For the Lua game mod see
+[faforever/fa](https://github.com/FAForever/fa).
+-   For the official FAF client see
+[faforever/downlords-faf-client](https://github.com/FAForever/downlords-faf-client)
 
 ## Overview
 The lobby server is the piece of software sitting at the very core of FAF,
@@ -26,6 +33,9 @@ The main responsibilities of the lobby server are:
 -   To maintain a list of online players
 
 -   To perform rating calculations and updates
+
+In production, the lobby server is deployed behind a websocket bridge
+[faforever/ws_bridge_rs](https://github.com/FAForever/ws_bridge_rs).
 
 ## Support development
 
