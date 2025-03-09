@@ -958,7 +958,7 @@ class LobbyConnection:
             try:
                 await conn.execute(
                     game_join_log.insert().values(
-                        player_id=player_id,
+                        player_id=self.player.id,
                         game_id=uuid,
                     )
                 )
