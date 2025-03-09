@@ -7,9 +7,9 @@ from datetime import datetime
 from unittest import mock
 
 import pytest
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 
-from server.db.models import game_player_stats, game_join_log
+from server.db.models import game_join_log, game_player_stats
 from server.games.game_results import GameOutcome
 from server.protocol import Protocol
 from server.timing import datetime_now
