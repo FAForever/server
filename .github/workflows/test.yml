@@ -105,14 +105,14 @@ jobs:
         run: PYTHONWARNINGS='error::UserWarning' pipenv run pdoc3 server >/dev/null
 
   docker-build:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
 
-        - name: Build docker image
-          run: docker build --build-arg GITHUB_REF -t test_image .
+      - name: Build docker image
+        run: docker build --build-arg GITHUB_REF -t test_image .
 
-        - name: Test image
-          run: |
-            docker run --rm -d -p 8001:8001 test_image
-            nc -z localhost 8001
+      - name: Test image
+        run: |
+          docker run --rm -d -p 8001:8001 test_image
+          nc -z localhost 8001
