@@ -1,3 +1,24 @@
+r"""DEPRECATED: Legacy [QDataStream](http://doc.qt.io/qt-5/qdatastream.html)
+(UTF-16, BigEndian) encoded data format.
+
+For the lobbyconnection, each message is of the form:
+```
+ACTION: QString
+```
+With most carrying a footer containing:
+```
+LOGIN: QString
+SESSION: QString
+```
+
+# Example:
+```python
+>>> QDataStreamProtocol.encode_message({"command": "ping"})
+b'\x00\x00\x00\x0c\x00\x00\x00\x08\x00P\x00I\x00N\x00G'
+
+```
+"""
+
 import base64
 import json
 import struct

@@ -1,3 +1,5 @@
+"""Protocol base class"""
+
 import contextlib
 import json
 from abc import ABCMeta, abstractmethod

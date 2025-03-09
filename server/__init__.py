@@ -75,7 +75,31 @@ implementation agnostic, instead linking to other sections of the documentation
 that go into more detail.
 
 ## Protocol
-TODO
+There are two layers to the server protocol:
+
+1. **The wire format.**
+This is how messages are serialized to bytes and sent over the network stream.
+2. **Application level messages.**
+Also sometimes called 'commands', messages are used to exchange state between
+the server and each client. Every command is part of a logical 'command flow'
+which is the expected sequence of messages exchanged between the server and
+client.
+
+### Wire Format
+See `server.protocol`.
+
+### Application messages
+See `server.lobbyconnection`.
+
+Terms:
+
+- **Command**: A message sent between the client and server. Every message is
+expected to deserialize to a python dict with at least one key `"command"`
+indicating the type of message. For example: `{"command": "ping"}`.
+- **Command Flow**: An expected logical sequence of commands. This is encoded in
+the application logic of each command handler.
+
+TODO: expand
 
 # Legal
 - Copyright © 2012-2014 Gael Honorez
