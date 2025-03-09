@@ -24,12 +24,12 @@ from .conftest import (
 
 
 async def host_game(
-    proto: Protocol,
-    *,
-    mod: str = "faf",
-    visibility: str = "public",
-    game_options: dict = {},
-    **kwargs
+        proto: Protocol,
+        *,
+        mod: str = "faf",
+        visibility: str = "public",
+        game_options: dict = {},
+        **kwargs
 ) -> int:
     await proto.send_message({
         "command": "game_host",
@@ -65,13 +65,13 @@ async def join_game(proto: Protocol, uid: int):
 
 
 async def setup_game_1v1(
-    host_proto: Protocol,
-    host_id: int,
-    guest_proto: Protocol,
-    guest_id: int,
-    mod: str = "faf",
-    game_options: dict = {},
-    **kwargs,
+        host_proto: Protocol,
+        host_id: int,
+        guest_proto: Protocol,
+        guest_id: int,
+        mod: str = "faf",
+        game_options: dict = {},
+        **kwargs,
 ):
     # Set up the game
     game_id = await host_game(
@@ -205,10 +205,10 @@ async def queue_players_for_matchmaking(lobby_server, queue_name: str = "ladder1
 
 
 async def queue_temp_players_for_matchmaking(
-    lobby_server,
-    tmp_user,
-    num_players,
-    queue_name,
+        lobby_server,
+        tmp_user,
+        num_players,
+        queue_name,
 ):
     """
     Queue an arbitrary number of players for matchmaking in a particular queue
@@ -254,6 +254,7 @@ async def get_player_ratings_all(proto, *names, old_ratings={}):
 
     If old_ratings is passed, wait for ratings to be different from old_ratings.
     """
+
     def _nested_keys(nested_dict):
         return set(k + r for k, v in nested_dict.items() for r in v.keys())
 
@@ -438,7 +439,6 @@ async def test_game_join_log(lobby_server, database):
         )
         row = result.one()
         assert row is not None
-
 
 
 @fast_forward(60)
@@ -1094,8 +1094,8 @@ async def test_restore_game_session_game_ended(lobby_server):
     # Player disconnects and the other player reports that they won the game
     await guest_proto.close()
     for result in (
-        [1, "victory 10"],
-        [2, "defeat -10"],
+            [1, "victory 10"],
+            [2, "defeat -10"],
     ):
         await host_proto.send_message({
             "target": "game",
@@ -1176,9 +1176,9 @@ async def test_partial_game_ended_rates_game(lobby_server, tmp_user):
         # Set player options
         await send_player_options(
             host_proto,
-            [guest_id, "Army", i+2],
-            [guest_id, "StartSpot", i+2],
-            [guest_id, "Color", i+2],
+            [guest_id, "Army", i + 2],
+            [guest_id, "StartSpot", i + 2],
+            [guest_id, "Color", i + 2],
             [guest_id, "Faction", 1],
             [guest_id, "Team", 3 if i % 2 == 0 else 2]
         )
@@ -1202,10 +1202,10 @@ async def test_partial_game_ended_rates_game(lobby_server, tmp_user):
     # End the game
     # Reports results (lazy, just the host reports. This should still work)
     for result in (
-        [1, "victory 10"],
-        [2, "defeat -10"],
-        [3, "victory 10"],
-        [4, "defeat -10"]
+            [1, "victory 10"],
+            [2, "defeat -10"],
+            [3, "victory 10"],
+            [4, "defeat -10"]
     ):
         await host_proto.send_message({
             "target": "game",
@@ -1287,9 +1287,9 @@ async def test_ladder_game_draw_bug(lobby_server, database):
 
     # Player 1 ctrl-k's
     for result in (
-        [army1, "defeat -10"],
-        [army1, "score 1"],
-        [army2, "defeat -10"]
+            [army1, "defeat -10"],
+            [army1, "score 1"],
+            [army2, "defeat -10"]
     ):
         for proto in (proto1, proto2):
             await proto.send_message({
@@ -1373,9 +1373,9 @@ async def test_ladder_game_not_joinable(lobby_server):
 @pytest.mark.flaky
 @fast_forward(60)
 async def test_gamestate_ended_clears_references(
-    lobby_server,
-    game_service,
-    player_service
+        lobby_server,
+        game_service,
+        player_service
 ):
     test_id, _, test_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
@@ -1506,8 +1506,8 @@ async def test_gamestate_ended_modifies_player_list(lobby_server):
 @pytest.mark.rabbitmq
 @fast_forward(30)
 async def test_game_stats_broadcasts_achievement_updates(
-    lobby_server,
-    channel
+        lobby_server,
+        channel
 ):
     mq_proto_ach = await connect_mq_consumer(
         lobby_server,
@@ -1599,8 +1599,8 @@ async def test_game_stats_broadcasts_achievement_updates(
 @pytest.mark.rabbitmq
 @fast_forward(30)
 async def test_galactic_war_1v1_game_ended_broadcasts_army_results(
-    lobby_server,
-    channel
+        lobby_server,
+        channel
 ):
     mq_proto_all = await connect_mq_consumer(
         lobby_server,
