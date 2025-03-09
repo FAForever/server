@@ -51,16 +51,16 @@ jobs:
           RABBITMQ_DEFAULT_VHOST: /
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Cache hypothesis examples
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .hypothesis
           key: .hypothesis
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -107,7 +107,7 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Build docker image
         run: docker build --build-arg GITHUB_REF -t test_image .
