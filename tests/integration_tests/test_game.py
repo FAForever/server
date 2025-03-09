@@ -394,7 +394,7 @@ async def test_game_with_foed_player(lobby_server):
 
 @fast_forward(60)
 async def test_game_join_log(lobby_server, database):
-    host_id, _, host_proto = await connect_and_sign_in(
+    _, _, host_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
     guest_id, _, guest_proto = await connect_and_sign_in(
