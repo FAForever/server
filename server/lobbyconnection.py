@@ -5,12 +5,13 @@ Handles requests from connected clients
 import asyncio
 import contextlib
 import json
+import logging
 import random
 import urllib.parse
 import urllib.request
 from datetime import datetime
 from functools import wraps
-from typing import Optional
+from typing import ClassVar, Optional
 
 import aiohttp
 from sqlalchemy import and_, func, select
@@ -62,8 +63,41 @@ from .rating_service import RatingService
 from .types import Address, GameLaunchOptions
 
 
+def ice_only(func):
+    """
+    Ensures that a handler function is not invoked from a non ICE client.
+    """
+    @wraps(func)
+    async def wrapper(self, message):
+        if self._attempted_connectivity_test:
+            raise ClientError("Cannot join game. Please update your client to the newest version.")
+        return await func(self, message)
+    return wrapper
+
+
+def player_idle(state_text: str):
+    """
+    Ensures that a handler function is not invoked unless the player state
+    is IDLE.
+    """
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(self, message):
+            if self.player.state != PlayerState.IDLE:
+                raise ClientError(
+                    f"Can't {state_text} while in state "
+                    f"{self.player.state.name}",
+                    recoverable=True
+                )
+            return await func(self, message)
+        return wrapper
+    return decorator
+
+
 @with_logger
 class LobbyConnection:
+    _logger: ClassVar[logging.Logger]
+
     @timed()
     def __init__(
         self,
@@ -93,7 +127,7 @@ class LobbyConnection:
         self.user_agent = None
         self.version = None
 
-        self._timeout_task = None
+        self._timeout_task: Optional[asyncio.Task] = None
         self._attempted_connectivity_test = False
 
         self._logger.debug("LobbyConnection initialized for '%s'", self.session)
@@ -122,6 +156,8 @@ class LobbyConnection:
                 await self.abort("Client took too long to log in.")
 
     async def abort(self, logspam=""):
+        assert self.protocol is not None
+
         self._authenticated = False
 
         self._logger.warning(
@@ -231,35 +267,6 @@ class LobbyConnection:
             self._logger.exception(e)
             await self.abort("Error processing command")
 
-    def ice_only(func):
-        """
-        Ensures that a handler function is not invoked from a non ICE client.
-        """
-        @wraps(func)
-        async def wrapper(self, message):
-            if self._attempted_connectivity_test:
-                raise ClientError("Cannot join game. Please update your client to the newest version.")
-            return await func(self, message)
-        return wrapper
-
-    def player_idle(state_text):
-        """
-        Ensures that a handler function is not invoked unless the player state
-        is IDLE.
-        """
-        def decorator(func):
-            @wraps(func)
-            async def wrapper(self, message):
-                if self.player.state != PlayerState.IDLE:
-                    raise ClientError(
-                        f"Can't {state_text} while in state "
-                        f"{self.player.state.name}",
-                        recoverable=True
-                    )
-                return await func(self, message)
-            return wrapper
-        return decorator
-
     async def command_ping(self, msg):
         await self.send({"command": "pong"})
 
@@ -308,6 +315,8 @@ class LobbyConnection:
         })
 
     async def send_game_list(self):
+        assert self.player is not None
+
         await self.send({
             "command": "game_info",
             "games": [
@@ -317,6 +326,8 @@ class LobbyConnection:
         })
 
     async def command_social_remove(self, message):
+        assert self.player is not None
+
         if "friend" in message:
             subject_id = message["friend"]
             player_attr = self.player.friends
@@ -337,6 +348,8 @@ class LobbyConnection:
             player_attr.discard(subject_id)
 
     async def command_social_add(self, message):
+        assert self.player is not None
+
         if "friend" in message:
             status = "FRIEND"
             subject_id = message["friend"]
@@ -362,6 +375,8 @@ class LobbyConnection:
             player_attr.add(subject_id)
 
     def _get_visibility_context_manager(self, subject_id: int):
+        assert self.player is not None
+
         game = self.player.game
 
         if game and game.host == self.player:
@@ -420,6 +435,8 @@ class LobbyConnection:
         })
 
     async def command_admin(self, message):
+        assert self.player is not None
+
         action = message["action"]
 
         if action == "closeFA":
@@ -544,7 +561,13 @@ class LobbyConnection:
                 f'<a href="{config.WWW_URL}">{config.WWW_URL}</a>'
             )
 
-    async def check_policy_conformity(self, player_id, uid_hash, session, ignore_result=False):
+    async def check_policy_conformity(
+        self,
+        player_id: int,
+        uid_hash: str,
+        session_id: int,
+        ignore_result: bool = False,
+    ) -> bool:
         if not config.USE_POLICY_SERVER:
             return True
 
@@ -552,7 +575,7 @@ class LobbyConnection:
         payload = {
             "player_id": player_id,
             "uid_hash": uid_hash,
-            "session": session
+            "session": session_id,
         }
         headers = {
             "content-type": "application/json",
@@ -685,8 +708,12 @@ class LobbyConnection:
         unique_id: str,
         method: str
     ):
+        assert self.peer_address is not None
+
         conforms_policy = await self.check_policy_conformity(
-            player_id, unique_id, self.session,
+            player_id,
+            unique_id,
+            self.session,
             # All players are required to have game ownership verified
             # so this is for informational purposes only
             ignore_result=True
@@ -818,6 +845,7 @@ class LobbyConnection:
     @player_idle("reconnect to a game")
     async def command_restore_game_session(self, message):
         assert self.player is not None
+        assert self.protocol is not None
 
         game_id = int(message["game_id"])
 
@@ -865,6 +893,8 @@ class LobbyConnection:
         await self.send({"command": "session", "session": self.session})
 
     async def command_avatar(self, message):
+        assert self.player is not None
+
         action = message["action"]
 
         if action == "list_avatar":
@@ -946,7 +976,7 @@ class LobbyConnection:
         """
         We are going to join a game.
         """
-        assert isinstance(self.player, Player)
+        assert self.player is not None
 
         await self.abort_connection_if_banned()
 
@@ -1009,6 +1039,8 @@ class LobbyConnection:
 
     @ice_only
     async def command_game_matchmaking(self, message):
+        assert self.player is not None
+
         queue_name = str(
             message.get("queue_name") or message.get("mod", "ladder1v1")
         )
@@ -1062,7 +1094,7 @@ class LobbyConnection:
     @ice_only
     @player_idle("host a game")
     async def command_game_host(self, message):
-        assert isinstance(self.player, Player)
+        assert self.player is not None
 
         await self.abort_connection_if_banned()
 
@@ -1152,6 +1184,7 @@ class LobbyConnection:
     ):
         assert self.player is not None
         assert self.game_connection is None
+        assert self.protocol is not None
         assert self.player.state in (
             PlayerState.IDLE,
             PlayerState.STARTING_AUTOMATCH,
@@ -1196,6 +1229,8 @@ class LobbyConnection:
         return {k: v for k, v in cmd.items() if v is not None}
 
     async def command_modvault(self, message):
+        assert self.player is not None
+
         type = message["type"]
 
         async with self._db.acquire() as conn:
@@ -1283,6 +1318,8 @@ class LobbyConnection:
 
     @player_idle("invite a player")
     async def command_invite_to_party(self, message):
+        assert self.player is not None
+
         recipient = self.player_service.get_player(message["recipient_id"])
         if recipient is None:
             # TODO: Client localized message
@@ -1295,6 +1332,8 @@ class LobbyConnection:
 
     @player_idle("join a party")
     async def command_accept_party_invite(self, message):
+        assert self.player is not None
+
         sender = self.player_service.get_player(message["sender_id"])
         if sender is None:
             # TODO: Client localized message
@@ -1304,6 +1343,8 @@ class LobbyConnection:
 
     @player_idle("kick a player")
     async def command_kick_player_from_party(self, message):
+        assert self.player is not None
+
         kicked_player = self.player_service.get_player(message["kicked_player_id"])
         if kicked_player is None:
             # TODO: Client localized message
@@ -1312,10 +1353,14 @@ class LobbyConnection:
         await self.party_service.kick_player_from_party(self.player, kicked_player)
 
     async def command_leave_party(self, _message):
+        assert self.player is not None
+
         self.ladder_service.cancel_search(self.player)
         await self.party_service.leave_party(self.player)
 
     async def command_set_party_factions(self, message):
+        assert self.player is not None
+
         factions = set(Faction.from_value(v) for v in message["factions"])
 
         if not factions:
@@ -1362,18 +1407,23 @@ class LobbyConnection:
 
     async def send(self, message):
         """Send a message and wait for it to be sent."""
+        assert self.protocol is not None
+
         self.write(message)
         await self.protocol.drain()
 
     def write(self, message):
         """Write a message into the send buffer."""
+        assert self.protocol is not None
+
         self._logger.log(TRACE, ">> %s: %s", self.get_user_identifier(), message)
         self.protocol.write_message(message)
 
     async def on_connection_lost(self):
         async def nop(*args, **kwargs):
             return
-        self.send = nop
+
+        setattr(self, "send", nop)
 
         if self._timeout_task and not self._timeout_task.done():
             self._timeout_task.cancel()
@@ -1386,6 +1436,8 @@ class LobbyConnection:
             await self.game_connection.on_connection_lost()
 
     async def abort_connection_if_banned(self):
+        assert self.player is not None
+
         async with self._db.acquire() as conn:
             now = datetime.utcnow()
             result = await conn.execute(

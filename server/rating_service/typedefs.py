@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 from server.games.game_results import GameOutcome
 from server.games.typedefs import TeamRatingSummary
@@ -22,7 +22,7 @@ class GameRatingSummary(NamedTuple):
     teams: list[TeamRatingSummary]
 
     @classmethod
-    def from_game_info_dict(cls, game_info: dict[str]) -> "GameRatingSummary":
+    def from_game_info_dict(cls, game_info: dict[str, Any]) -> "GameRatingSummary":
         if len(game_info["teams"]) != 2:
             raise ValueError("Detected other than two teams.")
 

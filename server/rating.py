@@ -95,7 +95,10 @@ class PlayerRatings(dict[str, Rating]):
         self.clean.clear()
         super().__setitem__(rating_type, Rating.of(value))
 
-    def __getitem__(
+    def __getitem__(self, rating_type: str) -> Rating:
+        return self._getitem_with_history(rating_type)
+
+    def _getitem_with_history(
         self,
         rating_type: str,
         history: Optional[set[str]] = None,
@@ -132,14 +135,14 @@ class PlayerRatings(dict[str, Rating]):
 
         history.add(rating_type)
         init_rating_type = leaderboard.initializer.technical_name
-        rating = self.__getitem__(init_rating_type, history=history)
+        rating = self._getitem_with_history(init_rating_type, history=history)
 
         if rating.dev > 250 or init_rating_type in self.transient:
             return rating
 
         return Rating(rating.mean, min(rating.dev + 150, 250))
 
-    def update(self, other: dict[str, Rating]):
+    def update_with_transient(self, other: dict[str, Rating]) -> None:
         self.transient -= set(other)
         self.clean.clear()
         if isinstance(other, PlayerRatings):

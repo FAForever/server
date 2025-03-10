@@ -4,23 +4,28 @@ Analysis of application performance
 
 import asyncio
 import cProfile
+import logging
 from asyncio import CancelledError
+from typing import ClassVar, Optional
 
 from server.config import config
 from server.decorators import with_logger
+from server.player_service import PlayerService
 
 
 @with_logger
 class Profiler:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
-        player_service,
-        interval=config.PROFILING_INTERVAL,
-        duration=config.PROFILING_DURATION,
-        max_count=config.PROFILING_COUNT,
-        outfile="server.profile",
+        player_service: PlayerService,
+        interval: int = config.PROFILING_INTERVAL,
+        duration: int = config.PROFILING_DURATION,
+        max_count: int = config.PROFILING_COUNT,
+        outfile: str = "server.profile",
     ):
-        self.profiler = None
+        self.profiler: Optional[cProfile.Profile] = None
         self.interval = interval
         self.duration = duration
         self.profile_count = 0
@@ -30,7 +35,7 @@ class Profiler:
         self._outfile = outfile
 
         self._running = False
-        self._task = None
+        self._task: Optional[asyncio.Task] = None
 
     def refresh(self):
         self.interval = config.PROFILING_INTERVAL
@@ -64,6 +69,8 @@ class Profiler:
             self.cancel()
 
     async def _run(self):
+        assert self.profiler is not None
+
         if len(self._player_service) > 1500:
             self._logger.info(
                 "Refusing to profile under high load %i/%i",

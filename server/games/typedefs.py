@@ -97,9 +97,9 @@ class BasicGameInfo(NamedTuple):
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     teams: list[set[Player]]
 
 
@@ -124,9 +124,9 @@ class EndedGameInfo(NamedTuple):
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     commander_kills: dict[str, int]
     validity: ValidityState
     team_summaries: list[TeamRatingSummary]

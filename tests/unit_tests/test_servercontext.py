@@ -18,10 +18,14 @@ def test_repr(context):
     assert "TestServer" in text
 
 
-async def test_stop_unstarted(context):
-    context = ServerContext("TestServer", mock.Mock, [])
-
+async def test_unstarted(context):
+    # Does not raise
     await context.stop()
+    await context.shutdown()
+    await context.shutdown(None)
+    await context.drain_connections()
+
+    assert context.sockets == []
 
 
 def test_write_broadcast_raw_error(context, caplog):

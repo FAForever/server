@@ -5,12 +5,17 @@ Player type definitions
 from collections import defaultdict
 from contextlib import suppress
 from enum import Enum, unique
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from .factions import Faction
 from .protocol import DisconnectedError
 from .rating import Leaderboard, PlayerRatings, RatingType
 from .weakattr import WeakAttribute
+
+if TYPE_CHECKING:
+    from server.gameconnection import GameConnection
+    from server.games import Game
+    from server.lobbyconnection import LobbyConnection
 
 
 @unique
@@ -32,46 +37,46 @@ class Player:
     information about players.
     """
 
-    lobby_connection = WeakAttribute["LobbyConnection"]()
-    game = WeakAttribute["Game"]()
-    game_connection = WeakAttribute["GameConnection"]()
+    lobby_connection: WeakAttribute["LobbyConnection"] = WeakAttribute()
+    game: WeakAttribute["Game"] = WeakAttribute()
+    game_connection: WeakAttribute["GameConnection"] = WeakAttribute()
 
     def __init__(
         self,
-        login: str = None,
+        login: str,
         session: int = 0,
         player_id: int = 0,
         leaderboards: dict[str, Leaderboard] = {},
-        ratings=None,
-        clan=None,
-        game_count=None,
+        ratings: Optional[PlayerRatings] = None,
+        clan: Optional[str] = None,
+        game_count: Optional[dict[str, int]] = None,
         lobby_connection: Optional["LobbyConnection"] = None
     ) -> None:
         self._faction = Faction.uef
 
+        # The player_id of the user in the `login` table of the database.
         self.id = player_id
         self.login = login
 
-        # The player_id of the user in the `login` table of the database.
         self.session = session
 
         self.ratings = PlayerRatings(leaderboards)
         if ratings is not None:
-            self.ratings.update(ratings)
+            self.ratings.update_with_transient(ratings)
 
-        self.game_count = defaultdict(int)
+        self.game_count: dict[str, int] = defaultdict(int)
         if game_count is not None:
             self.game_count.update(game_count)
 
         # social
-        self.avatar = None
+        self.avatar: Optional[dict[str, str]] = None
         self.clan = clan
-        self.country = None
+        self.country: Optional[str] = None
 
-        self.friends = set()
-        self.foes = set()
+        self.friends: set[int] = set()
+        self.foes: set[int] = set()
 
-        self.user_groups = set()
+        self.user_groups: set[str] = set()
 
         self.state = PlayerState.IDLE
 

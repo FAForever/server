@@ -29,7 +29,7 @@ class LadderGame(Game):
 
     def __init__(self, id, *args, **kwargs):
         super().__init__(id, *args, **kwargs)
-        self._launch_future = asyncio.Future()
+        self._launch_future: asyncio.Future[None] = asyncio.Future()
 
     async def wait_hosted(self, timeout: float):
         return await asyncio.wait_for(
@@ -76,7 +76,9 @@ class LadderGame(Game):
             return None
         team_sets = self.get_team_sets()
         army_scores = [
-            self._results.score(self.get_player_option(team_set.pop().id, "Army"))
+            self._results.score(
+                self.get_player_option(team_set.pop().id, "Army"),
+            )
             for team_set in team_sets
         ]
         if army_scores[0] > army_scores[1]:

@@ -163,7 +163,7 @@ def test_dict_update(chained_ratings):
     chained_ratings["ladder_1v1"] = (1000, 50)
     assert chained_ratings["global"] == (1000, 200)
 
-    chained_ratings.update({
+    chained_ratings.update_with_transient({
         "ladder_1v1": (500, 100),
         "global": (750, 100)
     })
@@ -181,14 +181,14 @@ def test_dict_update_caching(chained_ratings):
     previous_rating = chained_ratings["global"]
     chained_ratings._get_initial_rating.assert_called_once()
 
-    chained_ratings.update({
+    chained_ratings.update_with_transient({
         "ladder_1v1": (500, 100)
     })
     # Global should be re-initialized after dict update
     assert chained_ratings["global"] != previous_rating
     assert chained_ratings._get_initial_rating.call_count == 2
 
-    chained_ratings.update({
+    chained_ratings.update_with_transient({
         "ladder_1v1": (500, 100),
         "global": (750, 100)
     })
@@ -204,7 +204,7 @@ def test_ratings_update_same_leaderboards(chained_leaderboards):
     ratings1["ladder_1v1"] = (1000, 50)
     assert ratings1["global"] == (1000, 200)
 
-    ratings2.update(ratings1)
+    ratings2.update_with_transient(ratings1)
     # Existing keys should be copied
     assert ratings2 == {
         "ladder_1v1": (1000, 50),
@@ -228,7 +228,7 @@ def test_ratings_update_different_leaderboards(
     ratings1["ladder_1v1"] = (1000, 50)
     assert ratings1["global"] == (1000, 200)
 
-    ratings2.update(ratings1)
+    ratings2.update_with_transient(ratings1)
     # Existing keys should be copied
     assert ratings2 == {
         "tmm_2v2": DEFAULT_RATING,
@@ -253,7 +253,7 @@ def test_ratings_update_nontransient_with_transient(chained_leaderboards):
     # Global is not re-initialized
     assert ratings_nt["global"] == (1000, 50)
 
-    ratings_nt.update(ratings_t)
+    ratings_nt.update_with_transient(ratings_t)
     assert ratings_nt == {"ladder_1v1": DEFAULT_RATING, "global": DEFAULT_RATING}
 
     ratings_nt["ladder_1v1"] = (750, 50)
@@ -272,7 +272,7 @@ def test_ratings_update_transient_with_nontransient(chained_leaderboards):
     # Global is not re-initialized
     assert ratings_nt["global"] == (1000, 50)
 
-    ratings_t.update(ratings_nt)
+    ratings_t.update_with_transient(ratings_nt)
     assert ratings_t == {"ladder_1v1": (500, 50), "global": (1000, 50)}
 
     ratings_t["ladder_1v1"] = (750, 50)

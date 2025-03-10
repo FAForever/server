@@ -3,8 +3,9 @@ Manages the lifecycle of active games
 """
 
 import asyncio
+import logging
 from collections import Counter
-from typing import Optional, Union, ValuesView
+from typing import ClassVar, Optional, Union, ValuesView
 
 import aiocron
 from cachetools import LRUCache
@@ -29,6 +30,7 @@ from .games import (
 from .games.typedefs import EndedGameInfo
 from .matchmaker import MatchmakerQueue
 from .message_queue_service import MessageQueueService
+from .player_service import PlayerService
 from .players import Player
 from .rating_service import RatingService
 from .types import MAP_DEFAULT, Map, NeroxisGeneratedMap
@@ -40,10 +42,12 @@ class GameService(Service):
     Utility class for maintaining lifecycle of games
     """
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         database: FAFDatabase,
-        player_service,
+        player_service: PlayerService,
         game_stats_service,
         rating_service: RatingService,
         message_queue_service: MessageQueueService
@@ -57,16 +61,16 @@ class GameService(Service):
         self._message_queue_service = message_queue_service
         self.game_id_counter = 0
         self._allow_new_games = False
-        self._drain_event = None
+        self._drain_event: Optional[asyncio.Event] = None
 
         # Populated below in update_data.
-        self.featured_mods = dict()
+        self.featured_mods: dict[str, FeaturedMod] = {}
 
         # A set of mod ids that are allowed in ranked games
         self.ranked_mods: set[str] = set()
 
         # A cache of map_version info needed by Game
-        self.map_info_cache = LRUCache(maxsize=256)
+        self.map_info_cache: LRUCache[str, Map] = LRUCache(maxsize=256)
 
         # The set of active games
         self._games: dict[int, Game] = dict()
@@ -231,7 +235,7 @@ class GameService(Service):
         self.mark_dirty(game)
         return game
 
-    def update_active_game_metrics(self):
+    def update_active_game_metrics(self) -> None:
         modes = list(self.featured_mods.keys())
 
         game_counter = Counter(
@@ -257,7 +261,7 @@ class GameService(Service):
         )
 
         for state in GameState:
-            for rating_type in rating_type_counter.keys():
+            for rating_type, _ in rating_type_counter.keys():
                 metrics.active_games_by_rating_type.labels(rating_type, state.name).set(
                     rating_type_counter[(rating_type, state)]
                 )

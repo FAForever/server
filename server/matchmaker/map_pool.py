@@ -1,6 +1,7 @@
+import logging
 import random
 from collections import Counter
-from typing import Iterable
+from typing import ClassVar, Iterable
 
 from ..decorators import with_logger
 from ..types import Map, MapPoolMap
@@ -8,6 +9,8 @@ from ..types import Map, MapPoolMap
 
 @with_logger
 class MapPool(object):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         map_pool_id: int,

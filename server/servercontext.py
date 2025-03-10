@@ -3,10 +3,11 @@ Manages a group of connections using the same protocol over the same port
 """
 
 import asyncio
+import logging
 import socket
 from asyncio import StreamReader, StreamWriter
 from contextlib import contextmanager
-from typing import Callable, Iterable, Optional
+from typing import Callable, ClassVar, Iterable, Optional
 
 import humanize
 from proxyprotocol.detect import ProxyProtocolDetect
@@ -31,6 +32,8 @@ class ServerContext:
     Base class for managing connections and holding state about them.
     """
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         name: str,
@@ -40,8 +43,8 @@ class ServerContext:
     ):
         super().__init__()
         self.name = name
-        self._server = None
-        self._drain_event = None
+        self._server: Optional[asyncio.Server] = None
+        self._drain_event: Optional[asyncio.Event] = None
         self._connection_factory = connection_factory
         self._services = services
         self.connections: dict[LobbyConnection, Protocol] = {}
@@ -68,7 +71,7 @@ class ServerContext:
         if proxy:
             pp_detect = ProxyProtocolDetect()
             pp_reader = ProxyProtocolReader(pp_detect)
-            callback = pp_reader.get_callback(callback)
+            callback = pp_reader.get_callback(callback)  # type: ignore
 
         self._server = await asyncio.start_server(
             callback,
@@ -86,6 +89,8 @@ class ServerContext:
 
     @property
     def sockets(self):
+        if not self._server:
+            return []
         return self._server.sockets
 
     async def shutdown(self, timeout: Optional[float] = 5):
@@ -99,11 +104,18 @@ class ServerContext:
                     self.name,
                     conn.get_user_identifier()
                 )
-        self._logger.debug(
-            "%s: Waiting up to %s for connections to close",
-            self.name,
-            humanize.naturaldelta(timeout)
-        )
+
+        if timeout is None:
+            self._logger.debug(
+                "%s: Waiting for connections to close",
+                self.name,
+            )
+        else:
+            self._logger.debug(
+                "%s: Waiting up to %s for connections to close",
+                self.name,
+                humanize.naturaldelta(timeout)
+            )
         for fut in asyncio.as_completed([
             close_or_abort(conn, proto)
             for conn, proto in self.connections.items()

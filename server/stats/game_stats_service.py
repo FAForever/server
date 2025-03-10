@@ -1,3 +1,6 @@
+import logging
+from typing import Any, ClassVar
+
 from server.core import Service
 from server.decorators import with_logger
 from server.games import Game
@@ -13,6 +16,8 @@ from ..factions import Faction
 
 @with_logger
 class GameStatsService(Service):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         event_service: EventService,
@@ -81,9 +86,9 @@ class GameStatsService(Service):
 
         faction = stats["faction"]
         # Stores achievements to batch update
-        a_queue = []
+        a_queue: list[dict[str, Any]] = []
         # Stores events to batch update
-        e_queue = []
+        e_queue: list[dict[str, Any]] = []
         self._logger.debug("Army result for %s => %s ", player, army_result)
 
         survived = army_result is ArmyOutcome.VICTORY
