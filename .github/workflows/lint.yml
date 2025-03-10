@@ -40,6 +40,32 @@ jobs:
           flake8_version: 6.0.0
           plugins: flake8-quotes~=3.3
 
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create requirements file
+        run: |
+          pip install pipenv==2024.4.1
+          pipenv requirements --dev > requirements.txt
+
+      # Mypy-check runs inside its own docker image
+      - uses: jpetrucciani/mypy-check@master
+        with:
+          python_version: '3.10'
+          requirements: |
+            types-PyYAML
+            types-PyMySQL
+            types-cachetools
+          requirements_file: requirements.txt
+          mypy_flags: |
+            --follow-untyped-imports
+            --strict-equality
+            --warn-redundant-casts
+            --warn-unused-ignores
+          path: server/ main.py
+
   pipenv-verify:
     runs-on: ubuntu-latest
     steps:
