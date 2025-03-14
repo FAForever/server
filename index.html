@@ -105,7 +105,29 @@ how to interact with the server. It will remain relatively high level and
 implementation agnostic, instead linking to other sections of the documentation
 that go into more detail.</p>
 <h2 id="protocol">Protocol</h2>
-<p>TODO</p>
+<p>There are two layers to the server protocol:</p>
+<ol>
+<li><strong>The wire format.</strong>
+This is how messages are serialized to bytes and sent over the network stream.</li>
+<li><strong>Application level messages.</strong>
+Also sometimes called 'commands', messages are used to exchange state between
+the server and each client. Every command is part of a logical 'command flow'
+which is the expected sequence of messages exchanged between the server and
+client.</li>
+</ol>
+<h3 id="wire-format">Wire Format</h3>
+<p>See <code><a title="server.protocol" href="protocol/index.html">server.protocol</a></code>.</p>
+<h3 id="application-messages">Application messages</h3>
+<p>See <code><a title="server.lobbyconnection" href="lobbyconnection.html">server.lobbyconnection</a></code>.</p>
+<p>Terms:</p>
+<ul>
+<li><strong>Command</strong>: A message sent between the client and server. Every message is
+expected to deserialize to a python dict with at least one key <code>"command"</code>
+indicating the type of message. For example: <code>{"command": "ping"}</code>.</li>
+<li><strong>Command Flow</strong>: An expected logical sequence of commands. This is encoded in
+the application logic of each command handler.</li>
+</ul>
+<p>TODO: expand</p>
 <h1 id="legal">Legal</h1>
 <ul>
 <li>Copyright © 2012-2014 Gael Honorez</li>
@@ -223,7 +245,7 @@ that go into more detail.</p>
 </dd>
 <dt><code class="name"><a title="server.protocol" href="protocol/index.html">server.protocol</a></code></dt>
 <dd>
-<div class="desc"><p>Protocol format definitions</p></div>
+<div class="desc"><p>Protocol format definitions …</p></div>
 </dd>
 <dt><code class="name"><a title="server.rating" href="rating.html">server.rating</a></code></dt>
 <dd>
@@ -7790,7 +7812,11 @@ to connect to a game.</p></div>
 </ul>
 </li>
 <li><a href="#technical-overview">Technical Overview</a><ul>
-<li><a href="#protocol">Protocol</a></li>
+<li><a href="#protocol">Protocol</a><ul>
+<li><a href="#wire-format">Wire Format</a></li>
+<li><a href="#application-messages">Application messages</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#legal">Legal</a></li>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.5">
 <title>server.protocol API documentation</title>
-<meta name="description" content="Protocol format definitions">
+<meta name="description" content="Protocol format definitions …">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -37,6 +37,11 @@ el.replaceWith(d);
 </header>
 <section id="section-intro">
 <p>Protocol format definitions</p>
+<p>Every message sent between the lobby server and a client is expected to
+deserialize to a python dictionary. The structure of that dictionary depends on
+the application logic (see <code><a title="server.lobbyconnection" href="../lobbyconnection.html">server.lobbyconnection</a></code>).</p>
+<p>This module defines the classes that handle the wire format, i.e. how messages
+are serialized to bytes and sent across the network.</p>
 </section>
 <section>
 <h2 class="section-title" id="header-submodules">Sub-modules</h2>
@@ -47,15 +52,16 @@ el.replaceWith(d);
 </dd>
 <dt><code class="name"><a title="server.protocol.protocol" href="protocol.html">server.protocol.protocol</a></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Protocol base class</p></div>
 </dd>
 <dt><code class="name"><a title="server.protocol.qdatastream" href="qdatastream.html">server.protocol.qdatastream</a></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>DEPRECATED: Legacy <a href="http://doc.qt.io/qt-5/qdatastream.html">QDataStream</a>
+(UTF-16, BigEndian) encoded data format …</p></div>
 </dd>
 <dt><code class="name"><a title="server.protocol.simple_json" href="simple_json.html">server.protocol.simple_json</a></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>A simple newline terminated JSON data format …</p></div>
 </dd>
 </dl>
 </section>
