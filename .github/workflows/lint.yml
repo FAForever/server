@@ -60,6 +60,7 @@ jobs:
             types-cachetools
           requirements_file: requirements.txt
           mypy_flags: |
+            --disable-error-code=annotation-unchecked
             --follow-untyped-imports
             --strict-equality
             --warn-redundant-casts
