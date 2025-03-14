@@ -254,7 +254,10 @@ class LobbyConnection:
             )
         except OperationalError:
             # When the database goes down, SqlAlchemy will throw an OperationalError
-            self._logger.error("Encountered OperationalError on message received. This could indicate DB is down.")
+            self._logger.exception(
+                "Encountered OperationalError on message received. This could "
+                "indicate DB is down."
+            )
             await self.send({
                 "command": "notice",
                 "style": "error",
