@@ -1320,6 +1320,48 @@ async def test_ladder_game_not_joinable(lobby_server):
     }
 
 
+@fast_forward(60)
+async def test_gamestate_lobby_double_game_instance(lobby_server):
+    """There was a bug in the client that was causing multiple game instances
+    to launch simultaneously. This could cause the GpgNet messages in the game
+    startup sequence to be sent twice.
+    """
+    _, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    _, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(host_proto, "game_info")
+    await read_until_command(guest_proto, "game_info")
+
+    await host_proto.send_message({
+        "command": "game_host",
+        "mod": "faf",
+        "visibility": "public",
+    })
+    msg = await read_until_command(host_proto, "game_launch")
+    game_id = int(msg["uid"])
+
+    for _ in range(2):
+        await host_proto.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Idle"]
+        })
+
+    for _ in range(2):
+        await host_proto.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Lobby"]
+        })
+
+    await read_until_command(host_proto, "HostGame", target="game")
+
+    await join_game(guest_proto, game_id)
+
+
 @pytest.mark.flaky
 @fast_forward(60)
 async def test_gamestate_ended_clears_references(

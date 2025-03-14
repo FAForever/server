@@ -99,18 +99,33 @@ async def test_connect_to_peer_disconnected(game_connection):
     await game_connection.connect_to_peer(peer)
 
 
-async def test_handle_action_GameState_idle_adds_connection(
+async def test_handle_action_GameState_idle_hosting(
     game: Game,
     game_connection: GameConnection,
     players
 ):
-    players.joining.game = game
     game_connection.player = players.hosting
     game_connection.game = game
 
     await game_connection.handle_action("GameState", ["Idle"])
 
-    game.add_game_connection.assert_called_with(game_connection)
+    game.add_game_connection.assert_called_once_with(game_connection)
+
+
+async def test_handle_action_GameState_idle_joining(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
+    game_connection.player = players.joining
+    game_connection.game = game
+
+    await game_connection.handle_action("GameState", ["Idle"])
+
+    assert players.joining.state == PlayerState.JOINING
+    assert game_connection.state == GameConnectionState.INITIALIZED
+
+    game.add_game_connection.assert_not_called()
 
 
 async def test_handle_action_GameState_idle_sets_player_state(
