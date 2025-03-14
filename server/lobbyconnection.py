@@ -1228,6 +1228,7 @@ class LobbyConnection:
 
         return {k: v for k, v in cmd.items() if v is not None}
 
+    # DEPRECATED: Use the FAF API instead
     async def command_modvault(self, message):
         assert self.player is not None
 
