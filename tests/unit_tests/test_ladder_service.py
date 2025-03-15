@@ -21,8 +21,20 @@ from tests.utils import autocontext, exhaust_callbacks, fast_forward
 from .strategies import st_players
 
 
-async def test_queue_initialization(database, game_service, violation_service):
-    ladder_service = LadderService(database, game_service, violation_service)
+async def test_queue_initialization(
+    database,
+    game_service,
+    message_queue_service,
+    player_service,
+    violation_service,
+):
+    ladder_service = LadderService(
+        database,
+        game_service,
+        message_queue_service,
+        player_service,
+        violation_service,
+    )
 
     def make_mock_queue(*args, **kwargs):
         queue = mock.create_autospec(MatchmakerQueue)
