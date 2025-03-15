@@ -1,6 +1,7 @@
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import ClassVar, Optional
 
 import humanize
 
@@ -66,6 +67,8 @@ class ViolationService(Service):
     A violation could be anything, but it is usually any time a player fails
     to connect to a game.
     """
+
+    _logger: ClassVar[logging.Logger]
 
     def __init__(self):
         # We store a reference to the original `Player` object for logging only

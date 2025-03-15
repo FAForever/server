@@ -1226,7 +1226,11 @@ async def test_check_policy_conformity(lobbyconnection, policy_server):
     host, port = policy_server
     config.FAF_POLICY_SERVER_BASE_URL = f"http://{host}:{port}"
 
-    honest = await lobbyconnection.check_policy_conformity(1, "honest", session=100)
+    honest = await lobbyconnection.check_policy_conformity(
+        1,
+        "honest",
+        session_id=100,
+    )
     assert honest is True
 
 
@@ -1237,11 +1241,19 @@ async def test_check_policy_conformity_fraudulent(lobbyconnection, policy_server
     # 42 is not a valid player ID which should cause a SQL constraint error
     lobbyconnection.abort = mock.AsyncMock()
     with pytest.raises(ClientError):
-        await lobbyconnection.check_policy_conformity(42, "fraudulent", session=100)
+        await lobbyconnection.check_policy_conformity(
+            42,
+            "fraudulent",
+            session_id=100,
+        )
 
     lobbyconnection.abort = mock.AsyncMock()
     player_id = 200
-    honest = await lobbyconnection.check_policy_conformity(player_id, "fraudulent", session=100)
+    honest = await lobbyconnection.check_policy_conformity(
+        player_id,
+        "fraudulent",
+        session_id=100,
+    )
     assert honest is False
     lobbyconnection.abort.assert_called_once()
 
@@ -1261,7 +1273,11 @@ async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
 
     for result in ("already_associated", "fraudulent"):
         lobbyconnection.abort = mock.AsyncMock()
-        honest = await lobbyconnection.check_policy_conformity(1, result, session=100)
+        honest = await lobbyconnection.check_policy_conformity(
+            1,
+            result,
+            session_id=100,
+        )
         assert honest is False
         lobbyconnection.abort.assert_called_once()
 

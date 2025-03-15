@@ -1,11 +1,16 @@
 import asyncio
+import logging
 from collections import deque
 from time import time
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 import server.metrics as metrics
 
 from ..config import config
 from ..decorators import with_logger
+
+if TYPE_CHECKING:
+    from .matchmaker_queue import MatchmakerQueue
 
 
 @with_logger
@@ -25,6 +30,8 @@ class PopTimer(object):
     The exact size can be set in config.
     """
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, queue: "MatchmakerQueue"):
         self.queue = queue
         # Set up deque's for calculating a moving average
@@ -34,7 +41,7 @@ class PopTimer(object):
         self._last_queue_pop = time()
         # Optimistically schedule first pop for half of the max pop time
         self.next_queue_pop = self._last_queue_pop + (config.QUEUE_POP_TIME_MAX / 2)
-        self._wait_task = None
+        self._wait_task: Optional[asyncio.Task] = None
 
     async def next_pop(self):
         """ Wait for the timer to pop. """

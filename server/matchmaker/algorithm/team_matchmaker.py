@@ -2,7 +2,7 @@ import logging
 import statistics
 from collections import defaultdict
 from math import sqrt
-from typing import Iterable, NamedTuple
+from typing import ClassVar, Iterable, NamedTuple, Optional, Sequence
 
 from sortedcontainers import SortedList
 
@@ -57,6 +57,8 @@ class TeamMatchMaker(Matchmaker):
     9. repeat 8. until the list is empty
     """
 
+    _logger: ClassVar[logging.Logger]
+
     def find(
         self, searches: Iterable[Search], team_size: int, rating_peak: float
     ) -> tuple[list[Match], list[Search]]:
@@ -66,18 +68,23 @@ class TeamMatchMaker(Matchmaker):
         if team_size == 1:
             return StableMarriageMatchmaker().find(searches, 1, rating_peak)
 
-        searches = SortedList(searches, key=lambda s: s.average_rating)
+        searches_sorted = SortedList(searches, key=lambda s: s.average_rating)
+        del searches
         possible_games = []
 
         self._logger.debug("========= starting matching algorithm =========")
-        self._logger.debug("Searches in queue: %s", list(searches))
+        self._logger.debug("Searches in queue: %s", list(searches_sorted))
 
-        for index, search in enumerate(searches):
+        for index, search in enumerate(searches_sorted):
 
             self._logger.debug("building game for %r", search)
 
             try:
-                participants = self.pick_neighboring_players(searches, index, team_size)
+                participants = self.pick_neighboring_players(
+                    searches_sorted,
+                    index,
+                    team_size,
+                )
                 match = self.make_teams(participants, team_size)
                 game = self.assign_game_quality(match, team_size, rating_peak)
                 possible_games.append(game)
@@ -101,11 +108,15 @@ class TeamMatchMaker(Matchmaker):
         for match in matches:
             for team in match:
                 for search in team.get_original_searches():
-                    searches.remove(search)
-        return matches, list(searches)
+                    searches_sorted.remove(search)
+        return matches, list(searches_sorted)
 
     @staticmethod
-    def pick_neighboring_players(searches: list[Search], index: int, team_size: int) -> list[Search]:
+    def pick_neighboring_players(
+        searches: Sequence[Search],
+        index: int,
+        team_size: int,
+    ) -> list[Search]:
         """
         Picks searches from the list starting with the search at the given index and then expanding in both directions
         until there are enough players for a full game.
@@ -114,11 +125,12 @@ class TeamMatchMaker(Matchmaker):
         May raise `NotEnoughPlayersException` if it can't find enough suitable searches to fill a game.
         """
         # We need to do this in two steps to ensure that index = 0 gives an empty iterator
-        lower = searches[:index]
-        lower = iter(lower[::-1])
+        searches_lower = searches[:index]
+        lower = iter(searches_lower[::-1])
         higher = iter(searches[index+1:])
         pick_lower = True
-        candidate = searches[index]
+        candidate: Optional[Search] = searches[index]
+        assert candidate is not None
         participants = [candidate]
         number_of_players = len(candidate.players)
 
@@ -134,7 +146,11 @@ class TeamMatchMaker(Matchmaker):
                 number_of_players += len(candidate.players)
         return participants
 
-    def make_teams(self, participants: list[Search], team_size: int) -> tuple[Search, Search]:
+    def make_teams(
+        self,
+        participants: Sequence[Search],
+        team_size: int,
+    ) -> tuple[Search, Search]:
         """
         Attempts to partition the given searches into two teams of the appropriate team size
         while also trying that both teams have the same cumulative rating.
@@ -153,7 +169,7 @@ class TeamMatchMaker(Matchmaker):
         team_target_strength = sum(search.cumulative_rating for search in participants) / 2
         participants_dict = self._searches_by_size(participants)
         team_a = []
-        team_b = []
+        team_b: list[Search] = []
 
         if participants_dict[team_size]:
             search = participants_dict[team_size].pop()
@@ -180,7 +196,10 @@ class TeamMatchMaker(Matchmaker):
             raise UnevenTeamsException()
         return combined_team_a, combined_team_b
 
-    def _run_karmarkar_karp_algorithm(self, searches: list[Search]) -> tuple[list[Search], list[Search]]:
+    def _run_karmarkar_karp_algorithm(
+        self,
+        searches: Sequence[Search],
+    ) -> tuple[list[Search], list[Search]]:
         class Container:
             def __init__(self, rating_difference, content):
                 self.rating: int = rating_difference
@@ -238,7 +257,10 @@ class TeamMatchMaker(Matchmaker):
                     team_b.append(e.content[0])
         return team_a, team_b
 
-    def _searches_by_size(self, searches: list[Search]) -> dict[int, list[Search]]:
+    def _searches_by_size(
+        self,
+        searches: Sequence[Search],
+    ) -> dict[int, list[Search]]:
         searches_by_size: dict[int, list[Search]] = defaultdict(list)
 
         for search in searches:
@@ -251,7 +273,12 @@ class TeamMatchMaker(Matchmaker):
                 self._logger.debug("%i players: %s", i, searches_by_size[i])
         return searches_by_size
 
-    def _find_most_balanced_filler(self, avg: int, search: Search, single_player_searches: list[Search]) -> Search:
+    def _find_most_balanced_filler(
+        self,
+        avg: int,
+        search: Search,
+        single_player_searches: Sequence[Search],
+    ) -> Search:
         """
         If we simply fetch the highest/lowest rated single player search we may overshoot our
         goal to get the most balanced teams, so we try them all to find the one that brings us
@@ -270,10 +297,15 @@ class TeamMatchMaker(Matchmaker):
         self._logger.debug("used %s as best filler", [candidate])
         return candidate
 
-    def assign_game_quality(self, match: Match, team_size: int, rating_peak: float) -> GameCandidate:
-        newbie_bonus = 0
-        time_bonus = 0
-        minority_bonus = 0
+    def assign_game_quality(
+        self,
+        match: Match,
+        team_size: int,
+        rating_peak: float,
+    ) -> GameCandidate:
+        newbie_bonus = 0.0
+        time_bonus = 0.0
+        minority_bonus = 0.0
         ratings = []
         for team in match:
             for search in team.get_original_searches():
@@ -307,7 +339,7 @@ class TeamMatchMaker(Matchmaker):
         )
         return GameCandidate(match, quality)
 
-    def pick_noncolliding_games(self, games: list[GameCandidate]) -> list[Match]:
+    def pick_noncolliding_games(self, games: Sequence[GameCandidate]) -> list[Match]:
         """
         This greedily picks all matches with disjoint players, starting with the game with the highest quality.
         This can miss more optimal solutions, but extensive testing showed that over many matchmaker
@@ -318,11 +350,12 @@ class TeamMatchMaker(Matchmaker):
             "%i games left after removal of games with quality < %s", len(games),
             config.MINIMUM_GAME_QUALITY
         )
-        games = SortedList(games, key=lambda game: game.quality)
+        games_sorted = SortedList(games, key=lambda game: game.quality)
+        del games
 
         matches = []
-        used_searches = set()
-        for game in reversed(games):
+        used_searches: set[Search] = set()
+        for game in reversed(games_sorted):
             if used_searches.isdisjoint(game.all_searches):
                 matches.append(game.match)
                 used_searches.update(game.all_searches)

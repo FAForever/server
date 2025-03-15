@@ -110,7 +110,7 @@ def test_serialize():
 
 def test_serialize_state():
     conn = mock.Mock()
-    p = Player(lobby_connection=conn)
+    p = Player("TestPlayer", lobby_connection=conn)
     assert "state" not in p.to_dict()
 
     del p.lobby_connection

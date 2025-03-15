@@ -1,10 +1,11 @@
 import inspect
 from collections import ChainMap, defaultdict
+from typing import Any
 
 DependencyGraph = dict[str, list[str]]
 
 
-class DependencyInjector(object):
+class DependencyInjector():
     """
     Does dependency injection.
 
@@ -48,10 +49,10 @@ class DependencyInjector(object):
 
     def __init__(self) -> None:
         # Objects which are available to the constructors of injected objects
-        self.injectables: dict[str, object] = {}
+        self.injectables: dict[str, Any] = {}
 
     def add_injectables(
-        self, injectables: dict[str, object] = {}, **kwargs: object
+        self, injectables: dict[str, Any] = {}, **kwargs: Any
     ) -> None:
         """
         Register additional objects that can be requested by injected classes.
@@ -61,7 +62,7 @@ class DependencyInjector(object):
 
     def build_classes(
         self, classes: dict[str, type] = {}, **kwargs: type
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """
         Resolve dependencies by name and instantiate each class.
         """
@@ -89,10 +90,11 @@ class DependencyInjector(object):
             graph[name] = []
 
         for obj_name, klass in classes.items():
-            signature = inspect.signature(klass.__init__)
-            # Strip off the `self` parameter
-            params = list(signature.parameters.values())[1:]
-            graph[obj_name] = [param.name for param in params]
+            signature = inspect.signature(klass)
+            graph[obj_name] = [
+                param.name
+                for param in signature.parameters.values()
+            ]
 
         return graph
 
@@ -101,7 +103,7 @@ class DependencyInjector(object):
         dep: DependencyGraph,
         classes: dict[str, type],
         param_map: dict[str, list[str]]
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """
         Tries to build all classes in the dependency graph. Raises RuntimeError
         if some dependencies are not available or there was a cyclic dependency.

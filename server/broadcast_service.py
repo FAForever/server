@@ -1,4 +1,6 @@
 import asyncio
+import logging
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 import humanize
 from aio_pika import DeliveryMode
@@ -12,12 +14,17 @@ from .message_queue_service import MessageQueueService
 from .player_service import PlayerService
 from .timing import LazyIntervalTimer
 
+if TYPE_CHECKING:
+    from server import ServerInstance
+
 
 @with_logger
 class BroadcastService(Service):
     """
     Broadcast updates about changed entities.
     """
+
+    _logger: ClassVar[logging.Logger]
 
     def __init__(
         self,
@@ -30,7 +37,7 @@ class BroadcastService(Service):
         self.message_queue_service = message_queue_service
         self.game_service = game_service
         self.player_service = player_service
-        self._report_dirties_event = None
+        self._report_dirties_event: Optional[asyncio.Event] = None
 
     async def initialize(self):
         # Using a lazy interval timer so that the intervals can be changed

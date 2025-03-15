@@ -3,6 +3,8 @@ Manages periodic reloading of config variables
 """
 
 import asyncio
+import logging
+from typing import ClassVar, Optional
 
 from .config import config
 from .core import Service
@@ -11,9 +13,11 @@ from .decorators import with_logger
 
 @with_logger
 class ConfigurationService(Service):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self) -> None:
         self._store = config
-        self._task = None
+        self._task: Optional[asyncio.Task] = None
 
     async def initialize(self) -> None:
         self._task = asyncio.create_task(self._worker_loop())

@@ -1,4 +1,6 @@
+import logging
 import time
+from typing import ClassVar
 
 import aiocron
 import aiohttp
@@ -19,6 +21,8 @@ class OAuthService(Service, name="oauth_service"):
     """
     Service for managing the OAuth token logins and verification.
     """
+
+    _logger: ClassVar[logging.Logger]
 
     def __init__(self):
         self.public_keys = {}

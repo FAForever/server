@@ -1,7 +1,8 @@
 import itertools
+import logging
 import random
 from collections import OrderedDict
-from typing import Iterable, Iterator, Optional, TypeVar
+from typing import ClassVar, Iterable, Iterator, Optional, TypeVar
 
 from ...decorators import with_logger
 from ..search import CombinedSearch, Match, Search
@@ -19,6 +20,8 @@ class BucketTeamMatchmaker(Matchmaker):
     and then runs StableMarriageMatchmaker
     to produce a list of matches from these.
     """
+
+    _logger: ClassVar[logging.Logger]
 
     def find(
         self, searches: Iterable[Search], team_size: int, rating_peak: float

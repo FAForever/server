@@ -2,6 +2,9 @@
 Manages interactions between players and parties
 """
 
+import logging
+from typing import TYPE_CHECKING, ClassVar
+
 from .core import Service
 from .decorators import with_logger
 from .exceptions import ClientError
@@ -10,6 +13,9 @@ from .game_service import GameService
 from .players import Player, PlayerState
 from .team_matchmaker.player_party import PlayerParty
 from .timing import at_interval
+
+if TYPE_CHECKING:
+    from server.lobbyconnection import LobbyConnection
 
 
 @with_logger
@@ -20,6 +26,8 @@ class PartyService(Service):
     Logically, we consider players to always be in a party, either alone, or
     with other players.
     """
+
+    _logger: ClassVar[logging.Logger]
 
     def __init__(self, game_service: GameService):
         self.game_service = game_service

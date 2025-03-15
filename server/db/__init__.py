@@ -4,8 +4,8 @@ Database interaction
 
 import asyncio
 import logging
-from contextlib import contextmanager
-from typing import Optional
+from contextlib import AbstractAsyncContextManager, contextmanager
+from typing import Optional, cast
 
 from sqlalchemy import and_, create_engine, select, text, true
 from sqlalchemy.exc import DBAPIError, OperationalError
@@ -53,10 +53,15 @@ class FAFDatabase:
 
         self.engine = AsyncEngine(sync_engine)
 
-    def acquire(self):
-        return self.engine.begin()
+    def acquire(self) -> AbstractAsyncContextManager["AsyncConnection"]:
+        # The type definitions in SQLAlchemy don't support this sort of
+        # overriding, so we just cast here.
+        return cast(
+            AbstractAsyncContextManager[AsyncConnection],
+            self.engine.begin(),
+        )
 
-    async def close(self):
+    async def close(self) -> None:
         await self.engine.dispose()
 
 
@@ -68,7 +73,7 @@ class AsyncEngine(_AsyncEngine):
     is undocumented and probably more fragile so we subclass instead.
     """
 
-    def connect(self):
+    def connect(self) -> "AsyncConnection":
         return AsyncConnection(self)
 
 

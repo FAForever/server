@@ -1,4 +1,6 @@
 
+import logging
+from typing import ClassVar
 
 import trueskill
 
@@ -17,6 +19,8 @@ class GameRatingError(Exception):
 
 @with_logger
 class GameRater:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, summary: GameRatingSummary):
         self.summary = summary
         self.outcome_map = {
@@ -60,6 +64,8 @@ class GameRater:
 @with_logger
 class AdjustmentGameRater(GameRater):
     """GameRater for performing adjustments using another GameRater"""
+
+    _logger: ClassVar[logging.Logger]
 
     def __init__(self, rater: GameRater, base_ratings: RatingDict):
         self.rater = rater

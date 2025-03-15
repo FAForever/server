@@ -16,7 +16,6 @@ from typing import (
     Optional,
     Protocol,
     TypeVar,
-    cast,
     overload
 )
 
@@ -27,7 +26,7 @@ AsyncDecorator = Callable[[AsyncFunc], AsyncFunc]
 T = TypeVar("T")
 
 
-class AsyncLock(Protocol, AsyncContextManager["AsyncLock"]):
+class AsyncLock(Protocol, AsyncContextManager[None]):
     def locked(self) -> bool: ...
     async def acquire(self) -> bool: ...
     def release(self) -> None: ...
@@ -153,7 +152,7 @@ def _synchronize(
         nonlocal lock
 
         if lock is None:
-            lock = lock or cast(AsyncLock, asyncio.Lock())
+            lock = lock or asyncio.Lock()
 
         async with lock:
             return await function(*args, **kwargs)

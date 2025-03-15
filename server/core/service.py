@@ -54,7 +54,7 @@ class Service():
         pass  # pragma: no cover
 
 
-def create_services(injectables: dict[str, object] = {}) -> dict[str, Service]:
+def create_services(injectables: dict[str, Any] = {}) -> dict[str, Any]:
     """
     Resolve service dependencies and instantiate each service. This should only
     be called once.

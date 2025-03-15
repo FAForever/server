@@ -216,7 +216,7 @@ if __name__ == "__main__":
     stop_time = time.perf_counter()
     logger.info(
         "Total server uptime: %s",
-        humanize.precisedelta(stop_time - startup_time)
+        humanize.precisedelta(int(stop_time - startup_time))
     )
 
     if shutdown_time is not None:

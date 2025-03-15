@@ -202,7 +202,7 @@ class GameConnection(GpgNetServerProtocol):
         Handle GpgNetSend messages, wrapped in the JSON protocol
         """
         try:
-            await COMMAND_HANDLERS[command](self, *args)
+            await COMMAND_HANDLERS[command](self, *args)  # type: ignore
         except KeyError:
             self._logger.warning(
                 "Unrecognized command %s: %s from player %s",
@@ -230,7 +230,7 @@ class GameConnection(GpgNetServerProtocol):
 
         self._mark_dirty()
 
-    async def handle_game_mods(self, mode: Any, args: list[Any]):
+    async def handle_game_mods(self, mode: Any, args: Any):
         if not self.is_host():
             return
 

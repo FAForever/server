@@ -4,10 +4,12 @@ Interfaces with RabbitMQ
 
 import asyncio
 import json
-from typing import Iterable
+import logging
+from typing import ClassVar, Iterable, Optional
 
 import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
+from aio_pika.abc import AbstractChannel, AbstractConnection, AbstractExchange
 from aio_pika.exceptions import ProbableAuthenticationError
 
 from .asyncio_extensions import synchronizedmethod
@@ -27,11 +29,13 @@ class MessageQueueService(Service):
     and providing an interface to publish messages.
     """
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self) -> None:
-        self._connection = None
-        self._channel = None
-        self._exchanges = {}
-        self._exchange_types = {}
+        self._connection: Optional[AbstractConnection] = None
+        self._channel: Optional[AbstractChannel] = None
+        self._exchanges: dict[str, AbstractExchange] = {}
+        self._exchange_types: dict[str, ExchangeType] = {}
         self._is_ready = False
 
         config.register_callback("MQ_USER", self.reconnect)
@@ -83,6 +87,8 @@ class MessageQueueService(Service):
             )
             raise ConnectionAttemptFailed from e
 
+        assert self._connection is not None
+
         self._channel = await self._connection.channel(publisher_confirms=False)
         self._logger.debug("Connected to RabbitMQ %r", self._connection)
 
@@ -101,8 +107,12 @@ class MessageQueueService(Service):
     async def _declare_exchange(
         self, exchange_name: str, exchange_type: ExchangeType, durable: bool = True
     ) -> None:
+        assert self._channel is not None
+
         new_exchange = await self._channel.declare_exchange(
-            exchange_name, exchange_type, durable
+            exchange_name,
+            exchange_type,
+            durable=durable,
         )
 
         self._exchanges[exchange_name] = new_exchange
@@ -151,6 +161,8 @@ class MessageQueueService(Service):
                 "Not connected to RabbitMQ, unable to publish message."
             )
             return
+
+        assert self._channel is not None
 
         exchange = self._exchanges.get(exchange_name)
         if exchange is None:

@@ -112,7 +112,7 @@ Distributed under GPLv3, see license.txt
 import asyncio
 import logging
 import time
-from typing import Optional
+from typing import Optional, cast
 
 import server.metrics as metrics
 
@@ -176,7 +176,7 @@ class ServerInstance(object):
         self,
         name: str,
         database: FAFDatabase,
-        loop: asyncio.BaseEventLoop,
+        loop: asyncio.AbstractEventLoop,
         # For testing
         _override_services: Optional[dict[str, Service]] = None
     ):
@@ -320,8 +320,8 @@ class ServerInstance(object):
         """
         Wait for all games to end.
         """
-        game_service: GameService = self.services["game_service"]
-        broadcast_service: BroadcastService = self.services["broadcast_service"]
+        game_service = cast(GameService, self.services["game_service"])
+        broadcast_service = cast(BroadcastService, self.services["broadcast_service"])
         try:
             await asyncio.wait_for(
                 game_service.drain_games(),

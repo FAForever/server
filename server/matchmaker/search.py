@@ -1,9 +1,10 @@
 import asyncio
 import itertools
+import logging
 import math
 import statistics
 import time
-from typing import Any, Callable, Optional
+from typing import Any, Callable, ClassVar, Optional
 
 import trueskill
 
@@ -27,6 +28,8 @@ class Search:
     Represents the state of a users search for a match.
     """
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         players: list[Player],
@@ -38,7 +41,7 @@ class Search:
         for player in players:
             assert player.ratings[rating_type] is not None
 
-        self.players = players
+        self._players = players
         self.rating_type = rating_type
         self.start_time = start_time or time.time()
         self._match = asyncio.get_event_loop().create_future()
@@ -47,6 +50,10 @@ class Search:
 
         # Precompute this
         self.quality_against_self = self.quality_with(self)
+
+    @property
+    def players(self) -> list[Player]:
+        return self._players
 
     def adjusted_rating(self, player: Player) -> Rating:
         """
