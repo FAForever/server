@@ -1,15 +1,8 @@
 import time
 
-import pytest
-
 from server.games import CustomGame, GameState, ValidityState
 from server.rating import RatingType
 from tests.unit_tests.conftest import add_connected_players
-
-
-@pytest.fixture
-async def custom_game(database, game_service, game_stats_service):
-    return CustomGame(42, database, game_service, game_stats_service)
 
 
 async def test_rate_game_early_abort_no_enforce(

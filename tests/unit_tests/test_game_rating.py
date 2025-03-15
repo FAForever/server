@@ -5,14 +5,7 @@ from unittest import mock
 
 import pytest
 
-from server.games import (
-    CustomGame,
-    Game,
-    GameError,
-    GameState,
-    LadderGame,
-    ValidityState
-)
+from server.games import Game, GameError, GameState, ValidityState
 from server.games.game_results import GameOutcome
 from server.games.typedefs import TeamRatingSummary
 from server.rating import PlayerRatings, Rating, RatingType
@@ -117,23 +110,6 @@ def get_published_results_by_player_id(mock_service):
         result[message["player_id"]].append(message)
 
     return result
-
-
-@pytest.fixture
-async def game(database, game_service, game_stats_service):
-    return Game(
-        42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL
-    )
-
-
-@pytest.fixture
-async def custom_game(database, game_service, game_stats_service):
-    return CustomGame(42, database, game_service, game_stats_service)
-
-
-@pytest.fixture
-async def ladder_game(database, game_service, game_stats_service):
-    return LadderGame(42, database, game_service, game_stats_service, rating_type=RatingType.LADDER_1V1)
 
 
 def add_players_with_rating(player_factory, game, ratings, teams):

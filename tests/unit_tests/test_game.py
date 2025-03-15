@@ -10,8 +10,6 @@ from trueskill import Rating
 
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import (
-    CoopGame,
-    CustomGame,
     Game,
     GameError,
     GameState,
@@ -31,21 +29,6 @@ from tests.unit_tests.conftest import (
 from tests.utils import fast_forward
 
 
-@pytest.fixture
-async def game(database, game_service, game_stats_service):
-    return Game(42, database, game_service, game_stats_service, rating_type=RatingType.GLOBAL)
-
-
-@pytest.fixture
-async def coop_game(database, game_service, game_stats_service):
-    return CoopGame(42, database, game_service, game_stats_service)
-
-
-@pytest.fixture
-async def custom_game(database, game_service, game_stats_service):
-    return CustomGame(42, database, game_service, game_stats_service)
-
-
 async def game_player_scores(database, game):
     async with database.acquire() as conn:
         result = await conn.execute(
@@ -60,11 +43,17 @@ async def test_initialization(game: Game):
     assert game.enforce_rating is False
 
 
-async def test_instance_logging(database, game_stats_service):
+async def test_instance_logging(database, game_stats_service, players):
     logger = logging.getLogger(f"{Game.__qualname__}.5")
     logger.debug = mock.Mock()
     mock_parent = mock.Mock()
-    game = Game(5, database, mock_parent, game_stats_service)
+    game = Game(
+        5,
+        database,
+        mock_parent,
+        game_stats_service,
+        host=players.hosting,
+    )
     logger.debug.assert_called_with("%s created", game)
 
 
@@ -830,14 +819,14 @@ async def test_get_army_score_conflicting_results_tied(game, game_add_players):
 
 async def test_equality(game):
     assert game == game
-    assert game != Game(5, mock.Mock(), mock.Mock(), mock.Mock())
+    assert game != Game(5, mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock())
     assert game != "a string"
 
 
 async def test_hashing(game):
     assert {
         game: 1,
-        Game(game.id, mock.Mock(), mock.Mock(), mock.Mock()): 1
+        Game(game.id, mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock()): 1
     } == {
         game: 1
     }

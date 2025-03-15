@@ -8,10 +8,11 @@ import pytest
 from server import GameStatsService
 from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
-from server.games import Game
+from server.games import CoopGame, CustomGame, Game, LadderGame
 from server.ladder_service import LadderService
 from server.ladder_service.violation_service import ViolationService
 from server.protocol import QDataStreamProtocol
+from server.rating import RatingType
 
 
 @pytest.fixture(scope="session")
@@ -78,14 +79,14 @@ async def violation_service():
 async def game_connection(
     request,
     database,
-    game,
+    mock_game,
     players,
     game_service,
     player_service,
 ):
     conn = GameConnection(
         database=database,
-        game=game,
+        game=mock_game,
         player=players.hosting,
         protocol=mock.create_autospec(QDataStreamProtocol),
         player_service=player_service,
@@ -180,6 +181,69 @@ def game_add_players(player_factory):
         return players
 
     return add
+
+
+@pytest.fixture
+async def game(database, game_service, game_stats_service, players):
+    return Game(
+        42,
+        database,
+        game_service,
+        game_stats_service,
+        host=players.hosting,
+        rating_type=RatingType.GLOBAL
+    )
+
+
+@pytest.fixture
+async def coop_game(database, game_service, game_stats_service, players):
+    return CoopGame(
+        42,
+        database,
+        game_service,
+        game_stats_service,
+        host=players.hosting,
+    )
+
+
+@pytest.fixture
+async def custom_game(database, game_service, game_stats_service, players):
+    return CustomGame(
+        42,
+        database,
+        game_service,
+        game_stats_service,
+        host=players.hosting,
+    )
+
+
+@pytest.fixture
+async def ladder_game(database, game_service, game_stats_service, players):
+    return LadderGame(
+        42,
+        database,
+        game_service,
+        game_stats_service,
+        host=players.hosting,
+        rating_type=RatingType.LADDER_1V1,
+    )
+
+
+@pytest.fixture
+async def mock_game(database, game_service, game_stats_service, players):
+    game = mock.create_autospec(
+        Game(
+            id=42,
+            database=database,
+            game_service=game_service,
+            game_stats_service=game_stats_service,
+            host=players.hosting,
+        ),
+    )
+    game.id = 42
+    game.host = players.hosting
+
+    return game
 
 
 class Benchmark(AbstractContextManager):

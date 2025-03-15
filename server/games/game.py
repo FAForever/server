@@ -71,7 +71,7 @@ class Game:
         database: FAFDatabase,
         game_service: "GameService",
         game_stats_service: "GameStatsService",
-        host: Optional[Player] = None,
+        host: Player,
         name: str = "New Game",
         map: Map = MAP_DEFAULT,
         game_mode: str = FeaturedModType.FAF,

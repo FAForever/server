@@ -187,7 +187,7 @@ class AvatarListAvatar(TypedDict):
     """
 
     command: Literal["avatar"]
-    action: Literal["list_avatar", "select"]
+    action: Literal["list_avatar"]
 
 
 class AvatarSelect(TypedDict):
@@ -204,7 +204,7 @@ class AvatarSelect(TypedDict):
     """
 
     command: Literal["avatar"]
-    action: Literal["list_avatar", "select"]
+    action: Literal["select"]
 
     avatar: str
     """The URL of the avatar to select."""

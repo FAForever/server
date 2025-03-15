@@ -23,11 +23,6 @@ from server.types import Map
 from tests.utils import exhaust_callbacks
 
 
-@pytest.fixture
-async def real_game(database, game_service, game_stats_service):
-    return Game(42, database, game_service, game_stats_service)
-
-
 def assert_message_sent(game_connection: GameConnection, command, args):
     game_connection.protocol.send_message.assert_called_with({
         "command": command,
@@ -36,23 +31,23 @@ def assert_message_sent(game_connection: GameConnection, command, args):
     })
 
 
-async def test_abort(game_connection: GameConnection, game: Game, players):
+async def test_abort(game_connection: GameConnection, mock_game: Game, players):
     game_connection.player = players.hosting
-    game_connection.game = game
+    game_connection.game = mock_game
 
     await game_connection.abort()
 
-    game.remove_game_connection.assert_called_with(game_connection)
+    mock_game.remove_game_connection.assert_called_with(game_connection)
 
 
 async def test_disconnect_all_peers(
     game_connection: GameConnection,
-    real_game: Game,
+    game: Game,
     players
 ):
-    real_game.state = GameState.LOBBY
+    game.state = GameState.LOBBY
     game_connection.player = players.hosting
-    game_connection.game = real_game
+    game_connection.game = game
 
     disconnect_done = mock.Mock()
 
@@ -72,8 +67,8 @@ async def test_disconnect_all_peers(
     fail_disconnect.state = GameConnectionState.CONNECTED_TO_HOST
 
     # Add the peers to the game
-    real_game.add_game_connection(fail_disconnect)
-    real_game.add_game_connection(ok_disconnect)
+    game.add_game_connection(fail_disconnect)
+    game.add_game_connection(ok_disconnect)
 
     await game_connection.disconnect_all_peers()
 
@@ -100,17 +95,17 @@ async def test_connect_to_peer_disconnected(game_connection):
 
 
 async def test_handle_action_GameState_idle_adds_connection(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     players
 ):
-    players.joining.game = game
+    players.joining.game = mock_game
     game_connection.player = players.hosting
-    game_connection.game = game
+    game_connection.game = mock_game
 
     await game_connection.handle_action("GameState", ["Idle"])
 
-    game.add_game_connection.assert_called_with(game_connection)
+    mock_game.add_game_connection.assert_called_with(game_connection)
 
 
 async def test_handle_action_GameState_idle_sets_player_state(
@@ -135,29 +130,29 @@ async def test_handle_action_GameState_idle_sets_player_state(
 
 
 async def test_handle_action_GameState_lobby_sends_HostGame(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     players
 ):
     game_connection.player = players.hosting
-    game.map = Map(None, "some_map")
+    mock_game.map = Map(None, "some_map")
 
     await game_connection.handle_action("GameState", ["Lobby"])
     await exhaust_callbacks()
 
-    assert_message_sent(game_connection, "HostGame", [game.map.folder_name])
+    assert_message_sent(game_connection, "HostGame", [mock_game.map.folder_name])
 
 
 async def test_handle_action_GameState_lobby_calls_ConnectToHost(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     players
 ):
     game_connection.send = mock.AsyncMock()
     game_connection.connect_to_host = mock.AsyncMock()
     game_connection.player = players.joining
-    players.joining.game = game
-    game.host = players.hosting
+    players.joining.game = mock_game
+    mock_game.host = players.hosting
 
     await game_connection.handle_action("GameState", ["Lobby"])
     await exhaust_callbacks()
@@ -166,7 +161,7 @@ async def test_handle_action_GameState_lobby_calls_ConnectToHost(
 
 
 async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     players
 ):
@@ -175,13 +170,13 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
     game_connection.connect_to_peer = mock.AsyncMock()
     game_connection.player = players.joining
 
-    players.joining.game = game
+    players.joining.game = mock_game
 
-    game.host = players.hosting
-    game.map = Map(None, "some_map")
+    mock_game.host = players.hosting
+    mock_game.map = Map(None, "some_map")
     peer_conn = mock.Mock()
     players.peer.game_connection = peer_conn
-    game.connections = [peer_conn]
+    mock_game.connections = [peer_conn]
 
     await game_connection.handle_action("GameState", ["Lobby"])
     await exhaust_callbacks()
@@ -190,19 +185,18 @@ async def test_handle_action_GameState_lobby_calls_ConnectToPeer(
 
 
 async def test_handle_lobby_state_handles_GameError(
-    real_game: Game,
+    game: Game,
     game_connection: GameConnection,
     players
 ):
     game_connection.abort = mock.AsyncMock()
     game_connection.connect_to_host = mock.AsyncMock()
     game_connection.player = players.joining
-    game_connection.game = real_game
+    game_connection.game = game
 
-    players.joining.game = real_game
+    players.joining.game = game
 
-    real_game.host = players.hosting
-    real_game.state = GameState.ENDED
+    game.state = GameState.ENDED
 
     await game_connection.handle_action("GameState", ["Lobby"])
     await exhaust_callbacks()
@@ -211,17 +205,17 @@ async def test_handle_lobby_state_handles_GameError(
 
 
 async def test_handle_action_GameState_lobby_calls_abort(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     players
 ):
     game_connection.send = mock.AsyncMock()
     game_connection.abort = mock.AsyncMock()
     game_connection.player = players.joining
-    players.joining.game = game
-    game.host = players.hosting
-    game.host.state = PlayerState.IDLE
-    game.map = Map(None, "some_map")
+    players.joining.game = mock_game
+    mock_game.host = players.hosting
+    mock_game.host.state = PlayerState.IDLE
+    mock_game.map = Map(None, "some_map")
 
     await game_connection.handle_action("GameState", ["Lobby"])
     await exhaust_callbacks()
@@ -230,33 +224,33 @@ async def test_handle_action_GameState_lobby_calls_abort(
 
 
 async def test_handle_action_GameState_launching_calls_launch(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     players
 ):
     game_connection.player = players.hosting
-    game_connection.game = game
-    game.launch = mock.AsyncMock()
-    game.state = GameState.LOBBY
+    game_connection.game = mock_game
+    mock_game.launch = mock.AsyncMock()
+    mock_game.state = GameState.LOBBY
 
     await game_connection.handle_action("GameState", ["Launching"])
 
-    game.launch.assert_any_call()
+    mock_game.launch.assert_any_call()
 
 
 async def test_handle_action_GameState_launching_when_ended(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     players
 ):
     game_connection.player = players.hosting
-    game_connection.game = game
-    game.launch = mock.AsyncMock()
-    game.state = GameState.ENDED
+    game_connection.game = mock_game
+    mock_game.launch = mock.AsyncMock()
+    mock_game.state = GameState.ENDED
 
     await game_connection.handle_action("GameState", ["Launching"])
 
-    game.launch.assert_not_called()
+    mock_game.launch.assert_not_called()
 
 
 async def test_handle_action_GameState_ended_calls_on_connection_closed(
@@ -267,9 +261,12 @@ async def test_handle_action_GameState_ended_calls_on_connection_closed(
     game_connection.on_connection_closed.assert_called_once_with()
 
 
-async def test_handle_action_PlayerOption(game: Game, game_connection: GameConnection):
+async def test_handle_action_PlayerOption(
+    mock_game: Game,
+    game_connection: GameConnection,
+):
     await game_connection.handle_action("PlayerOption", [1, "Color", 2])
-    game.set_player_option.assert_called_once_with(1, "Color", 2)
+    mock_game.set_player_option.assert_called_once_with(1, "Color", 2)
 
 
 async def test_handle_action_PlayerOption_malformed_no_raise(game_connection: GameConnection):
@@ -278,47 +275,53 @@ async def test_handle_action_PlayerOption_malformed_no_raise(game_connection: Ga
 
 
 async def test_handle_action_PlayerOption_not_host(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     players
 ):
     game_connection.player = players.joining
     await game_connection.handle_action("PlayerOption", [1, "Color", 2])
-    game.set_player_option.assert_not_called()
+    mock_game.set_player_option.assert_not_called()
 
 
-async def test_handle_action_GameMods(game: Game, game_connection: GameConnection):
+async def test_handle_action_GameMods(
+    mock_game: Game,
+    game_connection: GameConnection,
+):
     await game_connection.handle_action("GameMods", ["uids", "foo baz"])
-    assert game.mods == {"baz": "test-mod2", "foo": "test-mod"}
+    assert mock_game.mods == {"baz": "test-mod2", "foo": "test-mod"}
 
 
-async def test_handle_action_GameMods_activated(game: Game, game_connection: GameConnection):
-    game.mods = {"a": "b"}
+async def test_handle_action_GameMods_activated(
+    mock_game: Game,
+    game_connection: GameConnection,
+):
+    mock_game.mods = {"a": "b"}
     await game_connection.handle_action("GameMods", ["activated", 0])
-    assert game.mods == {}
+    assert mock_game.mods == {}
     await game_connection.handle_action("GameMods", ["activated", "0"])
-    assert game.mods == {}
+    assert mock_game.mods == {}
 
 
 async def test_handle_action_GameMods_not_host(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     players
 ):
     game_connection.player = players.joining
-    mods = game.mods
+    mods = mock_game.mods
     await game_connection.handle_action("GameMods", ["uids", "foo baz"])
-    assert game.mods == mods
+    assert mock_game.mods == mods
 
 
 async def test_handle_action_GameMods_post_launch_updates_played_cache(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     database
 ):
-    game.launch = mock.AsyncMock()
-    game.state = GameState.LOBBY
-    game.remove_game_connection = mock.AsyncMock()
+    mock_game.launch = mock.AsyncMock()
+    mock_game.state = GameState.LOBBY
+    mock_game.remove_game_connection = mock.AsyncMock()
 
     await game_connection.handle_action("GameMods", ["uids", "foo bar EA040F8E-857A-4566-9879-0D37420A5B9D"])
     await game_connection.handle_action("GameState", ["Launching"])
@@ -333,21 +336,21 @@ async def test_handle_action_GameMods_post_launch_updates_played_cache(
 
 
 async def test_handle_action_AIOption(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection
 ):
     await game_connection.handle_action("AIOption", ["QAI", "StartSpot", 1])
-    game.set_ai_option.assert_called_once_with("QAI", "StartSpot", 1)
+    mock_game.set_ai_option.assert_called_once_with("QAI", "StartSpot", 1)
 
 
 async def test_handle_action_AIOption_not_host(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     players
 ):
     game_connection.player = players.joining
     await game_connection.handle_action("AIOption", ["QAI", "StartSpot", 1])
-    game.set_ai_option.assert_not_called()
+    mock_game.set_ai_option.assert_not_called()
 
 
 async def test_handle_action_Bottleneck(game_connection: GameConnection):
@@ -379,23 +382,23 @@ async def test_handle_action_Chat(game_connection: GameConnection):
 
 
 async def test_handle_action_ClearSlot(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection
 ):
     await game_connection.handle_action("ClearSlot", [1])
-    game.clear_slot.assert_called_once_with(1)
+    mock_game.clear_slot.assert_called_once_with(1)
     await game_connection.handle_action("ClearSlot", ["1"])
-    game.clear_slot.assert_called_with(1)
+    mock_game.clear_slot.assert_called_with(1)
 
 
 async def test_handle_action_ClearSlot_not_host(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     players
 ):
     game_connection.player = players.joining
     await game_connection.handle_action("ClearSlot", [1])
-    game.clear_slot.assert_not_called()
+    mock_game.clear_slot.assert_not_called()
 
 
 async def test_handle_action_Disconnected(game_connection: GameConnection):
@@ -411,17 +414,23 @@ async def test_handle_action_GameFull(game_connection: GameConnection):
 
 
 async def test_handle_action_GameResult_calls_add_result(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection
 ):
     game_connection.connect_to_host = mock.AsyncMock()
 
     await game_connection.handle_action("GameResult", [0, "score -5"])
-    game.add_result.assert_called_once_with(game_connection.player.id, 0, "score", -5, frozenset())
+    mock_game.add_result.assert_called_once_with(
+        game_connection.player.id,
+        0,
+        "score",
+        -5,
+        frozenset(),
+    )
 
 
 async def test_cannot_parse_game_results(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     caplog
 ):
@@ -429,19 +438,17 @@ async def test_cannot_parse_game_results(
 
     with caplog.at_level(logging.WARNING):
         await game_connection.handle_action("GameResult", [0, ""])
-        game.add_result.assert_not_called()
+        mock_game.add_result.assert_not_called()
         assert "Invalid result" in caplog.messages[0]
 
 
 async def test_handle_action_GameOption(
-    real_game: Game,
+    game: Game,
     game_connection: GameConnection,
     players,
 ):
-    game = real_game
-    game.host = players.hosting
     game_connection.player = players.hosting
-    game_connection.game = real_game
+    game_connection.game = game
 
     game.game_options.clear()
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
@@ -470,15 +477,13 @@ async def test_handle_action_GameOption(
     "////maps/////x1mp_002////x1mp_002_scenario.lua",
 ))
 async def test_handle_action_GameOption_ScenarioFile(
-    real_game: Game,
+    game: Game,
     game_connection: GameConnection,
     players,
     scenario_file,
 ):
-    game = real_game
-    game.host = players.hosting
     game_connection.player = players.hosting
-    game_connection.game = real_game
+    game_connection.game = game
 
     await game_connection.handle_action(
         "GameOption",
@@ -489,46 +494,46 @@ async def test_handle_action_GameOption_ScenarioFile(
 
 
 async def test_handle_action_GameOption_not_host(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     players
 ):
     game_connection.player = players.joining
-    game.game_options = {"Victory": "asdf"}
+    mock_game.game_options = {"Victory": "asdf"}
     await game_connection.handle_action("GameOption", ["Victory", "sandbox"])
-    assert game.game_options == {"Victory": "asdf"}
+    assert mock_game.game_options == {"Victory": "asdf"}
 
 
 async def test_json_stats(
-    real_game: Game,
+    game: Game,
     game_connection: GameConnection,
 ):
-    game_connection.game = real_game
+    game_connection.game = game
     await game_connection.handle_action("JsonStats", ['{"stats": {}}'])
 
 
 async def test_json_stats_malformed(
-    real_game: Game,
+    game: Game,
     game_connection: GameConnection,
 ):
-    game_connection.game = real_game
+    game_connection.game = game
     await game_connection.handle_action("JsonStats", ['{"stats": {}'])
 
 
 async def test_handle_json_stats_malformed(
-    real_game: Game,
+    game: Game,
     game_connection: GameConnection,
 ):
-    game_connection.game = real_game
+    game_connection.game = game
     await game_connection.handle_json_stats('{"stats": {}')
 
 
 async def test_handle_action_EnforceRating(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection
 ):
     await game_connection.handle_action("EnforceRating", [])
-    assert game.enforce_rating is True
+    assert mock_game.enforce_rating is True
 
 
 async def test_handle_action_Rehost(game_connection: GameConnection):
@@ -538,38 +543,40 @@ async def test_handle_action_Rehost(game_connection: GameConnection):
 
 
 async def test_handle_action_TeamkillReport(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection,
     database
 ):
-    game.launch = mock.AsyncMock()
+    mock_game.id = 1
+    mock_game.launch = mock.AsyncMock()
     await game_connection.handle_action("TeamkillReport", ["200", "2", "Dostya", "3", "Rhiza"])
 
     async with database.acquire() as conn:
         result = await conn.execute(
             "select game_id,id from moderation_report where reporter_id=2 and "
             "game_id=:id and game_incident_timecode=200",
-            {"id": game.id}
+            {"id": mock_game.id}
         )
         report = result.fetchone()
         assert report is None
 
 
 async def test_handle_action_TeamkillHappened(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection, database
 ):
-    game.launch = mock.AsyncMock()
+    mock_game.id = 1
+    mock_game.launch = mock.AsyncMock()
     await game_connection.handle_action("TeamkillHappened", ["200", "2", "Dostya", "3", "Rhiza"])
 
     async with database.acquire() as conn:
         result = await conn.execute(
             "select game_id from teamkills where victim=2 and teamkiller=3 and "
             "game_id=:id and gametime=200",
-            {"id": game.id}
+            {"id": mock_game.id}
         )
         row = result.fetchone()
-        assert game.id == row.game_id
+        assert mock_game.id == row.game_id
 
 
 async def test_handle_action_TeamkillHappened_AI(
@@ -582,13 +589,13 @@ async def test_handle_action_TeamkillHappened_AI(
 
 
 async def test_handle_action_GameEnded_ends_sim(
-    game: Game,
+    mock_game: Game,
     game_connection: GameConnection
 ):
     await game_connection.handle_action("GameEnded", [])
 
     assert game_connection.finished_sim
-    game.check_game_finish.assert_called_once()
+    mock_game.check_game_finish.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -777,8 +784,11 @@ async def test_handle_action_invalid(game_connection: GameConnection):
     game_connection.protocol.send_message.assert_not_called()
 
 
-async def test_result_format_phantom(game: Game, game_connection: GameConnection):
+async def test_result_format_phantom(
+    mock_game: Game,
+    game_connection: GameConnection,
+):
     await game_connection.handle_action("GameResult", [0, "phantom score -5"])
-    game.add_result.assert_called_once_with(
+    mock_game.add_result.assert_called_once_with(
         game_connection.player.id, 0, "score", -5, frozenset(["phantom"])
     )

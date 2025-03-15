@@ -317,22 +317,16 @@ async def test_command_game_host_creates_correct_game(
 
 
 async def test_command_game_join_calls_join_game(
-    database,
     lobbyconnection,
+    game,
     game_service,
     test_game_info,
     players,
-    game_stats_service
 ):
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
-    game = Game(42, database, game_service, game_stats_service)
     game.state = GameState.LOBBY
-    game.password = None
-    game.game_mode = "faf"
-    game.id = 42
     game.name = "Test Game Name"
-    game.host = players.hosting
     game_service._games[42] = game
     lobbyconnection.player = players.joining
     players.joining.state = PlayerState.IDLE
@@ -348,7 +342,7 @@ async def test_command_game_join_calls_join_game(
         "uid": 42,
         "mod": "faf",
         "name": "Test Game Name",
-        "init_mode": InitMode.NORMAL_LOBBY.value,
+        "init_mode": 0,
         "game_type": "custom",
         "rating_type": "global",
     }
@@ -356,22 +350,16 @@ async def test_command_game_join_calls_join_game(
 
 
 async def test_command_game_join_uid_as_str(
-    database,
     lobbyconnection,
+    game,
     game_service,
     test_game_info,
     players,
-    game_stats_service
 ):
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
-    game = Game(42, database, game_service, game_stats_service)
     game.state = GameState.LOBBY
-    game.password = None
-    game.game_mode = "faf"
-    game.id = 42
     game.name = "Test Game Name"
-    game.host = players.hosting
     game_service._games[42] = game
     lobbyconnection.player = players.joining
     players.joining.state = PlayerState.IDLE
@@ -387,7 +375,7 @@ async def test_command_game_join_uid_as_str(
         "mod": "faf",
         "uid": 42,
         "name": "Test Game Name",
-        "init_mode": InitMode.NORMAL_LOBBY.value,
+        "init_mode": 0,
         "game_type": "custom",
         "rating_type": "global",
     }
@@ -396,19 +384,15 @@ async def test_command_game_join_uid_as_str(
 
 async def test_command_game_join_without_password(
     lobbyconnection,
+    game,
     game_service,
     test_game_info,
     players,
 ):
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
-    game = mock.create_autospec(Game)
     game.state = GameState.LOBBY
-    game.init_mode = InitMode.NORMAL_LOBBY
     game.password = "password"
-    game.game_mode = "faf"
-    game.id = 42
-    game.host = players.hosting
     game_service._games[42] = game
     lobbyconnection.player = players.joining
     players.joining.state = PlayerState.IDLE
@@ -464,18 +448,14 @@ async def test_command_game_join_game_not_found(
 
 async def test_command_game_join_game_not_ready(
     lobbyconnection,
+    game,
     game_service,
     test_game_info,
-    players
+    players,
 ):
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
-    game = mock.create_autospec(Game)
     game.state = GameState.INITIALIZING
-    game.init_mode = InitMode.NORMAL_LOBBY
-    game.game_mode = "faf"
-    game.id = 42
-    game.host = players.hosting
     game_service._games[42] = game
     lobbyconnection.player = players.joining
     players.joining.state = PlayerState.IDLE
@@ -500,17 +480,15 @@ async def test_command_game_join_game_not_ready(
 
 async def test_command_game_join_game_bad_init_mode(
     lobbyconnection,
+    game,
     game_service,
     test_game_info,
     players
 ):
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.game_service = game_service
-    game = mock.create_autospec(Game)
     game.state = GameState.LOBBY
     game.init_mode = InitMode.AUTO_LOBBY
-    game.id = 42
-    game.host = players.hosting
     game_service._games[42] = game
     lobbyconnection.player = players.joining
     lobbyconnection.player.state = PlayerState.IDLE
@@ -552,8 +530,8 @@ async def test_abort(lobbyconnection):
 
 async def test_send_game_list(mocker, database, lobbyconnection, game_stats_service):
     games = mocker.patch.object(lobbyconnection, "game_service")  # type: GameService
-    game1, game2 = mock.create_autospec(Game(42, database, mock.Mock(), game_stats_service)), \
-        mock.create_autospec(Game(22, database, mock.Mock(), game_stats_service))
+    game1 = mock.create_autospec(Game, id=42)
+    game2 = mock.create_autospec(Game, id=22)
 
     games.open_games = [game1, game2]
     lobbyconnection.send = mock.AsyncMock()
@@ -754,12 +732,10 @@ async def test_command_social_add_friend_idempotent(lobbyconnection, database):
 
 async def test_command_social_add_friend_while_hosting(
     lobbyconnection,
+    game,
     database,
-    game_service,
-    game_stats_service,
 ):
     lobbyconnection.player.id = 1
-    game = Game(42, database, game_service, game_stats_service)
     game.host = lobbyconnection.player
     lobbyconnection.player.game = game
 
@@ -779,12 +755,10 @@ async def test_command_social_add_friend_while_hosting(
 
 async def test_command_social_add_friend_while_hosting_offline(
     lobbyconnection,
+    game,
     database,
-    game_service,
-    game_stats_service,
 ):
     lobbyconnection.player.id = 1
-    game = Game(42, database, game_service, game_stats_service)
     game.host = lobbyconnection.player
     lobbyconnection.player.game = game
     lobbyconnection.player_service.get_player.return_value = None
@@ -840,12 +814,10 @@ async def test_command_social_remove_friend_idempotent(lobbyconnection, database
 
 async def test_command_social_remove_friend_while_hosting(
     lobbyconnection,
+    game,
     database,
-    game_service,
-    game_stats_service,
 ):
     lobbyconnection.player.id = 2
-    game = Game(42, database, game_service, game_stats_service)
     game.host = lobbyconnection.player
     lobbyconnection.player.game = game
 
@@ -865,12 +837,10 @@ async def test_command_social_remove_friend_while_hosting(
 
 async def test_command_social_remove_friend_while_hosting_offline(
     lobbyconnection,
+    game,
     database,
-    game_service,
-    game_stats_service,
 ):
     lobbyconnection.player.id = 2
-    game = Game(42, database, game_service, game_stats_service)
     game.host = lobbyconnection.player
     lobbyconnection.player.game = game
     lobbyconnection.player_service.get_player.return_value = None
@@ -995,23 +965,18 @@ async def test_game_connection_not_restored_if_no_such_game_exists(
 
 @pytest.mark.parametrize("game_state", [GameState.INITIALIZING, GameState.ENDED])
 async def test_game_connection_not_restored_if_game_state_prohibits(
-    lobbyconnection: LobbyConnection,
-    game_service: GameService,
-    game_stats_service,
+    lobbyconnection,
+    mock_game,
+    game_service,
     game_state,
-    database
 ):
     del lobbyconnection.player.game_connection
     lobbyconnection.send = mock.AsyncMock()
     lobbyconnection.player.state = PlayerState.IDLE
     lobbyconnection.game_service = game_service
-    game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
-    game.state = game_state
-    game.password = None
-    game.game_mode = "faf"
-    game.id = 42
-    game.players = [lobbyconnection.player]
-    game_service._games[42] = game
+    mock_game.state = game_state
+    mock_game.players = [lobbyconnection.player]
+    game_service._games[42] = mock_game
 
     await lobbyconnection.on_message_received({
         "command": "restore_game_session",
@@ -1030,22 +995,17 @@ async def test_game_connection_not_restored_if_game_state_prohibits(
 
 @pytest.mark.parametrize("game_state", [GameState.LIVE, GameState.LOBBY])
 async def test_game_connection_restored_if_game_exists(
-    lobbyconnection: LobbyConnection,
-    game_service: GameService,
-    game_stats_service,
+    lobbyconnection,
+    mock_game,
+    game_service,
     game_state,
-    database
 ):
     del lobbyconnection.player.game_connection
     lobbyconnection.player.state = PlayerState.IDLE
     lobbyconnection.game_service = game_service
-    game = mock.create_autospec(Game(42, database, game_service, game_stats_service))
-    game.state = game_state
-    game.password = None
-    game.game_mode = "faf"
-    game.id = 42
-    game.players = [lobbyconnection.player]
-    game_service._games[42] = game
+    mock_game.state = game_state
+    mock_game.players = [lobbyconnection.player]
+    game_service._games[42] = mock_game
 
     await lobbyconnection.on_message_received({
         "command": "restore_game_session",
@@ -1054,7 +1014,7 @@ async def test_game_connection_restored_if_game_exists(
 
     assert lobbyconnection.game_connection
     assert lobbyconnection.player.state is PlayerState.PLAYING
-    assert lobbyconnection.player.game is game
+    assert lobbyconnection.player.game is mock_game
 
 
 async def test_command_invite_to_party(lobbyconnection, mock_player):

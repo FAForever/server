@@ -1132,10 +1132,10 @@ class LobbyConnection:
         game_class = CoopGame if game_mode == FeaturedModType.COOP else CustomGame
 
         game = self.game_service.create_game(
-            visibility=visibility,
-            game_mode=game_mode,
             game_class=game_class,
+            game_mode=game_mode,
             host=self.player,
+            visibility=visibility,
             name=title,
             map=game_map,
             password=password,
