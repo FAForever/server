@@ -48,7 +48,7 @@ el.replaceWith(d);
 <dl>
 <dt id="server.games.typedefs.BasicGameInfo"><code class="flex name class">
 <span>class <span class="ident">BasicGameInfo</span></span>
-<span>(</span><span>game_id: int,<br>rating_type: str | None,<br>map_id: int,<br>game_mode: str,<br>mods: list[int],<br>teams: list[set[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]])</span>
+<span>(</span><span>game_id: int,<br>rating_type: str | None,<br>map_id: int | None,<br>game_mode: str,<br>mods: list[str],<br>teams: list[set[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]])</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -67,9 +67,9 @@ el.replaceWith(d);
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     teams: list[set[Player]]</code></pre>
 </details>
 <div class="desc"><p>Holds basic information about a game that does not change after launch.
@@ -102,9 +102,9 @@ Fields:
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     teams: list[set[Player]]</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 0</p></div>
@@ -127,14 +127,14 @@ Fields:
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     teams: list[set[Player]]</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 3</p></div>
 </dd>
-<dt id="server.games.typedefs.BasicGameInfo.map_id"><code class="name">var <span class="ident">map_id</span> : int</code></dt>
+<dt id="server.games.typedefs.BasicGameInfo.map_id"><code class="name">var <span class="ident">map_id</span> : int | None</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -152,14 +152,14 @@ Fields:
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     teams: list[set[Player]]</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 2</p></div>
 </dd>
-<dt id="server.games.typedefs.BasicGameInfo.mods"><code class="name">var <span class="ident">mods</span> : list[int]</code></dt>
+<dt id="server.games.typedefs.BasicGameInfo.mods"><code class="name">var <span class="ident">mods</span> : list[str]</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -177,9 +177,9 @@ Fields:
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     teams: list[set[Player]]</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 4</p></div>
@@ -202,9 +202,9 @@ Fields:
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     teams: list[set[Player]]</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 1</p></div>
@@ -227,9 +227,9 @@ Fields:
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     teams: list[set[Player]]</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 5</p></div>
@@ -238,7 +238,7 @@ Fields:
 </dd>
 <dt id="server.games.typedefs.EndedGameInfo"><code class="flex name class">
 <span>class <span class="ident">EndedGameInfo</span></span>
-<span>(</span><span>game_id: int,<br>rating_type: str | None,<br>map_id: int,<br>game_mode: str,<br>mods: list[int],<br>commander_kills: dict[str, int],<br>validity: <a title="server.games.typedefs.ValidityState" href="#server.games.typedefs.ValidityState">ValidityState</a>,<br>team_summaries: list[<a title="server.games.typedefs.TeamRatingSummary" href="#server.games.typedefs.TeamRatingSummary">TeamRatingSummary</a>])</span>
+<span>(</span><span>game_id: int,<br>rating_type: str | None,<br>map_id: int | None,<br>game_mode: str,<br>mods: list[str],<br>commander_kills: dict[str, int],<br>validity: <a title="server.games.typedefs.ValidityState" href="#server.games.typedefs.ValidityState">ValidityState</a>,<br>team_summaries: list[<a title="server.games.typedefs.TeamRatingSummary" href="#server.games.typedefs.TeamRatingSummary">TeamRatingSummary</a>])</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -260,9 +260,9 @@ Fields:
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     commander_kills: dict[str, int]
     validity: ValidityState
     team_summaries: list[TeamRatingSummary]
@@ -369,9 +369,9 @@ on the team and the team's outcome</p></div>
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     commander_kills: dict[str, int]
     validity: ValidityState
     team_summaries: list[TeamRatingSummary]
@@ -456,9 +456,9 @@ on the team and the team's outcome</p></div>
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     commander_kills: dict[str, int]
     validity: ValidityState
     team_summaries: list[TeamRatingSummary]
@@ -543,9 +543,9 @@ on the team and the team's outcome</p></div>
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     commander_kills: dict[str, int]
     validity: ValidityState
     team_summaries: list[TeamRatingSummary]
@@ -609,7 +609,7 @@ on the team and the team's outcome</p></div>
 </details>
 <div class="desc"><p>Alias for field number 3</p></div>
 </dd>
-<dt id="server.games.typedefs.EndedGameInfo.map_id"><code class="name">var <span class="ident">map_id</span> : int</code></dt>
+<dt id="server.games.typedefs.EndedGameInfo.map_id"><code class="name">var <span class="ident">map_id</span> : int | None</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -630,9 +630,9 @@ on the team and the team's outcome</p></div>
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     commander_kills: dict[str, int]
     validity: ValidityState
     team_summaries: list[TeamRatingSummary]
@@ -696,7 +696,7 @@ on the team and the team's outcome</p></div>
 </details>
 <div class="desc"><p>Alias for field number 2</p></div>
 </dd>
-<dt id="server.games.typedefs.EndedGameInfo.mods"><code class="name">var <span class="ident">mods</span> : list[int]</code></dt>
+<dt id="server.games.typedefs.EndedGameInfo.mods"><code class="name">var <span class="ident">mods</span> : list[str]</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -717,9 +717,9 @@ on the team and the team's outcome</p></div>
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     commander_kills: dict[str, int]
     validity: ValidityState
     team_summaries: list[TeamRatingSummary]
@@ -804,9 +804,9 @@ on the team and the team's outcome</p></div>
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     commander_kills: dict[str, int]
     validity: ValidityState
     team_summaries: list[TeamRatingSummary]
@@ -891,9 +891,9 @@ on the team and the team's outcome</p></div>
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     commander_kills: dict[str, int]
     validity: ValidityState
     team_summaries: list[TeamRatingSummary]
@@ -978,9 +978,9 @@ on the team and the team's outcome</p></div>
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: list[int]
+    mods: list[str]
     commander_kills: dict[str, int]
     validity: ValidityState
     team_summaries: list[TeamRatingSummary]

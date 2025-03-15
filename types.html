@@ -276,12 +276,12 @@ el.replaceWith(d);
     weight: int = 1
 
     @property
-    def file_path(self):
+    def file_path(self) -&gt; str:
         &#34;&#34;&#34;A representation of the map name as it looks in the database&#34;&#34;&#34;
         return f&#34;maps/{self.folder_name}.zip&#34;
 
     @property
-    def scenario_file(self):
+    def scenario_file(self) -&gt; str:
         return f&#34;/maps/{self.folder_name}/{self.folder_name}_scenario.lua&#34;
 
     def get_map(self) -&gt; &#34;Map&#34;:
@@ -294,14 +294,14 @@ el.replaceWith(d);
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="server.types.Map.file_path"><code class="name">prop <span class="ident">file_path</span></code></dt>
+<dt id="server.types.Map.file_path"><code class="name">prop <span class="ident">file_path</span> : str</code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def file_path(self):
+def file_path(self) -&gt; str:
     &#34;&#34;&#34;A representation of the map name as it looks in the database&#34;&#34;&#34;
     return f&#34;maps/{self.folder_name}.zip&#34;</code></pre>
 </details>
@@ -321,12 +321,12 @@ def file_path(self):
     weight: int = 1
 
     @property
-    def file_path(self):
+    def file_path(self) -&gt; str:
         &#34;&#34;&#34;A representation of the map name as it looks in the database&#34;&#34;&#34;
         return f&#34;maps/{self.folder_name}.zip&#34;
 
     @property
-    def scenario_file(self):
+    def scenario_file(self) -&gt; str:
         return f&#34;/maps/{self.folder_name}/{self.folder_name}_scenario.lua&#34;
 
     def get_map(self) -&gt; &#34;Map&#34;:
@@ -348,12 +348,12 @@ def file_path(self):
     weight: int = 1
 
     @property
-    def file_path(self):
+    def file_path(self) -&gt; str:
         &#34;&#34;&#34;A representation of the map name as it looks in the database&#34;&#34;&#34;
         return f&#34;maps/{self.folder_name}.zip&#34;
 
     @property
-    def scenario_file(self):
+    def scenario_file(self) -&gt; str:
         return f&#34;/maps/{self.folder_name}/{self.folder_name}_scenario.lua&#34;
 
     def get_map(self) -&gt; &#34;Map&#34;:
@@ -375,12 +375,12 @@ def file_path(self):
     weight: int = 1
 
     @property
-    def file_path(self):
+    def file_path(self) -&gt; str:
         &#34;&#34;&#34;A representation of the map name as it looks in the database&#34;&#34;&#34;
         return f&#34;maps/{self.folder_name}.zip&#34;
 
     @property
-    def scenario_file(self):
+    def scenario_file(self) -&gt; str:
         return f&#34;/maps/{self.folder_name}/{self.folder_name}_scenario.lua&#34;
 
     def get_map(self) -&gt; &#34;Map&#34;:
@@ -388,14 +388,14 @@ def file_path(self):
 </details>
 <div class="desc"><p>Alias for field number 2</p></div>
 </dd>
-<dt id="server.types.Map.scenario_file"><code class="name">prop <span class="ident">scenario_file</span></code></dt>
+<dt id="server.types.Map.scenario_file"><code class="name">prop <span class="ident">scenario_file</span> : str</code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def scenario_file(self):
+def scenario_file(self) -&gt; str:
     return f&#34;/maps/{self.folder_name}/{self.folder_name}_scenario.lua&#34;</code></pre>
 </details>
 <div class="desc"></div>
@@ -414,12 +414,12 @@ def scenario_file(self):
     weight: int = 1
 
     @property
-    def file_path(self):
+    def file_path(self) -&gt; str:
         &#34;&#34;&#34;A representation of the map name as it looks in the database&#34;&#34;&#34;
         return f&#34;maps/{self.folder_name}.zip&#34;
 
     @property
-    def scenario_file(self):
+    def scenario_file(self) -&gt; str:
         return f&#34;/maps/{self.folder_name}/{self.folder_name}_scenario.lua&#34;
 
     def get_map(self) -&gt; &#34;Map&#34;:
@@ -455,8 +455,11 @@ def scenario_file(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class MapPoolMap(Protocol):
-    id: int
-    weight: int
+    @property
+    def id(self) -&gt; Optional[int]: ...
+
+    @property
+    def weight(self) -&gt; int: ...
 
     def get_map(self) -&gt; &#34;Map&#34;: ...</code></pre>
 </details>
@@ -490,14 +493,28 @@ Protocol classes can be generic, they are defined as::</p>
 <li>typing.Protocol</li>
 <li>typing.Generic</li>
 </ul>
-<h3>Class variables</h3>
+<h3>Instance variables</h3>
 <dl>
-<dt id="server.types.MapPoolMap.id"><code class="name">var <span class="ident">id</span> : int</code></dt>
+<dt id="server.types.MapPoolMap.id"><code class="name">prop <span class="ident">id</span> : int | None</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def id(self) -&gt; Optional[int]: ...</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
-<dt id="server.types.MapPoolMap.weight"><code class="name">var <span class="ident">weight</span> : int</code></dt>
+<dt id="server.types.MapPoolMap.weight"><code class="name">prop <span class="ident">weight</span> : int</code></dt>
 <dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def weight(self) -&gt; int: ...</code></pre>
+</details>
 <div class="desc"></div>
 </dd>
 </dl>
@@ -533,14 +550,10 @@ Protocol classes can be generic, they are defined as::</p>
     map_size_pixels: int
     weight: int = 1
 
-    _NAME_PATTERN = re.compile(
-        &#34;neroxis_map_generator_([0-9.]+)_.+&#34;
-    )
-
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -&gt; bool:
         &#34;&#34;&#34;Check if mapname is map generator&#34;&#34;&#34;
-        return cls._NAME_PATTERN.fullmatch(folder_name) is not None
+        return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
     def of(cls, params: dict, weight: int = 1):
@@ -635,14 +648,10 @@ Protocol classes can be generic, they are defined as::</p>
     map_size_pixels: int
     weight: int = 1
 
-    _NAME_PATTERN = re.compile(
-        &#34;neroxis_map_generator_([0-9.]+)_.+&#34;
-    )
-
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -&gt; bool:
         &#34;&#34;&#34;Check if mapname is map generator&#34;&#34;&#34;
-        return cls._NAME_PATTERN.fullmatch(folder_name) is not None
+        return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
     def of(cls, params: dict, weight: int = 1):
@@ -717,14 +726,10 @@ Protocol classes can be generic, they are defined as::</p>
     map_size_pixels: int
     weight: int = 1
 
-    _NAME_PATTERN = re.compile(
-        &#34;neroxis_map_generator_([0-9.]+)_.+&#34;
-    )
-
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -&gt; bool:
         &#34;&#34;&#34;Check if mapname is map generator&#34;&#34;&#34;
-        return cls._NAME_PATTERN.fullmatch(folder_name) is not None
+        return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
     def of(cls, params: dict, weight: int = 1):
@@ -799,14 +804,10 @@ Protocol classes can be generic, they are defined as::</p>
     map_size_pixels: int
     weight: int = 1
 
-    _NAME_PATTERN = re.compile(
-        &#34;neroxis_map_generator_([0-9.]+)_.+&#34;
-    )
-
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -&gt; bool:
         &#34;&#34;&#34;Check if mapname is map generator&#34;&#34;&#34;
-        return cls._NAME_PATTERN.fullmatch(folder_name) is not None
+        return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
     def of(cls, params: dict, weight: int = 1):
@@ -881,14 +882,10 @@ Protocol classes can be generic, they are defined as::</p>
     map_size_pixels: int
     weight: int = 1
 
-    _NAME_PATTERN = re.compile(
-        &#34;neroxis_map_generator_([0-9.]+)_.+&#34;
-    )
-
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -&gt; bool:
         &#34;&#34;&#34;Check if mapname is map generator&#34;&#34;&#34;
-        return cls._NAME_PATTERN.fullmatch(folder_name) is not None
+        return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
     def of(cls, params: dict, weight: int = 1):
@@ -963,14 +960,10 @@ Protocol classes can be generic, they are defined as::</p>
     map_size_pixels: int
     weight: int = 1
 
-    _NAME_PATTERN = re.compile(
-        &#34;neroxis_map_generator_([0-9.]+)_.+&#34;
-    )
-
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -&gt; bool:
         &#34;&#34;&#34;Check if mapname is map generator&#34;&#34;&#34;
-        return cls._NAME_PATTERN.fullmatch(folder_name) is not None
+        return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
     def of(cls, params: dict, weight: int = 1):

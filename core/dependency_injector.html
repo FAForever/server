@@ -54,7 +54,7 @@ el.replaceWith(d);
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class DependencyInjector(object):
+<pre><code class="python">class DependencyInjector():
     &#34;&#34;&#34;
     Does dependency injection.
 
@@ -98,10 +98,10 @@ el.replaceWith(d);
 
     def __init__(self) -&gt; None:
         # Objects which are available to the constructors of injected objects
-        self.injectables: dict[str, object] = {}
+        self.injectables: dict[str, Any] = {}
 
     def add_injectables(
-        self, injectables: dict[str, object] = {}, **kwargs: object
+        self, injectables: dict[str, Any] = {}, **kwargs: Any
     ) -&gt; None:
         &#34;&#34;&#34;
         Register additional objects that can be requested by injected classes.
@@ -111,7 +111,7 @@ el.replaceWith(d);
 
     def build_classes(
         self, classes: dict[str, type] = {}, **kwargs: type
-    ) -&gt; dict[str, object]:
+    ) -&gt; dict[str, Any]:
         &#34;&#34;&#34;
         Resolve dependencies by name and instantiate each class.
         &#34;&#34;&#34;
@@ -139,10 +139,11 @@ el.replaceWith(d);
             graph[name] = []
 
         for obj_name, klass in classes.items():
-            signature = inspect.signature(klass.__init__)
-            # Strip off the `self` parameter
-            params = list(signature.parameters.values())[1:]
-            graph[obj_name] = [param.name for param in params]
+            signature = inspect.signature(klass)
+            graph[obj_name] = [
+                param.name
+                for param in signature.parameters.values()
+            ]
 
         return graph
 
@@ -151,7 +152,7 @@ el.replaceWith(d);
         dep: DependencyGraph,
         classes: dict[str, type],
         param_map: dict[str, list[str]]
-    ) -&gt; dict[str, object]:
+    ) -&gt; dict[str, Any]:
         &#34;&#34;&#34;
         Tries to build all classes in the dependency graph. Raises RuntimeError
         if some dependencies are not available or there was a cyclic dependency.
@@ -241,7 +242,7 @@ another class in the class list).</p>
 <h3>Methods</h3>
 <dl>
 <dt id="server.core.dependency_injector.DependencyInjector.add_injectables"><code class="name flex">
-<span>def <span class="ident">add_injectables</span></span>(<span>self, injectables: dict[str, object] = {}, **kwargs: object) ‑> None</span>
+<span>def <span class="ident">add_injectables</span></span>(<span>self, injectables: dict[str, typing.Any] = {}, **kwargs: Any) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -249,7 +250,7 @@ another class in the class list).</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def add_injectables(
-    self, injectables: dict[str, object] = {}, **kwargs: object
+    self, injectables: dict[str, Any] = {}, **kwargs: Any
 ) -&gt; None:
     &#34;&#34;&#34;
     Register additional objects that can be requested by injected classes.
@@ -260,7 +261,7 @@ another class in the class list).</p>
 <div class="desc"><p>Register additional objects that can be requested by injected classes.</p></div>
 </dd>
 <dt id="server.core.dependency_injector.DependencyInjector.build_classes"><code class="name flex">
-<span>def <span class="ident">build_classes</span></span>(<span>self, classes: dict[str, type] = {}, **kwargs: type) ‑> dict[str, object]</span>
+<span>def <span class="ident">build_classes</span></span>(<span>self, classes: dict[str, type] = {}, **kwargs: type) ‑> dict[str, typing.Any]</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -269,7 +270,7 @@ another class in the class list).</p>
 </summary>
 <pre><code class="python">def build_classes(
     self, classes: dict[str, type] = {}, **kwargs: type
-) -&gt; dict[str, object]:
+) -&gt; dict[str, Any]:
     &#34;&#34;&#34;
     Resolve dependencies by name and instantiate each class.
     &#34;&#34;&#34;

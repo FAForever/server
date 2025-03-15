@@ -107,6 +107,8 @@ class GeoIpService(Service):
     Provides an interface for getting data out of the database.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self):
         self.refresh_file_path()
         config.register_callback(&#34;GEO_IP_DATABASE_PATH&#34;, self.refresh_file_path)

@@ -58,15 +58,17 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">@with_logger
 class ControlServer:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         lobby_server: &#34;ServerInstance&#34;,
     ):
         self.lobby_server = lobby_server
-        self.game_service = lobby_server.services[&#34;game_service&#34;]
-        self.player_service = lobby_server.services[&#34;player_service&#34;]
-        self.host = None
-        self.port = None
+        self.game_service = cast(GameService, lobby_server.services[&#34;game_service&#34;])
+        self.player_service = cast(PlayerService, lobby_server.services[&#34;player_service&#34;])
+        self.host: Optional[str] = None
+        self.port: Optional[int] = None
 
         self.app = web.Application()
         self.runner = web.AppRunner(self.app)
@@ -101,13 +103,13 @@ class ControlServer:
         self.host = None
         self.port = None
 
-    async def games(self, request) -&gt; web.Response:
+    async def games(self, request: web.Request) -&gt; web.Response:
         return web.json_response([
             game.to_dict()
             for game in self.game_service.all_games
         ])
 
-    async def players(self, request) -&gt; web.Response:
+    async def players(self, request: web.Request) -&gt; web.Response:
         return web.json_response([
             player.to_dict()
             for player in self.player_service.all_players
@@ -117,14 +119,14 @@ class ControlServer:
 <h3>Methods</h3>
 <dl>
 <dt id="server.control.ControlServer.games"><code class="name flex">
-<span>async def <span class="ident">games</span></span>(<span>self, request) ‑> aiohttp.web_response.Response</span>
+<span>async def <span class="ident">games</span></span>(<span>self, request: aiohttp.web_request.Request) ‑> aiohttp.web_response.Response</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def games(self, request) -&gt; web.Response:
+<pre><code class="python">async def games(self, request: web.Request) -&gt; web.Response:
     return web.json_response([
         game.to_dict()
         for game in self.game_service.all_games
@@ -133,14 +135,14 @@ class ControlServer:
 <div class="desc"></div>
 </dd>
 <dt id="server.control.ControlServer.players"><code class="name flex">
-<span>async def <span class="ident">players</span></span>(<span>self, request) ‑> aiohttp.web_response.Response</span>
+<span>async def <span class="ident">players</span></span>(<span>self, request: aiohttp.web_request.Request) ‑> aiohttp.web_response.Response</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def players(self, request) -&gt; web.Response:
+<pre><code class="python">async def players(self, request: web.Request) -&gt; web.Response:
     return web.json_response([
         player.to_dict()
         for player in self.player_service.all_players

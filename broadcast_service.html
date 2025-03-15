@@ -61,6 +61,8 @@ class BroadcastService(Service):
     Broadcast updates about changed entities.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         server: &#34;ServerInstance&#34;,
@@ -72,7 +74,7 @@ class BroadcastService(Service):
         self.message_queue_service = message_queue_service
         self.game_service = game_service
         self.player_service = player_service
-        self._report_dirties_event = None
+        self._report_dirties_event: Optional[asyncio.Event] = None
 
     async def initialize(self):
         # Using a lazy interval timer so that the intervals can be changed

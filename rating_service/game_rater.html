@@ -59,6 +59,8 @@ el.replaceWith(d);
 class AdjustmentGameRater(GameRater):
     &#34;&#34;&#34;GameRater for performing adjustments using another GameRater&#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, rater: GameRater, base_ratings: RatingDict):
         self.rater = rater
         self.base_ratings = base_ratings
@@ -191,6 +193,8 @@ prevent rating manipulation.</p></div>
 </summary>
 <pre><code class="python">@with_logger
 class GameRater:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, summary: GameRatingSummary):
         self.summary = summary
         self.outcome_map = {

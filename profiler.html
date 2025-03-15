@@ -49,7 +49,7 @@ el.replaceWith(d);
 <dl>
 <dt id="server.profiler.Profiler"><code class="flex name class">
 <span>class <span class="ident">Profiler</span></span>
-<span>(</span><span>player_service, interval=-1, duration=2, max_count=300, outfile='server.profile')</span>
+<span>(</span><span>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>,<br>interval: int = -1,<br>duration: int = 2,<br>max_count: int = 300,<br>outfile: str = 'server.profile')</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -58,15 +58,17 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">@with_logger
 class Profiler:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
-        player_service,
-        interval=config.PROFILING_INTERVAL,
-        duration=config.PROFILING_DURATION,
-        max_count=config.PROFILING_COUNT,
-        outfile=&#34;server.profile&#34;,
+        player_service: PlayerService,
+        interval: int = config.PROFILING_INTERVAL,
+        duration: int = config.PROFILING_DURATION,
+        max_count: int = config.PROFILING_COUNT,
+        outfile: str = &#34;server.profile&#34;,
     ):
-        self.profiler = None
+        self.profiler: Optional[cProfile.Profile] = None
         self.interval = interval
         self.duration = duration
         self.profile_count = 0
@@ -76,7 +78,7 @@ class Profiler:
         self._outfile = outfile
 
         self._running = False
-        self._task = None
+        self._task: Optional[asyncio.Task] = None
 
     def refresh(self):
         self.interval = config.PROFILING_INTERVAL
@@ -110,6 +112,8 @@ class Profiler:
             self.cancel()
 
     async def _run(self):
+        assert self.profiler is not None
+
         if len(self._player_service) &gt; 1500:
             self._logger.info(
                 &#34;Refusing to profile under high load %i/%i&#34;,

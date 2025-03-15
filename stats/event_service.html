@@ -57,6 +57,8 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">@with_logger
 class EventService(Service):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, message_queue_service: MessageQueueService):
         self.message_queue_service = message_queue_service
 

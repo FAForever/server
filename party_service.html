@@ -65,6 +65,8 @@ class PartyService(Service):
     with other players.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, game_service: GameService):
         self.game_service = game_service
         self.player_parties: dict[Player, PlayerParty] = {}

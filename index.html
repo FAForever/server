@@ -303,6 +303,8 @@ class BroadcastService(Service):
     Broadcast updates about changed entities.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         server: &#34;ServerInstance&#34;,
@@ -314,7 +316,7 @@ class BroadcastService(Service):
         self.message_queue_service = message_queue_service
         self.game_service = game_service
         self.player_service = player_service
-        self._report_dirties_event = None
+        self._report_dirties_event: Optional[asyncio.Event] = None
 
     async def initialize(self):
         # Using a lazy interval timer so that the intervals can be changed
@@ -605,9 +607,11 @@ interval.</p></div>
 </summary>
 <pre><code class="python">@with_logger
 class ConfigurationService(Service):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self) -&gt; None:
         self._store = config
-        self._task = None
+        self._task: Optional[asyncio.Task] = None
 
     async def initialize(self) -&gt; None:
         self._task = asyncio.create_task(self._worker_loop())
@@ -830,7 +834,7 @@ class ConfigurationService(Service):
         Handle GpgNetSend messages, wrapped in the JSON protocol
         &#34;&#34;&#34;
         try:
-            await COMMAND_HANDLERS[command](self, *args)
+            await COMMAND_HANDLERS[command](self, *args)  # type: ignore
         except KeyError:
             self._logger.warning(
                 &#34;Unrecognized command %s: %s from player %s&#34;,
@@ -858,7 +862,7 @@ class ConfigurationService(Service):
 
         self._mark_dirty()
 
-    async def handle_game_mods(self, mode: Any, args: list[Any]):
+    async def handle_game_mods(self, mode: Any, args: Any):
         if not self.is_host():
             return
 
@@ -1425,7 +1429,7 @@ and deletes references to Player and Game held by this object.</p></div>
     Handle GpgNetSend messages, wrapped in the JSON protocol
     &#34;&#34;&#34;
     try:
-        await COMMAND_HANDLERS[command](self, *args)
+        await COMMAND_HANDLERS[command](self, *args)  # type: ignore
     except KeyError:
         self._logger.warning(
             &#34;Unrecognized command %s: %s from player %s&#34;,
@@ -1624,14 +1628,14 @@ included for documentation purposes.</p></div>
 <div class="desc"><p>Sent when all game slots are full</p></div>
 </dd>
 <dt id="server.GameConnection.handle_game_mods"><code class="name flex">
-<span>async def <span class="ident">handle_game_mods</span></span>(<span>self, mode: Any, args: list[typing.Any])</span>
+<span>async def <span class="ident">handle_game_mods</span></span>(<span>self, mode: Any, args: Any)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_game_mods(self, mode: Any, args: list[Any]):
+<pre><code class="python">async def handle_game_mods(self, mode: Any, args: Any):
     if not self.is_host():
         return
 
@@ -2163,7 +2167,7 @@ cause the caller to be disconnected as well.</p></div>
 </dd>
 <dt id="server.GameService"><code class="flex name class">
 <span>class <span class="ident">GameService</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>player_service,<br>game_stats_service,<br>rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>,<br>message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>,<br>game_stats_service,<br>rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>,<br>message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -2176,10 +2180,12 @@ class GameService(Service):
     Utility class for maintaining lifecycle of games
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         database: FAFDatabase,
-        player_service,
+        player_service: PlayerService,
         game_stats_service,
         rating_service: RatingService,
         message_queue_service: MessageQueueService
@@ -2193,16 +2199,16 @@ class GameService(Service):
         self._message_queue_service = message_queue_service
         self.game_id_counter = 0
         self._allow_new_games = False
-        self._drain_event = None
+        self._drain_event: Optional[asyncio.Event] = None
 
         # Populated below in update_data.
-        self.featured_mods = dict()
+        self.featured_mods: dict[str, FeaturedMod] = {}
 
         # A set of mod ids that are allowed in ranked games
         self.ranked_mods: set[str] = set()
 
         # A cache of map_version info needed by Game
-        self.map_info_cache = LRUCache(maxsize=256)
+        self.map_info_cache: LRUCache[str, Map] = LRUCache(maxsize=256)
 
         # The set of active games
         self._games: dict[int, Game] = dict()
@@ -2367,7 +2373,7 @@ class GameService(Service):
         self.mark_dirty(game)
         return game
 
-    def update_active_game_metrics(self):
+    def update_active_game_metrics(self) -&gt; None:
         modes = list(self.featured_mods.keys())
 
         game_counter = Counter(
@@ -2393,7 +2399,7 @@ class GameService(Service):
         )
 
         for state in GameState:
-            for rating_type in rating_type_counter.keys():
+            for rating_type, _ in rating_type_counter.keys():
                 metrics.active_games_by_rating_type.labels(rating_type, state.name).set(
                     rating_type_counter[(rating_type, state)]
                 )
@@ -2867,14 +2873,14 @@ def pending_games(self) -&gt; list[Game]:
 <div class="desc"></div>
 </dd>
 <dt id="server.GameService.update_active_game_metrics"><code class="name flex">
-<span>def <span class="ident">update_active_game_metrics</span></span>(<span>self)</span>
+<span>def <span class="ident">update_active_game_metrics</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def update_active_game_metrics(self):
+<pre><code class="python">def update_active_game_metrics(self) -&gt; None:
     modes = list(self.featured_mods.keys())
 
     game_counter = Counter(
@@ -2900,7 +2906,7 @@ def pending_games(self) -&gt; list[Game]:
     )
 
     for state in GameState:
-        for rating_type in rating_type_counter.keys():
+        for rating_type, _ in rating_type_counter.keys():
             metrics.active_games_by_rating_type.labels(rating_type, state.name).set(
                 rating_type_counter[(rating_type, state)]
             )</code></pre>
@@ -2976,6 +2982,8 @@ time we need, but which can in principle change over time.</p></div>
 </summary>
 <pre><code class="python">@with_logger
 class GameStatsService(Service):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         event_service: EventService,
@@ -3044,9 +3052,9 @@ class GameStatsService(Service):
 
         faction = stats[&#34;faction&#34;]
         # Stores achievements to batch update
-        a_queue = []
+        a_queue: list[dict[str, Any]] = []
         # Stores events to batch update
-        e_queue = []
+        e_queue: list[dict[str, Any]] = []
         self._logger.debug(&#34;Army result for %s =&gt; %s &#34;, player, army_result)
 
         survived = army_result is ArmyOutcome.VICTORY
@@ -3332,6 +3340,8 @@ class GeoIpService(Service):
 
     Provides an interface for getting data out of the database.
     &#34;&#34;&#34;
+
+    _logger: ClassVar[logging.Logger]
 
     def __init__(self):
         self.refresh_file_path()
@@ -3758,6 +3768,8 @@ class LadderService(Service):
     statistics, and launches the games.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         database: FAFDatabase,
@@ -3767,7 +3779,7 @@ class LadderService(Service):
         self._db = database
         self._informed_players: set[Player] = set()
         self.game_service = game_service
-        self.queues = {}
+        self.queues: dict[str, MatchmakerQueue] = {}
         self.violation_service = violation_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
@@ -3838,7 +3850,7 @@ class LadderService(Service):
                 .outerjoin(map_version)
             )
         )
-        map_pool_maps = {}
+        map_pool_maps: dict[int, tuple[str, list[Map]]] = {}
         for row in result:
             id_ = row.id
             name = row.name
@@ -3849,7 +3861,10 @@ class LadderService(Service):
                 # Database filenames contain the maps/ prefix and .zip suffix.
                 # This comes from the content server which hosts the files at
                 # https://content.faforever.com/maps/name.zip
-                folder_name = re.match(r&#34;maps/(.+)\.zip&#34;, row.filename).group(1)
+                m = re.match(r&#34;maps/(.+)\.zip&#34;, row.filename)
+                if m is None:
+                    raise RuntimeError(f&#34;malformed map filename {row.filename}&#34;)
+                folder_name = m.group(1)
                 map_list.append(
                     Map(
                         id=row.map_id,
@@ -3907,7 +3922,9 @@ class LadderService(Service):
         # So we don&#39;t log the same error multiple times when a queue has several
         # map pools
         errored = set()
-        matchmaker_queues = defaultdict(lambda: defaultdict(list))
+        matchmaker_queues: dict[str, dict[str, Any]] = defaultdict(
+            lambda: defaultdict(list),
+        )
         for row in result:
             name = row.technical_name
             if name in errored:
@@ -4183,7 +4200,7 @@ class LadderService(Service):
         team1: list[Player],
         team2: list[Player],
         queue: MatchmakerQueue
-    ) -&gt; Awaitable[None]:
+    ) -&gt; Coroutine[Any, Any, None]:
         # We want assertion errors to trigger when the caller attempts to
         # create the async function, not when the function starts executing.
         assert len(team1) == len(team2)
@@ -4487,7 +4504,7 @@ statistics, and launches the games.</p></div>
             .outerjoin(map_version)
         )
     )
-    map_pool_maps = {}
+    map_pool_maps: dict[int, tuple[str, list[Map]]] = {}
     for row in result:
         id_ = row.id
         name = row.name
@@ -4498,7 +4515,10 @@ statistics, and launches the games.</p></div>
             # Database filenames contain the maps/ prefix and .zip suffix.
             # This comes from the content server which hosts the files at
             # https://content.faforever.com/maps/name.zip
-            folder_name = re.match(r&#34;maps/(.+)\.zip&#34;, row.filename).group(1)
+            m = re.match(r&#34;maps/(.+)\.zip&#34;, row.filename)
+            if m is None:
+                raise RuntimeError(f&#34;malformed map filename {row.filename}&#34;)
+            folder_name = m.group(1)
             map_list.append(
                 Map(
                     id=row.map_id,
@@ -4566,7 +4586,9 @@ statistics, and launches the games.</p></div>
     # So we don&#39;t log the same error multiple times when a queue has several
     # map pools
     errored = set()
-    matchmaker_queues = defaultdict(lambda: defaultdict(list))
+    matchmaker_queues: dict[str, dict[str, Any]] = defaultdict(
+        lambda: defaultdict(list),
+    )
     for row in result:
         name = row.technical_name
         if name in errored:
@@ -4807,7 +4829,7 @@ statistics, and launches the games.</p></div>
 so it should only perform fast operations.</p></div>
 </dd>
 <dt id="server.LadderService.start_game"><code class="name flex">
-<span>def <span class="ident">start_game</span></span>(<span>self,<br>team1: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>],<br>team2: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>],<br>queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> Awaitable[None]</span>
+<span>def <span class="ident">start_game</span></span>(<span>self,<br>team1: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>],<br>team2: list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>],<br>queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> Coroutine[Any, Any, None]</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -4819,7 +4841,7 @@ so it should only perform fast operations.</p></div>
     team1: list[Player],
     team2: list[Player],
     queue: MatchmakerQueue
-) -&gt; Awaitable[None]:
+) -&gt; Coroutine[Any, Any, None]:
     # We want assertion errors to trigger when the caller attempts to
     # create the async function, not when the function starts executing.
     assert len(team1) == len(team2)
@@ -5035,11 +5057,13 @@ class MessageQueueService(Service):
     and providing an interface to publish messages.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self) -&gt; None:
-        self._connection = None
-        self._channel = None
-        self._exchanges = {}
-        self._exchange_types = {}
+        self._connection: Optional[AbstractConnection] = None
+        self._channel: Optional[AbstractChannel] = None
+        self._exchanges: dict[str, AbstractExchange] = {}
+        self._exchange_types: dict[str, ExchangeType] = {}
         self._is_ready = False
 
         config.register_callback(&#34;MQ_USER&#34;, self.reconnect)
@@ -5091,6 +5115,8 @@ class MessageQueueService(Service):
             )
             raise ConnectionAttemptFailed from e
 
+        assert self._connection is not None
+
         self._channel = await self._connection.channel(publisher_confirms=False)
         self._logger.debug(&#34;Connected to RabbitMQ %r&#34;, self._connection)
 
@@ -5109,8 +5135,12 @@ class MessageQueueService(Service):
     async def _declare_exchange(
         self, exchange_name: str, exchange_type: ExchangeType, durable: bool = True
     ) -&gt; None:
+        assert self._channel is not None
+
         new_exchange = await self._channel.declare_exchange(
-            exchange_name, exchange_type, durable
+            exchange_name,
+            exchange_type,
+            durable=durable,
         )
 
         self._exchanges[exchange_name] = new_exchange
@@ -5159,6 +5189,8 @@ class MessageQueueService(Service):
                 &#34;Not connected to RabbitMQ, unable to publish message.&#34;
             )
             return
+
+        assert self._channel is not None
 
         exchange = self._exchanges.get(exchange_name)
         if exchange is None:
@@ -5277,6 +5309,8 @@ and providing an interface to publish messages.</p></div>
         )
         return
 
+    assert self._channel is not None
+
     exchange = self._exchanges.get(exchange_name)
     if exchange is None:
         raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
@@ -5354,6 +5388,8 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
     &#34;&#34;&#34;
     Service for managing the OAuth token logins and verification.
     &#34;&#34;&#34;
+
+    _logger: ClassVar[logging.Logger]
 
     def __init__(self):
         self.public_keys = {}
@@ -5564,6 +5600,8 @@ class PartyService(Service):
     Logically, we consider players to always be in a party, either alone, or
     with other players.
     &#34;&#34;&#34;
+
+    _logger: ClassVar[logging.Logger]
 
     def __init__(self, game_service: GameService):
         self.game_service = game_service
@@ -6011,13 +6049,15 @@ with other players.</p></div>
 </summary>
 <pre><code class="python">@with_logger
 class PlayerService(Service):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, database: FAFDatabase):
         self._db = database
-        self._players = dict()
+        self._players: dict[int, Player] = {}
 
         # Static-ish data fields.
-        self.uniqueid_exempt = {}
-        self._dirty_players = set()
+        self.uniqueid_exempt: frozenset[int] = frozenset()
+        self._dirty_players: set[Player] = set()
 
     async def initialize(self) -&gt; None:
         await self.update_data()
@@ -6025,16 +6065,16 @@ class PlayerService(Service):
             &#34;*/10 * * * *&#34;, func=self.update_data
         )
 
-    def __len__(self):
+    def __len__(self) -&gt; int:
         return len(self._players)
 
-    def __iter__(self):
+    def __iter__(self) -&gt; Iterator[Player]:
         return self._players.values().__iter__()
 
     def __getitem__(self, player_id: int) -&gt; Optional[Player]:
         return self._players.get(player_id)
 
-    def __setitem__(self, player_id: int, player: Player):
+    def __setitem__(self, player_id: int, player: Player) -&gt; None:
         self._players[player_id] = player
         metrics.players_online.set(len(self._players))
 
@@ -6042,7 +6082,7 @@ class PlayerService(Service):
     def all_players(self) -&gt; ValuesView[Player]:
         return self._players.values()
 
-    def mark_dirty(self, player: Player):
+    def mark_dirty(self, player: Player) -&gt; None:
         self._dirty_players.add(player)
 
     def pop_dirty_players(self) -&gt; set[Player]:
@@ -6051,7 +6091,7 @@ class PlayerService(Service):
 
         return dirty_players
 
-    async def fetch_player_data(self, player):
+    async def fetch_player_data(self, player: Player) -&gt; None:
         async with self._db.acquire() as conn:
             result = await conn.execute(
                 select(user_group.c.technical_name)
@@ -6087,19 +6127,19 @@ class PlayerService(Service):
                 )
                 return
 
-            row = row._mapping
-            player.clan = row.get(clan.c.tag)
+            row_mapping = row._mapping
+            player.clan = row_mapping.get(clan.c.tag)
 
             url, tooltip = (
-                row.get(avatars_list.c.url),
-                row.get(avatars_list.c.tooltip)
+                row_mapping.get(avatars_list.c.url),
+                row_mapping.get(avatars_list.c.tooltip)
             )
             if url and tooltip:
                 player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
 
             await self._fetch_player_ratings(player, conn)
 
-    async def _fetch_player_ratings(self, player, conn):
+    async def _fetch_player_ratings(self, player: Player, conn):
         sql = select(
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation,
@@ -6123,7 +6163,7 @@ class PlayerService(Service):
             player.ratings[rating_type] = rating
             player.game_count[rating_type] = total_games
 
-    def remove_player(self, player: Player):
+    def remove_player(self, player: Player) -&gt; None:
         if player.id in self._players:
             # This signals that the player is now disconnected
             del player.lobby_connection
@@ -6177,7 +6217,7 @@ class PlayerService(Service):
         player.game_count[rating_type] += 1
         self.mark_dirty(player)
 
-    async def update_data(self):
+    async def update_data(self) -&gt; None:
         &#34;&#34;&#34;
         Update rarely-changing data, such as the admin list and the list of users exempt from the
         uniqueid check.
@@ -6187,9 +6227,9 @@ class PlayerService(Service):
             result = await conn.execute(
                 &#34;SELECT `user_id` FROM uniqueid_exempt&#34;
             )
-            self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
+            self.uniqueid_exempt = frozenset(x[0] for x in result)
 
-    async def kick_idle_players(self):
+    async def kick_idle_players(self) -&gt; None:
         for fut in asyncio.as_completed([
             player.lobby_connection.abort(&#34;Graceful shutdown.&#34;)
             for player in self.all_players
@@ -6217,7 +6257,7 @@ class PlayerService(Service):
             conn.session
         )
 
-    async def graceful_shutdown(self):
+    async def graceful_shutdown(self) -&gt; None:
         if config.SHUTDOWN_KICK_IDLE_PLAYERS:
             self._kick_idle_task = at_interval(1, self.kick_idle_players)</code></pre>
 </details>
@@ -6245,14 +6285,14 @@ def all_players(self) -&gt; ValuesView[Player]:
 <h3>Methods</h3>
 <dl>
 <dt id="server.PlayerService.fetch_player_data"><code class="name flex">
-<span>async def <span class="ident">fetch_player_data</span></span>(<span>self, player)</span>
+<span>async def <span class="ident">fetch_player_data</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def fetch_player_data(self, player):
+<pre><code class="python">async def fetch_player_data(self, player: Player) -&gt; None:
     async with self._db.acquire() as conn:
         result = await conn.execute(
             select(user_group.c.technical_name)
@@ -6288,12 +6328,12 @@ def all_players(self) -&gt; ValuesView[Player]:
             )
             return
 
-        row = row._mapping
-        player.clan = row.get(clan.c.tag)
+        row_mapping = row._mapping
+        player.clan = row_mapping.get(clan.c.tag)
 
         url, tooltip = (
-            row.get(avatars_list.c.url),
-            row.get(avatars_list.c.tooltip)
+            row_mapping.get(avatars_list.c.url),
+            row_mapping.get(avatars_list.c.tooltip)
         )
         if url and tooltip:
             player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
@@ -6361,14 +6401,14 @@ def all_players(self) -&gt; ValuesView[Player]:
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.kick_idle_players"><code class="name flex">
-<span>async def <span class="ident">kick_idle_players</span></span>(<span>self)</span>
+<span>async def <span class="ident">kick_idle_players</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def kick_idle_players(self):
+<pre><code class="python">async def kick_idle_players(self) -&gt; None:
     for fut in asyncio.as_completed([
         player.lobby_connection.abort(&#34;Graceful shutdown.&#34;)
         for player in self.all_players
@@ -6386,14 +6426,14 @@ def all_players(self) -&gt; ValuesView[Player]:
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.mark_dirty"><code class="name flex">
-<span>def <span class="ident">mark_dirty</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
+<span>def <span class="ident">mark_dirty</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def mark_dirty(self, player: Player):
+<pre><code class="python">def mark_dirty(self, player: Player) -&gt; None:
     self._dirty_players.add(player)</code></pre>
 </details>
 <div class="desc"></div>
@@ -6415,14 +6455,14 @@ def all_players(self) -&gt; ValuesView[Player]:
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.remove_player"><code class="name flex">
-<span>def <span class="ident">remove_player</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
+<span>def <span class="ident">remove_player</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def remove_player(self, player: Player):
+<pre><code class="python">def remove_player(self, player: Player) -&gt; None:
     if player.id in self._players:
         # This signals that the player is now disconnected
         del player.lobby_connection
@@ -6433,7 +6473,7 @@ def all_players(self) -&gt; ValuesView[Player]:
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.signal_player_rating_change"><code class="name flex">
-<span>def <span class="ident">signal_player_rating_change</span></span>(<span>self, player_id: int, rating_type: str, new_rating: trueskill.Rating) ‑> None</span>
+<span>def <span class="ident">signal_player_rating_change</span></span>(<span>self,<br>player_id: int,<br>rating_type: str,<br>new_rating: <a title="server.rating.Rating" href="rating.html#server.rating.Rating">Rating</a>) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -6461,14 +6501,14 @@ def all_players(self) -&gt; ValuesView[Player]:
 <div class="desc"></div>
 </dd>
 <dt id="server.PlayerService.update_data"><code class="name flex">
-<span>async def <span class="ident">update_data</span></span>(<span>self)</span>
+<span>async def <span class="ident">update_data</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def update_data(self):
+<pre><code class="python">async def update_data(self) -&gt; None:
     &#34;&#34;&#34;
     Update rarely-changing data, such as the admin list and the list of users exempt from the
     uniqueid check.
@@ -6478,7 +6518,7 @@ def all_players(self) -&gt; ValuesView[Player]:
         result = await conn.execute(
             &#34;SELECT `user_id` FROM uniqueid_exempt&#34;
         )
-        self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))</code></pre>
+        self.uniqueid_exempt = frozenset(x[0] for x in result)</code></pre>
 </details>
 <div class="desc"><p>Update rarely-changing data, such as the admin list and the list of users exempt from the
 uniqueid check.</p></div>
@@ -6513,6 +6553,8 @@ class RatingService(Service):
     atomic.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         database: FAFDatabase,
@@ -6522,8 +6564,8 @@ class RatingService(Service):
         self._db = database
         self._player_service_callback = player_service.signal_player_rating_change
         self._accept_input = False
-        self._queue = asyncio.Queue()
-        self._task = None
+        self._queue: asyncio.Queue[GameRatingSummary] = asyncio.Queue()
+        self._task: Optional[asyncio.Task] = None
         self._rating_type_ids: Optional[dict[str, int]] = None
         self.leaderboards: dict[str, Leaderboard] = {}
         self._message_queue_service = message_queue_service
@@ -6570,7 +6612,7 @@ class RatingService(Service):
                 if init:
                     current.initializer = init
 
-    async def enqueue(self, game_info: dict[str]) -&gt; None:
+    async def enqueue(self, game_info: dict[str, Any]) -&gt; None:
         if not self._accept_input:
             self._logger.warning(&#34;Dropped rating request %s&#34;, game_info)
             raise ServiceNotReadyError(
@@ -7005,14 +7047,14 @@ atomic.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.RatingService.enqueue"><code class="name flex">
-<span>async def <span class="ident">enqueue</span></span>(<span>self, game_info: dict[str]) ‑> None</span>
+<span>async def <span class="ident">enqueue</span></span>(<span>self, game_info: dict[str, typing.Any]) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def enqueue(self, game_info: dict[str]) -&gt; None:
+<pre><code class="python">async def enqueue(self, game_info: dict[str, Any]) -&gt; None:
     if not self._accept_input:
         self._logger.warning(&#34;Dropped rating request %s&#34;, game_info)
         raise ServiceNotReadyError(
@@ -7125,7 +7167,7 @@ atomic.</p></div>
 </dd>
 <dt id="server.ServerInstance"><code class="flex name class">
 <span>class <span class="ident">ServerInstance</span></span>
-<span>(</span><span>name: str,<br>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>loop: asyncio.base_events.BaseEventLoop)</span>
+<span>(</span><span>name: str,<br>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>loop: asyncio.events.AbstractEventLoop)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -7143,7 +7185,7 @@ atomic.</p></div>
         self,
         name: str,
         database: FAFDatabase,
-        loop: asyncio.BaseEventLoop,
+        loop: asyncio.AbstractEventLoop,
         # For testing
         _override_services: Optional[dict[str, Service]] = None
     ):
@@ -7287,8 +7329,8 @@ atomic.</p></div>
         &#34;&#34;&#34;
         Wait for all games to end.
         &#34;&#34;&#34;
-        game_service: GameService = self.services[&#34;game_service&#34;]
-        broadcast_service: BroadcastService = self.services[&#34;broadcast_service&#34;]
+        game_service = cast(GameService, self.services[&#34;game_service&#34;])
+        broadcast_service = cast(BroadcastService, self.services[&#34;broadcast_service&#34;])
         try:
             await asyncio.wait_for(
                 game_service.drain_games(),
@@ -7352,8 +7394,8 @@ state, i.e. the same players, games, etc.</p></div>
     &#34;&#34;&#34;
     Wait for all games to end.
     &#34;&#34;&#34;
-    game_service: GameService = self.services[&#34;game_service&#34;]
-    broadcast_service: BroadcastService = self.services[&#34;broadcast_service&#34;]
+    game_service = cast(GameService, self.services[&#34;game_service&#34;])
+    broadcast_service = cast(BroadcastService, self.services[&#34;broadcast_service&#34;])
     try:
         await asyncio.wait_for(
             game_service.drain_games(),
@@ -7574,6 +7616,8 @@ class ViolationService(Service):
     A violation could be anything, but it is usually any time a player fails
     to connect to a game.
     &#34;&#34;&#34;
+
+    _logger: ClassVar[logging.Logger]
 
     def __init__(self):
         # We store a reference to the original `Player` object for logging only

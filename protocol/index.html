@@ -800,6 +800,8 @@ class QDataStreamProtocol(Protocol):
     Implements the legacy QDataStream-based encoding scheme
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     @staticmethod
     def read_qstring(buffer: bytes, pos: int = 0) -&gt; tuple[int, str]:
         &#34;&#34;&#34;
@@ -820,8 +822,10 @@ class QDataStreamProtocol(Protocol):
         (size, ) = struct.unpack(&#34;!I&#34;, chunk)
         if len(rest) &lt; size:
             raise ValueError(
-                &#34;Malformed QString: Claims length {} but actually {}. Entire buffer: {}&#34;
-                .format(size, len(rest), base64.b64encode(buffer)))
+                f&#34;Malformed QString: Claims length {size} &#34;
+                f&#34;but actually {len(rest)}. &#34;
+                f&#34;Entire buffer: {base64.b64encode(buffer).decode()}&#34;,
+            )
         return size + pos + 4, (buffer[pos + 4:pos + 4 + size]).decode(&#34;UTF-16BE&#34;)
 
     @staticmethod
@@ -1032,8 +1036,10 @@ def read_qstring(buffer: bytes, pos: int = 0) -&gt; tuple[int, str]:
     (size, ) = struct.unpack(&#34;!I&#34;, chunk)
     if len(rest) &lt; size:
         raise ValueError(
-            &#34;Malformed QString: Claims length {} but actually {}. Entire buffer: {}&#34;
-            .format(size, len(rest), base64.b64encode(buffer)))
+            f&#34;Malformed QString: Claims length {size} &#34;
+            f&#34;but actually {len(rest)}. &#34;
+            f&#34;Entire buffer: {base64.b64encode(buffer).decode()}&#34;,
+        )
     return size + pos + 4, (buffer[pos + 4:pos + 4 + size]).decode(&#34;UTF-16BE&#34;)</code></pre>
 </details>
 <div class="desc"><p>Parse a serialized QString from buffer (A bytes like object) at given

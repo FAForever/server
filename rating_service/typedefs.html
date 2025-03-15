@@ -169,7 +169,7 @@ el.replaceWith(d);
     teams: list[TeamRatingSummary]
 
     @classmethod
-    def from_game_info_dict(cls, game_info: dict[str]) -&gt; &#34;GameRatingSummary&#34;:
+    def from_game_info_dict(cls, game_info: dict[str, Any]) -&gt; &#34;GameRatingSummary&#34;:
         if len(game_info[&#34;teams&#34;]) != 2:
             raise ValueError(&#34;Detected other than two teams.&#34;)
 
@@ -198,7 +198,7 @@ Fields:
 <h3>Static methods</h3>
 <dl>
 <dt id="server.rating_service.typedefs.GameRatingSummary.from_game_info_dict"><code class="name flex">
-<span>def <span class="ident">from_game_info_dict</span></span>(<span>game_info: dict[str]) ‑> <a title="server.rating_service.typedefs.GameRatingSummary" href="#server.rating_service.typedefs.GameRatingSummary">GameRatingSummary</a></span>
+<span>def <span class="ident">from_game_info_dict</span></span>(<span>game_info: dict[str, typing.Any]) ‑> <a title="server.rating_service.typedefs.GameRatingSummary" href="#server.rating_service.typedefs.GameRatingSummary">GameRatingSummary</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -226,7 +226,7 @@ Fields:
     teams: list[TeamRatingSummary]
 
     @classmethod
-    def from_game_info_dict(cls, game_info: dict[str]) -&gt; &#34;GameRatingSummary&#34;:
+    def from_game_info_dict(cls, game_info: dict[str, Any]) -&gt; &#34;GameRatingSummary&#34;:
         if len(game_info[&#34;teams&#34;]) != 2:
             raise ValueError(&#34;Detected other than two teams.&#34;)
 
@@ -265,7 +265,7 @@ Fields:
     teams: list[TeamRatingSummary]
 
     @classmethod
-    def from_game_info_dict(cls, game_info: dict[str]) -&gt; &#34;GameRatingSummary&#34;:
+    def from_game_info_dict(cls, game_info: dict[str, Any]) -&gt; &#34;GameRatingSummary&#34;:
         if len(game_info[&#34;teams&#34;]) != 2:
             raise ValueError(&#34;Detected other than two teams.&#34;)
 
@@ -304,7 +304,7 @@ Fields:
     teams: list[TeamRatingSummary]
 
     @classmethod
-    def from_game_info_dict(cls, game_info: dict[str]) -&gt; &#34;GameRatingSummary&#34;:
+    def from_game_info_dict(cls, game_info: dict[str, Any]) -&gt; &#34;GameRatingSummary&#34;:
         if len(game_info[&#34;teams&#34;]) != 2:
             raise ValueError(&#34;Detected other than two teams.&#34;)
 

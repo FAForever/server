@@ -572,6 +572,8 @@ class GameResultReports(Mapping):
     for each army, but don&#39;t modify these.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, game_id: int):
         Mapping.__init__(self)
         self._game_id = game_id  # Just for logging
@@ -674,13 +676,13 @@ class GameResultReports(Mapping):
         )
         return []
 
-    def score(self, army: int) -&gt; int:
+    def score(self, army: Optional[int]) -&gt; int:
         &#34;&#34;&#34;
         Pick and return most frequently reported score for an army. If multiple
         scores are most frequent, pick the largest one. Returns 0 if there are
         no results for a given army.
         &#34;&#34;&#34;
-        if army not in self:
+        if army is None or army not in self:
             return 0
 
         scores = Counter(r.score for r in self[army])
@@ -835,20 +837,20 @@ Otherwise returns CONFLICTING if there is too much disagreement
 or UNKNOWN if no reports were filed.</p></div>
 </dd>
 <dt id="server.games.game_results.GameResultReports.score"><code class="name flex">
-<span>def <span class="ident">score</span></span>(<span>self, army: int) ‑> int</span>
+<span>def <span class="ident">score</span></span>(<span>self, army: int | None) ‑> int</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def score(self, army: int) -&gt; int:
+<pre><code class="python">def score(self, army: Optional[int]) -&gt; int:
     &#34;&#34;&#34;
     Pick and return most frequently reported score for an army. If multiple
     scores are most frequent, pick the largest one. Returns 0 if there are
     no results for a given army.
     &#34;&#34;&#34;
-    if army not in self:
+    if army is None or army not in self:
         return 0
 
     scores = Counter(r.score for r in self[army])

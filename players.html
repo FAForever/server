@@ -49,7 +49,7 @@ el.replaceWith(d);
 <dl>
 <dt id="server.players.Player"><code class="flex name class">
 <span>class <span class="ident">Player</span></span>
-<span>(</span><span>login: str = None,<br>session: int = 0,<br>player_id: int = 0,<br>leaderboards: dict[str, <a title="server.rating.Leaderboard" href="rating.html#server.rating.Leaderboard">Leaderboard</a>] = {},<br>ratings=None,<br>clan=None,<br>game_count=None,<br>lobby_connection: ForwardRef('LobbyConnection') | None = None)</span>
+<span>(</span><span>login: str,<br>session: int = 0,<br>player_id: int = 0,<br>leaderboards: dict[str, <a title="server.rating.Leaderboard" href="rating.html#server.rating.Leaderboard">Leaderboard</a>] = {},<br>ratings: <a title="server.rating.PlayerRatings" href="rating.html#server.rating.PlayerRatings">PlayerRatings</a> | None = None,<br>clan: str | None = None,<br>game_count: dict[str, int] | None = None,<br>lobby_connection: ForwardRef('LobbyConnection') | None = None)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -64,46 +64,46 @@ el.replaceWith(d);
     information about players.
     &#34;&#34;&#34;
 
-    lobby_connection = WeakAttribute[&#34;LobbyConnection&#34;]()
-    game = WeakAttribute[&#34;Game&#34;]()
-    game_connection = WeakAttribute[&#34;GameConnection&#34;]()
+    lobby_connection: WeakAttribute[&#34;LobbyConnection&#34;] = WeakAttribute()
+    game: WeakAttribute[&#34;Game&#34;] = WeakAttribute()
+    game_connection: WeakAttribute[&#34;GameConnection&#34;] = WeakAttribute()
 
     def __init__(
         self,
-        login: str = None,
+        login: str,
         session: int = 0,
         player_id: int = 0,
         leaderboards: dict[str, Leaderboard] = {},
-        ratings=None,
-        clan=None,
-        game_count=None,
+        ratings: Optional[PlayerRatings] = None,
+        clan: Optional[str] = None,
+        game_count: Optional[dict[str, int]] = None,
         lobby_connection: Optional[&#34;LobbyConnection&#34;] = None
     ) -&gt; None:
         self._faction = Faction.uef
 
+        # The player_id of the user in the `login` table of the database.
         self.id = player_id
         self.login = login
 
-        # The player_id of the user in the `login` table of the database.
         self.session = session
 
         self.ratings = PlayerRatings(leaderboards)
         if ratings is not None:
-            self.ratings.update(ratings)
+            self.ratings.update_with_transient(ratings)
 
-        self.game_count = defaultdict(int)
+        self.game_count: dict[str, int] = defaultdict(int)
         if game_count is not None:
             self.game_count.update(game_count)
 
         # social
-        self.avatar = None
+        self.avatar: Optional[dict[str, str]] = None
         self.clan = clan
-        self.country = None
+        self.country: Optional[str] = None
 
-        self.friends = set()
-        self.foes = set()
+        self.friends: set[int] = set()
+        self.foes: set[int] = set()
 
-        self.user_groups = set()
+        self.user_groups: set[str] = set()
 
         self.state = PlayerState.IDLE
 

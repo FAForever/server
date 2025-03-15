@@ -63,6 +63,8 @@ class RatingService(Service):
     atomic.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         database: FAFDatabase,
@@ -72,8 +74,8 @@ class RatingService(Service):
         self._db = database
         self._player_service_callback = player_service.signal_player_rating_change
         self._accept_input = False
-        self._queue = asyncio.Queue()
-        self._task = None
+        self._queue: asyncio.Queue[GameRatingSummary] = asyncio.Queue()
+        self._task: Optional[asyncio.Task] = None
         self._rating_type_ids: Optional[dict[str, int]] = None
         self.leaderboards: dict[str, Leaderboard] = {}
         self._message_queue_service = message_queue_service
@@ -120,7 +122,7 @@ class RatingService(Service):
                 if init:
                     current.initializer = init
 
-    async def enqueue(self, game_info: dict[str]) -&gt; None:
+    async def enqueue(self, game_info: dict[str, Any]) -&gt; None:
         if not self._accept_input:
             self._logger.warning(&#34;Dropped rating request %s&#34;, game_info)
             raise ServiceNotReadyError(
@@ -555,14 +557,14 @@ atomic.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.rating_service.rating_service.RatingService.enqueue"><code class="name flex">
-<span>async def <span class="ident">enqueue</span></span>(<span>self, game_info: dict[str]) ‑> None</span>
+<span>async def <span class="ident">enqueue</span></span>(<span>self, game_info: dict[str, typing.Any]) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def enqueue(self, game_info: dict[str]) -&gt; None:
+<pre><code class="python">async def enqueue(self, game_info: dict[str, Any]) -&gt; None:
     if not self._accept_input:
         self._logger.warning(&#34;Dropped rating request %s&#34;, game_info)
         raise ServiceNotReadyError(

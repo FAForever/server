@@ -57,9 +57,11 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">@with_logger
 class ConfigurationService(Service):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self) -&gt; None:
         self._store = config
-        self._task = None
+        self._task: Optional[asyncio.Task] = None
 
     async def initialize(self) -&gt; None:
         self._task = asyncio.create_task(self._worker_loop())

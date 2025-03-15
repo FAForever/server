@@ -229,7 +229,7 @@ el.replaceWith(d);
         Handle GpgNetSend messages, wrapped in the JSON protocol
         &#34;&#34;&#34;
         try:
-            await COMMAND_HANDLERS[command](self, *args)
+            await COMMAND_HANDLERS[command](self, *args)  # type: ignore
         except KeyError:
             self._logger.warning(
                 &#34;Unrecognized command %s: %s from player %s&#34;,
@@ -257,7 +257,7 @@ el.replaceWith(d);
 
         self._mark_dirty()
 
-    async def handle_game_mods(self, mode: Any, args: list[Any]):
+    async def handle_game_mods(self, mode: Any, args: Any):
         if not self.is_host():
             return
 
@@ -824,7 +824,7 @@ and deletes references to Player and Game held by this object.</p></div>
     Handle GpgNetSend messages, wrapped in the JSON protocol
     &#34;&#34;&#34;
     try:
-        await COMMAND_HANDLERS[command](self, *args)
+        await COMMAND_HANDLERS[command](self, *args)  # type: ignore
     except KeyError:
         self._logger.warning(
             &#34;Unrecognized command %s: %s from player %s&#34;,
@@ -1023,14 +1023,14 @@ included for documentation purposes.</p></div>
 <div class="desc"><p>Sent when all game slots are full</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_game_mods"><code class="name flex">
-<span>async def <span class="ident">handle_game_mods</span></span>(<span>self, mode: Any, args: list[typing.Any])</span>
+<span>async def <span class="ident">handle_game_mods</span></span>(<span>self, mode: Any, args: Any)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_game_mods(self, mode: Any, args: list[Any]):
+<pre><code class="python">async def handle_game_mods(self, mode: Any, args: Any):
     if not self.is_host():
         return
 

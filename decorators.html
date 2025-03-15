@@ -85,14 +85,14 @@ exceeds a limit.</p>
 </code></pre></div>
 </dd>
 <dt id="server.decorators.with_logger"><code class="name flex">
-<span>def <span class="ident">with_logger</span></span>(<span>cls)</span>
+<span>def <span class="ident">with_logger</span></span>(<span>cls: type[~T]) ‑> type[~T]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def with_logger(cls):
+<pre><code class="python">def with_logger(cls: type[T]) -&gt; type[T]:
     &#34;&#34;&#34;
     Add a `_logger` attribute to a class. The logger name will be the same as
     the class name.

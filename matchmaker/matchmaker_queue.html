@@ -57,6 +57,8 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">@with_logger
 class MatchmakerQueue:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         game_service: &#34;GameService&#34;,
@@ -107,7 +109,9 @@ class MatchmakerQueue:
                 continue
             return map_pool
 
-    def get_game_options(self) -&gt; dict[str, Any]:
+        return None
+
+    def get_game_options(self) -&gt; Optional[dict[str, Any]]:
         return self.params.get(&#34;GameOptions&#34;) or None
 
     def initialize(self):
@@ -432,14 +436,14 @@ MatchmakerQueue can call this function at any given time. This is
 needed in order to safely enable multiqueuing.</p></div>
 </dd>
 <dt id="server.matchmaker.matchmaker_queue.MatchmakerQueue.get_game_options"><code class="name flex">
-<span>def <span class="ident">get_game_options</span></span>(<span>self) ‑> dict[str, typing.Any]</span>
+<span>def <span class="ident">get_game_options</span></span>(<span>self) ‑> dict[str, typing.Any] | None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_game_options(self) -&gt; dict[str, Any]:
+<pre><code class="python">def get_game_options(self) -&gt; Optional[dict[str, Any]]:
     return self.params.get(&#34;GameOptions&#34;) or None</code></pre>
 </details>
 <div class="desc"></div>
@@ -458,7 +462,9 @@ needed in order to safely enable multiqueuing.</p></div>
             continue
         if max_rating is not None and rating &gt; max_rating:
             continue
-        return map_pool</code></pre>
+        return map_pool
+
+    return None</code></pre>
 </details>
 <div class="desc"></div>
 </dd>

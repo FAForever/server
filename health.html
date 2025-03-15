@@ -58,13 +58,15 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">@with_logger
 class HealthServer:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         lobby_server: &#34;ServerInstance&#34;,
     ):
         self.lobby_server = lobby_server
-        self.host = None
-        self.port = None
+        self.host: Optional[str] = None
+        self.port: Optional[int] = None
 
         self.app = web.Application()
         self.runner = web.AppRunner(self.app, access_log=None)

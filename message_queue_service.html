@@ -83,11 +83,13 @@ class MessageQueueService(Service):
     and providing an interface to publish messages.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self) -&gt; None:
-        self._connection = None
-        self._channel = None
-        self._exchanges = {}
-        self._exchange_types = {}
+        self._connection: Optional[AbstractConnection] = None
+        self._channel: Optional[AbstractChannel] = None
+        self._exchanges: dict[str, AbstractExchange] = {}
+        self._exchange_types: dict[str, ExchangeType] = {}
         self._is_ready = False
 
         config.register_callback(&#34;MQ_USER&#34;, self.reconnect)
@@ -139,6 +141,8 @@ class MessageQueueService(Service):
             )
             raise ConnectionAttemptFailed from e
 
+        assert self._connection is not None
+
         self._channel = await self._connection.channel(publisher_confirms=False)
         self._logger.debug(&#34;Connected to RabbitMQ %r&#34;, self._connection)
 
@@ -157,8 +161,12 @@ class MessageQueueService(Service):
     async def _declare_exchange(
         self, exchange_name: str, exchange_type: ExchangeType, durable: bool = True
     ) -&gt; None:
+        assert self._channel is not None
+
         new_exchange = await self._channel.declare_exchange(
-            exchange_name, exchange_type, durable
+            exchange_name,
+            exchange_type,
+            durable=durable,
         )
 
         self._exchanges[exchange_name] = new_exchange
@@ -207,6 +215,8 @@ class MessageQueueService(Service):
                 &#34;Not connected to RabbitMQ, unable to publish message.&#34;
             )
             return
+
+        assert self._channel is not None
 
         exchange = self._exchanges.get(exchange_name)
         if exchange is None:
@@ -324,6 +334,8 @@ and providing an interface to publish messages.</p></div>
             &#34;Not connected to RabbitMQ, unable to publish message.&#34;
         )
         return
+
+    assert self._channel is not None
 
     exchange = self._exchanges.get(exchange_name)
     if exchange is None:

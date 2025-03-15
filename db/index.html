@@ -447,7 +447,7 @@ and the function may be called in either an <code>async with fn():</code> or
     is undocumented and probably more fragile so we subclass instead.
     &#34;&#34;&#34;
 
-    def connect(self):
+    def connect(self) -&gt; &#34;AsyncConnection&#34;:
         return AsyncConnection(self)</code></pre>
 </details>
 <div class="desc"><p>For overriding the connection class used to execute statements.</p>
@@ -464,14 +464,14 @@ is undocumented and probably more fragile so we subclass instead.</p></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.db.AsyncEngine.connect"><code class="name flex">
-<span>def <span class="ident">connect</span></span>(<span>self)</span>
+<span>def <span class="ident">connect</span></span>(<span>self) ‑> <a title="server.db.AsyncConnection" href="#server.db.AsyncConnection">AsyncConnection</a></span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def connect(self):
+<pre><code class="python">def connect(self) -&gt; &#34;AsyncConnection&#34;:
     return AsyncConnection(self)</code></pre>
 </details>
 <div class="desc"><p>Return an :class:<code>_asyncio.AsyncConnection</code> object.</p>
@@ -514,37 +514,47 @@ method.</p></div>
 
         self.engine = AsyncEngine(sync_engine)
 
-    def acquire(self):
-        return self.engine.begin()
+    def acquire(self) -&gt; AbstractAsyncContextManager[&#34;AsyncConnection&#34;]:
+        # The type definitions in SQLAlchemy don&#39;t support this sort of
+        # overriding, so we just cast here.
+        return cast(
+            AbstractAsyncContextManager[AsyncConnection],
+            self.engine.begin(),
+        )
 
-    async def close(self):
+    async def close(self) -&gt; None:
         await self.engine.dispose()</code></pre>
 </details>
 <div class="desc"></div>
 <h3>Methods</h3>
 <dl>
 <dt id="server.db.FAFDatabase.acquire"><code class="name flex">
-<span>def <span class="ident">acquire</span></span>(<span>self)</span>
+<span>def <span class="ident">acquire</span></span>(<span>self) ‑> contextlib.AbstractAsyncContextManager['<a title="server.db.AsyncConnection" href="#server.db.AsyncConnection">AsyncConnection</a>']</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def acquire(self):
-    return self.engine.begin()</code></pre>
+<pre><code class="python">def acquire(self) -&gt; AbstractAsyncContextManager[&#34;AsyncConnection&#34;]:
+    # The type definitions in SQLAlchemy don&#39;t support this sort of
+    # overriding, so we just cast here.
+    return cast(
+        AbstractAsyncContextManager[AsyncConnection],
+        self.engine.begin(),
+    )</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
 <dt id="server.db.FAFDatabase.close"><code class="name flex">
-<span>async def <span class="ident">close</span></span>(<span>self)</span>
+<span>async def <span class="ident">close</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def close(self):
+<pre><code class="python">async def close(self) -&gt; None:
     await self.engine.dispose()</code></pre>
 </details>
 <div class="desc"></div>

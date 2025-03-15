@@ -218,8 +218,7 @@ el.replaceWith(d);
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@with_logger
-class CustomGame(Game):
+<pre><code class="python">class CustomGame(Game):
     init_mode = InitMode.NORMAL_LOBBY
     game_type = GameType.CUSTOM
 
@@ -232,6 +231,8 @@ class CustomGame(Game):
         super().__init__(id, *args, **new_kwargs)
 
     async def _run_pre_rate_validity_checks(self):
+        assert self.launched_at is not None
+
         limit = len(self.players) * 60
         if not self.enforce_rating and time.time() - self.launched_at &lt; limit:
             await self.mark_invalid(ValidityState.TOO_SHORT)</code></pre>
@@ -443,7 +444,7 @@ class CustomGame(Game):
 </dd>
 <dt id="server.games.Game"><code class="flex name class">
 <span>class <span class="ident">Game</span></span>
-<span>(</span><span>id: int,<br>database: FAFDatabase,<br>game_service: GameService,<br>game_stats_service: GameStatsService,<br>host: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a> | None = None,<br>name: str = 'New Game',<br>map: <a title="server.types.Map" href="../types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1),<br>game_mode: str = 'faf',<br>matchmaker_queue_id: int | None = None,<br>rating_type: str | None = None,<br>displayed_rating_range: <a title="server.rating.InclusiveRange" href="../rating.html#server.rating.InclusiveRange">InclusiveRange</a> | None = None,<br>enforce_rating_range: bool = False,<br>max_players: int = 12,<br>setup_timeout: int = 60)</span>
+<span>(</span><span>id: int,<br>database: <a title="server.db.FAFDatabase" href="../db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>game_service: GameService,<br>game_stats_service: GameStatsService,<br>host: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a> | None = None,<br>name: str = 'New Game',<br>map: <a title="server.types.Map" href="../types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1),<br>game_mode: str = 'faf',<br>matchmaker_queue_id: int | None = None,<br>rating_type: str | None = None,<br>displayed_rating_range: <a title="server.rating.InclusiveRange" href="../rating.html#server.rating.InclusiveRange">InclusiveRange</a> | None = None,<br>enforce_rating_range: bool = False,<br>max_players: int = 12,<br>setup_timeout: int = 60)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -460,7 +461,7 @@ class CustomGame(Game):
     def __init__(
         self,
         id: int,
-        database: &#34;FAFDatabase&#34;,
+        database: FAFDatabase,
         game_service: &#34;GameService&#34;,
         game_stats_service: &#34;GameStatsService&#34;,
         host: Optional[Player] = None,
@@ -477,13 +478,13 @@ class CustomGame(Game):
         self.id = id
         self._db = database
         self._results = GameResultReports(id)
-        self._army_stats_list = []
-        self._players_with_unsent_army_stats = []
+        self._army_stats_list: list[Any] = []
+        self._players_with_unsent_army_stats: list[Player] = []
         self._game_stats_service = game_stats_service
         self.game_service = game_service
         self._player_options: dict[int, dict[str, Any]] = defaultdict(dict)
-        self.hosted_at = None
-        self.launched_at = None
+        self.hosted_at: Optional[datetime] = None
+        self.launched_at: Optional[float] = None
         self.finished = False
         self._logger = logging.getLogger(
             f&#34;{self.__class__.__qualname__}.{id}&#34;
@@ -492,9 +493,9 @@ class CustomGame(Game):
         self.host = host
         self.name = name
         self.map = map
-        self.password = None
+        self.password: Optional[str] = None
         self._players_at_launch: list[Player] = []
-        self.AIs = {}
+        self.AIs: dict[str, dict[str, Any]] = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
         self.game_mode = game_mode
@@ -504,7 +505,7 @@ class CustomGame(Game):
         self.matchmaker_queue_id = matchmaker_queue_id
         self.setup_timeout = setup_timeout
         self.state = GameState.INITIALIZING
-        self._connections = {}
+        self._connections: dict[Player, &#34;GameConnection&#34;] = {}
         self._configured_player_ids: set[int] = set()
         self.enforce_rating = False
         self.game_options = GameOptions(
@@ -530,8 +531,8 @@ class CustomGame(Game):
         )
         self.game_options.add_callback(&#34;Title&#34;, self.on_title_changed)
 
-        self.mods = {}
-        self._hosted_future = asyncio.Future()
+        self.mods: dict[str, str] = {}
+        self._hosted_future: asyncio.Future[None] = asyncio.Future()
         self._finish_lock = asyncio.Lock()
 
         self._logger.debug(&#34;%s created&#34;, self)
@@ -580,7 +581,9 @@ class CustomGame(Game):
 
         Truncates the game name to avoid crashing mysql INSERT statements.
         &#34;&#34;&#34;
-        max_len = game_stats.c.gameName.type.length
+        # mypy sees the column type as a generic base class so it doesn&#39;t
+        # know about the `length` field
+        max_len = game_stats.c.gameName.type.length  # type: ignore
         self._name = value[:max_len]
 
     @property
@@ -588,7 +591,7 @@ class CustomGame(Game):
         return self.game_options[&#34;Slots&#34;]
 
     @property
-    def armies(self) -&gt; frozenset[int]:
+    def armies(self) -&gt; frozenset[Optional[int]]:
         return frozenset(
             self.get_player_option(player.id, &#34;Army&#34;)
             for player in self.players
@@ -626,7 +629,7 @@ class CustomGame(Game):
         return self._connections.values()
 
     @property
-    def teams(self) -&gt; frozenset[int]:
+    def teams(self) -&gt; frozenset[Optional[int]]:
         &#34;&#34;&#34;
         A set of all teams of this game&#39;s players.
         &#34;&#34;&#34;
@@ -744,16 +747,13 @@ class CustomGame(Game):
 
         self._process_pending_army_stats()
 
-    def _process_pending_army_stats(self):
+    def _process_pending_army_stats(self) -&gt; None:
         for player in self._players_with_unsent_army_stats:
             army = self.get_player_option(player.id, &#34;Army&#34;)
             if army not in self._results:
                 continue
 
-            for result in self._results[army]:
-                if result.outcome is not GameOutcome.UNKNOWN:
-                    self._process_army_stats_for_player(player)
-                    break
+            self._process_army_stats_for_player(player)
 
     def _process_army_stats_for_player(self, player):
         try:
@@ -1263,6 +1263,9 @@ class CustomGame(Game):
 
     def get_army_results(self, player: Player) -&gt; ArmyResult:
         army = self.get_player_option(player.id, &#34;Army&#34;)
+        assert army is not None
+        assert isinstance(army, int)
+
         return ArmyResult(
             player.id,
             army,
@@ -1383,14 +1386,14 @@ class CustomGame(Game):
 </dl>
 <h3>Instance variables</h3>
 <dl>
-<dt id="server.games.Game.armies"><code class="name">prop <span class="ident">armies</span> : frozenset[int]</code></dt>
+<dt id="server.games.Game.armies"><code class="name">prop <span class="ident">armies</span> : frozenset[int | None]</code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def armies(self) -&gt; frozenset[int]:
+def armies(self) -&gt; frozenset[Optional[int]]:
     return frozenset(
         self.get_player_option(player.id, &#34;Army&#34;)
         for player in self.players
@@ -1537,14 +1540,14 @@ def players(self) -&gt; list[Player]:
 - (LOBBY) The currently connected players
 - (LIVE) Players who participated in the game</p></div>
 </dd>
-<dt id="server.games.Game.teams"><code class="name">prop <span class="ident">teams</span> : frozenset[int]</code></dt>
+<dt id="server.games.Game.teams"><code class="name">prop <span class="ident">teams</span> : frozenset[int | None]</code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def teams(self) -&gt; frozenset[int]:
+def teams(self) -&gt; frozenset[Optional[int]]:
     &#34;&#34;&#34;
     A set of all teams of this game&#39;s players.
     &#34;&#34;&#34;
@@ -1764,6 +1767,9 @@ assigned an army or team, and deletes any AI's.</p></div>
 </summary>
 <pre><code class="python">def get_army_results(self, player: Player) -&gt; ArmyResult:
     army = self.get_player_option(player.id, &#34;Army&#34;)
+    assert army is not None
+    assert isinstance(army, int)
+
     return ArmyResult(
         player.id,
         army,
@@ -2317,7 +2323,9 @@ game.</p></div>
 
     Truncates the game name to avoid crashing mysql INSERT statements.
     &#34;&#34;&#34;
-    max_len = game_stats.c.gameName.type.length
+    # mypy sees the column type as a generic base class so it doesn&#39;t
+    # know about the `length` field
+    max_len = game_stats.c.gameName.type.length  # type: ignore
     self._name = value[:max_len]</code></pre>
 </details>
 <div class="desc"><p>Sets the game name without doing any validity checks.</p>
@@ -2678,8 +2686,8 @@ class GameConnectionState(Enum):
         self._logger = logging.getLogger(
             f&#34;{self.__class__.__qualname__}.{id}&#34;
         )
-        self.callbacks = defaultdict(list)
-        self.async_callbacks = defaultdict(list)
+        self.callbacks: dict[str, list[Callable[[Any], Any]]] = defaultdict(list)
+        self.async_callbacks: dict[str, list[Callable[[Any], Awaitable[Any]]]] = defaultdict(list)
 
     def add_callback(self, key: str, callback: Callable[[Any], Any]):
         self.callbacks[key].append(callback)
@@ -2963,7 +2971,7 @@ class InitMode(Enum):
 
     def __init__(self, id, *args, **kwargs):
         super().__init__(id, *args, **kwargs)
-        self._launch_future = asyncio.Future()
+        self._launch_future: asyncio.Future[None] = asyncio.Future()
 
     async def wait_hosted(self, timeout: float):
         return await asyncio.wait_for(
@@ -3010,7 +3018,9 @@ class InitMode(Enum):
             return None
         team_sets = self.get_team_sets()
         army_scores = [
-            self._results.score(self.get_player_option(team_set.pop().id, &#34;Army&#34;))
+            self._results.score(
+                self.get_player_option(team_set.pop().id, &#34;Army&#34;),
+            )
             for team_set in team_sets
         ]
         if army_scores[0] &gt; army_scores[1]:

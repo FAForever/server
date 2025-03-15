@@ -222,6 +222,8 @@ class ViolationService(Service):
     to connect to a game.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self):
         # We store a reference to the original `Player` object for logging only
         self._violations: dict[int, tuple[Player, Violation]] = {}

@@ -58,13 +58,15 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">@with_logger
 class PlayerService(Service):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, database: FAFDatabase):
         self._db = database
-        self._players = dict()
+        self._players: dict[int, Player] = {}
 
         # Static-ish data fields.
-        self.uniqueid_exempt = {}
-        self._dirty_players = set()
+        self.uniqueid_exempt: frozenset[int] = frozenset()
+        self._dirty_players: set[Player] = set()
 
     async def initialize(self) -&gt; None:
         await self.update_data()
@@ -72,16 +74,16 @@ class PlayerService(Service):
             &#34;*/10 * * * *&#34;, func=self.update_data
         )
 
-    def __len__(self):
+    def __len__(self) -&gt; int:
         return len(self._players)
 
-    def __iter__(self):
+    def __iter__(self) -&gt; Iterator[Player]:
         return self._players.values().__iter__()
 
     def __getitem__(self, player_id: int) -&gt; Optional[Player]:
         return self._players.get(player_id)
 
-    def __setitem__(self, player_id: int, player: Player):
+    def __setitem__(self, player_id: int, player: Player) -&gt; None:
         self._players[player_id] = player
         metrics.players_online.set(len(self._players))
 
@@ -89,7 +91,7 @@ class PlayerService(Service):
     def all_players(self) -&gt; ValuesView[Player]:
         return self._players.values()
 
-    def mark_dirty(self, player: Player):
+    def mark_dirty(self, player: Player) -&gt; None:
         self._dirty_players.add(player)
 
     def pop_dirty_players(self) -&gt; set[Player]:
@@ -98,7 +100,7 @@ class PlayerService(Service):
 
         return dirty_players
 
-    async def fetch_player_data(self, player):
+    async def fetch_player_data(self, player: Player) -&gt; None:
         async with self._db.acquire() as conn:
             result = await conn.execute(
                 select(user_group.c.technical_name)
@@ -134,19 +136,19 @@ class PlayerService(Service):
                 )
                 return
 
-            row = row._mapping
-            player.clan = row.get(clan.c.tag)
+            row_mapping = row._mapping
+            player.clan = row_mapping.get(clan.c.tag)
 
             url, tooltip = (
-                row.get(avatars_list.c.url),
-                row.get(avatars_list.c.tooltip)
+                row_mapping.get(avatars_list.c.url),
+                row_mapping.get(avatars_list.c.tooltip)
             )
             if url and tooltip:
                 player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
 
             await self._fetch_player_ratings(player, conn)
 
-    async def _fetch_player_ratings(self, player, conn):
+    async def _fetch_player_ratings(self, player: Player, conn):
         sql = select(
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation,
@@ -170,7 +172,7 @@ class PlayerService(Service):
             player.ratings[rating_type] = rating
             player.game_count[rating_type] = total_games
 
-    def remove_player(self, player: Player):
+    def remove_player(self, player: Player) -&gt; None:
         if player.id in self._players:
             # This signals that the player is now disconnected
             del player.lobby_connection
@@ -224,7 +226,7 @@ class PlayerService(Service):
         player.game_count[rating_type] += 1
         self.mark_dirty(player)
 
-    async def update_data(self):
+    async def update_data(self) -&gt; None:
         &#34;&#34;&#34;
         Update rarely-changing data, such as the admin list and the list of users exempt from the
         uniqueid check.
@@ -234,9 +236,9 @@ class PlayerService(Service):
             result = await conn.execute(
                 &#34;SELECT `user_id` FROM uniqueid_exempt&#34;
             )
-            self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
+            self.uniqueid_exempt = frozenset(x[0] for x in result)
 
-    async def kick_idle_players(self):
+    async def kick_idle_players(self) -&gt; None:
         for fut in asyncio.as_completed([
             player.lobby_connection.abort(&#34;Graceful shutdown.&#34;)
             for player in self.all_players
@@ -264,7 +266,7 @@ class PlayerService(Service):
             conn.session
         )
 
-    async def graceful_shutdown(self):
+    async def graceful_shutdown(self) -&gt; None:
         if config.SHUTDOWN_KICK_IDLE_PLAYERS:
             self._kick_idle_task = at_interval(1, self.kick_idle_players)</code></pre>
 </details>
@@ -292,14 +294,14 @@ def all_players(self) -&gt; ValuesView[Player]:
 <h3>Methods</h3>
 <dl>
 <dt id="server.player_service.PlayerService.fetch_player_data"><code class="name flex">
-<span>async def <span class="ident">fetch_player_data</span></span>(<span>self, player)</span>
+<span>async def <span class="ident">fetch_player_data</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def fetch_player_data(self, player):
+<pre><code class="python">async def fetch_player_data(self, player: Player) -&gt; None:
     async with self._db.acquire() as conn:
         result = await conn.execute(
             select(user_group.c.technical_name)
@@ -335,12 +337,12 @@ def all_players(self) -&gt; ValuesView[Player]:
             )
             return
 
-        row = row._mapping
-        player.clan = row.get(clan.c.tag)
+        row_mapping = row._mapping
+        player.clan = row_mapping.get(clan.c.tag)
 
         url, tooltip = (
-            row.get(avatars_list.c.url),
-            row.get(avatars_list.c.tooltip)
+            row_mapping.get(avatars_list.c.url),
+            row_mapping.get(avatars_list.c.tooltip)
         )
         if url and tooltip:
             player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
@@ -408,14 +410,14 @@ def all_players(self) -&gt; ValuesView[Player]:
 <div class="desc"></div>
 </dd>
 <dt id="server.player_service.PlayerService.kick_idle_players"><code class="name flex">
-<span>async def <span class="ident">kick_idle_players</span></span>(<span>self)</span>
+<span>async def <span class="ident">kick_idle_players</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def kick_idle_players(self):
+<pre><code class="python">async def kick_idle_players(self) -&gt; None:
     for fut in asyncio.as_completed([
         player.lobby_connection.abort(&#34;Graceful shutdown.&#34;)
         for player in self.all_players
@@ -433,14 +435,14 @@ def all_players(self) -&gt; ValuesView[Player]:
 <div class="desc"></div>
 </dd>
 <dt id="server.player_service.PlayerService.mark_dirty"><code class="name flex">
-<span>def <span class="ident">mark_dirty</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
+<span>def <span class="ident">mark_dirty</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def mark_dirty(self, player: Player):
+<pre><code class="python">def mark_dirty(self, player: Player) -&gt; None:
     self._dirty_players.add(player)</code></pre>
 </details>
 <div class="desc"></div>
@@ -462,14 +464,14 @@ def all_players(self) -&gt; ValuesView[Player]:
 <div class="desc"></div>
 </dd>
 <dt id="server.player_service.PlayerService.remove_player"><code class="name flex">
-<span>def <span class="ident">remove_player</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>)</span>
+<span>def <span class="ident">remove_player</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def remove_player(self, player: Player):
+<pre><code class="python">def remove_player(self, player: Player) -&gt; None:
     if player.id in self._players:
         # This signals that the player is now disconnected
         del player.lobby_connection
@@ -480,7 +482,7 @@ def all_players(self) -&gt; ValuesView[Player]:
 <div class="desc"></div>
 </dd>
 <dt id="server.player_service.PlayerService.signal_player_rating_change"><code class="name flex">
-<span>def <span class="ident">signal_player_rating_change</span></span>(<span>self, player_id: int, rating_type: str, new_rating: trueskill.Rating) ‑> None</span>
+<span>def <span class="ident">signal_player_rating_change</span></span>(<span>self,<br>player_id: int,<br>rating_type: str,<br>new_rating: <a title="server.rating.Rating" href="rating.html#server.rating.Rating">Rating</a>) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -508,14 +510,14 @@ def all_players(self) -&gt; ValuesView[Player]:
 <div class="desc"></div>
 </dd>
 <dt id="server.player_service.PlayerService.update_data"><code class="name flex">
-<span>async def <span class="ident">update_data</span></span>(<span>self)</span>
+<span>async def <span class="ident">update_data</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def update_data(self):
+<pre><code class="python">async def update_data(self) -&gt; None:
     &#34;&#34;&#34;
     Update rarely-changing data, such as the admin list and the list of users exempt from the
     uniqueid check.
@@ -525,7 +527,7 @@ def all_players(self) -&gt; ValuesView[Player]:
         result = await conn.execute(
             &#34;SELECT `user_id` FROM uniqueid_exempt&#34;
         )
-        self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))</code></pre>
+        self.uniqueid_exempt = frozenset(x[0] for x in result)</code></pre>
 </details>
 <div class="desc"><p>Update rarely-changing data, such as the admin list and the list of users exempt from the
 uniqueid check.</p></div>

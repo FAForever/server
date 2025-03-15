@@ -49,7 +49,7 @@ el.replaceWith(d);
 <dl>
 <dt id="server.game_service.GameService"><code class="flex name class">
 <span>class <span class="ident">GameService</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>player_service,<br>game_stats_service,<br>rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>,<br>message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>,<br>game_stats_service,<br>rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>,<br>message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -62,10 +62,12 @@ class GameService(Service):
     Utility class for maintaining lifecycle of games
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         database: FAFDatabase,
-        player_service,
+        player_service: PlayerService,
         game_stats_service,
         rating_service: RatingService,
         message_queue_service: MessageQueueService
@@ -79,16 +81,16 @@ class GameService(Service):
         self._message_queue_service = message_queue_service
         self.game_id_counter = 0
         self._allow_new_games = False
-        self._drain_event = None
+        self._drain_event: Optional[asyncio.Event] = None
 
         # Populated below in update_data.
-        self.featured_mods = dict()
+        self.featured_mods: dict[str, FeaturedMod] = {}
 
         # A set of mod ids that are allowed in ranked games
         self.ranked_mods: set[str] = set()
 
         # A cache of map_version info needed by Game
-        self.map_info_cache = LRUCache(maxsize=256)
+        self.map_info_cache: LRUCache[str, Map] = LRUCache(maxsize=256)
 
         # The set of active games
         self._games: dict[int, Game] = dict()
@@ -253,7 +255,7 @@ class GameService(Service):
         self.mark_dirty(game)
         return game
 
-    def update_active_game_metrics(self):
+    def update_active_game_metrics(self) -&gt; None:
         modes = list(self.featured_mods.keys())
 
         game_counter = Counter(
@@ -279,7 +281,7 @@ class GameService(Service):
         )
 
         for state in GameState:
-            for rating_type in rating_type_counter.keys():
+            for rating_type, _ in rating_type_counter.keys():
                 metrics.active_games_by_rating_type.labels(rating_type, state.name).set(
                     rating_type_counter[(rating_type, state)]
                 )
@@ -753,14 +755,14 @@ def pending_games(self) -&gt; list[Game]:
 <div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.update_active_game_metrics"><code class="name flex">
-<span>def <span class="ident">update_active_game_metrics</span></span>(<span>self)</span>
+<span>def <span class="ident">update_active_game_metrics</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def update_active_game_metrics(self):
+<pre><code class="python">def update_active_game_metrics(self) -&gt; None:
     modes = list(self.featured_mods.keys())
 
     game_counter = Counter(
@@ -786,7 +788,7 @@ def pending_games(self) -&gt; list[Game]:
     )
 
     for state in GameState:
-        for rating_type in rating_type_counter.keys():
+        for rating_type, _ in rating_type_counter.keys():
             metrics.active_games_by_rating_type.labels(rating_type, state.name).set(
                 rating_type_counter[(rating_type, state)]
             )</code></pre>

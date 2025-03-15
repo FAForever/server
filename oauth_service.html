@@ -60,6 +60,8 @@ class OAuthService(Service, name=&#34;oauth_service&#34;):
     Service for managing the OAuth token logins and verification.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self):
         self.public_keys = {}
         self._last_key_fetch_time = None

@@ -348,6 +348,8 @@ class Search:
     Represents the state of a users search for a match.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         players: list[Player],
@@ -359,7 +361,7 @@ class Search:
         for player in players:
             assert player.ratings[rating_type] is not None
 
-        self.players = players
+        self._players = players
         self.rating_type = rating_type
         self.start_time = start_time or time.time()
         self._match = asyncio.get_event_loop().create_future()
@@ -368,6 +370,10 @@ class Search:
 
         # Precompute this
         self.quality_against_self = self.quality_with(self)
+
+    @property
+    def players(self) -&gt; list[Player]:
+        return self._players
 
     def adjusted_rating(self, player: Player) -&gt; Rating:
         &#34;&#34;&#34;
@@ -740,6 +746,18 @@ def match_threshold(self) -&gt; float:
 <p>The base minimum quality is determined as 80% of the quality of a game
 against a copy of yourself. This is decreased by <code>self.search_expansion</code>
 if search is to be expanded.</p></div>
+</dd>
+<dt id="server.matchmaker.search.Search.players"><code class="name">prop <span class="ident">players</span> : list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def players(self) -&gt; list[Player]:
+    return self._players</code></pre>
+</details>
+<div class="desc"></div>
 </dd>
 <dt id="server.matchmaker.search.Search.ratings"><code class="name">prop <span class="ident">ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
 <dd>
@@ -1135,6 +1153,7 @@ and increase internal counter by one.</p></div>
 <li><code><a title="server.matchmaker.search.Search.match_threshold" href="#server.matchmaker.search.Search.match_threshold">match_threshold</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.matches_with" href="#server.matchmaker.search.Search.matches_with">matches_with</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.num_newbies" href="#server.matchmaker.search.Search.num_newbies">num_newbies</a></code></li>
+<li><code><a title="server.matchmaker.search.Search.players" href="#server.matchmaker.search.Search.players">players</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.quality_with" href="#server.matchmaker.search.Search.quality_with">quality_with</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.ratings" href="#server.matchmaker.search.Search.ratings">ratings</a></code></li>
 <li><code><a title="server.matchmaker.search.Search.raw_ratings" href="#server.matchmaker.search.Search.raw_ratings">raw_ratings</a></code></li>

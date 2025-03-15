@@ -148,7 +148,7 @@ is to use a value based on the decorated function name.</li>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class AsyncLock(Protocol, AsyncContextManager[&#34;AsyncLock&#34;]):
+<pre><code class="python">class AsyncLock(Protocol, AsyncContextManager[None]):
     def locked(self) -&gt; bool: ...
     async def acquire(self) -&gt; bool: ...
     def release(self) -&gt; None: ...</code></pre>

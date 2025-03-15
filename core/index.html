@@ -59,14 +59,14 @@ project.</p>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="server.core.create_services"><code class="name flex">
-<span>def <span class="ident">create_services</span></span>(<span>injectables: dict[str, object] = {}) ‑> dict[str, <a title="server.core.service.Service" href="service.html#server.core.service.Service">Service</a>]</span>
+<span>def <span class="ident">create_services</span></span>(<span>injectables: dict[str, typing.Any] = {}) ‑> dict[str, typing.Any]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_services(injectables: dict[str, object] = {}) -&gt; dict[str, Service]:
+<pre><code class="python">def create_services(injectables: dict[str, Any] = {}) -&gt; dict[str, Any]:
     &#34;&#34;&#34;
     Resolve service dependencies and instantiate each service. This should only
     be called once.
@@ -92,7 +92,7 @@ be called once.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class DependencyInjector(object):
+<pre><code class="python">class DependencyInjector():
     &#34;&#34;&#34;
     Does dependency injection.
 
@@ -136,10 +136,10 @@ be called once.</p></div>
 
     def __init__(self) -&gt; None:
         # Objects which are available to the constructors of injected objects
-        self.injectables: dict[str, object] = {}
+        self.injectables: dict[str, Any] = {}
 
     def add_injectables(
-        self, injectables: dict[str, object] = {}, **kwargs: object
+        self, injectables: dict[str, Any] = {}, **kwargs: Any
     ) -&gt; None:
         &#34;&#34;&#34;
         Register additional objects that can be requested by injected classes.
@@ -149,7 +149,7 @@ be called once.</p></div>
 
     def build_classes(
         self, classes: dict[str, type] = {}, **kwargs: type
-    ) -&gt; dict[str, object]:
+    ) -&gt; dict[str, Any]:
         &#34;&#34;&#34;
         Resolve dependencies by name and instantiate each class.
         &#34;&#34;&#34;
@@ -177,10 +177,11 @@ be called once.</p></div>
             graph[name] = []
 
         for obj_name, klass in classes.items():
-            signature = inspect.signature(klass.__init__)
-            # Strip off the `self` parameter
-            params = list(signature.parameters.values())[1:]
-            graph[obj_name] = [param.name for param in params]
+            signature = inspect.signature(klass)
+            graph[obj_name] = [
+                param.name
+                for param in signature.parameters.values()
+            ]
 
         return graph
 
@@ -189,7 +190,7 @@ be called once.</p></div>
         dep: DependencyGraph,
         classes: dict[str, type],
         param_map: dict[str, list[str]]
-    ) -&gt; dict[str, object]:
+    ) -&gt; dict[str, Any]:
         &#34;&#34;&#34;
         Tries to build all classes in the dependency graph. Raises RuntimeError
         if some dependencies are not available or there was a cyclic dependency.
@@ -279,7 +280,7 @@ another class in the class list).</p>
 <h3>Methods</h3>
 <dl>
 <dt id="server.core.DependencyInjector.add_injectables"><code class="name flex">
-<span>def <span class="ident">add_injectables</span></span>(<span>self, injectables: dict[str, object] = {}, **kwargs: object) ‑> None</span>
+<span>def <span class="ident">add_injectables</span></span>(<span>self, injectables: dict[str, typing.Any] = {}, **kwargs: Any) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -287,7 +288,7 @@ another class in the class list).</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def add_injectables(
-    self, injectables: dict[str, object] = {}, **kwargs: object
+    self, injectables: dict[str, Any] = {}, **kwargs: Any
 ) -&gt; None:
     &#34;&#34;&#34;
     Register additional objects that can be requested by injected classes.
@@ -298,7 +299,7 @@ another class in the class list).</p>
 <div class="desc"><p>Register additional objects that can be requested by injected classes.</p></div>
 </dd>
 <dt id="server.core.DependencyInjector.build_classes"><code class="name flex">
-<span>def <span class="ident">build_classes</span></span>(<span>self, classes: dict[str, type] = {}, **kwargs: type) ‑> dict[str, object]</span>
+<span>def <span class="ident">build_classes</span></span>(<span>self, classes: dict[str, type] = {}, **kwargs: type) ‑> dict[str, typing.Any]</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -307,7 +308,7 @@ another class in the class list).</p>
 </summary>
 <pre><code class="python">def build_classes(
     self, classes: dict[str, type] = {}, **kwargs: type
-) -&gt; dict[str, object]:
+) -&gt; dict[str, Any]:
     &#34;&#34;&#34;
     Resolve dependencies by name and instantiate each class.
     &#34;&#34;&#34;

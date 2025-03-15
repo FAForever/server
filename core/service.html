@@ -45,14 +45,14 @@ el.replaceWith(d);
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="server.core.service.create_services"><code class="name flex">
-<span>def <span class="ident">create_services</span></span>(<span>injectables: dict[str, object] = {}) ‑> dict[str, <a title="server.core.service.Service" href="#server.core.service.Service">Service</a>]</span>
+<span>def <span class="ident">create_services</span></span>(<span>injectables: dict[str, typing.Any] = {}) ‑> dict[str, typing.Any]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_services(injectables: dict[str, object] = {}) -&gt; dict[str, Service]:
+<pre><code class="python">def create_services(injectables: dict[str, Any] = {}) -&gt; dict[str, Any]:
     &#34;&#34;&#34;
     Resolve service dependencies and instantiate each service. This should only
     be called once.

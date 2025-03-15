@@ -79,6 +79,8 @@ class BucketTeamMatchmaker(Matchmaker):
     to produce a list of matches from these.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def find(
         self, searches: Iterable[Search], team_size: int, rating_peak: float
     ) -&gt; tuple[list[Match], list[Search]]:

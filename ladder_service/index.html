@@ -93,6 +93,8 @@ class LadderService(Service):
     statistics, and launches the games.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         database: FAFDatabase,
@@ -102,7 +104,7 @@ class LadderService(Service):
         self._db = database
         self._informed_players: set[Player] = set()
         self.game_service = game_service
-        self.queues = {}
+        self.queues: dict[str, MatchmakerQueue] = {}
         self.violation_service = violation_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
@@ -173,7 +175,7 @@ class LadderService(Service):
                 .outerjoin(map_version)
             )
         )
-        map_pool_maps = {}
+        map_pool_maps: dict[int, tuple[str, list[Map]]] = {}
         for row in result:
             id_ = row.id
             name = row.name
@@ -184,7 +186,10 @@ class LadderService(Service):
                 # Database filenames contain the maps/ prefix and .zip suffix.
                 # This comes from the content server which hosts the files at
                 # https://content.faforever.com/maps/name.zip
-                folder_name = re.match(r&#34;maps/(.+)\.zip&#34;, row.filename).group(1)
+                m = re.match(r&#34;maps/(.+)\.zip&#34;, row.filename)
+                if m is None:
+                    raise RuntimeError(f&#34;malformed map filename {row.filename}&#34;)
+                folder_name = m.group(1)
                 map_list.append(
                     Map(
                         id=row.map_id,
@@ -242,7 +247,9 @@ class LadderService(Service):
         # So we don&#39;t log the same error multiple times when a queue has several
         # map pools
         errored = set()
-        matchmaker_queues = defaultdict(lambda: defaultdict(list))
+        matchmaker_queues: dict[str, dict[str, Any]] = defaultdict(
+            lambda: defaultdict(list),
+        )
         for row in result:
             name = row.technical_name
             if name in errored:
@@ -518,7 +525,7 @@ class LadderService(Service):
         team1: list[Player],
         team2: list[Player],
         queue: MatchmakerQueue
-    ) -&gt; Awaitable[None]:
+    ) -&gt; Coroutine[Any, Any, None]:
         # We want assertion errors to trigger when the caller attempts to
         # create the async function, not when the function starts executing.
         assert len(team1) == len(team2)
@@ -822,7 +829,7 @@ statistics, and launches the games.</p></div>
             .outerjoin(map_version)
         )
     )
-    map_pool_maps = {}
+    map_pool_maps: dict[int, tuple[str, list[Map]]] = {}
     for row in result:
         id_ = row.id
         name = row.name
@@ -833,7 +840,10 @@ statistics, and launches the games.</p></div>
             # Database filenames contain the maps/ prefix and .zip suffix.
             # This comes from the content server which hosts the files at
             # https://content.faforever.com/maps/name.zip
-            folder_name = re.match(r&#34;maps/(.+)\.zip&#34;, row.filename).group(1)
+            m = re.match(r&#34;maps/(.+)\.zip&#34;, row.filename)
+            if m is None:
+                raise RuntimeError(f&#34;malformed map filename {row.filename}&#34;)
+            folder_name = m.group(1)
             map_list.append(
                 Map(
                     id=row.map_id,
@@ -901,7 +911,9 @@ statistics, and launches the games.</p></div>
     # So we don&#39;t log the same error multiple times when a queue has several
     # map pools
     errored = set()
-    matchmaker_queues = defaultdict(lambda: defaultdict(list))
+    matchmaker_queues: dict[str, dict[str, Any]] = defaultdict(
+        lambda: defaultdict(list),
+    )
     for row in result:
         name = row.technical_name
         if name in errored:
@@ -1142,7 +1154,7 @@ statistics, and launches the games.</p></div>
 so it should only perform fast operations.</p></div>
 </dd>
 <dt id="server.ladder_service.LadderService.start_game"><code class="name flex">
-<span>def <span class="ident">start_game</span></span>(<span>self,<br>team1: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>],<br>team2: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>],<br>queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="../matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> Awaitable[None]</span>
+<span>def <span class="ident">start_game</span></span>(<span>self,<br>team1: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>],<br>team2: list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>],<br>queue: <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="../matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>) ‑> Coroutine[Any, Any, None]</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -1154,7 +1166,7 @@ so it should only perform fast operations.</p></div>
     team1: list[Player],
     team2: list[Player],
     queue: MatchmakerQueue
-) -&gt; Awaitable[None]:
+) -&gt; Coroutine[Any, Any, None]:
     # We want assertion errors to trigger when the caller attempts to
     # create the async function, not when the function starts executing.
     assert len(team1) == len(team2)

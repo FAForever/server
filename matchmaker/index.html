@@ -354,6 +354,8 @@ def raw_ratings(self) -&gt; list[Rating]:
 </summary>
 <pre><code class="python">@with_logger
 class MapPool(object):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         map_pool_id: int,
@@ -479,6 +481,8 @@ amount of times.</p></div>
 </summary>
 <pre><code class="python">@with_logger
 class MatchmakerQueue:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         game_service: &#34;GameService&#34;,
@@ -529,7 +533,9 @@ class MatchmakerQueue:
                 continue
             return map_pool
 
-    def get_game_options(self) -&gt; dict[str, Any]:
+        return None
+
+    def get_game_options(self) -&gt; Optional[dict[str, Any]]:
         return self.params.get(&#34;GameOptions&#34;) or None
 
     def initialize(self):
@@ -854,14 +860,14 @@ MatchmakerQueue can call this function at any given time. This is
 needed in order to safely enable multiqueuing.</p></div>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue.get_game_options"><code class="name flex">
-<span>def <span class="ident">get_game_options</span></span>(<span>self) ‑> dict[str, typing.Any]</span>
+<span>def <span class="ident">get_game_options</span></span>(<span>self) ‑> dict[str, typing.Any] | None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_game_options(self) -&gt; dict[str, Any]:
+<pre><code class="python">def get_game_options(self) -&gt; Optional[dict[str, Any]]:
     return self.params.get(&#34;GameOptions&#34;) or None</code></pre>
 </details>
 <div class="desc"></div>
@@ -880,7 +886,9 @@ needed in order to safely enable multiqueuing.</p></div>
             continue
         if max_rating is not None and rating &gt; max_rating:
             continue
-        return map_pool</code></pre>
+        return map_pool
+
+    return None</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -1107,6 +1115,8 @@ class PopTimer(object):
     The exact size can be set in config.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, queue: &#34;MatchmakerQueue&#34;):
         self.queue = queue
         # Set up deque&#39;s for calculating a moving average
@@ -1116,7 +1126,7 @@ class PopTimer(object):
         self._last_queue_pop = time()
         # Optimistically schedule first pop for half of the max pop time
         self.next_queue_pop = self._last_queue_pop + (config.QUEUE_POP_TIME_MAX / 2)
-        self._wait_task = None
+        self._wait_task: Optional[asyncio.Task] = None
 
     async def next_pop(self):
         &#34;&#34;&#34; Wait for the timer to pop. &#34;&#34;&#34;
@@ -1303,6 +1313,8 @@ class Search:
     Represents the state of a users search for a match.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         players: list[Player],
@@ -1314,7 +1326,7 @@ class Search:
         for player in players:
             assert player.ratings[rating_type] is not None
 
-        self.players = players
+        self._players = players
         self.rating_type = rating_type
         self.start_time = start_time or time.time()
         self._match = asyncio.get_event_loop().create_future()
@@ -1323,6 +1335,10 @@ class Search:
 
         # Precompute this
         self.quality_against_self = self.quality_with(self)
+
+    @property
+    def players(self) -&gt; list[Player]:
+        return self._players
 
     def adjusted_rating(self, player: Player) -&gt; Rating:
         &#34;&#34;&#34;
@@ -1695,6 +1711,18 @@ def match_threshold(self) -&gt; float:
 <p>The base minimum quality is determined as 80% of the quality of a game
 against a copy of yourself. This is decreased by <code>self.search_expansion</code>
 if search is to be expanded.</p></div>
+</dd>
+<dt id="server.matchmaker.Search.players"><code class="name">prop <span class="ident">players</span> : list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def players(self) -&gt; list[Player]:
+    return self._players</code></pre>
+</details>
+<div class="desc"></div>
 </dd>
 <dt id="server.matchmaker.Search.ratings"><code class="name">prop <span class="ident">ratings</span> : list[<a title="server.rating.Rating" href="../rating.html#server.rating.Rating">Rating</a>]</code></dt>
 <dd>
@@ -2127,6 +2155,7 @@ and increase internal counter by one.</p></div>
 <li><code><a title="server.matchmaker.Search.match_threshold" href="#server.matchmaker.Search.match_threshold">match_threshold</a></code></li>
 <li><code><a title="server.matchmaker.Search.matches_with" href="#server.matchmaker.Search.matches_with">matches_with</a></code></li>
 <li><code><a title="server.matchmaker.Search.num_newbies" href="#server.matchmaker.Search.num_newbies">num_newbies</a></code></li>
+<li><code><a title="server.matchmaker.Search.players" href="#server.matchmaker.Search.players">players</a></code></li>
 <li><code><a title="server.matchmaker.Search.quality_with" href="#server.matchmaker.Search.quality_with">quality_with</a></code></li>
 <li><code><a title="server.matchmaker.Search.ratings" href="#server.matchmaker.Search.ratings">ratings</a></code></li>
 <li><code><a title="server.matchmaker.Search.raw_ratings" href="#server.matchmaker.Search.raw_ratings">raw_ratings</a></code></li>

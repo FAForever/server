@@ -55,8 +55,7 @@ el.replaceWith(d);
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">@with_logger
-class CustomGame(Game):
+<pre><code class="python">class CustomGame(Game):
     init_mode = InitMode.NORMAL_LOBBY
     game_type = GameType.CUSTOM
 
@@ -69,6 +68,8 @@ class CustomGame(Game):
         super().__init__(id, *args, **new_kwargs)
 
     async def _run_pre_rate_validity_checks(self):
+        assert self.launched_at is not None
+
         limit = len(self.players) * 60
         if not self.enforce_rating and time.time() - self.launched_at &lt; limit:
             await self.mark_invalid(ValidityState.TOO_SHORT)</code></pre>

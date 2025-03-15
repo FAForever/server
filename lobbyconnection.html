@@ -43,6 +43,59 @@ el.replaceWith(d);
 <section>
 </section>
 <section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="server.lobbyconnection.ice_only"><code class="name flex">
+<span>def <span class="ident">ice_only</span></span>(<span>func)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ice_only(func):
+    &#34;&#34;&#34;
+    Ensures that a handler function is not invoked from a non ICE client.
+    &#34;&#34;&#34;
+    @wraps(func)
+    async def wrapper(self, message):
+        if self._attempted_connectivity_test:
+            raise ClientError(&#34;Cannot join game. Please update your client to the newest version.&#34;)
+        return await func(self, message)
+    return wrapper</code></pre>
+</details>
+<div class="desc"><p>Ensures that a handler function is not invoked from a non ICE client.</p></div>
+</dd>
+<dt id="server.lobbyconnection.player_idle"><code class="name flex">
+<span>def <span class="ident">player_idle</span></span>(<span>state_text: str)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def player_idle(state_text: str):
+    &#34;&#34;&#34;
+    Ensures that a handler function is not invoked unless the player state
+    is IDLE.
+    &#34;&#34;&#34;
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(self, message):
+            if self.player.state != PlayerState.IDLE:
+                raise ClientError(
+                    f&#34;Can&#39;t {state_text} while in state &#34;
+                    f&#34;{self.player.state.name}&#34;,
+                    recoverable=True
+                )
+            return await func(self, message)
+        return wrapper
+    return decorator</code></pre>
+</details>
+<div class="desc"><p>Ensures that a handler function is not invoked unless the player state
+is IDLE.</p></div>
+</dd>
+</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -58,6 +111,8 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">@with_logger
 class LobbyConnection:
+    _logger: ClassVar[logging.Logger]
+
     @timed()
     def __init__(
         self,
@@ -87,7 +142,7 @@ class LobbyConnection:
         self.user_agent = None
         self.version = None
 
-        self._timeout_task = None
+        self._timeout_task: Optional[asyncio.Task] = None
         self._attempted_connectivity_test = False
 
         self._logger.debug(&#34;LobbyConnection initialized for &#39;%s&#39;&#34;, self.session)
@@ -116,6 +171,8 @@ class LobbyConnection:
                 await self.abort(&#34;Client took too long to log in.&#34;)
 
     async def abort(self, logspam=&#34;&#34;):
+        assert self.protocol is not None
+
         self._authenticated = False
 
         self._logger.warning(
@@ -212,7 +269,10 @@ class LobbyConnection:
             )
         except OperationalError:
             # When the database goes down, SqlAlchemy will throw an OperationalError
-            self._logger.error(&#34;Encountered OperationalError on message received. This could indicate DB is down.&#34;)
+            self._logger.exception(
+                &#34;Encountered OperationalError on message received. This could &#34;
+                &#34;indicate DB is down.&#34;
+            )
             await self.send({
                 &#34;command&#34;: &#34;notice&#34;,
                 &#34;style&#34;: &#34;error&#34;,
@@ -224,35 +284,6 @@ class LobbyConnection:
             await self.send({&#34;command&#34;: &#34;invalid&#34;})
             self._logger.exception(e)
             await self.abort(&#34;Error processing command&#34;)
-
-    def ice_only(func):
-        &#34;&#34;&#34;
-        Ensures that a handler function is not invoked from a non ICE client.
-        &#34;&#34;&#34;
-        @wraps(func)
-        async def wrapper(self, message):
-            if self._attempted_connectivity_test:
-                raise ClientError(&#34;Cannot join game. Please update your client to the newest version.&#34;)
-            return await func(self, message)
-        return wrapper
-
-    def player_idle(state_text):
-        &#34;&#34;&#34;
-        Ensures that a handler function is not invoked unless the player state
-        is IDLE.
-        &#34;&#34;&#34;
-        def decorator(func):
-            @wraps(func)
-            async def wrapper(self, message):
-                if self.player.state != PlayerState.IDLE:
-                    raise ClientError(
-                        f&#34;Can&#39;t {state_text} while in state &#34;
-                        f&#34;{self.player.state.name}&#34;,
-                        recoverable=True
-                    )
-                return await func(self, message)
-            return wrapper
-        return decorator
 
     async def command_ping(self, msg):
         await self.send({&#34;command&#34;: &#34;pong&#34;})
@@ -302,6 +333,8 @@ class LobbyConnection:
         })
 
     async def send_game_list(self):
+        assert self.player is not None
+
         await self.send({
             &#34;command&#34;: &#34;game_info&#34;,
             &#34;games&#34;: [
@@ -311,6 +344,8 @@ class LobbyConnection:
         })
 
     async def command_social_remove(self, message):
+        assert self.player is not None
+
         if &#34;friend&#34; in message:
             subject_id = message[&#34;friend&#34;]
             player_attr = self.player.friends
@@ -331,6 +366,8 @@ class LobbyConnection:
             player_attr.discard(subject_id)
 
     async def command_social_add(self, message):
+        assert self.player is not None
+
         if &#34;friend&#34; in message:
             status = &#34;FRIEND&#34;
             subject_id = message[&#34;friend&#34;]
@@ -356,6 +393,8 @@ class LobbyConnection:
             player_attr.add(subject_id)
 
     def _get_visibility_context_manager(self, subject_id: int):
+        assert self.player is not None
+
         game = self.player.game
 
         if game and game.host == self.player:
@@ -414,6 +453,8 @@ class LobbyConnection:
         })
 
     async def command_admin(self, message):
+        assert self.player is not None
+
         action = message[&#34;action&#34;]
 
         if action == &#34;closeFA&#34;:
@@ -538,7 +579,13 @@ class LobbyConnection:
                 f&#39;&lt;a href=&#34;{config.WWW_URL}&#34;&gt;{config.WWW_URL}&lt;/a&gt;&#39;
             )
 
-    async def check_policy_conformity(self, player_id, uid_hash, session, ignore_result=False):
+    async def check_policy_conformity(
+        self,
+        player_id: int,
+        uid_hash: str,
+        session_id: int,
+        ignore_result: bool = False,
+    ) -&gt; bool:
         if not config.USE_POLICY_SERVER:
             return True
 
@@ -546,7 +593,7 @@ class LobbyConnection:
         payload = {
             &#34;player_id&#34;: player_id,
             &#34;uid_hash&#34;: uid_hash,
-            &#34;session&#34;: session
+            &#34;session&#34;: session_id,
         }
         headers = {
             &#34;content-type&#34;: &#34;application/json&#34;,
@@ -679,8 +726,12 @@ class LobbyConnection:
         unique_id: str,
         method: str
     ):
+        assert self.peer_address is not None
+
         conforms_policy = await self.check_policy_conformity(
-            player_id, unique_id, self.session,
+            player_id,
+            unique_id,
+            self.session,
             # All players are required to have game ownership verified
             # so this is for informational purposes only
             ignore_result=True
@@ -812,6 +863,7 @@ class LobbyConnection:
     @player_idle(&#34;reconnect to a game&#34;)
     async def command_restore_game_session(self, message):
         assert self.player is not None
+        assert self.protocol is not None
 
         game_id = int(message[&#34;game_id&#34;])
 
@@ -859,6 +911,8 @@ class LobbyConnection:
         await self.send({&#34;command&#34;: &#34;session&#34;, &#34;session&#34;: self.session})
 
     async def command_avatar(self, message):
+        assert self.player is not None
+
         action = message[&#34;action&#34;]
 
         if action == &#34;list_avatar&#34;:
@@ -940,7 +994,7 @@ class LobbyConnection:
         &#34;&#34;&#34;
         We are going to join a game.
         &#34;&#34;&#34;
-        assert isinstance(self.player, Player)
+        assert self.player is not None
 
         await self.abort_connection_if_banned()
 
@@ -1003,6 +1057,8 @@ class LobbyConnection:
 
     @ice_only
     async def command_game_matchmaking(self, message):
+        assert self.player is not None
+
         queue_name = str(
             message.get(&#34;queue_name&#34;) or message.get(&#34;mod&#34;, &#34;ladder1v1&#34;)
         )
@@ -1056,7 +1112,7 @@ class LobbyConnection:
     @ice_only
     @player_idle(&#34;host a game&#34;)
     async def command_game_host(self, message):
-        assert isinstance(self.player, Player)
+        assert self.player is not None
 
         await self.abort_connection_if_banned()
 
@@ -1146,6 +1202,7 @@ class LobbyConnection:
     ):
         assert self.player is not None
         assert self.game_connection is None
+        assert self.protocol is not None
         assert self.player.state in (
             PlayerState.IDLE,
             PlayerState.STARTING_AUTOMATCH,
@@ -1189,7 +1246,10 @@ class LobbyConnection:
 
         return {k: v for k, v in cmd.items() if v is not None}
 
+    # DEPRECATED: Use the FAF API instead
     async def command_modvault(self, message):
+        assert self.player is not None
+
         type = message[&#34;type&#34;]
 
         async with self._db.acquire() as conn:
@@ -1277,6 +1337,8 @@ class LobbyConnection:
 
     @player_idle(&#34;invite a player&#34;)
     async def command_invite_to_party(self, message):
+        assert self.player is not None
+
         recipient = self.player_service.get_player(message[&#34;recipient_id&#34;])
         if recipient is None:
             # TODO: Client localized message
@@ -1289,6 +1351,8 @@ class LobbyConnection:
 
     @player_idle(&#34;join a party&#34;)
     async def command_accept_party_invite(self, message):
+        assert self.player is not None
+
         sender = self.player_service.get_player(message[&#34;sender_id&#34;])
         if sender is None:
             # TODO: Client localized message
@@ -1298,6 +1362,8 @@ class LobbyConnection:
 
     @player_idle(&#34;kick a player&#34;)
     async def command_kick_player_from_party(self, message):
+        assert self.player is not None
+
         kicked_player = self.player_service.get_player(message[&#34;kicked_player_id&#34;])
         if kicked_player is None:
             # TODO: Client localized message
@@ -1306,10 +1372,14 @@ class LobbyConnection:
         await self.party_service.kick_player_from_party(self.player, kicked_player)
 
     async def command_leave_party(self, _message):
+        assert self.player is not None
+
         self.ladder_service.cancel_search(self.player)
         await self.party_service.leave_party(self.player)
 
     async def command_set_party_factions(self, message):
+        assert self.player is not None
+
         factions = set(Faction.from_value(v) for v in message[&#34;factions&#34;])
 
         if not factions:
@@ -1356,18 +1426,23 @@ class LobbyConnection:
 
     async def send(self, message):
         &#34;&#34;&#34;Send a message and wait for it to be sent.&#34;&#34;&#34;
+        assert self.protocol is not None
+
         self.write(message)
         await self.protocol.drain()
 
     def write(self, message):
         &#34;&#34;&#34;Write a message into the send buffer.&#34;&#34;&#34;
+        assert self.protocol is not None
+
         self._logger.log(TRACE, &#34;&gt;&gt; %s: %s&#34;, self.get_user_identifier(), message)
         self.protocol.write_message(message)
 
     async def on_connection_lost(self):
         async def nop(*args, **kwargs):
             return
-        self.send = nop
+
+        setattr(self, &#34;send&#34;, nop)
 
         if self._timeout_task and not self._timeout_task.done():
             self._timeout_task.cancel()
@@ -1380,6 +1455,8 @@ class LobbyConnection:
             await self.game_connection.on_connection_lost()
 
     async def abort_connection_if_banned(self):
+        assert self.player is not None
+
         async with self._db.acquire() as conn:
             now = datetime.utcnow()
             result = await conn.execute(
@@ -1428,6 +1505,8 @@ def authenticated(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def abort(self, logspam=&#34;&#34;):
+    assert self.protocol is not None
+
     self._authenticated = False
 
     self._logger.warning(
@@ -1452,6 +1531,8 @@ def authenticated(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def abort_connection_if_banned(self):
+    assert self.player is not None
+
     async with self._db.acquire() as conn:
         now = datetime.utcnow()
         result = await conn.execute(
@@ -1476,14 +1557,20 @@ def authenticated(self):
 <div class="desc"></div>
 </dd>
 <dt id="server.lobbyconnection.LobbyConnection.check_policy_conformity"><code class="name flex">
-<span>async def <span class="ident">check_policy_conformity</span></span>(<span>self, player_id, uid_hash, session, ignore_result=False)</span>
+<span>async def <span class="ident">check_policy_conformity</span></span>(<span>self, player_id: int, uid_hash: str, session_id: int, ignore_result: bool = False) ‑> bool</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def check_policy_conformity(self, player_id, uid_hash, session, ignore_result=False):
+<pre><code class="python">async def check_policy_conformity(
+    self,
+    player_id: int,
+    uid_hash: str,
+    session_id: int,
+    ignore_result: bool = False,
+) -&gt; bool:
     if not config.USE_POLICY_SERVER:
         return True
 
@@ -1491,7 +1578,7 @@ def authenticated(self):
     payload = {
         &#34;player_id&#34;: player_id,
         &#34;uid_hash&#34;: uid_hash,
-        &#34;session&#34;: session
+        &#34;session&#34;: session_id,
     }
     headers = {
         &#34;content-type&#34;: &#34;application/json&#34;,
@@ -1601,6 +1688,8 @@ def authenticated(self):
 </summary>
 <pre><code class="python">@player_idle(&#34;join a party&#34;)
 async def command_accept_party_invite(self, message):
+    assert self.player is not None
+
     sender = self.player_service.get_player(message[&#34;sender_id&#34;])
     if sender is None:
         # TODO: Client localized message
@@ -1619,6 +1708,8 @@ async def command_accept_party_invite(self, message):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def command_admin(self, message):
+    assert self.player is not None
+
     action = message[&#34;action&#34;]
 
     if action == &#34;closeFA&#34;:
@@ -1772,6 +1863,8 @@ async def command_accept_party_invite(self, message):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def command_avatar(self, message):
+    assert self.player is not None
+
     action = message[&#34;action&#34;]
 
     if action == &#34;list_avatar&#34;:
@@ -1911,7 +2004,7 @@ async def command_accept_party_invite(self, message):
 <pre><code class="python">@ice_only
 @player_idle(&#34;host a game&#34;)
 async def command_game_host(self, message):
-    assert isinstance(self.player, Player)
+    assert self.player is not None
 
     await self.abort_connection_if_banned()
 
@@ -1967,7 +2060,7 @@ async def command_game_join(self, message):
     &#34;&#34;&#34;
     We are going to join a game.
     &#34;&#34;&#34;
-    assert isinstance(self.player, Player)
+    assert self.player is not None
 
     await self.abort_connection_if_banned()
 
@@ -2040,6 +2133,8 @@ async def command_game_join(self, message):
 </summary>
 <pre><code class="python">@ice_only
 async def command_game_matchmaking(self, message):
+    assert self.player is not None
+
     queue_name = str(
         message.get(&#34;queue_name&#34;) or message.get(&#34;mod&#34;, &#34;ladder1v1&#34;)
     )
@@ -2156,6 +2251,8 @@ async def command_game_matchmaking(self, message):
 </summary>
 <pre><code class="python">@player_idle(&#34;invite a player&#34;)
 async def command_invite_to_party(self, message):
+    assert self.player is not None
+
     recipient = self.player_service.get_player(message[&#34;recipient_id&#34;])
     if recipient is None:
         # TODO: Client localized message
@@ -2178,6 +2275,8 @@ async def command_invite_to_party(self, message):
 </summary>
 <pre><code class="python">@player_idle(&#34;kick a player&#34;)
 async def command_kick_player_from_party(self, message):
+    assert self.player is not None
+
     kicked_player = self.player_service.get_player(message[&#34;kicked_player_id&#34;])
     if kicked_player is None:
         # TODO: Client localized message
@@ -2196,6 +2295,8 @@ async def command_kick_player_from_party(self, message):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def command_leave_party(self, _message):
+    assert self.player is not None
+
     self.ladder_service.cancel_search(self.player)
     await self.party_service.leave_party(self.player)</code></pre>
 </details>
@@ -2248,6 +2349,8 @@ async def command_kick_player_from_party(self, message):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def command_modvault(self, message):
+    assert self.player is not None
+
     type = message[&#34;type&#34;]
 
     async with self._db.acquire() as conn:
@@ -2361,6 +2464,7 @@ async def command_kick_player_from_party(self, message):
 @player_idle(&#34;reconnect to a game&#34;)
 async def command_restore_game_session(self, message):
     assert self.player is not None
+    assert self.protocol is not None
 
     game_id = int(message[&#34;game_id&#34;])
 
@@ -2411,6 +2515,8 @@ async def command_restore_game_session(self, message):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def command_set_party_factions(self, message):
+    assert self.player is not None
+
     factions = set(Faction.from_value(v) for v in message[&#34;factions&#34;])
 
     if not factions:
@@ -2432,6 +2538,8 @@ async def command_restore_game_session(self, message):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def command_social_add(self, message):
+    assert self.player is not None
+
     if &#34;friend&#34; in message:
         status = &#34;FRIEND&#34;
         subject_id = message[&#34;friend&#34;]
@@ -2467,6 +2575,8 @@ async def command_restore_game_session(self, message):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def command_social_remove(self, message):
+    assert self.player is not None
+
     if &#34;friend&#34; in message:
         subject_id = message[&#34;friend&#34;]
         player_attr = self.player.friends
@@ -2531,27 +2641,6 @@ async def command_restore_game_session(self, message):
 </details>
 <div class="desc"><p>For logging purposes</p></div>
 </dd>
-<dt id="server.lobbyconnection.LobbyConnection.ice_only"><code class="name flex">
-<span>def <span class="ident">ice_only</span></span>(<span>func)</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def ice_only(func):
-    &#34;&#34;&#34;
-    Ensures that a handler function is not invoked from a non ICE client.
-    &#34;&#34;&#34;
-    @wraps(func)
-    async def wrapper(self, message):
-        if self._attempted_connectivity_test:
-            raise ClientError(&#34;Cannot join game. Please update your client to the newest version.&#34;)
-        return await func(self, message)
-    return wrapper</code></pre>
-</details>
-<div class="desc"><p>Ensures that a handler function is not invoked from a non ICE client.</p></div>
-</dd>
 <dt id="server.lobbyconnection.LobbyConnection.kick"><code class="name flex">
 <span>async def <span class="ident">kick</span></span>(<span>self)</span>
 </code></dt>
@@ -2606,7 +2695,8 @@ async def command_restore_game_session(self, message):
 <pre><code class="python">async def on_connection_lost(self):
     async def nop(*args, **kwargs):
         return
-    self.send = nop
+
+    setattr(self, &#34;send&#34;, nop)
 
     if self._timeout_task and not self._timeout_task.done():
         self._timeout_task.cancel()
@@ -2711,7 +2801,10 @@ async def command_restore_game_session(self, message):
         )
     except OperationalError:
         # When the database goes down, SqlAlchemy will throw an OperationalError
-        self._logger.error(&#34;Encountered OperationalError on message received. This could indicate DB is down.&#34;)
+        self._logger.exception(
+            &#34;Encountered OperationalError on message received. This could &#34;
+            &#34;indicate DB is down.&#34;
+        )
         await self.send({
             &#34;command&#34;: &#34;notice&#34;,
             &#34;style&#34;: &#34;error&#34;,
@@ -2741,8 +2834,12 @@ async def command_restore_game_session(self, message):
     unique_id: str,
     method: str
 ):
+    assert self.peer_address is not None
+
     conforms_policy = await self.check_policy_conformity(
-        player_id, unique_id, self.session,
+        player_id,
+        unique_id,
+        self.session,
         # All players are required to have game ownership verified
         # so this is for informational purposes only
         ignore_result=True
@@ -2872,35 +2969,6 @@ async def command_restore_game_session(self, message):
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="server.lobbyconnection.LobbyConnection.player_idle"><code class="name flex">
-<span>def <span class="ident">player_idle</span></span>(<span>state_text)</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def player_idle(state_text):
-    &#34;&#34;&#34;
-    Ensures that a handler function is not invoked unless the player state
-    is IDLE.
-    &#34;&#34;&#34;
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(self, message):
-            if self.player.state != PlayerState.IDLE:
-                raise ClientError(
-                    f&#34;Can&#39;t {state_text} while in state &#34;
-                    f&#34;{self.player.state.name}&#34;,
-                    recoverable=True
-                )
-            return await func(self, message)
-        return wrapper
-    return decorator</code></pre>
-</details>
-<div class="desc"><p>Ensures that a handler function is not invoked unless the player state
-is IDLE.</p></div>
-</dd>
 <dt id="server.lobbyconnection.LobbyConnection.send"><code class="name flex">
 <span>async def <span class="ident">send</span></span>(<span>self, message)</span>
 </code></dt>
@@ -2911,6 +2979,8 @@ is IDLE.</p></div>
 </summary>
 <pre><code class="python">async def send(self, message):
     &#34;&#34;&#34;Send a message and wait for it to be sent.&#34;&#34;&#34;
+    assert self.protocol is not None
+
     self.write(message)
     await self.protocol.drain()</code></pre>
 </details>
@@ -2925,6 +2995,8 @@ is IDLE.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def send_game_list(self):
+    assert self.player is not None
+
     await self.send({
         &#34;command&#34;: &#34;game_info&#34;,
         &#34;games&#34;: [
@@ -3011,6 +3083,8 @@ a fatal warning it should disconnect and not attempt to reconnect.</li>
 </summary>
 <pre><code class="python">def write(self, message):
     &#34;&#34;&#34;Write a message into the send buffer.&#34;&#34;&#34;
+    assert self.protocol is not None
+
     self._logger.log(TRACE, &#34;&gt;&gt; %s: %s&#34;, self.get_user_identifier(), message)
     self.protocol.write_message(message)</code></pre>
 </details>
@@ -3087,6 +3161,12 @@ a fatal warning it should disconnect and not attempt to reconnect.</li>
 <li><code><a title="server" href="index.html">server</a></code></li>
 </ul>
 </li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="server.lobbyconnection.ice_only" href="#server.lobbyconnection.ice_only">ice_only</a></code></li>
+<li><code><a title="server.lobbyconnection.player_idle" href="#server.lobbyconnection.player_idle">player_idle</a></code></li>
+</ul>
+</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
@@ -3123,14 +3203,12 @@ a fatal warning it should disconnect and not attempt to reconnect.</li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.command_social_remove" href="#server.lobbyconnection.LobbyConnection.command_social_remove">command_social_remove</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.ensure_authenticated" href="#server.lobbyconnection.LobbyConnection.ensure_authenticated">ensure_authenticated</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.get_user_identifier" href="#server.lobbyconnection.LobbyConnection.get_user_identifier">get_user_identifier</a></code></li>
-<li><code><a title="server.lobbyconnection.LobbyConnection.ice_only" href="#server.lobbyconnection.LobbyConnection.ice_only">ice_only</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.kick" href="#server.lobbyconnection.LobbyConnection.kick">kick</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.launch_game" href="#server.lobbyconnection.LobbyConnection.launch_game">launch_game</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.on_connection_lost" href="#server.lobbyconnection.LobbyConnection.on_connection_lost">on_connection_lost</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.on_connection_made" href="#server.lobbyconnection.LobbyConnection.on_connection_made">on_connection_made</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.on_message_received" href="#server.lobbyconnection.LobbyConnection.on_message_received">on_message_received</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.on_player_login" href="#server.lobbyconnection.LobbyConnection.on_player_login">on_player_login</a></code></li>
-<li><code><a title="server.lobbyconnection.LobbyConnection.player_idle" href="#server.lobbyconnection.LobbyConnection.player_idle">player_idle</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.send" href="#server.lobbyconnection.LobbyConnection.send">send</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.send_game_list" href="#server.lobbyconnection.LobbyConnection.send_game_list">send_game_list</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.send_updated_achievements" href="#server.lobbyconnection.LobbyConnection.send_updated_achievements">send_updated_achievements</a></code></li>

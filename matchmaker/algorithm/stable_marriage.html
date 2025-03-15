@@ -212,6 +212,8 @@ class StableMarriageMatchmaker(Matchmaker):
     and afterwards adds random matchups for previously unmatched new players.
     &#34;&#34;&#34;
 
+    _logger: ClassVar[logging.Logger]
+
     def find(
         self, searches: Iterable[Search], team_size: int, rating_peak: float
     ) -&gt; tuple[list[Match], list[Search]]:
