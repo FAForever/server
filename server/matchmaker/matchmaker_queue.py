@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Optional
 
 import server.metrics as metrics
+from server.types.messages.server import MatchmakerInfoQueue
 
 from ..asyncio_extensions import SpinLock, synchronized
 from ..decorators import with_logger
@@ -282,7 +283,7 @@ class MatchmakerQueue:
         self._is_running = False
         self.timer.cancel()
 
-    def to_dict(self):
+    def to_dict(self) -> MatchmakerInfoQueue:
         """
         Return a fuzzy representation of the searches currently in the queue
         """

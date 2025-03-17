@@ -127,6 +127,8 @@ class AdminJoinChannel(TypedDict):
 class AskSession(TypedDict):
     """Request session ID information needed by the faf-uid binary.
 
+    Responds with a `server.types.messages.server.Session` message.
+
     **Example**
     ```json
     {
@@ -177,6 +179,8 @@ Avatar = Union["AvatarListAvatar", "AvatarSelect"]
 class AvatarListAvatar(TypedDict):
     """Get a list of available avatars.
 
+    Responds with a `server.types.messages.server.Avatar` message.
+
     **Example**
     ```json
     {
@@ -213,6 +217,9 @@ class AvatarSelect(TypedDict):
 class CoopList(TypedDict):
     """Request a list of available coop missions.
 
+    Responds with a `server.types.messages.server.CoopInfo` message for each
+    coop mission.
+
     **Example**
     ```json
     {
@@ -226,6 +233,9 @@ class CoopList(TypedDict):
 
 class GameHost(TypedDict):
     """Request to host a custom or coop game.
+
+    Responds with a `server.types.messages.server.GameLaunch` message signaling
+    to launch ForgedAlliance.
 
     **Example**
     ```json
@@ -280,6 +290,12 @@ class GameHost(TypedDict):
 class GameJoin(TypedDict):
     """Request to join a custom game.
 
+    Responds with a `server.types.messages.server.GameLaunch` message signaling
+    to launch ForgedAlliance.
+
+    Responds with a `server.types.messages.server.GameJoinFailed` message if the
+    game could not be joined.
+
     **Example**
     ```json
     {
@@ -301,6 +317,17 @@ class GameJoin(TypedDict):
 
 class GameMatchmaking(TypedDict):
     """Request to join a matchmaker queue.
+
+    Responds with a `server.types.messages.server.SearchInfo` message with state
+    "start" on success. Each search will conclude with either a
+    `server.types.messages.server.SearchInfo` message with state "stop"
+    signaling that the search was cancelled, or a
+    `server.types.messages.server.MatchFound` message signaling that a match was
+    found succesfully.
+
+    Responds with a `server.types.messages.server.SearchTimeout` message if the
+    request failed because some members of the party are actively banned from
+    the matchmaker.
 
     **Example**
     ```json
@@ -364,6 +391,8 @@ class Hello(TypedDict):
 class IceServers(TypedDict):
     """Request a list of available ICE server credentials.
 
+    Responds with a `server.types.messages.server.IceServers` message.
+
     DEPRECATED: ICE servers are handled by the icebreaker service.
 
     **Example**
@@ -379,6 +408,9 @@ class IceServers(TypedDict):
 
 class InviteToParty(TypedDict):
     """Request to send a party invite to a player.
+
+    Sends a `server.types.messages.server.PartyInvite` message to the invited
+    player.
 
     **Example**
     ```json
@@ -397,6 +429,9 @@ class InviteToParty(TypedDict):
 
 class KickPlayerFromParty(TypedDict):
     """Request to kick a player from your party.
+
+    Sends a `server.types.messages.server.KickedFromParty` message to the kicked
+    player.
 
     **Example**
     ```json
@@ -430,6 +465,9 @@ class LeaveParty(TypedDict):
 class MatchmakerInfo(TypedDict):
     """Request a list of available matchmaker queues.
 
+    Responds with a `server.types.messages.server.MatchmakerInfo` message
+    describing the currently available matchmaker queues.
+
     **Example**
     ```json
     {
@@ -459,6 +497,9 @@ class Modvault(TypedDict):
     """
     DEPRECATED: This command will be removed in the future. Use the FAF API
     instead.
+
+    Responds with a `server.types.messages.server.ModvaultInfo` message for
+    'start' and 'like' type.
     """
 
     command: Literal["modvault"]

@@ -24,7 +24,8 @@ import json
 import logging
 import struct
 from asyncio import IncompleteReadError
-from typing import ClassVar
+from collections.abc import Mapping
+from typing import Any, ClassVar
 
 from server.decorators import with_logger
 
@@ -95,7 +96,7 @@ class QDataStreamProtocol(Protocol):
         return QDataStreamProtocol.pack_block(msg)
 
     @staticmethod
-    def encode_message(message: dict) -> bytes:
+    def encode_message(message: Mapping[str, Any]) -> bytes:
         """
         Encodes a python object as a block of QStrings
         """
@@ -108,7 +109,7 @@ class QDataStreamProtocol(Protocol):
         return QDataStreamProtocol.pack_message(json_encoder.encode(message))
 
     @staticmethod
-    def decode_message(data: bytes) -> dict:
+    def decode_message(data: bytes) -> dict[str, Any]:
         _, action = QDataStreamProtocol.read_qstring(data)
         if action in ("PING", "PONG"):
             return {"command": action.lower()}
@@ -128,7 +129,7 @@ class QDataStreamProtocol(Protocol):
             pass
         return message
 
-    async def read_message(self):
+    async def read_message(self) -> dict[str, Any]:
         """
         Read a message from the stream
 

@@ -10,6 +10,11 @@ from typing import TYPE_CHECKING, Optional, Union
 from .factions import Faction
 from .protocol import DisconnectedError
 from .rating import Leaderboard, PlayerRatings, RatingType
+from .types.messages.server import (
+    PlayerInfoPlayer,
+    PlayerInfoPlayerAvatar,
+    ServerMessage
+)
 from .weakattr import WeakAttribute
 
 if TYPE_CHECKING:
@@ -49,6 +54,7 @@ class Player:
         leaderboards: dict[str, Leaderboard] = {},
         ratings: Optional[PlayerRatings] = None,
         clan: Optional[str] = None,
+        country: str = "__",
         game_count: Optional[dict[str, int]] = None,
         lobby_connection: Optional["LobbyConnection"] = None
     ) -> None:
@@ -69,9 +75,9 @@ class Player:
             self.game_count.update(game_count)
 
         # social
-        self.avatar: Optional[dict[str, str]] = None
+        self.avatar: Optional[PlayerInfoPlayerAvatar] = None
         self.clan = clan
-        self.country: Optional[str] = None
+        self.country = country
 
         self.friends: set[int] = set()
         self.foes: set[int] = set()
@@ -112,7 +118,7 @@ class Player:
     def is_moderator(self) -> bool:
         return "faf_moderators_global" in self.user_groups
 
-    async def send_message(self, message: dict) -> None:
+    async def send_message(self, message: ServerMessage) -> None:
         """
         Try to send a message to this player.
 
@@ -124,7 +130,7 @@ class Player:
 
         await self.lobby_connection.send(message)
 
-    def write_message(self, message: dict) -> None:
+    def write_message(self, message: ServerMessage) -> None:
         """
         Try to queue a message to be sent to this player.
 
@@ -136,24 +142,16 @@ class Player:
         with suppress(DisconnectedError):
             self.lobby_connection.write(message)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> PlayerInfoPlayer:
         """
         Return a dictionary representing this player object
         """
         assert self.state is not None and self.state.value is not None
 
-        cmd = {
+        cmd: PlayerInfoPlayer = {
             "id": self.id,
             "login": self.login,
-            "avatar": self.avatar,
             "country": self.country,
-            "clan": self.clan,
-            # NOTE: We are only sending an 'offline' state for now to signal to
-            # the client when a player disconnects. However, this could be
-            # expanded in the future to expose more of the internal state
-            # tracking to the client to make the UI for showing players in game
-            # more correct.
-            "state": None if self.lobby_connection else "offline",
             "ratings": {
                 rating_type: {
                     "rating": self.ratings[rating_type],
@@ -166,7 +164,19 @@ class Player:
             "ladder_rating": self.ratings[RatingType.LADDER_1V1],
             "number_of_games": self.game_count[RatingType.GLOBAL],
         }
-        return {k: v for k, v in cmd.items() if v is not None}
+        if self.avatar is not None:
+            cmd["avatar"] = self.avatar
+        if self.clan is not None:
+            cmd["clan"] = self.clan
+        if self.lobby_connection is None:
+            # NOTE: We are only sending an 'offline' state for now to signal to
+            # the client when a player disconnects. However, this could be
+            # expanded in the future to expose more of the internal state
+            # tracking to the client to make the UI for showing players in game
+            # more correct.
+            cmd["state"] = "offline"
+
+        return cmd
 
     def __str__(self) -> str:
         return (f"Player({self.login}, {self.id}, "

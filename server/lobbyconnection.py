@@ -13,7 +13,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime
 from functools import wraps
-from typing import ClassVar, Optional
+from typing import ClassVar, Literal, Optional, cast
 
 import aiohttp
 from sqlalchemy import and_, func, select
@@ -64,6 +64,7 @@ from .rating import InclusiveRange, RatingType
 from .rating_service import RatingService
 from .types import Address, GameLaunchOptions
 from .types.messages import client
+from .types.messages.server import GameLaunch, ServerMessage
 
 
 def ice_only(func):
@@ -320,13 +321,14 @@ class LobbyConnection:
             ]
         })
 
-    async def send_game_list(self):
+    async def send_game_list(self) -> None:
         assert self.player is not None
 
         await self.send({
             "command": "game_info",
             "games": [
-                game.to_dict() for game in self.game_service.open_games
+                game.to_dict()
+                for game in self.game_service.open_games
                 if game.is_visible_to_player(self.player)
             ]
         })
@@ -427,7 +429,7 @@ class LobbyConnection:
 
         player.write_message(msg)
 
-    async def kick(self):
+    async def kick(self) -> None:
         await self.send({
             "command": "notice",
             "style": "kick",
@@ -772,17 +774,14 @@ class LobbyConnection:
             login=username,
             session=self.session,
             player_id=player_id,
+            leaderboards=self.rating_service.leaderboards,
+            country=self.geoip_service.country(self.peer_address.host),
             lobby_connection=self,
-            leaderboards=self.rating_service.leaderboards
         )
         await self.player_service.fetch_player_data(self.player)
 
         self.player_service[self.player.id] = self.player
         self._authenticated = True
-
-        # Country
-        # -------
-        self.player.country = self.geoip_service.country(self.peer_address.host)
 
         # Send the player their own player info.
         await self.send({
@@ -790,7 +789,7 @@ class LobbyConnection:
             "me": self.player.to_dict(),
             "current_time": datetime_now().isoformat(),
 
-            # For backwards compatibility for old clients. For now.
+            # DEPRECATED: Use attributes in `me` instead.
             "id": self.player.id,
             "login": username
         })
@@ -836,15 +835,14 @@ class LobbyConnection:
         if self.player.clan is not None:
             channels.append(f"#{self.player.clan}_clan")
 
-        json_to_send = {
+        await self.send({
             "command": "social",
             "autojoin": channels,
             "channels": channels,
             "friends": friends,
             "foes": foes,
             "power": self.player.power()
-        }
-        await self.send(json_to_send)
+        })
 
         await self.send_game_list()
 
@@ -1192,7 +1190,7 @@ class LobbyConnection:
         game: Game,
         is_host: bool = False,
         options: GameLaunchOptions = GameLaunchOptions(),
-    ):
+    ) -> GameLaunch:
         assert self.player is not None
         assert self.game_connection is None
         assert self.protocol is not None
@@ -1219,7 +1217,7 @@ class LobbyConnection:
             self.player.state = PlayerState.STARTING_GAME
 
         self.player.game = game
-        cmd = {
+        cmd: GameLaunch = {
             "command": "game_launch",
             "args": ["/numgames", self.player.game_count[game.rating_type]],
             "uid": game.id,
@@ -1234,10 +1232,10 @@ class LobbyConnection:
             "init_mode": game.init_mode.value,
             "game_type": game.game_type.value,
             "rating_type": game.rating_type,
-            **options._asdict()
+            **options._asdict(),
         }
 
-        return {k: v for k, v in cmd.items() if v is not None}
+        return cast(GameLaunch, {k: v for k, v in cmd.items() if v is not None})
 
     # DEPRECATED: Use the FAF API instead
     async def command_modvault(self, message: client.Modvault):
@@ -1257,11 +1255,23 @@ class LobbyConnection:
                         if icon:
                             thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
-                        out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
-                                   comments=[], description=description, played=played, likes=likes,
-                                   downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
-                                   ui=ui)
-                        await self.send(out)
+                        await self.send({
+                            "command": "modvault_info",
+                            "thumbnail": thumbstr,
+                            "link": link,
+                            "bugreports": [],
+                            "comments": [],
+                            "description": description,
+                            "played": played,
+                            "likes": likes,
+                            "downloads": downloads,
+                            "date": int(date.timestamp()),
+                            "uid": uid,
+                            "name": name,
+                            "version": version,
+                            "author": author,
+                            "ui": ui,
+                        })
                     except Exception:
                         self._logger.error(f"Error handling table_mod row (uid: {uid})", exc_info=True)
 
@@ -1282,11 +1292,6 @@ class LobbyConnection:
                 if icon:
                     thumbstr = urllib.parse.urljoin(config.CONTENT_URL, "faf/vault/mods_thumbs/" + urllib.parse.quote(icon))
 
-                out = dict(command="modvault_info", thumbnail=thumbstr, link=link, bugreports=[],
-                           comments=[], description=description, played=played, likes=likes + 1,
-                           downloads=downloads, date=int(date.timestamp()), uid=uid, name=name, version=version, author=author,
-                           ui=ui)
-
                 try:
                     likers = json.loads(likerList)
                     if self.player.id in likers:
@@ -1305,7 +1310,23 @@ class LobbyConnection:
                         l=json.dumps(likers),
                         id=uid
                     )
-                    await self.send(out)
+                    await self.send({
+                        "command": "modvault_info",
+                        "thumbnail": thumbstr,
+                        "link": link,
+                        "bugreports": [],
+                        "comments": [],
+                        "description": description,
+                        "played": played,
+                        "likes": likes + 1,
+                        "downloads": downloads,
+                        "date": int(date.timestamp()),
+                        "uid": uid,
+                        "name": name,
+                        "version": version,
+                        "author": author,
+                        "ui": ui,
+                    })
 
             elif type == "download":
                 uid = message["uid"]
@@ -1413,7 +1434,7 @@ class LobbyConnection:
         self,
         message: str,
         fatal: bool = False,
-        style: Optional[str] = None
+        style: Optional[Literal["error", "info", "kick", "kill"]] = None
     ):
         """
         Like `send_warning`, but does not await the data to be sent.
@@ -1426,14 +1447,14 @@ class LobbyConnection:
         if fatal:
             asyncio.create_task(self.abort(message))
 
-    async def send(self, message):
+    async def send(self, message: ServerMessage) -> None:
         """Send a message and wait for it to be sent."""
         assert self.protocol is not None
 
         self.write(message)
         await self.protocol.drain()
 
-    def write(self, message):
+    def write(self, message: ServerMessage) -> None:
         """Write a message into the send buffer."""
         assert self.protocol is not None
 
