@@ -287,6 +287,7 @@ matchmaker_queue_game = Table(
 
 matchmaker_queue_map_pool = Table(
     "matchmaker_queue_map_pool", metadata,
+    Column("id",                       Integer, primary_key=True),
     Column("matchmaker_queue_id",      Integer, ForeignKey("matchmaker_queue.id"), nullable=False),
     Column("map_pool_id",              Integer, ForeignKey("map_pool.id"),         nullable=False),
     Column("min_rating",               Integer),

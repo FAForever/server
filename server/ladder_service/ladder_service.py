@@ -104,8 +104,8 @@ class LadderService(Service):
                 queue.rating_type = info["rating_type"]
                 queue.team_size = info["team_size"]
                 queue.rating_peak = await self.fetch_rating_peak(info["rating_type"])
-            queue.map_pools.clear()
-            for map_pool_id, min_rating, max_rating, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto in info["map_pools"]:
+            queue.map_pools.clear()            
+            for matchmaker_queue_map_pool_id, map_pool_id, min_rating, max_rating, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto in info["map_pools"]:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]
                 if not map_list:
                     self._logger.warning(
@@ -116,6 +116,7 @@ class LadderService(Service):
                     )
                 queue.add_map_pool(
                     MatchmakerQueueMapPool(
+                        matchmaker_queue_map_pool_id,   
                         MapPool(map_pool_id, map_pool_name, map_list),
                         min_rating,
                         max_rating,
@@ -206,6 +207,7 @@ class LadderService(Service):
                 matchmaker_queue.c.technical_name,
                 matchmaker_queue.c.team_size,
                 matchmaker_queue.c.params,
+                matchmaker_queue_map_pool.c.id.label("matchmaker_queue_map_pool_id"),
                 matchmaker_queue_map_pool.c.map_pool_id,
                 matchmaker_queue_map_pool.c.min_rating,
                 matchmaker_queue_map_pool.c.max_rating,
@@ -238,6 +240,7 @@ class LadderService(Service):
                 info["team_size"] = row.team_size
                 info["params"] = json.loads(row.params) if row.params else None
                 info["map_pools"].append((
+                    row.matchmaker_queue_map_pool_id,
                     row.map_pool_id,
                     row.min_rating,
                     row.max_rating,
@@ -548,14 +551,36 @@ class LadderService(Service):
             if not pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
 
-            pool, *_, max_tokens_per_map, minimum_maps_after_veto = queue.map_pools[pool.id]
+            pool_id, pool, *_, max_tokens_per_map, minimum_maps_after_veto = queue.map_pools[pool.id]
 
             vetoes_map = defaultdict(int)
 
             for m in pool.maps.values():
-                for player in all_players:
-                    vetoes_map[m.map_pool_map_version_id] += player.vetoes.get(m.map_pool_map_version_id, 0)
+                for index, player in enumerate(all_players):
+                    vetoes_map[m.map_pool_map_version_id] += player.vetoes.get(pool_id, {}).get(m.map_pool_map_version_id, 0)
+            
+            for index, player in enumerate(all_players):
+                self._logger.debug("______pool________: %s", pool)
+                self._logger.debug("______pool_id________: %s", pool_id)
+                last_played_tokens = player.vetoes.get(pool_id, {}).get(-1, 0)
+                self._logger.debug("______player________with tokens________: %s %s", player.id, last_played_tokens)
+                self._logger.debug("his vetoes is %s", player.vetoes)
+                if (last_played_tokens > 0):
+                    last_played_map_id = played_map_ids.get(player.id, None)
+                    self._logger.debug("______last_played_map_id________: %s", last_played_map_id)
+                    if (last_played_map_id is not None):
+                        map =  next((el for el in pool.maps.values() if el.id == last_played_map_id), None)
+                        self._logger.debug("______map________: %s", map)
+                        if (map is not None):
+                            if (vetoes_map.get(map.map_pool_map_version_id, -1) == -1):
+                                vetoes_map[map.map_pool_map_version_id] = 0
+                            vetoes_map[map.map_pool_map_version_id] += last_played_tokens
 
+            
+            self._logger.debug("______played_map_ids________________: %s", played_map_ids)
+            self._logger.debug("______pool_maps________________: %s", pool.maps.values())
+            self._logger.debug("______Vetoes_map________________: %s", vetoes_map)
+            self._logger.debug("______maplist________: %s", pool.maps.values())
             if (max_tokens_per_map == 0):
                 max_tokens_per_map = self.calculate_dynamic_tokens_per_map(minimum_maps_after_veto, vetoes_map.values())
                 # this should never happen actually so i am not sure do we need this here or not
@@ -564,7 +589,10 @@ class LadderService(Service):
                     vetoes_map = {}
                     max_tokens_per_map = 1
             game_map = pool.choose_map(played_map_ids, vetoes_map, max_tokens_per_map)
-
+            self._logger.debug("______game_map________________: %s", game_map)
+            for player in all_players:
+                player.state = PlayerState.IDLE
+            raise RuntimeError(f"tesing!")
             game = self.game_service.create_game(
                 game_class=LadderGame,
                 game_mode=queue.featured_mod,
@@ -837,7 +865,7 @@ class LadderService(Service):
     def get_pools_veto_data(self) -> list[MatchmakerQueueMapPoolVetoData]:
         result = []
         for queue in self.queues.values():
-            for pool, *_, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto in queue.map_pools.values():
+            for matchmaker_queue_map_pool_id, pool, *_, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto in queue.map_pools.values():
                 if max_tokens_per_map == 0 and minimum_maps_after_veto >= len(pool.maps.values()) \
                    or max_tokens_per_map != 0 and queue.team_size * 2 * veto_tokens_per_player / max_tokens_per_map > len(pool.maps.values()) - minimum_maps_after_veto:
                     veto_tokens_per_player = 0
@@ -846,7 +874,8 @@ class LadderService(Service):
                     self._logger.error(f"Wrong vetoes setup detected for pool {pool.id} in queue {queue.id}")
                 result.append(
                     MatchmakerQueueMapPoolVetoData(
-                        map_pool_map_version_ids=[map.map_pool_map_version_id for map in pool.maps.values()],
+                        matchmaker_queue_map_pool_id = matchmaker_queue_map_pool_id,
+                        map_pool_map_version_ids=[map.map_pool_map_version_id for map in pool.maps.values()] + [-1],
                         veto_tokens_per_player=veto_tokens_per_player,
                         max_tokens_per_map=max_tokens_per_map,
                         minimum_maps_after_veto=minimum_maps_after_veto
@@ -861,7 +890,7 @@ class LadderService(Service):
         limit: int = 3
     ) -> list[int]:
         async with self._db.acquire() as conn:
-            result = []
+            result = {}
             for player in players:
                 query = select(
                     game_stats.c.mapId,
@@ -885,9 +914,9 @@ class LadderService(Service):
                     game_stats.c.id.desc()
                 ).limit(limit)
 
-                result.extend([
+                result[player.id] = ([
                     row.mapId for row in await conn.execute(query)
-                ])
+                ])[0] or None
         return result
 
     def on_connection_lost(self, conn: "LobbyConnection") -> None:

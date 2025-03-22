@@ -81,7 +81,7 @@ class MatchmakerQueue:
         self.map_pools[matchmaker_queue_map_pool.map_pool.id] = matchmaker_queue_map_pool
 
     def get_map_pool_for_rating(self, rating: float) -> Optional[MapPool]:
-        for map_pool, min_rating, max_rating, *_, in self.map_pools.values():
+        for id, map_pool, min_rating, max_rating, *_, in self.map_pools.values():
             if min_rating is not None and rating < min_rating:
                 continue
             if max_rating is not None and rating > max_rating:

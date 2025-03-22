@@ -92,15 +92,20 @@ class Player:
             self._faction = Faction.from_value(value)
 
     @property
-    def vetoes(self) -> dict[int, int]:
+    def vetoes(self) -> dict[int, dict[int, int]]:
         return self._vetoes
 
     @vetoes.setter
-    def vetoes(self, value: dict[int, int]) -> None:
-        if not isinstance(value, dict):
-            raise ValueError("Vetoes must be a dictionary")
-        if not all(isinstance(key, int) and isinstance(val, int) and val >= 0 for key, val in value.items()):
-            raise ValueError("Incorrect vetoes dictonary")
+    def vetoes(self, value: dict[int, dict[int, int]]) -> None:
+        if not isinstance(value, dict) or \
+            not all(
+                isinstance(k, int) and 
+                isinstance(v, dict) and 
+                all(isinstance(mk, int) and isinstance(mv, int) and mv >= 0 
+                    for mk, mv in v.items())
+                for k, v in value.items()
+            ):
+            raise ValueError("Invalid vetoes structure")
         self._vetoes = value
 
     async def update_vetoes(self, pools_vetodata: list[MatchmakerQueueMapPoolVetoData], current: dict = None) -> None:
@@ -108,21 +113,28 @@ class Player:
             current = self.vetoes
         fixedVetoes = {}
         vetoDatas = []
-        for (map_pool_map_version_ids, veto_tokens_per_player, max_tokens_per_map, _) in pools_vetodata:
+        for (matchmaker_queue_map_pool_id, map_pool_map_version_ids, veto_tokens_per_player, max_tokens_per_map, _) in pools_vetodata:
             tokens_sum = 0
+            cur_bracket_vetoes = current.get(matchmaker_queue_map_pool_id, {})
+            cur_fixed_vetoes = {}
             for map_id in map_pool_map_version_ids:
-                new_tokens_applied = max(current.get(map_id, 0), 0)
+                new_tokens_applied = max(cur_bracket_vetoes.get(map_id, 0), 0)
                 if (tokens_sum + new_tokens_applied > veto_tokens_per_player):
                     new_tokens_applied = veto_tokens_per_player - tokens_sum
                 if (max_tokens_per_map > 0 and new_tokens_applied > max_tokens_per_map):
                     new_tokens_applied = max_tokens_per_map
                 if (new_tokens_applied == 0):
                     continue
-                vetoDatas.append({"map_pool_map_version_id": map_id, "veto_tokens_applied": new_tokens_applied})
-                fixedVetoes[map_id] = new_tokens_applied
+                vetoDatas.append({"map_pool_map_version_id": map_id, "veto_tokens_applied": new_tokens_applied, "matchmaker_queue_map_pool_id": matchmaker_queue_map_pool_id})
+                cur_fixed_vetoes[map_id] = new_tokens_applied
                 tokens_sum += new_tokens_applied
+            if tokens_sum > 0:
+                fixedVetoes[matchmaker_queue_map_pool_id] = cur_fixed_vetoes
         if fixedVetoes == self.vetoes == current:
             return
+        print("fixedVetoes", fixedVetoes)
+        print("self.vetoes", self.vetoes)
+        print("current", current)
         self.vetoes = fixedVetoes
         if self.lobby_connection is None:
             return

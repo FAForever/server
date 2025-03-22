@@ -21,7 +21,7 @@ class MapPool(object):
     def set_maps(self, maps: Iterable[MapPoolMap]) -> None:
         self.maps = {map_.id: map_ for map_ in maps}
 
-    def choose_map(self, played_map_ids: Iterable[int] = (), vetoes_map={}, max_tokens_per_map=1) -> Map:
+    def choose_map(self, played_map_ids, vetoes_map={}, max_tokens_per_map=1) -> Map:
         """
         Select a random map using veto system weights.
         The maps which are least played from played_map_ids
@@ -33,29 +33,10 @@ class MapPool(object):
             )
             raise RuntimeError(f"Map pool {self.name} not set!")
 
-        # Make sure the counter has every available map
-        counter = Counter(self.maps.keys())
-        counter.update(id_ for id_ in played_map_ids if id_ in self.maps)
-
-        least_common = counter.most_common()[::-1]
-        least_count = 1
-        for id_, count in least_common:
-            if isinstance(self.maps[id_], Map):
-                least_count = count
-                break
-
-        # Trim off the maps with higher play counts
-        for i, (_, count) in enumerate(least_common):
-            if count > least_count:
-                least_common = least_common[:i]
-                break
-
-        least_common_ids = {id_ for id_, _ in least_common}
-
         # Anti-repetition is temporary disabled
         # map_list = list((map.map_pool_map_version_id, map, 2 if (map.id in least_common_ids) and (vetoes_map.get(map.map_pool_map_version_id, 0) == 0) else 1) for map in self.maps.values())
-        map_list = list((map.map_pool_map_version_id, map, 1) for map in self.maps.values())
-        weights = [max(0, (1 - vetoes_map.get(id, 0) / max_tokens_per_map) * map.weight * least_common_multiplier) for id, map, least_common_multiplier in map_list]
+        map_list = list((map.map_pool_map_version_id, map) for map in self.maps.values())
+        weights = [max(0, (1 - vetoes_map.get(id, 0) / max_tokens_per_map) * map.weight) for id, map in map_list]
         return random.choices(map_list, weights=weights, k=1)[0][1]
 
     def __repr__(self) -> str:
@@ -63,6 +44,7 @@ class MapPool(object):
 
 
 class MatchmakerQueueMapPool(NamedTuple):
+    id: int
     map_pool: MapPool
     min_rating: int | None
     max_rating: int | None
