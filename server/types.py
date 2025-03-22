@@ -40,8 +40,11 @@ class MatchmakerQueueMapPoolVetoData(NamedTuple):
 
 
 class MapPoolMap(Protocol):
-    id: int
-    weight: int
+    @property
+    def id(self) -> Optional[int]: ...
+
+    @property
+    def weight(self) -> int: ...
 
     def get_map(self) -> "Map": ...
 
@@ -55,16 +58,19 @@ class Map(NamedTuple):
     map_pool_map_version_id: Optional[int] = None
 
     @property
-    def file_path(self):
+    def file_path(self) -> str:
         """A representation of the map name as it looks in the database"""
         return f"maps/{self.folder_name}.zip"
 
     @property
-    def scenario_file(self):
+    def scenario_file(self) -> str:
         return f"/maps/{self.folder_name}/{self.folder_name}_scenario.lua"
 
     def get_map(self) -> "Map":
         return self
+
+
+_NEROXIS_MAP_NAME_PATTERN = re.compile("neroxis_map_generator_([0-9.]+)_.+")
 
 
 class NeroxisGeneratedMap(NamedTuple):
@@ -75,14 +81,10 @@ class NeroxisGeneratedMap(NamedTuple):
     weight: int = 1
     map_pool_map_version_id: Optional[int] = None
 
-    _NAME_PATTERN = re.compile(
-        "neroxis_map_generator_([0-9.]+)_([a-z2-7]+)_([a-z2-7]+)"
-    )
-
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -> bool:
         """Check if mapname is map generator"""
-        return cls._NAME_PATTERN.fullmatch(folder_name) is not None
+        return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
     def of(cls, params: dict, weight: int = 1, map_pool_map_version_id: Optional[int] = None):

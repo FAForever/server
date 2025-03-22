@@ -6,7 +6,7 @@ from server.db.models import coop_leaderboard
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until, read_until_command
-from .test_game import host_game, send_player_options
+from .test_game import host_game, join_game, send_player_options
 
 
 @fast_forward(100)
@@ -95,3 +95,94 @@ async def test_single_player_game_recorded(lobby_server, database):
         assert row.secondary == 0
         assert row.time == datetime.time(0, 11, 50)
         assert row.player_count == 1
+
+
+@fast_forward(100)
+async def test_three_player_game_recorded(lobby_server, database):
+    test_id, _, proto1 = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    await read_until_command(proto1, "game_info")
+    test2_id, _, proto2 = await connect_and_sign_in(
+        ("test2", "test2"), lobby_server
+    )
+    await read_until_command(proto2, "game_info")
+    test3_id, _, proto3 = await connect_and_sign_in(
+        ("test3", "test3"), lobby_server
+    )
+    await read_until_command(proto3, "game_info")
+
+    # Set up the game
+    game_id = await host_game(proto1, mod="coop", mapname="scmp_coop_123.v0002")
+    await join_game(proto2, game_id)
+    await join_game(proto3, game_id)
+    # Set player options
+    await send_player_options(
+        proto1,
+        [test_id, "Army", 1],
+        [test_id, "Team", 1],
+        [test_id, "StartSpot", 1],
+        [test_id, "Faction", 1],
+        [test_id, "Color", 1],
+        [test2_id, "Army", 2],
+        [test2_id, "Team", 1],
+        [test2_id, "StartSpot", 2],
+        [test2_id, "Faction", 1],
+        [test2_id, "Color", 2],
+        [test3_id, "Army", 3],
+        [test3_id, "Team", 1],
+        [test3_id, "StartSpot", 3],
+        [test3_id, "Faction", 1],
+        [test3_id, "Color", 3],
+    )
+
+    # Launch game
+    await proto1.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Launching"]
+    })
+
+    for proto in (proto1, proto2, proto3):
+        await read_until(
+            proto,
+            lambda cmd: cmd["command"] == "game_info" and cmd["launched_at"]
+        )
+
+    # End the game
+
+    for proto in (proto1, proto2, proto3):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameEnded",
+            "args": []
+        })
+
+    for proto in (proto1, proto2, proto3):
+        await proto.send_message({
+            "target": "game",
+            "command": "OperationComplete",
+            "args": [1, 0, "00:11:50"]
+        })
+
+    # Now disconnect
+    for proto in (proto1, proto2, proto3):
+        await proto.send_message({
+            "target": "game",
+            "command": "GameState",
+            "args": ["Ended"]
+        })
+
+    await read_until_command(proto1, "game_info", uid=game_id, state="closed")
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select(coop_leaderboard).where(
+                coop_leaderboard.c.gameuid == game_id
+            )
+        )
+        row = result.fetchone()
+        assert row is not None
+        assert row.secondary == 0
+        assert row.time == datetime.time(0, 11, 50)
+        assert row.player_count == 3

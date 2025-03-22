@@ -1,3 +1,6 @@
+import logging
+from typing import ClassVar
+
 from server.config import config
 from server.core import Service
 from server.decorators import with_logger
@@ -64,6 +67,8 @@ ACH_DONT_MESS_WITH_ME = "2103e0de-1c87-4fba-bc1b-0bba66669607"
 
 @with_logger
 class AchievementService(Service):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, message_queue_service: MessageQueueService):
         self.message_queue_service = message_queue_service
 

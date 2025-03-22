@@ -6,10 +6,11 @@ from enum import Enum, unique
 
 @unique
 class Victory(Enum):
-    DEMORALIZATION = 0
-    DOMINATION = 1
-    ERADICATION = 2
-    SANDBOX = 3
+    DEMORALIZATION = "DEMORALIZATION"
+    DOMINATION = "DOMINATION"
+    ERADICATION = "ERADICATION"
+    SANDBOX = "SANDBOX"
+    DECAPITATION = "DECAPITATION"
 
 
 @unique

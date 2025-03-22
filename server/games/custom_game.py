@@ -1,13 +1,11 @@
 import time
 
-from server.decorators import with_logger
 from server.rating import RatingType
 
 from .game import Game
 from .typedefs import GameType, InitMode, ValidityState
 
 
-@with_logger
 class CustomGame(Game):
     init_mode = InitMode.NORMAL_LOBBY
     game_type = GameType.CUSTOM
@@ -21,6 +19,8 @@ class CustomGame(Game):
         super().__init__(id, *args, **new_kwargs)
 
     async def _run_pre_rate_validity_checks(self):
+        assert self.launched_at is not None
+
         limit = len(self.players) * 60
         if not self.enforce_rating and time.time() - self.launched_at < limit:
             await self.mark_invalid(ValidityState.TOO_SHORT)

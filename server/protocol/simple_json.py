@@ -1,3 +1,13 @@
+r"""A simple newline terminated JSON data format.
+
+# Example:
+```python
+>>> SimpleJsonProtocol.encode_message({"command": "ping"})
+b'{"command":"ping"}\n'
+
+```
+"""
+
 import json
 
 from .protocol import DisconnectedError, Protocol, json_encoder

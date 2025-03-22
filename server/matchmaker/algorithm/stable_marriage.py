@@ -1,7 +1,8 @@
 import itertools
+import logging
 import math
 import statistics as stats
-from typing import Iterable
+from typing import ClassVar, Iterable
 
 from ...decorators import with_logger
 from ..search import Match, Search
@@ -79,6 +80,8 @@ class StableMarriageMatchmaker(Matchmaker):
     and afterwards adds random matchups for previously unmatched new players.
     """
 
+    _logger: ClassVar[logging.Logger]
+
     def find(
         self, searches: Iterable[Search], team_size: int, rating_peak: float
     ) -> tuple[list[Match], list[Search]]:
@@ -117,6 +120,8 @@ class StableMarriageMatchmaker(Matchmaker):
 
 @with_logger
 class _MatchingGraph:
+    _logger: ClassVar[logging.Logger]
+
     @staticmethod
     def build_full(searches: list[Search]) -> WeightedGraph:
         """A graph in adjacency list representation, whose nodes are the searches
@@ -128,7 +133,10 @@ class _MatchingGraph:
 
         Time complexity: O(n^2)
         """
-        adj_list = {search: [] for search in searches}
+        adj_list: dict[Search, list[tuple[Search, float]]] = {
+            search: []
+            for search in searches
+        }
 
         # Generate every edge. There are 'len(searches) choose 2' of these.
         for search, other in itertools.combinations(searches, 2):
@@ -153,7 +161,10 @@ class _MatchingGraph:
 
         Time complexity: O(n*log(n))
         """
-        adj_list = {search: [] for search in searches}
+        adj_list: dict[Search, list[tuple[Search, float]]] = {
+            search: []
+            for search in searches
+        }
         # Sort all searches by players average trueskill mean
         searches = sorted(searches, key=avg_mean)
         # Now compute quality with `num_to_check` nearby searches on either side

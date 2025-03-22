@@ -1,5 +1,6 @@
 import asyncio
-from typing import Optional
+import logging
+from typing import Any, ClassVar, Optional
 
 import aiocron
 import pymysql
@@ -39,6 +40,8 @@ class RatingService(Service):
     atomic.
     """
 
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         database: FAFDatabase,
@@ -48,8 +51,8 @@ class RatingService(Service):
         self._db = database
         self._player_service_callback = player_service.signal_player_rating_change
         self._accept_input = False
-        self._queue = asyncio.Queue()
-        self._task = None
+        self._queue: asyncio.Queue[GameRatingSummary] = asyncio.Queue()
+        self._task: Optional[asyncio.Task] = None
         self._rating_type_ids: Optional[dict[str, int]] = None
         self.leaderboards: dict[str, Leaderboard] = {}
         self._message_queue_service = message_queue_service
@@ -96,7 +99,7 @@ class RatingService(Service):
                 if init:
                     current.initializer = init
 
-    async def enqueue(self, game_info: dict[str]) -> None:
+    async def enqueue(self, game_info: dict[str, Any]) -> None:
         if not self._accept_input:
             self._logger.warning("Dropped rating request %s", game_info)
             raise ServiceNotReadyError(

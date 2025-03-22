@@ -391,6 +391,7 @@ def test_matchmaker(player_factory):
         assert top_player not in match_pair
 
 
+@pytest.mark.performance
 def test_matchmaker_performance(player_factory, bench, caplog):
     # Disable debug logging for performance
     caplog.set_level(logging.INFO)

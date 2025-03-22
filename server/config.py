@@ -6,7 +6,7 @@ import asyncio
 import logging
 import os
 import statistics
-from typing import Callable
+from typing import Callable, ClassVar, Iterable
 
 import trueskill
 import yaml
@@ -27,7 +27,7 @@ FFA_TEAM = 1
 # see: http://forums.faforever.com/viewtopic.php?f=45&t=11698#p119599
 # Optimum values for ladder here, using them for global as well.
 trueskill.setup(mu=1500, sigma=500, beta=240, tau=10, draw_probability=0.10)
-MAP_POOL_RATING_SELECTION_FUNCTIONS = {
+MAP_POOL_RATING_SELECTION_FUNCTIONS: dict[str, Callable[[Iterable[float]], float]] = {
     "mean": statistics.mean,
     "min": min,
     "max": max,
@@ -36,6 +36,8 @@ MAP_POOL_RATING_SELECTION_FUNCTIONS = {
 
 @with_logger
 class ConfigurationStore:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self):
         """
         Change default values here.
@@ -84,6 +86,8 @@ class ConfigurationStore:
         self.DB_LOGIN = "root"
         self.DB_PASSWORD = "banana"
         self.DB_NAME = "faf"
+        # An empty value will disable the database version check
+        self.DB_FLYWAY_TABLE = "flyway_schema_history"
 
         self.API_CLIENT_ID = "client_id"
         self.API_CLIENT_SECRET = "banana"
@@ -156,6 +160,17 @@ class ConfigurationStore:
         self.QUEUE_POP_DESIRED_MATCHES = 2.5
         # How many previous queue sizes to consider
         self.QUEUE_POP_TIME_MOVING_AVG_SIZE = 5
+
+        self.LADDER_VIOLATIONS_ENABLED = True
+        # How many violations are needed to trigger a temporary ban from queuing
+        self.LADDER_VIOLATIONS_BAN_THRESHOLD = 2
+        # Number of seconds that each temporary ban lasts
+        self.LADDER_VIOLATIONS_BAN_DURATION = 1800
+        # Number of seconds that the first temporary ban lasts. By default the
+        # ban for the first violation is shorter than the following bans.
+        self.LADDER_VIOLATIONS_FIRST_BAN_DURATION = 600
+        # Number of seconds needed since last violation to reset the counter
+        self.LADDER_VIOLATIONS_RESET_TIME = 3600
 
         self._defaults = {
             key: value

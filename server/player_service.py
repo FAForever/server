@@ -3,17 +3,19 @@ Manages connected and authenticated players
 """
 
 import asyncio
-from typing import Optional, ValuesView
+import logging
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, ClassVar, Optional, ValuesView
 
 import aiocron
 from sqlalchemy import and_, select
-from trueskill import Rating
 
 import server.metrics as metrics
 from server.config import config
 from server.db import FAFDatabase
 from server.decorators import with_logger
 from server.players import Player, PlayerState
+from server.rating import Rating
 from server.timing import at_interval
 
 from .core import Service
@@ -31,16 +33,21 @@ from .db.models import (
     user_group_assignment
 )
 
+if TYPE_CHECKING:
+    from server.lobbyconnection import LobbyConnection
+
 
 @with_logger
 class PlayerService(Service):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, database: FAFDatabase):
         self._db = database
-        self._players = dict()
+        self._players: dict[int, Player] = {}
 
         # Static-ish data fields.
-        self.uniqueid_exempt = {}
-        self._dirty_players = set()
+        self.uniqueid_exempt: frozenset[int] = frozenset()
+        self._dirty_players: set[Player] = set()
 
     async def initialize(self) -> None:
         await self.update_data()
@@ -48,16 +55,16 @@ class PlayerService(Service):
             "*/10 * * * *", func=self.update_data
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._players)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Player]:
         return self._players.values().__iter__()
 
     def __getitem__(self, player_id: int) -> Optional[Player]:
         return self._players.get(player_id)
 
-    def __setitem__(self, player_id: int, player: Player):
+    def __setitem__(self, player_id: int, player: Player) -> None:
         self._players[player_id] = player
         metrics.players_online.set(len(self._players))
 
@@ -65,7 +72,7 @@ class PlayerService(Service):
     def all_players(self) -> ValuesView[Player]:
         return self._players.values()
 
-    def mark_dirty(self, player: Player):
+    def mark_dirty(self, player: Player) -> None:
         self._dirty_players.add(player)
 
     def pop_dirty_players(self) -> set[Player]:
@@ -74,7 +81,7 @@ class PlayerService(Service):
 
         return dirty_players
 
-    async def fetch_player_data(self, player):
+    async def fetch_player_data(self, player: Player) -> None:
         async with self._db.acquire() as conn:
             result = await conn.execute(
                 select(user_group.c.technical_name)
@@ -110,19 +117,19 @@ class PlayerService(Service):
                 )
                 return
 
-            row = row._mapping
-            player.clan = row.get(clan.c.tag)
+            row_mapping = row._mapping
+            player.clan = row_mapping.get(clan.c.tag)
 
             url, tooltip = (
-                row.get(avatars_list.c.url),
-                row.get(avatars_list.c.tooltip)
+                row_mapping.get(avatars_list.c.url),
+                row_mapping.get(avatars_list.c.tooltip)
             )
             if url and tooltip:
                 player.avatar = {"url": url, "tooltip": tooltip}
 
             await self._fetch_player_ratings(player, conn)
 
-    async def _fetch_player_ratings(self, player, conn):
+    async def _fetch_player_ratings(self, player: Player, conn):
         sql = select(
             leaderboard_rating.c.mean,
             leaderboard_rating.c.deviation,
@@ -146,7 +153,7 @@ class PlayerService(Service):
             player.ratings[rating_type] = rating
             player.game_count[rating_type] = total_games
 
-    def remove_player(self, player: Player):
+    def remove_player(self, player: Player) -> None:
         if player.id in self._players:
             # This signals that the player is now disconnected
             del player.lobby_connection
@@ -200,7 +207,7 @@ class PlayerService(Service):
         player.game_count[rating_type] += 1
         self.mark_dirty(player)
 
-    async def update_data(self):
+    async def update_data(self) -> None:
         """
         Update rarely-changing data, such as the admin list and the list of users exempt from the
         uniqueid check.
@@ -210,9 +217,9 @@ class PlayerService(Service):
             result = await conn.execute(
                 "SELECT `user_id` FROM uniqueid_exempt"
             )
-            self.uniqueid_exempt = frozenset(map(lambda x: x[0], result))
+            self.uniqueid_exempt = frozenset(x[0] for x in result)
 
-    async def kick_idle_players(self):
+    async def kick_idle_players(self) -> None:
         for fut in asyncio.as_completed([
             player.lobby_connection.abort("Graceful shutdown.")
             for player in self.all_players
@@ -240,6 +247,6 @@ class PlayerService(Service):
             conn.session
         )
 
-    async def graceful_shutdown(self):
+    async def graceful_shutdown(self) -> None:
         if config.SHUTDOWN_KICK_IDLE_PLAYERS:
             self._kick_idle_task = at_interval(1, self.kick_idle_players)

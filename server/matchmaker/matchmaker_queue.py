@@ -1,9 +1,10 @@
 import asyncio
+import logging
 import time
 from collections import OrderedDict
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
-from typing import Any, Callable, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Optional
 
 import server.metrics as metrics
 
@@ -14,6 +15,9 @@ from .algorithm.team_matchmaker import TeamMatchMaker
 from .map_pool import MapPool, MatchmakerQueueMapPool
 from .pop_timer import PopTimer
 from .search import Match, Search
+
+if TYPE_CHECKING:
+    from server.game_service import GameService
 
 MatchFoundCallback = Callable[[Search, Search, "MatchmakerQueue"], Any]
 
@@ -40,6 +44,8 @@ class MatchmakerSearchTimer:
 
 @with_logger
 class MatchmakerQueue:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         game_service: "GameService",
@@ -88,7 +94,9 @@ class MatchmakerQueue:
                 continue
             return map_pool
 
-    def get_game_options(self) -> dict[str, Any]:
+        return None
+
+    def get_game_options(self) -> Optional[dict[str, Any]]:
         return self.params.get("GameOptions") or None
 
     def initialize(self):

@@ -1,3 +1,6 @@
+import logging
+from typing import ClassVar
+
 from server.config import config
 from server.core import Service
 from server.decorators import with_logger
@@ -35,6 +38,8 @@ EVENT_SERAPHIM_WINS = "15b6c19a-6084-4e82-ada9-6c30e282191f"
 
 @with_logger
 class EventService(Service):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self, message_queue_service: MessageQueueService):
         self.message_queue_service = message_queue_service
 

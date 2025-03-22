@@ -202,7 +202,7 @@ class GameConnection(GpgNetServerProtocol):
         Handle GpgNetSend messages, wrapped in the JSON protocol
         """
         try:
-            await COMMAND_HANDLERS[command](self, *args)
+            await COMMAND_HANDLERS[command](self, *args)  # type: ignore
         except KeyError:
             self._logger.warning(
                 "Unrecognized command %s: %s from player %s",
@@ -230,7 +230,7 @@ class GameConnection(GpgNetServerProtocol):
 
         self._mark_dirty()
 
-    async def handle_game_mods(self, mode: Any, args: list[Any]):
+    async def handle_game_mods(self, mode: Any, args: Any):
         if not self.is_host():
             return
 
@@ -311,9 +311,7 @@ class GameConnection(GpgNetServerProtocol):
             return
 
         if not isinstance(self.game, CoopGame):
-            self._logger.warning(
-                "OperationComplete called for non-coop game: %s", self.game.id
-            )
+            self._logger.warning("OperationComplete called for non-coop game")
             return
 
         if self.game.validity != ValidityState.COOP_NOT_RANKED:
@@ -338,6 +336,13 @@ class GameConnection(GpgNetServerProtocol):
             # message but we only need to perform this insert once
             async with self.game.leaderboard_lock:
                 if not self.game.leaderboard_saved:
+                    self._logger.debug(
+                        "Updating coop leaderboard: mission: %s, secondary: %s, "
+                        "time %s",
+                        mission,
+                        secondary,
+                        delta,
+                    )
                     await conn.execute(
                         coop_leaderboard.insert().values(
                             mission=mission,
@@ -500,7 +505,7 @@ class GameConnection(GpgNetServerProtocol):
         self.finished_sim = True
         await self.game.check_game_finish(self.player)
 
-    async def handle_rehost(self, *args: list[Any]):
+    async def handle_rehost(self, *args: Any):
         """
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
@@ -514,26 +519,35 @@ class GameConnection(GpgNetServerProtocol):
         """
         pass
 
-    async def handle_bottleneck(self, *args: list[Any]):
+    async def handle_bottleneck(self, code: str, *args: str):
         """
-        Not sure what this command means. This is currently unused but
-        included for documentation purposes.
-        """
-        pass
+        Not entirely sure what this command means. Seems to be sent when a
+        player is getting behind on data, slowing down the game.
 
-    async def handle_bottleneck_cleared(self, *args: list[Any]):
+        Example:
+        ```python
+        {
+            "command": "Bottleneck",
+            "target": "game",
+            "args": ["data", "19508", "517268,516974,344419", "5980.1"],
+        }
+        ```
         """
-        Not sure what this command means. This is currently unused but
-        included for documentation purposes.
-        """
-        pass
+        self._logger.debug("Bottleneck: %s", list((code, *args)))
 
-    async def handle_disconnected(self, *args: list[Any]):
+    async def handle_bottleneck_cleared(self):
+        """
+        Not entirely sure what this command means. Probably sent when the game
+        is no longer being slowed down due to players being behind on data.
+        """
+        self._logger.debug("BottleneckCleared")
+
+    async def handle_disconnected(self, *args: Any):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         """
-        pass
+        self._logger.debug("Disconnected: %s", list(args))
 
     async def handle_chat(self, message: str):
         """

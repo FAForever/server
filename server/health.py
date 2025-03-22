@@ -3,23 +3,30 @@ Kubernetes compatible HTTP health check server.
 """
 
 import http
+import logging
 import socket
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 from aiohttp import web
 
 from .config import config
 from .decorators import with_logger
 
+if TYPE_CHECKING:
+    from server import ServerInstance
+
 
 @with_logger
 class HealthServer:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         lobby_server: "ServerInstance",
     ):
         self.lobby_server = lobby_server
-        self.host = None
-        self.port = None
+        self.host: Optional[str] = None
+        self.port: Optional[int] = None
 
         self.app = web.Application()
         self.runner = web.AppRunner(self.app, access_log=None)

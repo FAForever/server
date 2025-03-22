@@ -4,12 +4,13 @@ Manages the GeoIP database
 
 import asyncio
 import hashlib
+import logging
 import os
 import shutil
 import tarfile
 from datetime import datetime
 from tempfile import TemporaryFile
-from typing import IO
+from typing import IO, ClassVar
 
 import aiocron
 import aiohttp
@@ -31,6 +32,8 @@ class GeoIpService(Service):
 
     Provides an interface for getting data out of the database.
     """
+
+    _logger: ClassVar[logging.Logger]
 
     def __init__(self):
         self.refresh_file_path()

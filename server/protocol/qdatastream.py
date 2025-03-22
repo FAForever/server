@@ -1,7 +1,30 @@
+r"""DEPRECATED: Legacy [QDataStream](http://doc.qt.io/qt-5/qdatastream.html)
+(UTF-16, BigEndian) encoded data format.
+
+For the lobbyconnection, each message is of the form:
+```
+ACTION: QString
+```
+With most carrying a footer containing:
+```
+LOGIN: QString
+SESSION: QString
+```
+
+# Example:
+```python
+>>> QDataStreamProtocol.encode_message({"command": "ping"})
+b'\x00\x00\x00\x0c\x00\x00\x00\x08\x00P\x00I\x00N\x00G'
+
+```
+"""
+
 import base64
 import json
+import logging
 import struct
 from asyncio import IncompleteReadError
+from typing import ClassVar
 
 from server.decorators import with_logger
 
@@ -13,6 +36,8 @@ class QDataStreamProtocol(Protocol):
     """
     Implements the legacy QDataStream-based encoding scheme
     """
+
+    _logger: ClassVar[logging.Logger]
 
     @staticmethod
     def read_qstring(buffer: bytes, pos: int = 0) -> tuple[int, str]:
@@ -34,8 +59,10 @@ class QDataStreamProtocol(Protocol):
         (size, ) = struct.unpack("!I", chunk)
         if len(rest) < size:
             raise ValueError(
-                "Malformed QString: Claims length {} but actually {}. Entire buffer: {}"
-                .format(size, len(rest), base64.b64encode(buffer)))
+                f"Malformed QString: Claims length {size} "
+                f"but actually {len(rest)}. "
+                f"Entire buffer: {base64.b64encode(buffer).decode()}",
+            )
         return size + pos + 4, (buffer[pos + 4:pos + 4 + size]).decode("UTF-16BE")
 
     @staticmethod

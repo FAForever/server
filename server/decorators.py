@@ -5,11 +5,14 @@ Helper decorators
 import logging
 import time
 from functools import wraps
+from typing import TypeVar
 
 _logger = logging.getLogger(__name__)
 
+T = TypeVar("T")
 
-def with_logger(cls):
+
+def with_logger(cls: type[T]) -> type[T]:
     """
     Add a `_logger` attribute to a class. The logger name will be the same as
     the class name.

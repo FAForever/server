@@ -325,3 +325,13 @@ user_group_assignment = Table(
     Column("create_time",   TIMESTAMP,  nullable=False),
     Column("update_time",   TIMESTAMP,  nullable=False)
 )
+
+
+def get_flyway_schema_history_table(table_name: str) -> Table:
+    return Table(
+        table_name, metadata,
+        Column("version", String(50)),
+        Column("success", Boolean),
+        # For interaction with unit tests
+        extend_existing=True,
+    )

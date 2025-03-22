@@ -115,6 +115,7 @@ def test_make_teams_single_2v2_small_pool(player_factory):
                 assert p2.ratings[RatingType.LADDER_1V1][0] > 900
 
 
+@pytest.mark.performance
 def test_make_buckets_performance(bench, player_factory):
     NUM_SEARCHES = 1000
     searches = [

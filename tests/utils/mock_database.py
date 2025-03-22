@@ -7,6 +7,9 @@ class MockConnectionContext:
     def __init__(self, db):
         self._db = db
 
+    def commit(self):
+        """Ignore manual commits"""
+
     async def __aenter__(self):
         await self._db._lock.acquire()
         return self._db._connection
@@ -24,7 +27,6 @@ class MockDatabase(FAFDatabase):
     at the same time we can rollback all these changes once the test is over.
 
     Note that right now the server relies on autocommit behaviour sqlalchemy.
-    Any future manual commit() calls should be mocked here as well.
     """
 
     def __init__(

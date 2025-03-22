@@ -1,5 +1,6 @@
+import logging
 from abc import ABC, abstractmethod
-from typing import Iterable
+from typing import ClassVar, Iterable
 
 from ...decorators import with_logger
 from ..search import Match, Search
@@ -7,6 +8,8 @@ from ..search import Match, Search
 
 @with_logger
 class Matchmaker(ABC):
+    _logger: ClassVar[logging.Logger]
+
     @abstractmethod
     def find(
         self,
@@ -19,6 +22,8 @@ class Matchmaker(ABC):
 
 @with_logger
 class MatchmakingPolicy1v1(object):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(self):
         self.matches: dict[Search, Search] = {}
         self.searches_remaining_unmatched: set[Search] = set()

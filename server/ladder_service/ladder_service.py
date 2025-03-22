@@ -3,11 +3,12 @@ Manages interactions between players and matchmakers
 """
 import asyncio
 import json
+import logging
 import random
 import re
 import statistics
 from collections import defaultdict
-from typing import Awaitable, Callable, Optional, Iterable
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Coroutine, Optional, Iterable
 
 import aiocron
 import humanize
@@ -49,6 +50,12 @@ from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap, MatchmakerQueueMapPoolVetoData
 
+if TYPE_CHECKING:
+    from server.lobbyconnection import LobbyConnection
+
+if TYPE_CHECKING:
+    from server.lobbyconnection import LobbyConnection
+
 
 @with_logger
 class LadderService(Service):
@@ -56,6 +63,8 @@ class LadderService(Service):
     Service responsible for managing the automatches. Does matchmaking, updates
     statistics, and launches the games.
     """
+
+    _logger: ClassVar[logging.Logger]
 
     def __init__(
         self,
@@ -68,7 +77,7 @@ class LadderService(Service):
         self._informed_players: set[Player] = set()
         self.game_service = game_service
         self.player_service = player_service
-        self.queues = {}
+        self.queues: dict[str, MatchmakerQueue] = {}
         self.pools_veto_data: list[MatchmakerQueueMapPoolVetoData] = []
         self.violation_service = violation_service
 
@@ -153,7 +162,7 @@ class LadderService(Service):
                 .outerjoin(map_version)
             )
         )
-        map_pool_maps = {}
+        map_pool_maps: dict[int, tuple[str, list[Map]]] = {}
         for row in result:
             id_ = row.id
             name = row.name
@@ -164,7 +173,10 @@ class LadderService(Service):
                 # Database filenames contain the maps/ prefix and .zip suffix.
                 # This comes from the content server which hosts the files at
                 # https://content.faforever.com/maps/name.zip
-                folder_name = re.match(r"maps/(.+)\.zip", row.filename).group(1)
+                m = re.match(r"maps/(.+)\.zip", row.filename)
+                if m is None:
+                    raise RuntimeError(f"malformed map filename {row.filename}")
+                folder_name = m.group(1)
                 map_list.append(
                     Map(
                         id=row.map_id,
@@ -227,7 +239,9 @@ class LadderService(Service):
         # So we don't log the same error multiple times when a queue has several
         # map pools
         errored = set()
-        matchmaker_queues = defaultdict(lambda: defaultdict(list))
+        matchmaker_queues: dict[str, dict[str, Any]] = defaultdict(
+            lambda: defaultdict(list),
+        )
         for row in result:
             name = row.technical_name
             if name in errored:
@@ -347,6 +361,7 @@ class LadderService(Service):
                         key=lambda v: v.get_ban_expiration()
                     ).get_remaining()
                 )
+                # DEPRECATED: Use `search_timeout` instead
                 player.write_message({
                     "command": "notice",
                     "style": "info",
@@ -506,7 +521,7 @@ class LadderService(Service):
         team1: list[Player],
         team2: list[Player],
         queue: MatchmakerQueue
-    ) -> Awaitable[None]:
+    ) -> Coroutine[Any, Any, None]:
         # We want assertion errors to trigger when the caller attempts to
         # create the async function, not when the function starts executing.
         assert len(team1) == len(team2)

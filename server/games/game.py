@@ -5,13 +5,15 @@ import logging
 import pathlib
 import time
 from collections import defaultdict
-from typing import Any, Awaitable, Callable, Iterable, Optional
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Iterable, Optional
 
 from sqlalchemy import and_, bindparam
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.sql.functions import now as sql_now
 
 from server.config import FFA_TEAM
+from server.db import FAFDatabase
 from server.db.models import (
     game_player_stats,
     game_stats,
@@ -46,6 +48,11 @@ from .typedefs import (
     VisibilityState
 )
 
+if TYPE_CHECKING:
+    from server.game_service import GameService
+    from server.gameconnection import GameConnection
+    from server.stats.game_stats_service import GameStatsService
+
 
 class GameError(Exception):
     pass
@@ -61,7 +68,7 @@ class Game:
     def __init__(
         self,
         id: int,
-        database: "FAFDatabase",
+        database: FAFDatabase,
         game_service: "GameService",
         game_stats_service: "GameStatsService",
         host: Optional[Player] = None,
@@ -78,13 +85,13 @@ class Game:
         self.id = id
         self._db = database
         self._results = GameResultReports(id)
-        self._army_stats_list = []
-        self._players_with_unsent_army_stats = []
+        self._army_stats_list: list[Any] = []
+        self._players_with_unsent_army_stats: list[Player] = []
         self._game_stats_service = game_stats_service
         self.game_service = game_service
         self._player_options: dict[int, dict[str, Any]] = defaultdict(dict)
-        self.hosted_at = None
-        self.launched_at = None
+        self.hosted_at: Optional[datetime] = None
+        self.launched_at: Optional[float] = None
         self.finished = False
         self._logger = logging.getLogger(
             f"{self.__class__.__qualname__}.{id}"
@@ -93,9 +100,9 @@ class Game:
         self.host = host
         self.name = name
         self.map = map
-        self.password = None
+        self.password: Optional[str] = None
         self._players_at_launch: list[Player] = []
-        self.AIs = {}
+        self.AIs: dict[str, dict[str, Any]] = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
         self.game_mode = game_mode
@@ -105,7 +112,7 @@ class Game:
         self.matchmaker_queue_id = matchmaker_queue_id
         self.setup_timeout = setup_timeout
         self.state = GameState.INITIALIZING
-        self._connections = {}
+        self._connections: dict[Player, "GameConnection"] = {}
         self._configured_player_ids: set[int] = set()
         self.enforce_rating = False
         self.game_options = GameOptions(
@@ -131,8 +138,8 @@ class Game:
         )
         self.game_options.add_callback("Title", self.on_title_changed)
 
-        self.mods = {}
-        self._hosted_future = asyncio.Future()
+        self.mods: dict[str, str] = {}
+        self._hosted_future: asyncio.Future[None] = asyncio.Future()
         self._finish_lock = asyncio.Lock()
 
         self._logger.debug("%s created", self)
@@ -181,7 +188,9 @@ class Game:
 
         Truncates the game name to avoid crashing mysql INSERT statements.
         """
-        max_len = game_stats.c.gameName.type.length
+        # mypy sees the column type as a generic base class so it doesn't
+        # know about the `length` field
+        max_len = game_stats.c.gameName.type.length  # type: ignore
         self._name = value[:max_len]
 
     @property
@@ -189,7 +198,7 @@ class Game:
         return self.game_options["Slots"]
 
     @property
-    def armies(self) -> frozenset[int]:
+    def armies(self) -> frozenset[Optional[int]]:
         return frozenset(
             self.get_player_option(player.id, "Army")
             for player in self.players
@@ -227,7 +236,7 @@ class Game:
         return self._connections.values()
 
     @property
-    def teams(self) -> frozenset[int]:
+    def teams(self) -> frozenset[Optional[int]]:
         """
         A set of all teams of this game's players.
         """
@@ -345,16 +354,13 @@ class Game:
 
         self._process_pending_army_stats()
 
-    def _process_pending_army_stats(self):
+    def _process_pending_army_stats(self) -> None:
         for player in self._players_with_unsent_army_stats:
             army = self.get_player_option(player.id, "Army")
             if army not in self._results:
                 continue
 
-            for result in self._results[army]:
-                if result.outcome is not GameOutcome.UNKNOWN:
-                    self._process_army_stats_for_player(player)
-                    break
+            self._process_army_stats_for_player(player)
 
     def _process_army_stats_for_player(self, player):
         try:
@@ -661,9 +667,6 @@ class Game:
         if self.is_multi_team:
             await self.mark_invalid(ValidityState.MULTI_TEAM)
             return
-        if self.is_ffa:
-            await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
-            return
         valid_options = {
             "AIReplacement": (FA.DISABLED, ValidityState.HAS_AI_PLAYERS),
             "FogOfWar": ("explored", ValidityState.NO_FOG_OF_WAR),
@@ -683,6 +686,10 @@ class Game:
         """
         A subset of checks that need to be overridden in coop games.
         """
+        if self.is_ffa:
+            await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
+            return
+
         if len(self.players) < 2:
             await self.mark_invalid(ValidityState.SINGLE_PLAYER)
             return
@@ -691,10 +698,12 @@ class Game:
             await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
             return
 
-        valid_options = {
-            "Victory": (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
-        }
-        await self._validate_game_options(valid_options)
+        if self.game_options.get("Victory") not in (
+            Victory.DEMORALIZATION,
+            Victory.DECAPITATION,
+        ):
+            await self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
+            return
 
     async def _validate_game_options(
         self,
@@ -756,7 +765,7 @@ class Game:
         # In some cases, games can be invalidated while running: we check for
         # those cases when the game ends and update this record as appropriate.
 
-        game_type = str(self.game_options.get("Victory").value)
+        game_type = self.game_options.get("Victory")
 
         async with self._db.acquire() as conn:
             await conn.execute(
@@ -861,6 +870,9 @@ class Game:
 
     def get_army_results(self, player: Player) -> ArmyResult:
         army = self.get_player_option(player.id, "Army")
+        assert army is not None
+        assert isinstance(army, int)
+
         return ArmyResult(
             player.id,
             army,
@@ -968,8 +980,8 @@ class GameOptions(dict):
         self._logger = logging.getLogger(
             f"{self.__class__.__qualname__}.{id}"
         )
-        self.callbacks = defaultdict(list)
-        self.async_callbacks = defaultdict(list)
+        self.callbacks: dict[str, list[Callable[[Any], Any]]] = defaultdict(list)
+        self.async_callbacks: dict[str, list[Callable[[Any], Awaitable[Any]]]] = defaultdict(list)
 
     def add_callback(self, key: str, callback: Callable[[Any], Any]):
         self.callbacks[key].append(callback)

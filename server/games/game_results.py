@@ -1,8 +1,9 @@
 import contextlib
+import logging
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from enum import Enum
-from typing import Iterator, NamedTuple, Optional
+from typing import ClassVar, Iterator, NamedTuple, Optional
 
 from sqlalchemy import select
 
@@ -74,6 +75,8 @@ class GameResultReports(Mapping):
     army and game as a whole. Supports a dict-like access to lists of results
     for each army, but don't modify these.
     """
+
+    _logger: ClassVar[logging.Logger]
 
     def __init__(self, game_id: int):
         Mapping.__init__(self)
@@ -177,13 +180,13 @@ class GameResultReports(Mapping):
         )
         return []
 
-    def score(self, army: int) -> int:
+    def score(self, army: Optional[int]) -> int:
         """
         Pick and return most frequently reported score for an army. If multiple
         scores are most frequent, pick the largest one. Returns 0 if there are
         no results for a given army.
         """
-        if army not in self:
+        if army is None or army not in self:
             return 0
 
         scores = Counter(r.score for r in self[army])

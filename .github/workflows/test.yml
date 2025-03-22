@@ -11,7 +11,7 @@ on:
     - cron: '0 0 * * *'
 
 env:
-  FAF_DB_VERSION: v133
+  FAF_DB_VERSION: v136
   FLYWAY_VERSION: 7.5.4
 
 jobs:
@@ -51,16 +51,16 @@ jobs:
           RABBITMQ_DEFAULT_VHOST: /
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Cache hypothesis examples
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .hypothesis
           key: .hypothesis
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -81,7 +81,7 @@ jobs:
 
       - name: Install dependencies with pipenv
         run: |
-          pip install pipenv==2023.4.20
+          pip install pipenv==2024.4.1
           pipenv sync --dev
           pipenv run pip install pytest-github-actions-annotate-failures
 
@@ -105,14 +105,14 @@ jobs:
         run: PYTHONWARNINGS='error::UserWarning' pipenv run pdoc3 server >/dev/null
 
   docker-build:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-        - name: Build docker image
-          run: docker build --build-arg GITHUB_REF -t test_image .
+      - name: Build docker image
+        run: docker build --build-arg GITHUB_REF -t test_image .
 
-        - name: Test image
-          run: |
-            docker run --rm -d -p 8001:8001 test_image
-            nc -z localhost 8001
+      - name: Test image
+        run: |
+          docker run --rm -d -p 8001:8001 test_image
+          nc -z localhost 8001
