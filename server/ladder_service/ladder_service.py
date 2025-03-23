@@ -53,6 +53,7 @@ from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap, Matchmaker
 if TYPE_CHECKING:
     from server.lobbyconnection import LobbyConnection
 
+
 @with_logger
 class LadderService(Service):
     """
