@@ -8,7 +8,15 @@ import random
 import re
 import statistics
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Coroutine, Optional, Iterable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Coroutine,
+    Iterable,
+    Optional
+)
 
 import aiocron
 import humanize
@@ -40,15 +48,20 @@ from server.ladder_service.game_name import game_name
 from server.ladder_service.violation_service import ViolationService
 from server.matchmaker import (
     MapPool,
-    MatchmakerQueueMapPool,
     MatchmakerQueue,
+    MatchmakerQueueMapPool,
     OnMatchedCallback,
     Search
 )
 from server.metrics import MatchLaunch
 from server.player_service import PlayerService
 from server.players import Player, PlayerState
-from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap, MatchmakerQueueMapPoolVetoData
+from server.types import (
+    GameLaunchOptions,
+    Map,
+    MatchmakerQueueMapPoolVetoData,
+    NeroxisGeneratedMap
+)
 
 if TYPE_CHECKING:
     from server.lobbyconnection import LobbyConnection

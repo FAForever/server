@@ -6,7 +6,8 @@ import logging
 from collections import defaultdict
 from contextlib import suppress
 from enum import Enum, unique
-from typing import TYPE_CHECKING, Optional, Union, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Optional, Union
+
 from .decorators import with_logger
 from .factions import Faction
 from .protocol import DisconnectedError
@@ -121,7 +122,8 @@ class Player:
                         for mk, mv in v.items()
                     )
                     for k, v in value.items()
-                )):
+                )
+            ):
             raise ValueError("Invalid vetoes structure")
         self._vetoes = value
 

@@ -2,6 +2,7 @@ import logging
 import random
 from collections import Counter
 from typing import ClassVar, Iterable, NamedTuple, Optional
+
 from server.config import config
 
 from ..decorators import with_logger
@@ -39,7 +40,7 @@ class MapPool(object):
         # Filter and count played map IDs
         repetition_counts = Counter(id_ for id_ in played_map_ids if id_ in self.maps)
         sorted_maps = [id_ for id_, _ in repetition_counts.most_common()]
-        
+
         # Initial weights based on vetoes
         initial_weights = {id_: max(0, 1 - vetoes_map.get(id_, 0) / max_tokens_per_map) for id_ in self.maps}
         adjusted_weights = initial_weights.copy()
@@ -63,10 +64,10 @@ class MapPool(object):
                 for other_id in candidates:
                     adjusted_weights[other_id] += (initial_weights[other_id] / sum_candidates) * v
                 adjusted_weights[id_] = 0
-        self._logger.debug(f"Adjusted weights: {adjusted_weights}")
+
         map_list = list(self.maps.items())
         final_weights = [adjusted_weights[id_] * map.weight for id_, map in map_list]
-        self._logger.debug(f"Final weights: {final_weights}")
+
         return random.choices([map for _, map in map_list], weights=final_weights, k=1)[0].get_map()
 
     def __repr__(self) -> str:
