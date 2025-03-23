@@ -36,18 +36,12 @@ class MapPool(object):
         if vetoes_map is None:
             vetoes_map = {}
 
-        PRIMARY_THRESHOLD = 0.75
-        SECONDARY_THRESHOLD = 0.5
-
         # Filter and count played map IDs
         repetition_counts = Counter(id_ for id_ in played_map_ids if id_ in self.maps)
-        self._logger.debug(f"Repetition counts: {repetition_counts}")
         sorted_maps = [id_ for id_, _ in repetition_counts.most_common()]
-        self._logger.debug(f"Sorted maps: {sorted_maps}")
+        
         # Initial weights based on vetoes
         initial_weights = {id_: max(0, 1 - vetoes_map.get(id_, 0) / max_tokens_per_map) for id_ in self.maps}
-        self._logger.debug(f"Vetoes: {vetoes_map}")
-        self._logger.debug(f"Initial weights: {initial_weights}")
         adjusted_weights = initial_weights.copy()
 
         # Anti-repetition adjustment
