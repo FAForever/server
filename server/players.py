@@ -111,19 +111,15 @@ class Player:
 
     @vetoes.setter
     def vetoes(self, value: PlayerVetoes) -> None:
-        if (not isinstance(value, dict) or
-                not all(
-                    isinstance(k, int) and
-                    isinstance(v, dict) and
-                    all(
-                        isinstance(mk, int) and
-                        isinstance(mv, int) and
-                        mv >= 0
-                        for mk, mv in v.items()
-                    )
-                    for k, v in value.items()
-                )
-            ):
+        if not isinstance(value, dict) or not all(
+            isinstance(k, int)
+            and isinstance(v, dict)
+            and all(
+                isinstance(mk, int) and isinstance(mv, int) and mv >= 0
+                for mk, mv in v.items()
+            )
+            for k, v in value.items()
+        ):
             raise ValueError("Invalid vetoes structure")
         self._vetoes = value
 
