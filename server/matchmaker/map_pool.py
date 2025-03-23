@@ -2,6 +2,7 @@ import logging
 import random
 from collections import Counter
 from typing import ClassVar, Iterable, NamedTuple, Optional
+from server.config import config
 
 from ..decorators import with_logger
 from ..types import Map, MapPoolMap
@@ -32,8 +33,8 @@ class MapPool(object):
             self._logger.critical("Trying to choose a map from an empty map pool: %s", self.name)
             raise RuntimeError(f"Map pool {self.name} not set!")
 
-        if vetoesMap is None:
-            vetoesMap = {}
+        if vetoes_map is None:
+            vetoes_map = {}
 
         PRIMARY_THRESHOLD = 0.75
         SECONDARY_THRESHOLD = 0.5
@@ -53,7 +54,7 @@ class MapPool(object):
         for id_ in sorted_maps:
             current_weight = initial_weights[id_]
             candidates = []
-            for threshold in [PRIMARY_THRESHOLD, SECONDARY_THRESHOLD]:
+            for threshold in [config.LADDER_ANTI_REPETITION_PRIMARY_WEIGHT_THRESHOLD, config.LADDER_ANTI_REPETITION_SECONDARY_WEIGHT_THRESHOLD]:
                 candidates = [
                     other_id for other_id in self.maps if other_id != id_
                     and repetition_counts[other_id] < repetition_counts[id_]
