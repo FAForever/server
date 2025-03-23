@@ -5,8 +5,9 @@ Player type definitions
 from collections import defaultdict
 from contextlib import suppress
 from enum import Enum, unique
-from typing import TYPE_CHECKING, Optional, Union
-
+import logging
+from typing import TYPE_CHECKING, Optional, Union, ClassVar
+from .decorators import with_logger
 from .types import MatchmakerQueueMapPoolVetoData
 from .factions import Faction
 from .protocol import DisconnectedError
@@ -18,6 +19,10 @@ if TYPE_CHECKING:
     from server.games import Game
     from server.lobbyconnection import LobbyConnection
 
+BracketID = int
+MapPoolMapVersionId = int
+VetoTokensApplied = int
+PlayerVetoes = dict[BracketID, dict[MapPoolMapVersionId, VetoTokensApplied]]
 
 @unique
 class PlayerState(Enum):
@@ -29,8 +34,9 @@ class PlayerState(Enum):
     STARTING_AUTOMATCH = 6
     STARTING_GAME = 7
 
-
+@with_logger
 class Player:
+    _logger: ClassVar[logging.Logger]
     """
     Standard player object used for representing signed-in players.
 
@@ -97,11 +103,11 @@ class Player:
             self._faction = Faction.from_value(value)
 
     @property
-    def vetoes(self) -> dict[int, dict[int, int]]:
+    def vetoes(self) -> PlayerVetoes:
         return self._vetoes
 
     @vetoes.setter
-    def vetoes(self, value: dict[int, dict[int, int]]) -> None:
+    def vetoes(self, value: PlayerVetoes) -> None:
         if not isinstance(value, dict) or \
             not all(
                 isinstance(k, int) and 
@@ -137,9 +143,6 @@ class Player:
                 fixedVetoes[matchmaker_queue_map_pool_id] = cur_fixed_vetoes
         if fixedVetoes == self.vetoes == current:
             return
-        print("fixedVetoes", fixedVetoes)
-        print("self.vetoes", self.vetoes)
-        print("current", current)
         self.vetoes = fixedVetoes
         if self.lobby_connection is None:
             return

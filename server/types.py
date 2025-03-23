@@ -38,6 +38,10 @@ class MatchmakerQueueMapPoolVetoData(NamedTuple):
     max_tokens_per_map: int
     minimum_maps_after_veto: float
 
+class VetoData(NamedTuple):
+  map_pool_map_version_id: int
+  veto_tokens_applied: int
+  matchmaker_queue_map_pool_id: int
 
 class MapPoolMap(Protocol):
     @property

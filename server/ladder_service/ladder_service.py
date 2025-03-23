@@ -574,28 +574,6 @@ class LadderService(Service):
                 for index, player in enumerate(all_players):
                     vetoes_map[m.map_pool_map_version_id] += player.vetoes.get(pool_id, {}).get(m.map_pool_map_version_id, 0)
             
-            for index, player in enumerate(all_players):
-                self._logger.debug("______pool________: %s", pool)
-                self._logger.debug("______pool_id________: %s", pool_id)
-                last_played_tokens = player.vetoes.get(pool_id, {}).get(-1, 0)
-                self._logger.debug("______player________with tokens________: %s %s", player.id, last_played_tokens)
-                self._logger.debug("his vetoes is %s", player.vetoes)
-                if (last_played_tokens > 0):
-                    last_played_map_id = played_map_ids.get(player.id, None)
-                    self._logger.debug("______last_played_map_id________: %s", last_played_map_id)
-                    if (last_played_map_id is not None):
-                        map =  next((el for el in pool.maps.values() if el.id == last_played_map_id), None)
-                        self._logger.debug("______map________: %s", map)
-                        if (map is not None):
-                            if (vetoes_map.get(map.map_pool_map_version_id, -1) == -1):
-                                vetoes_map[map.map_pool_map_version_id] = 0
-                            vetoes_map[map.map_pool_map_version_id] += last_played_tokens
-
-            
-            self._logger.debug("______played_map_ids________________: %s", played_map_ids)
-            self._logger.debug("______pool_maps________________: %s", pool.maps.values())
-            self._logger.debug("______Vetoes_map________________: %s", vetoes_map)
-            self._logger.debug("______maplist________: %s", pool.maps.values())
             if (max_tokens_per_map == 0):
                 max_tokens_per_map = self.calculate_dynamic_tokens_per_map(minimum_maps_after_veto, vetoes_map.values())
                 # this should never happen actually so i am not sure do we need this here or not
@@ -756,102 +734,102 @@ class LadderService(Service):
                 if player not in connected_players
             ])
 
-    """
-        function finds minimal max_tokens_per_map > 0 for given M (minimal_maps_after_veto) > 0 and [iterable] of veto tokens applied for each map in the bracket
-        max_tokens_per_map - is the amount of veto_tokens required to fully ban a map
-        minimal_maps_after_veto - minimal sum of map weights, anything lower is forbidden (for map diversity purpuses)
-
-        lets rename max_tokens_per_map to T for simplicity
-        then weight of map with V tokens applied is max((T - V) / T, 0)
-
-        example: lets say we have A maps with 0 tokens applied, B Maps with 1 token, C Maps with 2 tokens
-        the inequality to be true:
-        A * max((T - 0) / T, 0) + B * max((T - 1) / T, 0) + C * max((T - 2) / T, 0) >= M
-
-        max((T - 0) / T, 0) is always 1, so:
-        B * max((T - 1) / T, 0) + C * max((T - 2) / T, 0) >= M - A
-
-        due to max() function, it splits to 3:
-        1) for 0 < T <= 1: 0 >= M - A which is the same as A >= M
-        2) for 1 < T <= 2: B * (T - 1) / T >= M - A
-        3) for T > 2: B * (T - 1) / T + C * (T - 2) / T >= M - A
-
-        since we are looking for minimal T > 0, we should just check out cases from min T to max T
-
-        in case 1): range T <= 1
-          here we trying to find answer using only 0-tokens maps
-          - if A >= M, then any value 0 < T <= 1 is valid answer, but to avoid division by zero errors, we return 1
-            a bit contradicts with "minimal" in function definition, but since veto tokens applied is always an integer, result of 1 will give the same veto system result as 0.0001
-          - if A < M, there is no answer in this case
-
-        [1] for every next case: M > A is true (otherwise we would return answer in case 1)
-        in case 2): range 1 < T <= 2
-          here we trying to find answer using maps with 0-1 tokens
-          B * (T - 1) / T >= M - A
-          B * (T - 1) >= (M - A) * T
-          BT - B - MT + AT >= 0
-          (B - M + A)T >= B
-          T >= B / (B + A - M)
-          note 1: B + A is just amount of maps to which we try to shrink bracket (only maps with 0 and 1 tokens applied)
-                  so we can say that denominator is "map balance", amount of map to which we try to shrink the bracket minus the minimal amount it should be,
-                  so if map balance is negative, the answer should be obviously discarded
-                  in case if map balance is 0 answer also should be discarded because B > 0 and division by zero happens
-          note 2: since M is guaranteed to be > A due to [1], then A - M is negative, then B + A - M < B, so B / (B + A - M) > 1
-          thus, since we're looking for MINIMAL answer, we should just replace > with = :
-          T = B / (B + A - M)
-          its always > 1 so we can forget lower border issue in 1 < T <= 2 above
-          just calculating T, checking if its <= 2, if true - return T, if false - case 3
-
-        [2] for every next case: B / (B + A - M) > 2 which is the same as B > 2B + 2A - 2M
-        in case 3): range T > 2
-            here we trying to find answer using maps with 0-2 tokens
-            B * (T - 1) / T + C * (T - 2) / T >= M - A
-            BT - B + CT - 2C >= (M - A) * T
-            (B + C + A - M)T >= B + 2C
-            T >= (B + 2C) / (B + C + A - M)
-            note 1: now we can see pattern in nominator: its just sum of tokens applied to all maps to wich we currently try to shrink the bracket
-                    its basically 0A + 1B in case 2, and 0A + 1B + 2C in case 3, you can return to A B C definitions above to be sure
-            note 2: denominator is the same as in case 2, map balance. Again, A - M is negative, so B + C + A - M < B + C
-            let prove that there is no need to worry about lower border, again:
-            lets assume that (B + 2C) / (B + C + A - M) < 2
-            then B + 2C < 2B + 2C + 2A - 2M
-            then B < 2B + 2A - 2M
-            which is contradicts with [2], so again, we can just replace >= with = :
-            T = (B + 2C) / (B + C + A - M)
-            just calulating it and return the value
-
-
-        case X)
-            if we had some number D of maps with X tokens, and in case 3 we received result more than X (and discarded it due to exceeding upper border), then we would say that
-            [3] (B + 2C) / (B + C + A - M) > X which is the same as B + 2C > XB + XC + XA - XM
-            and our X equation would have lower border of X ofcourse
-            T = (B + 2C + XD) / (D + B + C + A - M)
-            now lets prove that T > X:
-            lets assume that T < X
-            (B + 2C + XD) / (D + B + C + A - M) < X
-            B + 2C + XD < XD + XB + XC + XA - XM
-            B + 2C < XB + XC + XA - XM
-            which is contradicts with [3]
-            so, we just proved that we should not worry about lower border in any case
-            and just solve equations and not inequality for each case except case 1
-
-        notices:
-           1) in every case except case 1, nominator is just sum of tokens applied to all maps in equation
-            and denominator is map balance
-           2) for case 1 we always have tokens_sum equal to 0
-
-        conclusion: whole solution process is
-           1) sorting tokens applied in ascending order
-           cycle:
-             2) including next bunch of maps (with the same tokens applied value) to our group
-             3) checking if tokens_sum == 0
-                then its case 1, and return 1 if maps_balance > 0
-             4) otherwise
-                solving equation for current group
-                and checking the result vs upper border
-                and upper border is equal to the amount of tokens applied to the map next to last map in our group, or infinity if there is no such one
-    """
     def calculate_dynamic_tokens_per_map(self, M: float, tokens: Iterable[int]) -> float:
+        """
+            function finds minimal max_tokens_per_map > 0 for given M (minimal_maps_after_veto) > 0 and [iterable] of veto tokens applied for each map in the bracket
+            max_tokens_per_map - is the amount of veto_tokens required to fully ban a map
+            minimal_maps_after_veto - minimal sum of map weights, anything lower is forbidden (for map diversity purpuses)
+
+            lets rename max_tokens_per_map to T for simplicity
+            then weight of map with V tokens applied is max((T - V) / T, 0)
+
+            example: lets say we have A maps with 0 tokens applied, B Maps with 1 token, C Maps with 2 tokens
+            the inequality to be true:
+            A * max((T - 0) / T, 0) + B * max((T - 1) / T, 0) + C * max((T - 2) / T, 0) >= M
+
+            max((T - 0) / T, 0) is always 1, so:
+            B * max((T - 1) / T, 0) + C * max((T - 2) / T, 0) >= M - A
+
+            due to max() function, it splits to 3:
+            1) for 0 < T <= 1: 0 >= M - A which is the same as A >= M
+            2) for 1 < T <= 2: B * (T - 1) / T >= M - A
+            3) for T > 2: B * (T - 1) / T + C * (T - 2) / T >= M - A
+
+            since we are looking for minimal T > 0, we should just check out cases from min T to max T
+
+            in case 1): range T <= 1
+            here we trying to find answer using only 0-tokens maps
+            - if A >= M, then any value 0 < T <= 1 is valid answer, but to avoid division by zero errors, we return 1
+                a bit contradicts with "minimal" in function definition, but since veto tokens applied is always an integer, result of 1 will give the same veto system result as 0.0001
+            - if A < M, there is no answer in this case
+
+            [1] for every next case: M > A is true (otherwise we would return answer in case 1)
+            in case 2): range 1 < T <= 2
+            here we trying to find answer using maps with 0-1 tokens
+            B * (T - 1) / T >= M - A
+            B * (T - 1) >= (M - A) * T
+            BT - B - MT + AT >= 0
+            (B - M + A)T >= B
+            T >= B / (B + A - M)
+            note 1: B + A is just amount of maps to which we try to shrink bracket (only maps with 0 and 1 tokens applied)
+                    so we can say that denominator is "map balance", amount of map to which we try to shrink the bracket minus the minimal amount it should be,
+                    so if map balance is negative, the answer should be obviously discarded
+                    in case if map balance is 0 answer also should be discarded because B > 0 and division by zero happens
+            note 2: since M is guaranteed to be > A due to [1], then A - M is negative, then B + A - M < B, so B / (B + A - M) > 1
+            thus, since we're looking for MINIMAL answer, we should just replace > with = :
+            T = B / (B + A - M)
+            its always > 1 so we can forget lower border issue in 1 < T <= 2 above
+            just calculating T, checking if its <= 2, if true - return T, if false - case 3
+
+            [2] for every next case: B / (B + A - M) > 2 which is the same as B > 2B + 2A - 2M
+            in case 3): range T > 2
+                here we trying to find answer using maps with 0-2 tokens
+                B * (T - 1) / T + C * (T - 2) / T >= M - A
+                BT - B + CT - 2C >= (M - A) * T
+                (B + C + A - M)T >= B + 2C
+                T >= (B + 2C) / (B + C + A - M)
+                note 1: now we can see pattern in nominator: its just sum of tokens applied to all maps to wich we currently try to shrink the bracket
+                        its basically 0A + 1B in case 2, and 0A + 1B + 2C in case 3, you can return to A B C definitions above to be sure
+                note 2: denominator is the same as in case 2, map balance. Again, A - M is negative, so B + C + A - M < B + C
+                let prove that there is no need to worry about lower border, again:
+                lets assume that (B + 2C) / (B + C + A - M) < 2
+                then B + 2C < 2B + 2C + 2A - 2M
+                then B < 2B + 2A - 2M
+                which is contradicts with [2], so again, we can just replace >= with = :
+                T = (B + 2C) / (B + C + A - M)
+                just calulating it and return the value
+
+
+            case X)
+                if we had some number D of maps with X tokens, and in case 3 we received result more than X (and discarded it due to exceeding upper border), then we would say that
+                [3] (B + 2C) / (B + C + A - M) > X which is the same as B + 2C > XB + XC + XA - XM
+                and our X equation would have lower border of X ofcourse
+                T = (B + 2C + XD) / (D + B + C + A - M)
+                now lets prove that T > X:
+                lets assume that T < X
+                (B + 2C + XD) / (D + B + C + A - M) < X
+                B + 2C + XD < XD + XB + XC + XA - XM
+                B + 2C < XB + XC + XA - XM
+                which is contradicts with [3]
+                so, we just proved that we should not worry about lower border in any case
+                and just solve equations and not inequality for each case except case 1
+
+            notices:
+            1) in every case except case 1, nominator is just sum of tokens applied to all maps in equation
+                and denominator is map balance
+            2) for case 1 we always have tokens_sum equal to 0
+
+            conclusion: whole solution process is
+            1) sorting tokens applied in ascending order
+            cycle:
+                2) including next bunch of maps (with the same tokens applied value) to our group
+                3) checking if tokens_sum == 0
+                    then its case 1, and return 1 if maps_balance > 0
+                4) otherwise
+                    solving equation for current group
+                    and checking the result vs upper border
+                    and upper border is equal to the amount of tokens applied to the map next to last map in our group, or infinity if there is no such one
+        """
         sorted_tokens = sorted(tokens)
         # adding infinity as last upper border
         sorted_tokens.append(float("inf"))
@@ -905,7 +883,7 @@ class LadderService(Service):
         limit: int = 3
     ) -> list[int]:
         async with self._db.acquire() as conn:
-            result = {}
+            result = []
             for player in players:
                 query = select(
                     game_stats.c.mapId,
@@ -929,9 +907,9 @@ class LadderService(Service):
                     game_stats.c.id.desc()
                 ).limit(limit)
 
-                result[player.id] = ([
+                result.extend([
                     row.mapId for row in await conn.execute(query)
-                ])[0] or None
+                ])
         return result
 
     def on_connection_lost(self, conn: "LobbyConnection") -> None:
