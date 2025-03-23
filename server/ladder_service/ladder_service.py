@@ -53,10 +53,6 @@ from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap, Matchmaker
 if TYPE_CHECKING:
     from server.lobbyconnection import LobbyConnection
 
-if TYPE_CHECKING:
-    from server.lobbyconnection import LobbyConnection
-
-
 @with_logger
 class LadderService(Service):
     """
@@ -113,7 +109,7 @@ class LadderService(Service):
                 queue.rating_type = info["rating_type"]
                 queue.team_size = info["team_size"]
                 queue.rating_peak = await self.fetch_rating_peak(info["rating_type"])
-            queue.map_pools.clear()            
+            queue.map_pools.clear()
             for matchmaker_queue_map_pool_id, map_pool_id, min_rating, max_rating, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto in info["map_pools"]:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]
                 if not map_list:
@@ -125,7 +121,7 @@ class LadderService(Service):
                     )
                 queue.add_map_pool(
                     MatchmakerQueueMapPool(
-                        matchmaker_queue_map_pool_id,   
+                        matchmaker_queue_map_pool_id,
                         MapPool(map_pool_id, map_pool_name, map_list),
                         min_rating,
                         max_rating,
@@ -573,7 +569,7 @@ class LadderService(Service):
             for m in pool.maps.values():
                 for index, player in enumerate(all_players):
                     vetoes_map[m.map_pool_map_version_id] += player.vetoes.get(pool_id, {}).get(m.map_pool_map_version_id, 0)
-            
+
             if (max_tokens_per_map == 0):
                 max_tokens_per_map = self.calculate_dynamic_tokens_per_map(minimum_maps_after_veto, vetoes_map.values())
                 # this should never happen actually so i am not sure do we need this here or not
@@ -583,9 +579,7 @@ class LadderService(Service):
                     max_tokens_per_map = 1
             game_map = pool.choose_map(played_map_ids, vetoes_map, max_tokens_per_map)
             self._logger.debug("______game_map________________: %s", game_map)
-            for player in all_players:
-                player.state = PlayerState.IDLE
-            raise RuntimeError(f"tesing!")
+
             game = self.game_service.create_game(
                 game_class=LadderGame,
                 game_mode=queue.featured_mod,
@@ -867,7 +861,7 @@ class LadderService(Service):
                     self._logger.error(f"Wrong vetoes setup detected for pool {pool.id} in queue {queue.id}")
                 result.append(
                     MatchmakerQueueMapPoolVetoData(
-                        matchmaker_queue_map_pool_id = matchmaker_queue_map_pool_id,
+                        matchmaker_queue_map_pool_id=matchmaker_queue_map_pool_id,
                         map_pool_map_version_ids=[map.map_pool_map_version_id for map in pool.maps.values()] + [-1],
                         veto_tokens_per_player=veto_tokens_per_player,
                         max_tokens_per_map=max_tokens_per_map,
