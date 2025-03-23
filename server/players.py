@@ -2,16 +2,16 @@
 Player type definitions
 """
 
+import logging
 from collections import defaultdict
 from contextlib import suppress
 from enum import Enum, unique
-import logging
 from typing import TYPE_CHECKING, Optional, Union, ClassVar
 from .decorators import with_logger
-from .types import MatchmakerQueueMapPoolVetoData
 from .factions import Faction
 from .protocol import DisconnectedError
 from .rating import Leaderboard, PlayerRatings, RatingType
+from .types import MatchmakerQueueMapPoolVetoData
 from .weakattr import WeakAttribute
 
 if TYPE_CHECKING:
@@ -24,6 +24,7 @@ MapPoolMapVersionId = int
 VetoTokensApplied = int
 PlayerVetoes = dict[BracketID, dict[MapPoolMapVersionId, VetoTokensApplied]]
 
+
 @unique
 class PlayerState(Enum):
     IDLE = 1
@@ -33,6 +34,7 @@ class PlayerState(Enum):
     SEARCHING_LADDER = 5
     STARTING_AUTOMATCH = 6
     STARTING_GAME = 7
+
 
 @with_logger
 class Player:
@@ -60,7 +62,7 @@ class Player:
         lobby_connection: Optional["LobbyConnection"] = None
     ) -> None:
         self._faction = Faction.uef
-        self._vetoes = {}
+        self._vetoes: PlayerVetoes = {}
 
         # The player_id of the user in the `login` table of the database.
         self.id = player_id
@@ -108,14 +110,18 @@ class Player:
 
     @vetoes.setter
     def vetoes(self, value: PlayerVetoes) -> None:
-        if not isinstance(value, dict) or \
-            not all(
-                isinstance(k, int) and 
-                isinstance(v, dict) and 
-                all(isinstance(mk, int) and isinstance(mv, int) and mv >= 0 
-                    for mk, mv in v.items())
-                for k, v in value.items()
-            ):
+        if (not isinstance(value, dict) or
+                not all(
+                    isinstance(k, int) and
+                    isinstance(v, dict) and
+                    all(
+                        isinstance(mk, int) and
+                        isinstance(mv, int) and
+                        mv >= 0
+                        for mk, mv in v.items()
+                    )
+                    for k, v in value.items()
+                )):
             raise ValueError("Invalid vetoes structure")
         self._vetoes = value
 

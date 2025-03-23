@@ -6,6 +6,7 @@ from typing import ClassVar, Iterable, NamedTuple, Optional
 from ..decorators import with_logger
 from ..types import Map, MapPoolMap
 
+
 @with_logger
 class MapPool(object):
     _logger: ClassVar[logging.Logger]
@@ -23,13 +24,16 @@ class MapPool(object):
     def set_maps(self, maps: Iterable[MapPoolMap]) -> None:
         self.maps = {map_.id: map_ for map_ in maps}
 
-    def choose_map(self, played_map_ids: Iterable[int] = (), vetoes_map={}, max_tokens_per_map=1) -> Map:
+    def choose_map(self, played_map_ids: Iterable[int] = (), vetoes_map=None, max_tokens_per_map=1) -> Map:
         """
         Select a random map using veto system weights with an anti-repetition adjustment.
         """
         if not self.maps:
             self._logger.critical("Trying to choose a map from an empty map pool: %s", self.name)
             raise RuntimeError(f"Map pool {self.name} not set!")
+
+        if vetoesMap is None:
+            vetoesMap = {}
 
         PRIMARY_THRESHOLD = 0.75
         SECONDARY_THRESHOLD = 0.5
@@ -51,10 +55,10 @@ class MapPool(object):
             candidates = []
             for threshold in [PRIMARY_THRESHOLD, SECONDARY_THRESHOLD]:
                 candidates = [
-                    other_id for other_id in self.maps if other_id != id_ 
+                    other_id for other_id in self.maps if other_id != id_
                     and repetition_counts[other_id] < repetition_counts[id_]
-                    and initial_weights[other_id] >= threshold * current_weight 
-                    and adjusted_weights[other_id] > 0 
+                    and initial_weights[other_id] >= threshold * current_weight
+                    and adjusted_weights[other_id] > 0
                 ]
                 if candidates:
                     break
@@ -68,10 +72,10 @@ class MapPool(object):
         map_list = list(self.maps.items())
         final_weights = [adjusted_weights[id_] * map.weight for id_, map in map_list]
         self._logger.debug(f"Final weights: {final_weights}")
-        return random.choices([map for _, map in map_list], weights=final_weights, k=1)[0]
+        return random.choices([map for _, map in map_list], weights=final_weights, k=1)[0].get_map()
 
-        def __repr__(self) -> str:
-            return f"MapPool({self.id}, {self.name}, {list(self.maps.values())})"
+    def __repr__(self) -> str:
+        return f"MapPool({self.id}, {self.name}, {list(self.maps.values())})"
 
 
 class MatchmakerQueueMapPool(NamedTuple):
