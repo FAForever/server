@@ -15,8 +15,7 @@ from typing import (
     ClassVar,
     Coroutine,
     Iterable,
-    Optional,
-    Union
+    Optional
 )
 
 import aiocron
@@ -839,9 +838,7 @@ class LadderService(Service):
                     and checking the result vs upper border
                     and upper border is equal to the amount of tokens applied to the map next to last map in our group, or infinity if there is no such one
         """
-        sorted_tokens: list[Union[int, float]] = sorted(tokens)
-        # adding infinity as last upper border
-        sorted_tokens.append(float("inf"))
+        sorted_tokens = sorted(tokens)
         # t is the maximum amount of tokens applied to any single map in current group
         t = 0
         tokens_sum = 0
@@ -861,6 +858,11 @@ class LadderService(Service):
                 t = tokens_
             tokens_sum += tokens_
 
+        # Final case: all maps included
+        maps_balance = len(sorted_tokens) - M
+        if maps_balance > 0:
+            return tokens_sum / maps_balance
+            
         # return 0 never happens for correct tokens - M pairs
         return 0
 
