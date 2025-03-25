@@ -51,8 +51,7 @@ class MapPool(object):
             candidates = []
             for threshold in [config.LADDER_ANTI_REPETITION_PRIMARY_WEIGHT_THRESHOLD, config.LADDER_ANTI_REPETITION_SECONDARY_WEIGHT_THRESHOLD]:
                 candidates = [
-                    other_id for other_id in self.maps if other_id != id_
-                    and repetition_counts[other_id] < repetition_counts[id_]
+                    other_id for other_id in self.maps if other_id not in repetition_counts
                     and initial_weights[other_id] >= threshold * current_weight
                     and adjusted_weights[other_id] > 0
                 ]
@@ -80,5 +79,5 @@ class MatchmakerQueueMapPool(NamedTuple):
     min_rating: Optional[int]
     max_rating: Optional[int]
     veto_tokens_per_player: int
-    max_tokens_per_map: int
+    max_tokens_per_map: float
     minimum_maps_after_veto: float

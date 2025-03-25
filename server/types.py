@@ -35,7 +35,7 @@ class MatchmakerQueueMapPoolVetoData(NamedTuple):
     matchmaker_queue_map_pool_id: int
     map_pool_map_version_ids: list[int]
     veto_tokens_per_player: int
-    max_tokens_per_map: int
+    max_tokens_per_map: float
     minimum_maps_after_veto: float
 
 

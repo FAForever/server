@@ -578,10 +578,11 @@ class LadderService(Service):
 
             pool_id, pool, *_, max_tokens_per_map, minimum_maps_after_veto = queue.map_pools[pool.id]
 
-            vetoes_map = defaultdict(int)
+            vetoes_map : dict[int, int] = defaultdict(int)
+
 
             for m in pool.maps.values():
-                for index, player in enumerate(all_players):
+                for _, player in enumerate(all_players):
                     vetoes_map[m.map_pool_map_version_id] += player.vetoes.get(pool_id, {}).get(m.map_pool_map_version_id, 0)
 
             if (max_tokens_per_map == 0):
@@ -594,6 +595,9 @@ class LadderService(Service):
             game_map = pool.choose_map(played_map_ids, vetoes_map, max_tokens_per_map)
             self._logger.debug("______game_map________________: %s", game_map)
 
+            for player in all_players:
+                player.state = PlayerState.IDLE
+            raise RuntimeError(f"tesing!")
             game = self.game_service.create_game(
                 game_class=LadderGame,
                 game_mode=queue.featured_mod,
@@ -838,7 +842,7 @@ class LadderService(Service):
                     and checking the result vs upper border
                     and upper border is equal to the amount of tokens applied to the map next to last map in our group, or infinity if there is no such one
         """
-        sorted_tokens = sorted(tokens)
+        sorted_tokens : list[Union[int, float]] = sorted(tokens)
         # adding infinity as last upper border
         sorted_tokens.append(float("inf"))
         # t is the maximum amount of tokens applied to any single map in current group
