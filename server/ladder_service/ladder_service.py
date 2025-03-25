@@ -862,7 +862,7 @@ class LadderService(Service):
         maps_balance = len(sorted_tokens) - M
         if maps_balance > 0:
             return tokens_sum / maps_balance
-            
+
         # return 0 never happens for correct tokens - M pairs
         return 0
 
