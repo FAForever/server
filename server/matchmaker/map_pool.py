@@ -39,14 +39,13 @@ class MapPool(object):
 
         # Filter and count played map IDs
         repetition_counts = Counter(id_ for id_ in played_map_ids if id_ in self.maps)
-        sorted_maps = [id_ for id_, _ in repetition_counts.most_common()]
 
         # Initial weights based on vetoes
         initial_weights = {id_: max(0, 1 - vetoes_map.get(id_, 0) / max_tokens_per_map) for id_ in self.maps}
         adjusted_weights = initial_weights.copy()
 
         # Anti-repetition adjustment
-        for id_ in sorted_maps:
+        for id_ in repetition_counts:
             current_weight = initial_weights[id_]
             candidates = []
             for threshold in [config.LADDER_ANTI_REPETITION_PRIMARY_WEIGHT_THRESHOLD, config.LADDER_ANTI_REPETITION_SECONDARY_WEIGHT_THRESHOLD]:
