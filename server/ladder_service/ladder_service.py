@@ -573,11 +573,11 @@ class LadderService(Service):
             )
             rating = func(ratings)
 
-            pool = queue.get_map_pool_for_rating(rating)
-            if not pool:
+            pool_ = queue.get_map_pool_for_rating(rating)
+            if not pool_:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
 
-            pool_id, pool, *_, max_tokens_per_map, minimum_maps_after_veto = queue.map_pools[pool.id]
+            pool_id, pool, *_, max_tokens_per_map, minimum_maps_after_veto = queue.map_pools[pool_.id]
 
             vetoes_map: dict[int, int] = defaultdict(int)
 
@@ -845,9 +845,9 @@ class LadderService(Service):
         # t is the maximum amount of tokens applied to any single map in current group
         t = 0
         tokens_sum = 0
-        for index, tokens in enumerate(sorted_tokens):
+        for index, tokens_ in enumerate(sorted_tokens):
             # if at [index] our current group is ended
-            if tokens > t:
+            if tokens_ > t:
                 maps_balance = index - M
                 # if our group is only 0-tokened maps
                 if tokens_sum == 0 and maps_balance >= 0:
@@ -856,10 +856,10 @@ class LadderService(Service):
                     # solving the equation
                     candidate = tokens_sum / maps_balance
                     # checking it vs upper border
-                    if candidate <= tokens:
+                    if candidate <= tokens_:
                         return candidate
-                t = tokens
-            tokens_sum += tokens
+                t = tokens_
+            tokens_sum += tokens_
 
         # return 0 never happens for correct tokens - M pairs
         return 0
