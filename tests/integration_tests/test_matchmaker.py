@@ -100,9 +100,8 @@ async def test_game_launch_message_game_options(lobby_server, tmp_user):
         }
 
 
-@pytest.mark.flaky
 @fast_forward(15)
-async def test_game_matchmaking_start(lobby_server, database):
+async def test_game_matchmaking_start(lobby_server, database, game_service):
     host_id, host, guest_id, guest = await queue_players_for_matchmaking(lobby_server)
 
     # The player that queued last will be the host
@@ -139,8 +138,7 @@ async def test_game_matchmaking_start(lobby_server, database):
     })
 
     # Wait for db to be updated
-    await read_until_launched(host, game_id)
-    await read_until_launched(guest, game_id)
+    await game_service[game_id].wait_launched(None)
 
     async with database.acquire() as conn:
         result = await conn.execute(select(
