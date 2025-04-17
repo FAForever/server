@@ -1199,7 +1199,7 @@ async def test_graceful_shutdown_clears_queues(
     (4.5, [0, 0, 0, 1, 1, 2, 2], 2.4),
     # M=4.5, all maps, T=2.4, sum=4.5
 ])
-def test_calculate_dynamic_tokens_per_map(database, game_service, player_service, violation_service,M, tokens, expected):
+def test_calculate_dynamic_tokens_per_map(database, game_service, player_service, violation_service, M, tokens, expected):
     ladder_service = LadderService(database, game_service, player_service, violation_service)
     result = ladder_service.calculate_dynamic_tokens_per_map(M, tokens)
     assert result == pytest.approx(expected, rel=1e-9)
