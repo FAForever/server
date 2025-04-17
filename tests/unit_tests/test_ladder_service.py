@@ -1198,6 +1198,10 @@ async def test_graceful_shutdown_clears_queues(
     # Float M
     (4.5, [0, 0, 0, 1, 1, 2, 2], 2.4),
     # M=4.5, all maps, T=2.4, sum=4.5
+
+    # The same test, just checking that ordering of maps doesnt matter
+    (4.5, [2, 1, 2, 0, 1, 0, 0], 2.4),
+    # M=4.5, all maps, T=2.4, sum=4.5
 ])
 def test_calculate_dynamic_tokens_per_map(database, game_service, player_service, violation_service, M, tokens, expected):
     ladder_service = LadderService(database, game_service, player_service, violation_service)
