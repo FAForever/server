@@ -21,8 +21,8 @@ from tests.utils import autocontext, exhaust_callbacks, fast_forward
 from .strategies import st_players
 
 
-async def test_queue_initialization(database, game_service, violation_service):
-    ladder_service = LadderService(database, game_service, violation_service)
+async def test_queue_initialization(database, game_service, player_service, violation_service):
+    ladder_service = LadderService(database, game_service, player_service, violation_service)
 
     def make_mock_queue(*args, **kwargs):
         queue = mock.create_autospec(MatchmakerQueue)
@@ -1140,3 +1140,70 @@ async def test_graceful_shutdown_clears_queues(
 
     assert ladder_service.queues["ladder1v1"]._is_running is False
     assert ladder_service.queues["tmm2v2"]._is_running is False
+
+
+@pytest.mark.parametrize("M, tokens, expected", [
+    # Only 0-token maps, sufficient to meet M
+    (2.0, [0, 0, 0], 1.0),
+    # Three maps with 0 tokens, M=2 < 3, should return T=1 because taking all 0-token maps is enough
+
+    # Impossible setup, 1 full map required but the only map available is partially vetoed
+    (1, [1], 0),
+    # function returns 0 for bad input
+
+    # Include maps with 1 token
+    (2.0, [0, 1, 1], 2.0),
+    # One 0-token map (sum=1) isn't enough for M=2, include two 1-token maps, T=2 satisfies
+
+    # Non-integer M
+    (1.5, [0, 1, 1], 4/3),
+    # M=1.5, 0-token sum=1 < M, include 1-token maps, T=4/3 ≈ 1.333, sum=1.5
+
+    # Include maps with 2 tokens
+    (2.5, [0, 0, 2], 4.0),
+    # Two 0-token maps (sum=2) < M=2.5, include 2-token map, T=4, sum=2.5
+
+    # Another test because why not
+    (1.9, [0, 1], 10.0),
+    # M=1.9, one 0-token (sum=1) < M, include 1-token, final case T=10, sum=1.9
+
+    # More complex case
+    (3.5, [0, 0, 1, 1, 2], 8/3),
+    # M=3.5, 0 and 1-token maps insufficient, all maps give T=8/3 ≈ 2.667, sum=3.5
+
+    # All maps have 1 token, no 0-token maps
+    (1.0, [1, 1, 1], 1.5),
+    # T=1.5, each weight=1/3, sum=1
+
+    # All maps have 1 token, small M
+    (0.5, [1, 1, 1], 1.2),
+    # M=0.5, all 1-token maps, T=1.2, each weight=1/6, sum=0.5
+
+    # Mix of 0 and higher tokens, 0-tokens sufficient
+    (1.0, [0, 2], 1.0),
+    # M=1, one 0-token map suffices, T=1, sum=1
+
+    # Mix of 0 and 2 tokens
+    (1.5, [0, 2], 4.0),
+    # M=1.5, 0-token sum=1 < M, include 2-token, T=4, sum=1.5
+
+    # Larger set, T matches next token boundary
+    (4.0, [0, 0, 0, 1, 1, 2, 2], 2.0),
+    # M=4, 0 and 1-token maps (5 maps), T=2, sum=4
+
+    # Larger set, T in final case
+    (5.0, [0, 0, 0, 1, 1, 2, 2], 3.0),
+    # M=5, all maps included, T=3, sum=5
+
+    # Float M
+    (4.5, [0, 0, 0, 1, 1, 2, 2], 2.4),
+    # M=4.5, all maps, T=2.4, sum=4.5
+])
+def test_calculate_dynamic_tokens_per_map(database, game_service, player_service, violation_service,M, tokens, expected):
+    ladder_service = LadderService(database, game_service, player_service, violation_service)
+    result = ladder_service.calculate_dynamic_tokens_per_map(M, tokens)
+    assert result == pytest.approx(expected, rel=1e-9)
+    # Verify that the result produces a sum >= M
+    if (result != 0):
+        total_weight = sum(max((result - v) / result, 0) for v in tokens)
+        assert total_weight >= M - 1e-9  # Account for floating-point errors

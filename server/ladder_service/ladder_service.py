@@ -742,7 +742,7 @@ class LadderService(Service):
                 if player not in connected_players
             ])
 
-    def calculate_dynamic_tokens_per_map(self, M: float, tokens: Iterable[int]) -> float:
+    def calculate_dynamic_tokens_per_map(self, M: float, tokens_: Iterable[int]) -> float:
         """
             function finds minimal max_tokens_per_map > 0 for given M (minimal_maps_after_veto) > 0 and [iterable] of veto tokens applied for each map in the bracket
             max_tokens_per_map - is the amount of veto_tokens required to fully ban a map
@@ -838,7 +838,9 @@ class LadderService(Service):
                     and checking the result vs upper border
                     and upper border is equal to the amount of tokens applied to the map next to last map in our group, or infinity if there is no such one
         """
-        sorted_tokens = sorted(tokens)
+        sorted_tokens = sorted(tokens_)
+        # adding infinity as last upper border
+        sorted_tokens.append(float("inf"))
         # t is the maximum amount of tokens applied to any single map in current group
         t = 0
         tokens_sum = 0
@@ -857,11 +859,6 @@ class LadderService(Service):
                         return candidate
                 t = tokens_
             tokens_sum += tokens_
-
-        # Final case: all maps included
-        maps_balance = len(sorted_tokens) - M
-        if maps_balance > 0:
-            return tokens_sum / maps_balance
 
         # return 0 never happens for correct tokens - M pairs
         return 0
