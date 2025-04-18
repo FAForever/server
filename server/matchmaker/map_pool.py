@@ -26,7 +26,6 @@ class MapPool(object):
     def set_maps(self, maps: Iterable[MapPoolMap]) -> None:
         self.maps = {map_.id: map_ for map_ in maps}
 
-
     def apply_antirepetition_adjustment(self, initial_weights: dict[int, float], played_map_ids: Iterable[int], thresholds: list[float]) -> dict[int, float]:
         notzero_weights = {map_id: weight for map_id, weight in initial_weights.items() if weight > 0}
         repetition_counts = Counter(map_id for map_id in played_map_ids if map_id in notzero_weights)
