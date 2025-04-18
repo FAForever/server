@@ -101,17 +101,18 @@ def test_choose_map_all_maps_played(map_pool_factory):
     assert chosen_map in maps
 
 
-def test_choose_map_all_played_but_generated_map_doesnt_dominate(map_pool_factory):
-    maps = [
-        Map(1, "some_map.v001", weight=1000000),
-        Map(2, "some_map.v001", weight=1000000),
-        Map(3, "some_map.v001", weight=1000000),
-        NeroxisGeneratedMap.of({
+def test_choose_map_all_played_except_generated_map(map_pool_factory):
+    generated_map = NeroxisGeneratedMap.of({
             "version": "0.0.0",
             "spawns": 2,
             "size": 512,
             "type": "neroxis"
-        }),
+        })
+    maps = [
+        Map(1, "some_map.v001", weight=1000000),
+        Map(2, "some_map.v001", weight=1000000),
+        Map(3, "some_map.v001", weight=1000000),
+        generated_map,
     ]
     map_pool = map_pool_factory(maps=maps)
 
@@ -120,8 +121,7 @@ def test_choose_map_all_played_but_generated_map_doesnt_dominate(map_pool_factor
         chosen_map = map_pool.choose_map([1, 2, 3])
 
         assert chosen_map is not None
-        assert chosen_map in maps
-        assert chosen_map.id in [1, 2, 3]
+        assert chosen_map.id == generated_map.id
 
 
 def test_choose_map_all_maps_played_not_in_pool(map_pool_factory):
@@ -180,3 +180,87 @@ def test_choose_map_raises_on_empty_map_pool(map_pool_factory):
 
     with pytest.raises(RuntimeError):
         map_pool.choose_map([])
+
+
+@pytest.mark.parametrize(
+    "initial_weights, played_map_ids, thresholds, expected_adjusted_weights",
+    [
+        # All Maps Played Equally
+        (
+            {1: 1, 2: 1, 3: 1},
+            [1, 2, 3],
+            [0.5],
+            {1: 1, 2: 1, 3: 1}
+        ),
+        # Testing Redistribution: should be proportional to initial weights
+        (
+            {1: 0.6, 2: 0.5, 3: 1},
+            [1],
+            [0.5],
+            {1: 0, 2: 0.7, 3: 1.4}
+        ),
+        # High Threshold, No Redistribution to half-banned map
+        (
+            {1: 1, 2: 1, 3: 0.5},
+            [1, 1, 2],
+            [1],
+            {1: 0, 2: 2, 3: 0.5}
+        ),
+        # Low first Threshold, Redistribution to half-banned map happens
+        (
+            {1: 1, 2: 1, 3: 0.5},
+            [1, 1, 2],
+            [0.5],
+            {1: 0, 2: 0, 3: 2.5}
+        ),
+        # Secondary Threshold triggers Redistribution
+        (
+            {1: 1, 2: 1, 3: 0.5},
+            [1, 1, 2],
+            [1, 0.5],
+            {1: 0, 2: 0, 3: 2.5}
+        ),
+        # Threshold is high but high played counts still going through
+        (
+            {1: 1, 2: 0.2},
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [0.9],
+            {1: 0, 2: 1.2}
+        ),
+        # Really complex redistribution test
+        (
+            {1: 0.8, 2: 0.6, 3: 0.4, 4: 0.2, 5: 0.65, 6: 0.7, 7: 1, 8: 0.55, 9: 1},
+            [1, 1, 2, 3, 7, 9],
+            [0.85, 0.5],
+            {
+                1: 0, 
+                2: 0, 
+                3: 0, 
+                4: 0.2, 
+                5: pytest.approx(1.9949332, rel=1e-6), # 0.65 + (0.65 / 3.35 * 0.8) + (0.65 / 1.9 * 0.6) + (0.65 / 1.9 * 0.4) + 2 * (0.65 / 1.9 * (1.0 + 1 / 3.35 * 0.8))
+                6: pytest.approx(2.1483896, rel=1e-6), # 0.7 + (0.7 / 3.35 * 0.8) + (0.7 / 1.9 * 0.6) + (0.7 / 1.9 * 0.4) + 2 * (0.7 / 1.9 * (1.0 + 1 / 3.35 * 0.8)), 
+                7: 0, 
+                8: pytest.approx(1.5566771, rel=1e-6), # 0.55 + (0.55 / 1.9 * 0.6) + (0.55 / 1.9 * 0.4) + 2 * (0.55 / 1.9 * (1.0 + 1 / 3.35 * 0.8)), 
+                9: 0
+            }
+        ),
+        # Empty Played Map IDs
+        (
+            {1: 1, 2: 1, 3: 1},
+            [],
+            [0.5],
+            {1: 1, 2: 1, 3: 1}
+        ),
+        # Played Maps Not in Pool
+        (
+            {1: 1, 2: 1, 3: 1},
+            [1, 1, 4],
+            [0.5],
+            {1: 0, 2: 1.5, 3: 1.5}
+        ),
+    ],
+)
+def test_apply_antirepetition_adjustment(map_pool_factory, initial_weights, played_map_ids, thresholds, expected_adjusted_weights):
+    map_pool = map_pool_factory()
+    adjusted = map_pool.apply_antirepetition_adjustment(initial_weights, played_map_ids, thresholds)
+    assert adjusted == expected_adjusted_weights
