@@ -103,11 +103,11 @@ def test_choose_map_all_maps_played(map_pool_factory):
 
 def test_choose_map_all_played_except_generated_map(map_pool_factory):
     generated_map = NeroxisGeneratedMap.of({
-            "version": "0.0.0",
-            "spawns": 2,
-            "size": 512,
-            "type": "neroxis"
-        })
+        "version": "0.0.0",
+        "spawns": 2,
+        "size": 512,
+        "type": "neroxis"
+    })
     maps = [
         Map(1, "some_map.v001", weight=1000000),
         Map(2, "some_map.v001", weight=1000000),
@@ -233,14 +233,14 @@ def test_choose_map_raises_on_empty_map_pool(map_pool_factory):
             [1, 1, 2, 3, 7, 9],
             [0.85, 0.5],
             {
-                1: 0, 
-                2: 0, 
-                3: 0, 
-                4: 0.2, 
-                5: pytest.approx(1.9949332, rel=1e-6), # 0.65 + (0.65 / 3.35 * 0.8) + (0.65 / 1.9 * 0.6) + (0.65 / 1.9 * 0.4) + 2 * (0.65 / 1.9 * (1.0 + 1 / 3.35 * 0.8))
-                6: pytest.approx(2.1483896, rel=1e-6), # 0.7 + (0.7 / 3.35 * 0.8) + (0.7 / 1.9 * 0.6) + (0.7 / 1.9 * 0.4) + 2 * (0.7 / 1.9 * (1.0 + 1 / 3.35 * 0.8)), 
-                7: 0, 
-                8: pytest.approx(1.5566771, rel=1e-6), # 0.55 + (0.55 / 1.9 * 0.6) + (0.55 / 1.9 * 0.4) + 2 * (0.55 / 1.9 * (1.0 + 1 / 3.35 * 0.8)), 
+                1: 0,
+                2: 0,
+                3: 0,
+                4: 0.2,
+                5: pytest.approx(1.9949332, rel=1e-6),  # 0.65 + (0.65 / 3.35 * 0.8) + (0.65 / 1.9 * 0.6) + (0.65 / 1.9 * 0.4) + 2 * (0.65 / 1.9 * (1.0 + 1 / 3.35 * 0.8))
+                6: pytest.approx(2.1483896, rel=1e-6),  # 0.7 + (0.7 / 3.35 * 0.8) + (0.7 / 1.9 * 0.6) + (0.7 / 1.9 * 0.4) + 2 * (0.7 / 1.9 * (1.0 + 1 / 3.35 * 0.8)),
+                7: 0,
+                8: pytest.approx(1.5566771, rel=1e-6),  # 0.55 + (0.55 / 1.9 * 0.6) + (0.55 / 1.9 * 0.4) + 2 * (0.55 / 1.9 * (1.0 + 1 / 3.35 * 0.8)),
                 9: 0
             }
         ),
