@@ -27,12 +27,12 @@ class MapPool(object):
         self.maps = {map_.id: map_ for map_ in maps}
 
     def apply_antirepetition_adjustment(self, initial_weights: dict[int, float], played_map_ids: Iterable[int], base_thresholds: list[float], repeat_factor: float) -> dict[int, float]:
-        '''
+        """
             Transfers weights from played maps to not-played (if possible) or less-played (otherwise) maps,
             base_thresholds and repeat_factor adjusts the level of respect to the veto system:
             base_thresholds used to determine, which not-played maps are available as transfer targets
             the bigger the repeat_factor, the stronger algo tries to get rid of maps with playcount >= 2
-        '''
+        """
         notzero_weights = {map_id: weight for map_id, weight in initial_weights.items() if weight > 0}
         repetition_counts = Counter(map_id for map_id in played_map_ids if map_id in notzero_weights)
         adjusted_weights = notzero_weights.copy()
