@@ -183,13 +183,14 @@ def test_choose_map_raises_on_empty_map_pool(map_pool_factory):
 
 
 @pytest.mark.parametrize(
-    "initial_weights, played_map_ids, thresholds, expected_adjusted_weights",
+    "initial_weights, played_map_ids, base_thresholds, repeat_factor, expected_adjusted_weights",
     [
         # All Maps Played Equally
         (
             {1: 1, 2: 1, 3: 1},
             [1, 2, 3],
             [0.5],
+            0.8,
             {1: 1, 2: 1, 3: 1}
         ),
         # Testing Redistribution: should be proportional to initial weights
@@ -197,6 +198,7 @@ def test_choose_map_raises_on_empty_map_pool(map_pool_factory):
             {1: 0.6, 2: 0.5, 3: 1},
             [1],
             [0.5],
+            0.8,
             {1: 0, 2: 0.7, 3: 1.4}
         ),
         # High Threshold, No Redistribution to half-banned map
@@ -204,6 +206,7 @@ def test_choose_map_raises_on_empty_map_pool(map_pool_factory):
             {1: 1, 2: 1, 3: 0.5},
             [1, 1, 2],
             [1],
+            0.8,
             {1: 0, 2: 2, 3: 0.5}
         ),
         # Low first Threshold, Redistribution to half-banned map happens
@@ -211,44 +214,31 @@ def test_choose_map_raises_on_empty_map_pool(map_pool_factory):
             {1: 1, 2: 1, 3: 0.5},
             [1, 1, 2],
             [0.5],
+            0.8,
             {1: 0, 2: 0, 3: 2.5}
         ),
-        # Secondary Threshold triggers Redistribution
+        # Secondary Threshold triggers Redistribution with help of repeat_factor
         (
-            {1: 1, 2: 1, 3: 0.5},
+            {1: 1, 2: 0.8, 3: 0.4},
             [1, 1, 2],
             [1, 0.5],
-            {1: 0, 2: 0, 3: 2.5}
+            0.8,
+            {1: 0, 2: 0, 3: 2.2}
         ),
-        # Threshold is high but high played counts still going through
+        # Threshold is very high but repeat_factor handles high playcounts
         (
-            {1: 1, 2: 0.2},
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            {1: 1, 2: 0.9 * 0.8 ** 7},
+            [1] * 8,
             [0.9],
-            {1: 0, 2: 1.2}
-        ),
-        # Really complex redistribution test
-        (
-            {1: 0.8, 2: 0.6, 3: 0.4, 4: 0.2, 5: 0.65, 6: 0.7, 7: 1, 8: 0.55, 9: 1},
-            [1, 1, 2, 3, 7, 9],
-            [0.85, 0.5],
-            {
-                1: 0,
-                2: 0,
-                3: 0,
-                4: 0.2,
-                5: pytest.approx(1.9949332, rel=1e-6),  # 0.65 + (0.65 / 3.35 * 0.8) + (0.65 / 1.9 * 0.6) + (0.65 / 1.9 * 0.4) + 2 * (0.65 / 1.9 * (1.0 + 1 / 3.35 * 0.8))
-                6: pytest.approx(2.1483896, rel=1e-6),  # 0.7 + (0.7 / 3.35 * 0.8) + (0.7 / 1.9 * 0.6) + (0.7 / 1.9 * 0.4) + 2 * (0.7 / 1.9 * (1.0 + 1 / 3.35 * 0.8)),
-                7: 0,
-                8: pytest.approx(1.5566771, rel=1e-6),  # 0.55 + (0.55 / 1.9 * 0.6) + (0.55 / 1.9 * 0.4) + 2 * (0.55 / 1.9 * (1.0 + 1 / 3.35 * 0.8)),
-                9: 0
-            }
+            0.8,
+            {1: 0, 2: 1 + 0.9 * 0.8 ** 7}
         ),
         # Empty Played Map IDs
         (
             {1: 1, 2: 1, 3: 1},
             [],
             [0.5],
+            0.8,
             {1: 1, 2: 1, 3: 1}
         ),
         # Played Maps Not in Pool
@@ -256,11 +246,49 @@ def test_choose_map_raises_on_empty_map_pool(map_pool_factory):
             {1: 1, 2: 1, 3: 1},
             [1, 1, 4],
             [0.5],
+            0.8,
             {1: 0, 2: 1.5, 3: 1.5}
+        ),
+        # Really complex redistribution test
+        # 1 -> [5,6], [2,3] -> [5,6,8], [7,9] -> 5
+        (
+            {1: 0.9, 2: 0.6, 3: 0.4, 4: 0.2, 5: 0.75, 6: 0.6, 7: 1, 8: 0.5, 9: 1},
+            [1, 1, 2, 3, 7, 9],
+            [0.75, 0.5],
+            0.8,
+            {
+                1: 0,
+                2: 0,
+                3: 0,
+                4: 0.2,
+                5: pytest.approx(3.655405, rel=1e-6),
+                6: pytest.approx(1.324324, rel=1e-6),
+                7: 0,
+                8: pytest.approx(0.770270, rel=1e-6),
+                9: 0
+            }
+        ),
+        # Same test but maps and played_ids are in the different order
+        (
+            {4: 0.2, 9: 1, 7: 1, 6: 0.6, 5: 0.75, 8: 0.5, 1: 0.9, 3: 0.4, 2: 0.6},
+            [9, 7, 2, 1, 3, 1],
+            [0.75, 0.5],
+            0.8,
+            {
+                1: 0,
+                2: 0,
+                3: 0,
+                4: 0.2,
+                5: pytest.approx(3.655405, rel=1e-6),
+                6: pytest.approx(1.324324, rel=1e-6),
+                7: 0,
+                8: pytest.approx(0.770270, rel=1e-6),
+                9: 0
+            }
         ),
     ],
 )
-def test_apply_antirepetition_adjustment(map_pool_factory, initial_weights, played_map_ids, thresholds, expected_adjusted_weights):
+def test_apply_antirepetition_adjustment(map_pool_factory, initial_weights, played_map_ids, base_thresholds, repeat_factor, expected_adjusted_weights):
     map_pool = map_pool_factory()
-    adjusted = map_pool.apply_antirepetition_adjustment(initial_weights, played_map_ids, thresholds)
+    adjusted = map_pool.apply_antirepetition_adjustment(initial_weights, played_map_ids, base_thresholds, repeat_factor)
     assert adjusted == expected_adjusted_weights

@@ -26,34 +26,56 @@ class MapPool(object):
     def set_maps(self, maps: Iterable[MapPoolMap]) -> None:
         self.maps = {map_.id: map_ for map_ in maps}
 
-    def apply_antirepetition_adjustment(self, initial_weights: dict[int, float], played_map_ids: Iterable[int], thresholds: list[float]) -> dict[int, float]:
+    def apply_antirepetition_adjustment(self, initial_weights: dict[int, float], played_map_ids: Iterable[int], base_thresholds: list[float], repeat_factor: float) -> dict[int, float]:
+        '''
+            Transfers weights from played maps to not-played (if possible) or less-played (otherwise) maps,
+            base_thresholds and repeat_factor adjusts the level of respect to the veto system:
+            base_thresholds used to determine, which not-played maps are available as transfer targets
+            the bigger the repeat_factor, the stronger algo tries to get rid of maps with playcount >= 2
+        '''
         notzero_weights = {map_id: weight for map_id, weight in initial_weights.items() if weight > 0}
         repetition_counts = Counter(map_id for map_id in played_map_ids if map_id in notzero_weights)
         adjusted_weights = notzero_weights.copy()
 
+        def get_notrepeated_weight_transfer_targets(current_weight, rep_count):
+            for base_threshold in base_thresholds:
+                targets = [
+                    target_id for target_id in notzero_weights
+                    if repetition_counts.get(target_id, 0) == 0 and
+                    notzero_weights[target_id] >= base_threshold * repeat_factor ** (rep_count - 1) * current_weight
+                ]
+                if targets:
+                    return targets
+            return []
+
+        def get_repeated_weight_transfer_targets(current_weight, rep_count):
+            return [
+                target_id for target_id in notzero_weights
+                if 0 < (target_rep := repetition_counts.get(target_id, 0)) < rep_count and
+                notzero_weights[target_id] >= repeat_factor ** (rep_count - target_rep) * current_weight
+            ]
+
+        def transfer_weight_proportionally(from_id, to_ids):
+            v = adjusted_weights[from_id]
+            adjusted_weights[from_id] = 0
+            weight_sum = sum(notzero_weights[c] for c in to_ids)
+            for c in to_ids:
+                adjusted_weights[c] += (notzero_weights[c] / weight_sum) * v
+
         for map_id, rep_count in repetition_counts.most_common():
             current_weight = notzero_weights[map_id]
-            for threshold in thresholds:
-                candidates = [
-                    other_id for other_id in notzero_weights
-                    if (
-                        repetition_counts.get(other_id, 0) < rep_count
-                        and notzero_weights[other_id] >= (
-                            threshold ** (rep_count - repetition_counts.get(other_id, 0))
-                            * current_weight
-                        )
-                    )
-                ]
-                if candidates:
-                    v = adjusted_weights[map_id]
-                    adjusted_weights[map_id] = 0
-                    sum_candidates = sum(notzero_weights[c] for c in candidates)
-                    for c in candidates:
-                        adjusted_weights[c] += (notzero_weights[c] / sum_candidates) * v
-                    break
+            notrepeated_targets = get_notrepeated_weight_transfer_targets(current_weight, rep_count)
+            repeated_targets = get_repeated_weight_transfer_targets(current_weight, rep_count)
+            weight_transfer_targets = notrepeated_targets or repeated_targets
+            if weight_transfer_targets:
+                transfer_weight_proportionally(map_id, weight_transfer_targets)
+
         return adjusted_weights
 
     def choose_map(self, played_map_ids: Iterable[int] = (), vetoes_map=None, max_tokens_per_map=1) -> Map:
+        """
+            Selects a random map using veto system weights with an anti-repetition adjustment.
+        """
         if not self.maps:
             self._logger.critical("Trying to choose a map from an empty map pool: %s", self.name)
             raise RuntimeError(f"Map pool {self.name} not set!")
@@ -63,7 +85,7 @@ class MapPool(object):
 
         initial_weights = {id_: max(0, 1 - vetoes_map.get(id_, 0) / max_tokens_per_map) for id_ in self.maps}
         adjusted_weights = self.apply_antirepetition_adjustment(
-            initial_weights, played_map_ids, config.LADDER_ANTI_REPETITION_WEIGHT_THRESHOLDS
+            initial_weights, played_map_ids, config.LADDER_ANTI_REPETITION_WEIGHT_BASE_THRESHOLDS, config.LADDER_ANTI_REPETITION_REPEAT_COUNTS_FACTOR
         )
 
         map_list = list(self.maps.items())
