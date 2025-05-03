@@ -142,7 +142,7 @@ class VetoSystem:
         return result
 
     @staticmethod
-    def calculate_dynamic_tokens_per_map(self, M: float, tokens_applied_to_maps: Iterable[int]) -> float:
+    def calculate_dynamic_tokens_per_map(M: float, tokens_applied_to_maps: Iterable[int]) -> float:
         """
         Calculate the smallest positive T such that the sum of weights w = max((T - V)/T, 0) for each map is at least M,
         where V is the number of tokens applied to that map. If the condition is met with maps that have zero tokens, returns 1.

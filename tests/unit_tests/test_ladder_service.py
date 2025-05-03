@@ -11,6 +11,7 @@ from server.exceptions import DisabledError
 from server.games import LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service import game_name
+from server.ladder_service.veto_system import VetoSystem
 from server.matchmaker import MapPool, MatchmakerQueue
 from server.players import PlayerState
 from server.rating import RatingType
@@ -1204,8 +1205,8 @@ async def test_graceful_shutdown_clears_queues(
     # M=4.5, all maps, T=2.4, sum=4.5
 ])
 def test_calculate_dynamic_tokens_per_map(database, game_service, player_service, violation_service, M, tokens, expected):
-    ladder_service = LadderService(database, game_service, player_service, violation_service)
-    result = ladder_service.calculate_dynamic_tokens_per_map(M, tokens)
+    # ladder_service = LadderService(database, game_service, player_service, violation_service)
+    result = VetoSystem.calculate_dynamic_tokens_per_map(M, tokens)
     assert result == pytest.approx(expected, rel=1e-9)
     # Verify that the result produces a sum >= M
     if (result != 0):
