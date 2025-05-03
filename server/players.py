@@ -19,10 +19,6 @@ if TYPE_CHECKING:
     from server.games import Game
     from server.lobbyconnection import LobbyConnection
 
-BracketID = int
-MapPoolMapVersionId = int
-VetoTokensApplied = int
-
 
 @unique
 class PlayerState(Enum):
@@ -103,14 +99,6 @@ class Player:
             self._faction = value
         else:
             self._faction = Faction.from_value(value)
-
-    async def apply_vetoes(self, new_vetoes: Optional[dict[BracketID, dict[MapPoolMapVersionId, VetoTokensApplied]]] = None) -> None:
-        veto_datas = self.vetoes.apply_vetoes(new_vetoes)
-        if veto_datas:
-            await self.send_message({
-                "command": "vetoes_changed",
-                "vetoesData": veto_datas
-            })
 
     def power(self) -> int:
         """An artifact of the old permission system. The client still uses this

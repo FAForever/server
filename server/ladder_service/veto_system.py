@@ -1,7 +1,10 @@
+import asyncio
 import logging
 from collections import defaultdict, Counter
 from server.decorators import with_logger
 from typing import ClassVar, Optional, Iterable
+from server.protocol import DisconnectedError
+from server.players import Player
 from server.types import MatchmakerQueueMapPoolVetoData
 from server.matchmaker import (
     MatchmakerQueue,
@@ -88,7 +91,40 @@ class PlayerVetoes:
 @with_logger
 class VetoSystem:
     _logger: ClassVar[logging.Logger] = logging.getLogger(__name__)
+    _max_stream_count = 25
     pools_veto_data: ClassVar[list[MatchmakerQueueMapPoolVetoData]] = []
+
+    @staticmethod
+    async def apply_vetoes_to_player(player: Player, new_vetoes: Optional[dict[BracketID, dict[MapPoolMapVersionId, VetoTokensApplied]]] = None) -> None:
+        """Applies vetoes for a player and sends a message if changes occur."""
+        veto_datas = player.vetoes.apply_vetoes(new_vetoes)
+        if veto_datas:
+            try:
+                await player.send_message({
+                    "command": "vetoes_changed",
+                    "vetoesData": veto_datas
+                })
+            except DisconnectedError:
+                VetoSystem._logger.warning(f"Failed to send vetoes update to player {player.id}: Player disconnected")
+            except Exception as e:
+                VetoSystem._logger.error(f"Unexpected error sending vetoes update to player {player.id}: {str(e)}")
+
+    @staticmethod
+    async def update_vetoes_of_players(players: Iterable[Player]) -> None:
+        player_queue = asyncio.Queue()
+        for player in players:
+            await player_queue.put(player)
+
+        async def worker():
+            while not player_queue.empty():
+                player = await player_queue.get()
+                try:
+                    await VetoSystem.apply_vetoes_to_player(player)
+                finally:
+                    player_queue.task_done()
+
+        workers = [asyncio.create_task(worker()) for _ in range(VetoSystem._max_stream_count)]
+        await asyncio.gather(*workers)
 
     @staticmethod
     def generate_initial_weights_for_match(players_in_match, matchmaker_queue_map_pool: MatchmakerQueueMapPool) -> dict[int, int]:

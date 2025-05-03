@@ -53,6 +53,7 @@ from .games import (
 )
 from .geoip_service import GeoIpService
 from .ladder_service import LadderService
+from .ladder_service.veto_system import VetoSystem
 from .oauth_service import OAuthService
 from .party_service import PartyService
 from .player_service import PlayerService
@@ -1387,7 +1388,7 @@ class LobbyConnection:
 
             vetoes[matchmaker_queue_map_pool][map_pool_map_version_id] = veto_tokens_applied
 
-        await self.player.apply_vetoes(vetoes)
+        await VetoSystem.apply_vetoes_to_player(self.player, vetoes)
 
     async def send_warning(self, message: str, fatal: bool = False):
         """
