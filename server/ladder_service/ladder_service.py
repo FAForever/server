@@ -578,9 +578,9 @@ class LadderService(Service):
             game_map = map_pool.choose_map(played_map_ids, initial_weights)
 
             self._logger.debug("______game_map________________: %s", game_map)
-            for player in all_players:
-                player.state = PlayerState.IDLE
-            return
+            # for player in all_players:
+            #   player.state = PlayerState.IDLE
+            # return
             game = self.game_service.create_game(
                 game_class=LadderGame,
                 game_mode=queue.featured_mod,
