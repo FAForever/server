@@ -22,10 +22,8 @@ class PlayerVetoes:
 
     def apply_vetoes(self, new_vetoes: Optional[dict[BracketID, dict[MapPoolMapVersionId, VetoTokensApplied]]]) -> Optional[list[dict]]:
         """Validates and sets vetoes based on new vetoes and pool constraints."""
-        if new_vetoes is None:
+        if new_vetoes is None or not self._is_valid_vetoes(new_vetoes):
             new_vetoes = self._vetoes
-        if not self._is_valid_vetoes(new_vetoes):
-            raise ValueError("Invalid vetoes structure")
         pools_vetodata = VetoSystem.pools_veto_data
         adjusted_vetoes = {}
         veto_datas = []
