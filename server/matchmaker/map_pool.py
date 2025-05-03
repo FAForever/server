@@ -72,7 +72,7 @@ class MapPool(object):
 
         return adjusted_weights
 
-    def choose_map(self, played_map_ids: Iterable[int] = (), vetoes_map=None, max_tokens_per_map=1) -> Map:
+    def choose_map(self, played_map_ids: Iterable[int] = (), initial_weights: dict[int, float] = None) -> Map:
         """
             Selects a random map using veto system weights with an anti-repetition adjustment.
         """
@@ -80,16 +80,17 @@ class MapPool(object):
             self._logger.critical("Trying to choose a map from an empty map pool: %s", self.name)
             raise RuntimeError(f"Map pool {self.name} not set!")
 
-        if vetoes_map is None:
-            vetoes_map = {}
+        if initial_weights is None:
+            initial_weights = {map_id: 1 for map_id in self.maps.keys()}
 
-        initial_weights = {id_: max(0, 1 - vetoes_map.get(id_, 0) / max_tokens_per_map) for id_ in self.maps}
         adjusted_weights = self.apply_antirepetition_adjustment(
             initial_weights, played_map_ids, config.LADDER_ANTI_REPETITION_WEIGHT_BASE_THRESHOLDS, config.LADDER_ANTI_REPETITION_REPEAT_COUNTS_FACTOR
         )
-
-        map_list = list(self.maps.items())
-        final_weights = [adjusted_weights[id_] * map.weight for id_, map in map_list]
+        self._logger.debug("______adjusted_weights________________: %s", adjusted_weights)
+        map_list = [(m.get_map().map_pool_map_version_id, m) for m in self.maps.values()]
+        self._logger.debug("______map_list________________: %s", map_list)
+        final_weights = [adjusted_weights.get(mp_mv_id, 0) * m.weight for mp_mv_id, m in map_list]
+        self._logger.debug("______final_weights________________: %s", final_weights)
         return random.choices([map for _, map in map_list], weights=final_weights, k=1)[0].get_map()
 
     def __repr__(self) -> str:

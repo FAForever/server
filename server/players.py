@@ -12,7 +12,6 @@ from .decorators import with_logger
 from .factions import Faction
 from .protocol import DisconnectedError
 from .rating import Leaderboard, PlayerRatings, RatingType
-from .types import MatchmakerQueueMapPoolVetoData
 from .weakattr import WeakAttribute
 
 if TYPE_CHECKING:
@@ -23,7 +22,6 @@ if TYPE_CHECKING:
 BracketID = int
 MapPoolMapVersionId = int
 VetoTokensApplied = int
-PlayerVetoes = dict[BracketID, dict[MapPoolMapVersionId, VetoTokensApplied]]
 
 
 @unique
@@ -62,8 +60,9 @@ class Player:
         game_count: Optional[dict[str, int]] = None,
         lobby_connection: Optional["LobbyConnection"] = None
     ) -> None:
+        from server.ladder_service.veto_system import PlayerVetoes
         self._faction = Faction.uef
-        self._vetoes: PlayerVetoes = {}
+        self.vetoes = PlayerVetoes()
 
         # The player_id of the user in the `login` table of the database.
         self.id = player_id
@@ -105,55 +104,13 @@ class Player:
         else:
             self._faction = Faction.from_value(value)
 
-    @property
-    def vetoes(self) -> PlayerVetoes:
-        return self._vetoes
-
-    @vetoes.setter
-    def vetoes(self, value: PlayerVetoes) -> None:
-        if not isinstance(value, dict) or not all(
-            isinstance(k, int)
-            and isinstance(v, dict)
-            and all(
-                isinstance(mk, int) and isinstance(mv, int) and mv >= 0
-                for mk, mv in v.items()
-            )
-            for k, v in value.items()
-        ):
-            raise ValueError("Invalid vetoes structure")
-        self._vetoes = value
-
-    async def update_vetoes(self, pools_vetodata: list[MatchmakerQueueMapPoolVetoData], current: dict = None) -> None:
-        if current is None:
-            current = self.vetoes
-        fixedVetoes = {}
-        vetoDatas = []
-        for (matchmaker_queue_map_pool_id, map_pool_map_version_ids, veto_tokens_per_player, max_tokens_per_map, _) in pools_vetodata:
-            tokens_sum = 0
-            cur_bracket_vetoes = current.get(matchmaker_queue_map_pool_id, {})
-            cur_fixed_vetoes = {}
-            for map_id in map_pool_map_version_ids:
-                new_tokens_applied = max(cur_bracket_vetoes.get(map_id, 0), 0)
-                if (tokens_sum + new_tokens_applied > veto_tokens_per_player):
-                    new_tokens_applied = veto_tokens_per_player - tokens_sum
-                if (max_tokens_per_map > 0 and new_tokens_applied > max_tokens_per_map):
-                    new_tokens_applied = max_tokens_per_map
-                if (new_tokens_applied == 0):
-                    continue
-                vetoDatas.append({"map_pool_map_version_id": map_id, "veto_tokens_applied": new_tokens_applied, "matchmaker_queue_map_pool_id": matchmaker_queue_map_pool_id})
-                cur_fixed_vetoes[map_id] = new_tokens_applied
-                tokens_sum += new_tokens_applied
-            if tokens_sum > 0:
-                fixedVetoes[matchmaker_queue_map_pool_id] = cur_fixed_vetoes
-        if fixedVetoes == self.vetoes == current:
-            return
-        self.vetoes = fixedVetoes
-        if self.lobby_connection is None:
-            return
-        await self.lobby_connection.send({
-            "command": "vetoes_changed",
-            "vetoesData": vetoDatas
-        })
+    async def apply_vetoes(self, new_vetoes: Optional[dict[BracketID, dict[MapPoolMapVersionId, VetoTokensApplied]]] = None) -> None:
+        veto_datas = self.vetoes.apply_vetoes(new_vetoes)
+        if veto_datas:
+            await self.send_message({
+                "command": "vetoes_changed",
+                "vetoesData": veto_datas
+            })
 
     def power(self) -> int:
         """An artifact of the old permission system. The client still uses this

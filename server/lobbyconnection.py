@@ -1376,18 +1376,18 @@ class LobbyConnection:
         self.party_service.set_factions(self.player, list(factions))
 
     async def command_set_player_vetoes(self, message):
-        converted = {}
+        vetoes = {}
         for v in message["vetoes"]:
             matchmaker_queue_map_pool = v.get("matchmaker_queue_map_pool_id")
             map_pool_map_version_id = v["map_pool_map_version_id"]
             veto_tokens_applied = v["veto_tokens_applied"]
 
-            if matchmaker_queue_map_pool not in converted:
-                converted[matchmaker_queue_map_pool] = {}
+            if matchmaker_queue_map_pool not in vetoes:
+                vetoes[matchmaker_queue_map_pool] = {}
 
-            converted[matchmaker_queue_map_pool][map_pool_map_version_id] = veto_tokens_applied
+            vetoes[matchmaker_queue_map_pool][map_pool_map_version_id] = veto_tokens_applied
 
-        await self.player.update_vetoes(self.ladder_service.pools_veto_data, converted)
+        await self.player.apply_vetoes(vetoes)
 
     async def send_warning(self, message: str, fatal: bool = False):
         """
