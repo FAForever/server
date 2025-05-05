@@ -1,7 +1,6 @@
 import base64
 import random
 import re
-import logging
 
 import pytest
 from hypothesis import given

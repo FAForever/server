@@ -153,7 +153,7 @@ class VetoSystem:
     def generate_initial_weights_for_match(
         players_in_match,
         matchmaker_queue_map_pool: MatchmakerQueueMapPool,
-    ) -> dict[int, int]:
+    ) -> dict[int, float]:
         (
             pool_id,
             pool,

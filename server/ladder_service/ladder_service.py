@@ -138,7 +138,7 @@ class LadderService(Service):
                 del self.queues[queue_name]
 
         if VetoSystem.set_pools_veto_data(self.queues):
-            VetoSystem.update_vetoes_of_players(self.player_service.all_players)
+            await VetoSystem.update_vetoes_of_players(self.player_service.all_players)
 
     async def fetch_map_pools(self, conn) -> dict[int, tuple[str, list[Map]]]:
         result = await conn.execute(
