@@ -82,13 +82,13 @@ class MapPool(object):
 
         self._logger.debug("______initial_played_map_ids___________: %s", list(played_map_ids))
         played_map_pool_map_version_ids = [
-            m.get_map().map_pool_map_version_id
-            for m in self.maps.values()
-            if m.id in played_map_ids and m.id is not None
+            self.maps[id].map_pool_map_version_id
+            for id in played_map_ids
+            if id in self.maps
         ]
         self._logger.debug("______played_map_pool_map_version_ids_________: %s", played_map_pool_map_version_ids)
 
-        map_list = [(m.get_map().map_pool_map_version_id, m) for m in self.maps.values()]
+        map_list = [(m.map_pool_map_version_id, m) for m in self.maps.values()]
 
         if initial_weights is None:
             initial_weights = {mp_mv_id: 1.0 for mp_mv_id, _ in map_list}

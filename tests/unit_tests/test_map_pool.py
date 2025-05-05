@@ -1,6 +1,7 @@
 import base64
 import random
 import re
+import logging
 
 import pytest
 from hypothesis import given
@@ -24,31 +25,31 @@ def map_pool_factory():
 
 def test_choose_map(map_pool_factory):
     map_pool = map_pool_factory(maps=[
-        Map(1, "some_map.v001"),
-        Map(2, "some_map.v001"),
-        Map(3, "some_map.v001"),
-        Map(4, "choose_me.v001"),
+        Map(1, "some_map.v001", map_pool_map_version_id=1),
+        Map(2, "some_map.v001", map_pool_map_version_id=2),
+        Map(3, "some_map.v001", map_pool_map_version_id=3),
+        Map(4, "choose_me.v001", map_pool_map_version_id=4),
     ])
 
     # Make the probability very low that the test passes because we got lucky
     for _ in range(20):
         chosen_map = map_pool.choose_map([1, 2, 3])
-        assert chosen_map == Map(4, "choose_me.v001")
+        assert chosen_map == Map(4, "choose_me.v001", map_pool_map_version_id=4)
 
 
 @pytest.mark.flaky
 def test_choose_map_with_weights(map_pool_factory):
     map_pool = map_pool_factory(maps=[
-        Map(1, "some_map.v001", weight=1),
-        Map(2, "some_map.v001", weight=1),
-        Map(3, "some_map.v001", weight=1),
-        Map(4, "choose_me.v001", weight=10000000),
+        Map(1, "some_map.v001", weight=1, map_pool_map_version_id=1),
+        Map(2, "some_map.v001", weight=1, map_pool_map_version_id=2),
+        Map(3, "some_map.v001", weight=1, map_pool_map_version_id=3),
+        Map(4, "choose_me.v001", weight=10000000, map_pool_map_version_id=4),
     ])
 
     # Make the probability very low that the test passes because we got lucky
     for _ in range(20):
         chosen_map = map_pool.choose_map()
-        assert chosen_map == Map(4, "choose_me.v001", weight=10000000)
+        assert chosen_map == Map(4, "choose_me.v001", weight=10000000, map_pool_map_version_id=4)
 
 
 def test_choose_map_generated_map(map_pool_factory):
@@ -62,7 +63,7 @@ def test_choose_map_generated_map(map_pool_factory):
             "spawns": 2,
             "size": 512,
             "type": "neroxis"
-        }),
+        }, map_pool_map_version_id=1),
     ])
 
     chosen_map = map_pool.choose_map([])
@@ -89,9 +90,9 @@ def test_choose_map_generated_map(map_pool_factory):
 
 def test_choose_map_all_maps_played(map_pool_factory):
     maps = [
-        Map(1, "some_map.v001"),
-        Map(2, "some_map.v001"),
-        Map(3, "some_map.v001"),
+        Map(1, "some_map.v001", map_pool_map_version_id=1),
+        Map(2, "some_map.v001", map_pool_map_version_id=2),
+        Map(3, "some_map.v001", map_pool_map_version_id=3),
     ]
     map_pool = map_pool_factory(maps=maps)
 
@@ -109,9 +110,9 @@ def test_choose_map_all_played_except_generated_map(map_pool_factory):
         "type": "neroxis"
     })
     maps = [
-        Map(1, "some_map.v001", weight=1000000),
-        Map(2, "some_map.v001", weight=1000000),
-        Map(3, "some_map.v001", weight=1000000),
+        Map(1, "some_map.v001", weight=1000000, map_pool_map_version_id=1),
+        Map(2, "some_map.v001", weight=1000000, map_pool_map_version_id=2),
+        Map(3, "some_map.v001", weight=1000000, map_pool_map_version_id=3),
         generated_map,
     ]
     map_pool = map_pool_factory(maps=maps)
@@ -126,9 +127,9 @@ def test_choose_map_all_played_except_generated_map(map_pool_factory):
 
 def test_choose_map_all_maps_played_not_in_pool(map_pool_factory):
     maps = [
-        Map(1, "some_map.v001"),
-        Map(2, "some_map.v001"),
-        Map(3, "some_map.v001"),
+        Map(1, "some_map.v001", map_pool_map_version_id=1),
+        Map(2, "some_map.v001", map_pool_map_version_id=2),
+        Map(3, "some_map.v001", map_pool_map_version_id=3),
     ]
     map_pool = map_pool_factory(maps=maps)
 
@@ -151,7 +152,7 @@ def test_choose_map_all_maps_played_returns_least_played(map_pool_factory):
     ]
 
     maps = [
-        Map(i + 1, "some_map.v001") for i in range(num_maps)
+        Map(i + 1, "some_map.v001", map_pool_map_version_id=i+1) for i in range(num_maps)
     ]
     # Shuffle the list so that `choose_map` can't just return the first map
     random.shuffle(maps)
@@ -160,19 +161,19 @@ def test_choose_map_all_maps_played_returns_least_played(map_pool_factory):
     chosen_map = map_pool.choose_map(played_map_ids)
 
     # Map 1 was played only once
-    assert chosen_map == Map(1, "some_map.v001")
+    assert chosen_map == Map(1, "some_map.v001", map_pool_map_version_id=1)
 
 
 @given(history=st.lists(st.integers()))
 def test_choose_map_single_map(map_pool_factory, history):
     map_pool = map_pool_factory(maps=[
-        Map(1, "choose_me.v001"),
+        Map(1, "choose_me.v001", map_pool_map_version_id=1),
     ])
 
     # Make the probability very low that the test passes because we got lucky
     for _ in range(20):
         chosen_map = map_pool.choose_map(history)
-        assert chosen_map == Map(1, "choose_me.v001")
+        assert chosen_map == Map(1, "choose_me.v001", map_pool_map_version_id=1)
 
 
 def test_choose_map_raises_on_empty_map_pool(map_pool_factory):

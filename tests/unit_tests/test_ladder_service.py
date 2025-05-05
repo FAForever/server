@@ -445,7 +445,7 @@ async def test_start_game_start_spots(
         rating_type=RatingType.GLOBAL
     )
     queue.add_map_pool(
-        MapPool(1, "test", [Map(1, "scmp_007")]),
+        MapPool(1, "test", [Map(1, "scmp_007", map_pool_map_version_id=1)]),
         min_rating=None,
         max_rating=None
     )

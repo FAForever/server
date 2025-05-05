@@ -9,6 +9,7 @@ import re
 import statistics
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Callable, ClassVar, Coroutine, Optional
+
 import aiocron
 import humanize
 from sqlalchemy import and_, func, select, text, true
