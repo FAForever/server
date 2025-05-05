@@ -125,7 +125,7 @@ class VetoSystem:
             try:
                 await player.send_message({
                     "command": "vetoes_changed",
-                    "vetoesData": veto_datas
+                    "vetoes_data": veto_datas
                 })
             except DisconnectedError:
                 VetoSystem._logger.warning(f"Failed to send vetoes update to player {player.id}: Player disconnected")
