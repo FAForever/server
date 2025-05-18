@@ -302,14 +302,14 @@ insert into map_pool_map_version (id, map_pool_id, map_version_id, weight, map_p
   (17, 4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 3, "version": "0.0.0"}'),
   (18, 4, NULL, 1, '{"type": "beroxis", "size": 512, "spawns": 2, "version": "0.0.0"}');
 
-insert into matchmaker_queue_map_pool (matchmaker_queue_id, map_pool_id, min_rating, max_rating) values
-  (1, 1, NULL, 800),
-  (1, 2, 800, NULL),
-  (1, 3, 1000, NULL),
-  (2, 3, NULL, NULL),
-  (4, 4, NULL, NULL),
-  (5, 1, NULL, NULL),
-  (6, 1, NULL, NULL);
+insert into matchmaker_queue_map_pool (id, matchmaker_queue_id, map_pool_id, min_rating, max_rating) values
+  (1, 1, 1, NULL, 800),
+  (2, 1, 2, 800, NULL),
+  (3, 1, 3, 1000, NULL),
+  (4, 2, 3, NULL, NULL),
+  (5, 4, 4, NULL, NULL),
+  (6, 5, 1, NULL, NULL),
+  (7, 6, 1, NULL, NULL);
 
 insert into friends_and_foes (user_id, subject_id, `status`) values
   (1, 400, 'FOE'),
