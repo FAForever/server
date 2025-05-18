@@ -70,32 +70,27 @@ class VetoService(Service):
     ) -> list[MatchmakerQueueMapPoolVetoData]:
         result = []
         for queue in queues.values():
-            for (
-                matchmaker_queue_map_pool_id,
-                pool,
-                *_,
-                veto_tokens_per_player,
-                max_tokens_per_map,
-                minimum_maps_after_veto
-            ) in queue.map_pools.values():
-                if (
-                    max_tokens_per_map == 0 and minimum_maps_after_veto >= len(pool.maps)
-                    or max_tokens_per_map != 0 and queue.team_size * 2 * veto_tokens_per_player / max_tokens_per_map > len(pool.maps) - minimum_maps_after_veto
-                ):
+            for matchmaker_queue_map_pool in queue.map_pools.values():
+                veto_tokens_per_player = matchmaker_queue_map_pool.veto_tokens_per_player
+                max_tokens_per_map = matchmaker_queue_map_pool.max_tokens_per_map
+                minimum_maps_after_veto = matchmaker_queue_map_pool.minimum_maps_after_veto
+
+                if not _is_valid_veto_config_for_queue(queue, matchmaker_queue_map_pool):
                     veto_tokens_per_player = 0
                     max_tokens_per_map = 1
                     minimum_maps_after_veto = 1
                     self._logger.error(
                         "Wrong vetoes setup detected for pool %s in queue %s",
-                        pool.id,
+                        matchmaker_queue_map_pool.map_pool.id,
                         queue.id,
                     )
 
                 result.append(
                     MatchmakerQueueMapPoolVetoData(
-                        matchmaker_queue_map_pool_id=matchmaker_queue_map_pool_id,
+                        matchmaker_queue_map_pool_id=matchmaker_queue_map_pool.id,
                         map_pool_map_version_ids=[
-                            map.map_pool_map_version_id for map in pool.maps.values()
+                            map.map_pool_map_version_id
+                            for map in matchmaker_queue_map_pool.map_pool.maps.values()
                         ] + [-1],
                         veto_tokens_per_player=veto_tokens_per_player,
                         max_tokens_per_map=max_tokens_per_map,
@@ -229,6 +224,33 @@ class VetoService(Service):
                 return solution
 
         return 0
+
+
+def _is_valid_veto_config_for_queue(
+    queue: MatchmakerQueue,
+    queue_config: MatchmakerQueueMapPool,
+) -> bool:
+    num_maps = len(queue_config.map_pool.maps)
+
+    if (
+        queue_config.max_tokens_per_map == 0
+        and queue_config.minimum_maps_after_veto >= num_maps
+    ):
+        return False
+
+    if queue_config.max_tokens_per_map != 0:
+        total_players = queue.team_size * 2
+        vetoable_maps_per_player = queue_config.veto_tokens_per_player / queue_config.max_tokens_per_map
+        vetoable_maps = total_players * vetoable_maps_per_player
+
+        # tokens/map > number of maps that may be vetoed
+        # TODO: because vetoable_maps >= 0 this inequality also implies
+        # queue_config.minimum_maps_after_veto > num_maps
+        # Why is it strictly greater than here but greater than or equal to above?
+        if vetoable_maps > num_maps - queue_config.minimum_maps_after_veto:
+            return False
+
+    return True
 
 
 def _is_valid_vetoes(vetoes: Any) -> bool:

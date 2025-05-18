@@ -1,6 +1,125 @@
+from unittest import mock
+
 import pytest
 
-from server.ladder_service.veto_system import _cap_tokens
+from server.ladder_service.veto_system import (
+    _cap_tokens,
+    _is_valid_veto_config_for_queue
+)
+from server.matchmaker import MapPool, MatchmakerQueueMapPool
+
+
+def test_is_valid_veto_config_for_queue(queue_factory):
+    queue = queue_factory(team_size=1)
+
+    # minimum_maps_after_veto larger than map pool size
+    assert _is_valid_veto_config_for_queue(
+        queue,
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=MapPool(1, "pool", maps=[mock.Mock()]),
+            min_rating=None,
+            max_rating=None,
+            veto_tokens_per_player=0,
+            max_tokens_per_map=0,
+            minimum_maps_after_veto=10,
+        )
+    ) is False
+
+    # minimum_maps_after_veto equal to map pool size
+    # TODO: Is calling this invalid really the desired behavior? When
+    # max_tokens_per_map != 0, they are allowed to be equal
+    assert _is_valid_veto_config_for_queue(
+        queue,
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=MapPool(1, "pool", maps=[mock.Mock()]),
+            min_rating=None,
+            max_rating=None,
+            veto_tokens_per_player=0,
+            max_tokens_per_map=0,
+            minimum_maps_after_veto=1,
+        )
+    ) is False
+
+    assert _is_valid_veto_config_for_queue(
+        queue,
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=MapPool(1, "pool", maps=[mock.Mock()]),
+            min_rating=None,
+            max_rating=None,
+            veto_tokens_per_player=0,
+            max_tokens_per_map=1,
+            minimum_maps_after_veto=2,
+        )
+    ) is False
+
+    # Each player can veto 1 map. 2 maps vetoed total
+    assert _is_valid_veto_config_for_queue(
+        queue,
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=MapPool(1, "pool", maps=[mock.Mock(), mock.Mock()]),
+            min_rating=None,
+            max_rating=None,
+            veto_tokens_per_player=1,
+            max_tokens_per_map=1,
+            minimum_maps_after_veto=1,
+        )
+    ) is False
+    assert _is_valid_veto_config_for_queue(
+        queue,
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=MapPool(1, "pool", maps=[mock.Mock() for _ in range(3)]),
+            min_rating=None,
+            max_rating=None,
+            veto_tokens_per_player=1,
+            max_tokens_per_map=1,
+            minimum_maps_after_veto=1,
+        )
+    ) is True
+    assert _is_valid_veto_config_for_queue(
+        queue,
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=MapPool(1, "pool", maps=[mock.Mock() for _ in range(4)]),
+            min_rating=None,
+            max_rating=None,
+            veto_tokens_per_player=1,
+            max_tokens_per_map=1,
+            minimum_maps_after_veto=1,
+        )
+    ) is True
+
+    # minimum_maps_after_veto is zero
+    assert _is_valid_veto_config_for_queue(
+        queue,
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=MapPool(1, "pool", maps=[mock.Mock(), mock.Mock()]),
+            min_rating=None,
+            max_rating=None,
+            veto_tokens_per_player=0,
+            max_tokens_per_map=0,
+            minimum_maps_after_veto=0,
+        )
+    ) is True
+
+    # max_tokens_per_map > veto_tokens_per_player
+    assert _is_valid_veto_config_for_queue(
+        queue,
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=MapPool(1, "pool", maps=[mock.Mock(), mock.Mock()]),
+            min_rating=None,
+            max_rating=None,
+            veto_tokens_per_player=1,
+            max_tokens_per_map=2,
+            minimum_maps_after_veto=1,
+        )
+    ) is True
 
 
 def test_cap_tokens():
