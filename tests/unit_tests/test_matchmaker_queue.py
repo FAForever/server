@@ -8,7 +8,12 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from server.config import config
-from server.matchmaker import CombinedSearch, MapPool, Search
+from server.matchmaker import (
+    CombinedSearch,
+    MapPool,
+    MatchmakerQueueMapPool,
+    Search
+)
 from server.players import PlayerState
 from server.rating import RatingType
 
@@ -286,7 +291,14 @@ def test_queue_map_pools_empty(queue_factory, rating):
 def test_queue_map_pools_any_range(queue_factory, rating):
     queue = queue_factory()
     map_pool = MapPool(0, "pool")
-    queue.add_map_pool(map_pool, None, None)
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=map_pool,
+            min_rating=None,
+            max_rating=None,
+        )
+    )
 
     assert queue.get_map_pool_for_rating(rating) is map_pool
 
@@ -295,7 +307,14 @@ def test_queue_map_pools_any_range(queue_factory, rating):
 def test_queue_map_pools_lower_bound(queue_factory, rating, low):
     queue = queue_factory()
     map_pool = MapPool(0, "pool")
-    queue.add_map_pool(map_pool, low, None)
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=map_pool,
+            min_rating=low,
+            max_rating=None,
+        )
+    )
 
     if rating < low:
         assert queue.get_map_pool_for_rating(rating) is None
@@ -307,7 +326,14 @@ def test_queue_map_pools_lower_bound(queue_factory, rating, low):
 def test_queue_map_pools_upper_bound(queue_factory, rating, high):
     queue = queue_factory()
     map_pool = MapPool(0, "pool")
-    queue.add_map_pool(map_pool, None, high)
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=map_pool,
+            min_rating=None,
+            max_rating=high,
+        )
+    )
 
     if rating > high:
         assert queue.get_map_pool_for_rating(rating) is None
@@ -319,7 +345,14 @@ def test_queue_map_pools_upper_bound(queue_factory, rating, high):
 def test_queue_map_pools_bound(queue_factory, rating, low, high):
     queue = queue_factory()
     map_pool = MapPool(0, "pool")
-    queue.add_map_pool(map_pool, low, high)
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=map_pool,
+            min_rating=low,
+            max_rating=high,
+        )
+    )
 
     if low <= rating <= high:
         assert queue.get_map_pool_for_rating(rating) is map_pool
@@ -340,8 +373,22 @@ def test_queue_multiple_map_pools(
     queue = queue_factory()
     map_pool1 = MapPool(0, "pool1")
     map_pool2 = MapPool(1, "pool2")
-    queue.add_map_pool(map_pool1, low1, high1)
-    queue.add_map_pool(map_pool2, low2, high2)
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=map_pool1,
+            min_rating=low1,
+            max_rating=high1,
+        )
+    )
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=2,
+            map_pool=map_pool2,
+            min_rating=low2,
+            max_rating=high2,
+        )
+    )
 
     if low1 <= rating <= high1:
         assert queue.get_map_pool_for_rating(rating) is map_pool1

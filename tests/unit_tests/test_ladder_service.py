@@ -11,7 +11,7 @@ from server.exceptions import DisabledError
 from server.games import LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service import game_name
-from server.matchmaker import MapPool, MatchmakerQueue
+from server.matchmaker import MapPool, MatchmakerQueue, MatchmakerQueueMapPool
 from server.players import PlayerState
 from server.rating import RatingType
 from server.types import Map, NeroxisGeneratedMap
@@ -68,40 +68,40 @@ async def test_load_from_database(ladder_service, queue_factory):
         assert queue.rating_type == "ladder_1v1"
         assert queue.rating_peak == 1000.0
         assert len(queue.map_pools) == 3
-        assert list(queue.map_pools[1][0].maps.values()) == [
-            Map(15, "scmp_015", ranked=True),
-            Map(16, "scmp_015.v0002", ranked=True),
-            Map(17, "scmp_015.v0003", ranked=True),
+        assert list(queue.map_pools[1][1].maps.values()) == [
+            Map(15, "scmp_015", ranked=True, map_pool_map_version_id=1),
+            Map(16, "scmp_015.v0002", ranked=True, map_pool_map_version_id=2),
+            Map(17, "scmp_015.v0003", ranked=True, map_pool_map_version_id=3),
         ]
-        assert list(queue.map_pools[2][0].maps.values()) == [
-            Map(11, "scmp_011", ranked=True),
-            Map(14, "scmp_014", ranked=True),
-            Map(15, "scmp_015", ranked=True),
-            Map(16, "scmp_015.v0002", ranked=True),
-            Map(17, "scmp_015.v0003", ranked=True),
+        assert list(queue.map_pools[2][1].maps.values()) == [
+            Map(11, "scmp_011", ranked=True, map_pool_map_version_id=4),
+            Map(14, "scmp_014", ranked=True, map_pool_map_version_id=5),
+            Map(15, "scmp_015", ranked=True, map_pool_map_version_id=6),
+            Map(16, "scmp_015.v0002", ranked=True, map_pool_map_version_id=7),
+            Map(17, "scmp_015.v0003", ranked=True, map_pool_map_version_id=8),
         ]
-        assert list(queue.map_pools[3][0].maps.values()) == [
-            Map(1, "scmp_001", ranked=True),
-            Map(2, "scmp_002", ranked=True),
-            Map(3, "scmp_003", ranked=True),
+        assert list(queue.map_pools[3][1].maps.values()) == [
+            Map(1, "scmp_001", ranked=True, map_pool_map_version_id=9),
+            Map(2, "scmp_002", ranked=True, map_pool_map_version_id=10),
+            Map(3, "scmp_003", ranked=True, map_pool_map_version_id=11),
         ]
 
         queue = ladder_service.queues["neroxis1v1"]
         assert queue.name == "neroxis1v1"
         assert len(queue.map_pools) == 1
-        assert list(queue.map_pools[4][0].maps.values()) == [
+        assert list(queue.map_pools[4][1].maps.values()) == [
             NeroxisGeneratedMap.of({
                 "version": "0.0.0",
                 "spawns": 2,
                 "size": 512,
                 "type": "neroxis"
-            }),
+            }, map_pool_map_version_id=12),
             NeroxisGeneratedMap.of({
                 "version": "0.0.0",
                 "spawns": 2,
                 "size": 768,
                 "type": "neroxis"
-            }),
+            }, map_pool_map_version_id=13),
         ]
 
         queue = ladder_service.queues["tmm2v2"]
@@ -454,9 +454,12 @@ async def test_start_game_start_spots(
         rating_type=RatingType.GLOBAL
     )
     queue.add_map_pool(
-        MapPool(1, "test", [Map(1, "scmp_007", map_pool_map_version_id=1)]),
-        min_rating=None,
-        max_rating=None
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=MapPool(1, "test", [Map(1, "scmp_007", map_pool_map_version_id=1)]),
+            min_rating=None,
+            max_rating=None,
+        ),
     )
 
     monkeypatch.setattr(LadderGame, "wait_hosted", mock.AsyncMock())
@@ -849,25 +852,56 @@ async def test_start_game_called_on_match(
     (((400, 100), 10), ((300, 100), 1000))
 ))
 async def test_start_game_map_selection_newbie_pool(
+    mocker,
     ladder_service: LadderService,
     player_factory,
     ratings
 ):
     p1 = player_factory(
+        login="Test1",
         ladder_rating=ratings[0][0],
         ladder_games=ratings[0][1],
     )
     p2 = player_factory(
+        login="Test2",
         ladder_rating=ratings[1][0],
         ladder_games=ratings[1][1],
     )
 
     queue = ladder_service.queues["ladder1v1"]
     queue.map_pools.clear()
-    newbie_map_pool = mock.Mock()
-    full_map_pool = mock.Mock()
-    queue.add_map_pool(newbie_map_pool, None, 500)
-    queue.add_map_pool(full_map_pool, 500, None)
+    newbie_map_pool = MapPool(
+        map_pool_id=1,
+        name="newbie_map_pool",
+        maps=[Map(15, "scmp_015", ranked=True)],
+    )
+    mocker.patch.object(newbie_map_pool, "choose_map")
+    full_map_pool = MapPool(
+        map_pool_id=2,
+        name="full_map_pool",
+        maps=[
+            Map(15, "scmp_015", ranked=True),
+            Map(16, "scmp_016", ranked=True),
+            Map(17, "scmp_017", ranked=True),
+        ],
+    )
+    mocker.patch.object(full_map_pool, "choose_map")
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=newbie_map_pool,
+            min_rating=None,
+            max_rating=500,
+        ),
+    )
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=2,
+            map_pool=full_map_pool,
+            min_rating=500,
+            max_rating=None,
+        ),
+    )
 
     await ladder_service.start_game([p1], [p2], queue)
 
@@ -876,7 +910,9 @@ async def test_start_game_map_selection_newbie_pool(
 
 
 async def test_start_game_map_selection_pros(
-    ladder_service: LadderService, player_factory
+    mocker,
+    ladder_service: LadderService,
+    player_factory,
 ):
     p1 = player_factory(
         ladder_rating=(2000, 50),
@@ -889,10 +925,38 @@ async def test_start_game_map_selection_pros(
 
     queue = ladder_service.queues["ladder1v1"]
     queue.map_pools.clear()
-    newbie_map_pool = mock.Mock()
-    full_map_pool = mock.Mock()
-    queue.add_map_pool(newbie_map_pool, None, 500)
-    queue.add_map_pool(full_map_pool, 500, None)
+    newbie_map_pool = MapPool(
+        map_pool_id=1,
+        name="newbie_map_pool",
+        maps=[Map(15, "scmp_015", ranked=True)],
+    )
+    mocker.patch.object(newbie_map_pool, "choose_map")
+    full_map_pool = MapPool(
+        map_pool_id=2,
+        name="full_map_pool",
+        maps=[
+            Map(15, "scmp_015", ranked=True),
+            Map(16, "scmp_016", ranked=True),
+            Map(17, "scmp_017", ranked=True),
+        ],
+    )
+    mocker.patch.object(full_map_pool, "choose_map")
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=newbie_map_pool,
+            min_rating=None,
+            max_rating=500,
+        ),
+    )
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=2,
+            map_pool=full_map_pool,
+            min_rating=500,
+            max_rating=None,
+        ),
+    )
 
     await ladder_service.start_game([p1], [p2], queue)
 
@@ -901,7 +965,9 @@ async def test_start_game_map_selection_pros(
 
 
 async def test_start_game_map_selection_rating_type(
-    ladder_service: LadderService, player_factory
+    mocker,
+    ladder_service: LadderService,
+    player_factory,
 ):
     p1 = player_factory(
         ladder_rating=(2000, 50),
@@ -919,10 +985,38 @@ async def test_start_game_map_selection_rating_type(
     queue = ladder_service.queues["ladder1v1"]
     queue.rating_type = RatingType.GLOBAL
     queue.map_pools.clear()
-    newbie_map_pool = mock.Mock()
-    full_map_pool = mock.Mock()
-    queue.add_map_pool(newbie_map_pool, None, 500)
-    queue.add_map_pool(full_map_pool, 500, None)
+    newbie_map_pool = MapPool(
+        map_pool_id=1,
+        name="newbie_map_pool",
+        maps=[Map(15, "scmp_015", ranked=True)],
+    )
+    mocker.patch.object(newbie_map_pool, "choose_map")
+    full_map_pool = MapPool(
+        map_pool_id=2,
+        name="full_map_pool",
+        maps=[
+            Map(15, "scmp_015", ranked=True),
+            Map(16, "scmp_016", ranked=True),
+            Map(17, "scmp_017", ranked=True),
+        ],
+    )
+    mocker.patch.object(full_map_pool, "choose_map")
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=newbie_map_pool,
+            min_rating=None,
+            max_rating=500,
+        ),
+    )
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=2,
+            map_pool=full_map_pool,
+            min_rating=500,
+            max_rating=None,
+        ),
+    )
 
     await ladder_service.start_game([p1], [p2], queue)
 
