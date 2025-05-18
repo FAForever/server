@@ -37,7 +37,7 @@ from server.game_service import GameService
 from server.games import InitMode, LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service.game_name import game_name
-from server.ladder_service.veto_system import VetoSystem
+from server.ladder_service.veto_system import VetoService
 from server.ladder_service.violation_service import ViolationService
 from server.matchmaker import (
     MapPool,
@@ -47,7 +47,6 @@ from server.matchmaker import (
     Search
 )
 from server.metrics import MatchLaunch
-from server.player_service import PlayerService
 from server.players import Player, PlayerState
 from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
 
@@ -68,15 +67,15 @@ class LadderService(Service):
         self,
         database: FAFDatabase,
         game_service: GameService,
-        player_service: PlayerService,
         violation_service: ViolationService,
+        veto_service: VetoService,
     ):
         self._db = database
         self._informed_players: set[Player] = set()
         self.game_service = game_service
-        self.player_service = player_service
         self.queues: dict[str, MatchmakerQueue] = {}
         self.violation_service = violation_service
+        self.veto_service = veto_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
         self._allow_new_searches = True
@@ -137,8 +136,7 @@ class LadderService(Service):
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
 
-        if VetoSystem.set_pools_veto_data(self.queues):
-            await VetoSystem.update_vetoes_of_players(self.player_service.all_players)
+        self.veto_service.update_pools_veto_config(self.queues)
 
     async def fetch_map_pools(self, conn) -> dict[int, tuple[str, list[Map]]]:
         result = await conn.execute(
@@ -560,9 +558,18 @@ class LadderService(Service):
             if not map_pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
 
-            self._logger.debug("______queue.map_pools[map_pool.id]________________: %s", queue.map_pools[map_pool.id])
-            initial_weights = VetoSystem.generate_initial_weights_for_match(all_players, queue.map_pools[map_pool.id])
-            self._logger.debug("______initial_weights________________: %s", initial_weights)
+            self._logger.debug(
+                "______queue.map_pools[map_pool.id]________________: %s",
+                queue.map_pools[map_pool.id],
+            )
+            initial_weights = self.veto_service.generate_initial_weights_for_match(
+                all_players,
+                queue.map_pools[map_pool.id],
+            )
+            self._logger.debug(
+                "______initial_weights________________: %s",
+                initial_weights,
+            )
             game_map = map_pool.choose_map(played_map_ids, initial_weights)
 
             self._logger.debug("______game_map________________: %s", game_map)

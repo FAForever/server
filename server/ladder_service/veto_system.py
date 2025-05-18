@@ -1,12 +1,13 @@
-import asyncio
 import logging
 from collections import Counter, defaultdict
-from typing import ClassVar, Iterable, Optional
+from typing import Any, ClassVar, Iterable, Optional
 
+from server.core import Service
 from server.decorators import with_logger
+from server.exceptions import ClientError
 from server.matchmaker import MatchmakerQueue, MatchmakerQueueMapPool
+from server.player_service import PlayerService
 from server.players import Player
-from server.protocol import DisconnectedError
 from server.types import MatchmakerQueueMapPoolVetoData
 
 BracketID = int
@@ -19,138 +20,132 @@ class PlayerVetoes:
     def __init__(self):
         self._vetoes: dict[BracketID, VetosMap] = {}
 
-    def apply_vetoes(
-        self,
-        new_vetoes: Optional[dict[BracketID, VetosMap]],
-    ) -> Optional[list[dict]]:
-        """Validates and sets vetoes based on new vetoes and pool constraints."""
-        if new_vetoes is None or not self._is_valid_vetoes(new_vetoes):
-            new_vetoes = self._vetoes
+    def get_vetoes_for_bracket(self, bracket_id: BracketID) -> VetosMap:
+        return self._vetoes.get(bracket_id, {})
 
-        pools_vetodata = VetoSystem.pools_veto_data
+    def to_dict(self) -> dict:
+        return {
+            "vetoes": [
+                {
+                    "map_pool_map_version_id": map_id,
+                    "veto_tokens_applied": tokens,
+                    "matchmaker_queue_map_pool_id": bracket_id
+                }
+                for bracket_id, vetoes in self._vetoes.items()
+                for map_id, tokens in vetoes.items()
+            ]
+        }
+
+
+@with_logger
+class VetoService(Service):
+    _logger: ClassVar[logging.Logger]
+
+    def __init__(self, player_service: PlayerService):
+        self.player_service = player_service
+
+        self.pools_veto_data: list[MatchmakerQueueMapPoolVetoData] = []
+
+    def update_pools_veto_config(self, queues: dict[str, MatchmakerQueue]):
+        """Update the cached veto config to match the new queues"""
+
+        pools_vetodata = self.extract_pools_veto_config(queues)
+
+        if self.pools_veto_data != pools_vetodata:
+            self.pools_veto_data = pools_vetodata
+
+            for player in self.player_service.all_players:
+                # TODO: Can we avoid force adjusting veto selections for players.
+                adjusted_vetoes = self._adjust_vetoes(player.vetoes._vetoes)
+                if adjusted_vetoes != player.vetoes._vetoes:
+                    player.vetoes._vetoes = adjusted_vetoes
+                    player.write_message({
+                        "command": "vetoes_info",
+                        **player.vetoes.to_dict(),
+                    })
+
+    def extract_pools_veto_config(
+        self,
+        queues: dict[str, MatchmakerQueue],
+    ) -> list[MatchmakerQueueMapPoolVetoData]:
+        result = []
+        for queue in queues.values():
+            for (
+                matchmaker_queue_map_pool_id,
+                pool,
+                *_,
+                veto_tokens_per_player,
+                max_tokens_per_map,
+                minimum_maps_after_veto
+            ) in queue.map_pools.values():
+                if (
+                    max_tokens_per_map == 0 and minimum_maps_after_veto >= len(pool.maps)
+                    or max_tokens_per_map != 0 and queue.team_size * 2 * veto_tokens_per_player / max_tokens_per_map > len(pool.maps) - minimum_maps_after_veto
+                ):
+                    veto_tokens_per_player = 0
+                    max_tokens_per_map = 1
+                    minimum_maps_after_veto = 1
+                    self._logger.error(
+                        "Wrong vetoes setup detected for pool %s in queue %s",
+                        pool.id,
+                        queue.id,
+                    )
+
+                result.append(
+                    MatchmakerQueueMapPoolVetoData(
+                        matchmaker_queue_map_pool_id=matchmaker_queue_map_pool_id,
+                        map_pool_map_version_ids=[
+                            map.map_pool_map_version_id for map in pool.maps.values()
+                        ] + [-1],
+                        veto_tokens_per_player=veto_tokens_per_player,
+                        max_tokens_per_map=max_tokens_per_map,
+                        minimum_maps_after_veto=minimum_maps_after_veto
+                    )
+                )
+
+        return result
+
+    async def set_player_vetoes(
+        self,
+        player: Player,
+        new_vetoes: dict[BracketID, VetosMap],
+    ):
+        """Validates and sets vetoes based on new vetoes and pool constraints."""
+        if not _is_valid_vetoes(new_vetoes):
+            raise ClientError("invalid veto data")
+
+        adjusted_vetoes = self._adjust_vetoes(player.vetoes._vetoes)
+
+        if adjusted_vetoes != player.vetoes._vetoes:
+            player.vetoes._vetoes = adjusted_vetoes
+            await player.send_message({
+                "command": "vetoes_info",
+                **player.vetoes.to_dict(),
+            })
+
+    def _adjust_vetoes(
+        self,
+        new_vetoes: dict[BracketID, VetosMap],
+    ) -> dict[BracketID, VetosMap]:
+        # TODO: How can we avoid doing this adjustment? It would be better to
+        # simply check if the veto selection is valid, and return an error if
+        # not so that the client can display that to the user and force a new
+        # selection. Or, if we expect the client to do that already, we can
+        # simply raise a ClientError on invalid veto selections.
         adjusted_vetoes = {}
-        veto_datas = []
-        for bracket_id, map_ids, total_tokens, max_per_map, _ in pools_vetodata:
-            bracket_vetoes = self.get_correct_vetoes_for_bracket(
+        for bracket_id, map_ids, total_tokens, max_per_map, _ in self.pools_veto_data:
+            bracket_vetoes = _adjust_vetoes_for_bracket(
                 new_vetoes.get(bracket_id, {}),
                 map_ids,
                 total_tokens,
                 max_per_map,
             )
             adjusted_vetoes[bracket_id] = bracket_vetoes
-            if bracket_vetoes:
-                veto_datas.extend(self.build_veto_data(bracket_id, bracket_vetoes))
 
-        if adjusted_vetoes != self._vetoes:
-            self._vetoes = adjusted_vetoes
-            return veto_datas
-
-        return None
-
-    def _is_valid_vetoes(self, vetoes: dict) -> bool:
-        return (
-            isinstance(vetoes, dict)
-            and all(
-                isinstance(k, int)
-                and isinstance(v, dict)
-                and all(
-                    isinstance(mk, int) and isinstance(mv, int) and mv >= 0
-                    for mk, mv in v.items()
-                )
-                for k, v in vetoes.items()
-            )
-        )
-
-    def get_correct_vetoes_for_bracket(
-        self,
-        new_bracket_vetoes: VetosMap,
-        map_ids: list[MapPoolMapVersionId],
-        total_tokens: int,
-        max_per_map: int,
-    ) -> VetosMap:
-        adjusted_vetoes = {}
-        tokens_sum = 0
-        for map_id in map_ids:
-            tokens = new_bracket_vetoes.get(map_id, 0)
-            tokens_applied = self.cap_tokens(tokens, tokens_sum, total_tokens, max_per_map)
-            if tokens_applied > 0:
-                adjusted_vetoes[map_id] = tokens_applied
-                tokens_sum += tokens_applied
         return adjusted_vetoes
 
-    def cap_tokens(
-        self,
-        tokens: int,
-        tokens_sum: int,
-        total_tokens: int,
-        max_per_map: int,
-    ) -> int:
-        tokens_applied = max(tokens, 0)
-        if tokens_sum + tokens_applied > total_tokens:
-            tokens_applied = total_tokens - tokens_sum
-        if max_per_map > 0 and tokens_applied > max_per_map:
-            tokens_applied = max_per_map
-        return tokens_applied
-
-    def build_veto_data(self, bracket_id: BracketID, vetoes: VetosMap) -> list[dict]:
-        """Builds veto data for sending to the client."""
-
-        return [
-            {
-                "map_pool_map_version_id": map_id,
-                "veto_tokens_applied": tokens,
-                "matchmaker_queue_map_pool_id": bracket_id
-            }
-            for map_id, tokens in vetoes.items()
-        ]
-
-    def get_vetoes_for_bracket(self, bracket_id: BracketID) -> VetosMap:
-        return self._vetoes.get(bracket_id, {})
-
-
-@with_logger
-class VetoSystem:
-    _logger: ClassVar[logging.Logger] = logging.getLogger(__name__)
-    _max_stream_count = 25
-    pools_veto_data: ClassVar[list[MatchmakerQueueMapPoolVetoData]] = []
-
-    @staticmethod
-    async def apply_vetoes_to_player(
-        player: Player,
-        new_vetoes: Optional[dict[BracketID, VetosMap]] = None,
-    ) -> None:
-        """Applies vetoes for a player and sends a message if changes occur."""
-        veto_datas = player.vetoes.apply_vetoes(new_vetoes)
-        if veto_datas:
-            try:
-                await player.send_message({
-                    "command": "vetoes_changed",
-                    "vetoes_data": veto_datas
-                })
-            except DisconnectedError:
-                VetoSystem._logger.warning(f"Failed to send vetoes update to player {player.id}: Player disconnected")
-            except Exception as e:
-                VetoSystem._logger.error(f"Unexpected error sending vetoes update to player {player.id}: {str(e)}")
-
-    @staticmethod
-    async def update_vetoes_of_players(players: Iterable[Player]) -> None:
-        player_queue: asyncio.Queue[Player] = asyncio.Queue()
-        for player in players:
-            await player_queue.put(player)
-
-        async def worker():
-            while not player_queue.empty():
-                player = await player_queue.get()
-                try:
-                    await VetoSystem.apply_vetoes_to_player(player)
-                finally:
-                    player_queue.task_done()
-
-        workers = [asyncio.create_task(worker()) for _ in range(VetoSystem._max_stream_count)]
-        await asyncio.gather(*workers)
-
-    @staticmethod
     def generate_initial_weights_for_match(
+        self,
         players_in_match,
         matchmaker_queue_map_pool: MatchmakerQueueMapPool,
     ) -> dict[int, float]:
@@ -166,15 +161,19 @@ class VetoSystem:
 
         for m in pool.maps.values():
             for player in players_in_match:
-                vetoes_map[m.map_pool_map_version_id] += player.vetoes.get_vetoes_for_bracket(pool_id).get(m.map_pool_map_version_id, 0)
+                bracket_vetoes = player.vetoes.get_vetoes_for_bracket(pool_id)
+                vetoes_map[m.map_pool_map_version_id] += bracket_vetoes.get(m.map_pool_map_version_id, 0)
 
-        VetoSystem._logger.debug("______vetoes_map________________: %s", vetoes_map)
+        self._logger.debug("______vetoes_map________________: %s", vetoes_map)
 
         if max_tokens_per_map == 0:
-            max_tokens_per_map = VetoSystem.calculate_dynamic_tokens_per_map(minimum_maps_after_veto, vetoes_map.values())
-            # this should never happen actually so i am not sure do we need this here or not
+            max_tokens_per_map = self.calculate_dynamic_tokens_per_map(minimum_maps_after_veto, vetoes_map.values())
+            # This should never happen
             if max_tokens_per_map == 0:
-                VetoSystem._logger.error("calculate_dynamic_tokens_per_map received impossible vetoes setup, all vetoes cancelled for a match")
+                self._logger.error(
+                    "calculate_dynamic_tokens_per_map received impossible "
+                    "vetoes setup, all vetoes cancelled for a match",
+                )
                 vetoes_map = {}
                 max_tokens_per_map = 1
 
@@ -186,50 +185,11 @@ class VetoSystem:
             for m in pool.maps.values()
         }
 
-    @staticmethod
-    def set_pools_veto_data(queues: dict[str, MatchmakerQueue]) -> bool:
-        """
-        # Returns
-        Whether or not the veto data changed.
-        """
-        pools_vetodata = VetoSystem.extract_pools_veto_data(queues)
-
-        if VetoSystem.pools_veto_data != pools_vetodata:
-            VetoSystem.pools_veto_data = pools_vetodata
-            return True
-
-        return False
-
-    @staticmethod
-    def extract_pools_veto_data(queues: dict[str, MatchmakerQueue]) -> list[MatchmakerQueueMapPoolVetoData]:
-        result = []
-        for queue in queues.values():
-            for matchmaker_queue_map_pool_id, pool, *_, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto in queue.map_pools.values():
-                if (
-                    max_tokens_per_map == 0 and minimum_maps_after_veto >= len(pool.maps)
-                    or max_tokens_per_map != 0 and queue.team_size * 2 * veto_tokens_per_player / max_tokens_per_map > len(pool.maps) - minimum_maps_after_veto
-                ):
-                    veto_tokens_per_player = 0
-                    max_tokens_per_map = 1
-                    minimum_maps_after_veto = 1
-                    VetoSystem._logger.error(
-                        "Wrong vetoes setup detected for pool %s in queue %s",
-                        pool.id,
-                        queue.id,
-                    )
-                result.append(
-                    MatchmakerQueueMapPoolVetoData(
-                        matchmaker_queue_map_pool_id=matchmaker_queue_map_pool_id,
-                        map_pool_map_version_ids=[map.map_pool_map_version_id for map in pool.maps.values()] + [-1],
-                        veto_tokens_per_player=veto_tokens_per_player,
-                        max_tokens_per_map=max_tokens_per_map,
-                        minimum_maps_after_veto=minimum_maps_after_veto
-                    )
-                )
-        return result
-
-    @staticmethod
-    def calculate_dynamic_tokens_per_map(M: float, tokens_applied_to_maps: Iterable[int]) -> float:
+    def calculate_dynamic_tokens_per_map(
+        self,
+        M: float,
+        tokens_applied_to_maps: Iterable[int],
+    ) -> float:
         """
         Calculate the smallest positive T such that the sum of weights w = max((T - V)/T, 0) for each map is at least M,
         where V is the number of tokens applied to that map. If the condition is met with maps that have zero tokens, returns 1.
@@ -269,3 +229,58 @@ class VetoSystem:
                 return solution
 
         return 0
+
+
+def _is_valid_vetoes(vetoes: Any) -> bool:
+    return (
+        isinstance(vetoes, dict)
+        and all(
+            isinstance(k, int)
+            and isinstance(v, dict)
+            and all(
+                isinstance(mk, int) and isinstance(mv, int) and mv >= 0
+                for mk, mv in v.items()
+            )
+            for k, v in vetoes.items()
+        )
+    )
+
+
+def _adjust_vetoes_for_bracket(
+    new_bracket_vetoes: VetosMap,
+    map_ids: list[MapPoolMapVersionId],
+    total_tokens: int,
+    max_per_map: int,
+) -> VetosMap:
+    assert total_tokens >= 0
+
+    adjusted_vetoes = {}
+    tokens_sum = 0
+    for map_id in map_ids:
+        tokens = new_bracket_vetoes.get(map_id, 0)
+        tokens_applied = _cap_tokens(
+            tokens,
+            total_tokens - tokens_sum,
+            max_per_map,
+        )
+
+        if tokens_applied > 0:
+            adjusted_vetoes[map_id] = tokens_applied
+            tokens_sum += tokens_applied
+
+    return adjusted_vetoes
+
+
+def _cap_tokens(
+    tokens: int,
+    total_remaining: int,
+    max_per_map: int,
+) -> int:
+    assert total_remaining >= 0
+
+    applied = min(max(tokens, 0), total_remaining)
+
+    if max_per_map > 0:
+        applied = min(applied, max_per_map)
+
+    return applied

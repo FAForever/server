@@ -60,6 +60,7 @@ async def context(mock_service):
             party_service=mock.Mock(),
             rating_service=mock.Mock(),
             oauth_service=mock.Mock(),
+            veto_service=mock.Mock(),
         )
 
     ctx = ServerContext("TestServer", make_connection, [mock_service])

@@ -53,7 +53,7 @@ from .games import (
 )
 from .geoip_service import GeoIpService
 from .ladder_service import LadderService
-from .ladder_service.veto_system import VetoSystem
+from .ladder_service.veto_system import VetoService
 from .oauth_service import OAuthService
 from .party_service import PartyService
 from .player_service import PlayerService
@@ -110,6 +110,7 @@ class LobbyConnection:
         party_service: PartyService,
         rating_service: RatingService,
         oauth_service: OAuthService,
+        veto_service: VetoService,
     ):
         self._db = database
         self.geoip_service = geoip
@@ -119,6 +120,7 @@ class LobbyConnection:
         self.party_service = party_service
         self.rating_service = rating_service
         self.oauth_service = oauth_service
+        self.veto_service = veto_service
         self._authenticated = False
         self.player: Optional[Player] = None
         self.game_connection: Optional[GameConnection] = None
@@ -1377,6 +1379,8 @@ class LobbyConnection:
         self.party_service.set_factions(self.player, list(factions))
 
     async def command_set_player_vetoes(self, message):
+        assert self.player is not None
+
         vetoes = {}
         for v in message["vetoes"]:
             matchmaker_queue_map_pool = v.get("matchmaker_queue_map_pool_id")
@@ -1388,7 +1392,7 @@ class LobbyConnection:
 
             vetoes[matchmaker_queue_map_pool][map_pool_map_version_id] = veto_tokens_applied
 
-        await VetoSystem.apply_vetoes_to_player(self.player, vetoes)
+        await self.veto_service.set_player_vetoes(self.player, vetoes)
 
     async def send_warning(self, message: str, fatal: bool = False):
         """
