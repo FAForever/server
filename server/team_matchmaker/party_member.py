@@ -1,6 +1,7 @@
 import random
 
 from server.players import Player
+from server.types.messages.server import UpdatePartyMember
 
 from ..factions import Faction
 
@@ -23,7 +24,7 @@ class PartyMember:
 
         self.player.faction = random.choice(self.factions)
 
-    def to_dict(self):
+    def to_dict(self) -> UpdatePartyMember:
         return {
             "player": self.player.id,
             "factions": list(faction.name for faction in self.factions)

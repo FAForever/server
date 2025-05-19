@@ -32,21 +32,22 @@ async def test_initialize_game_counter_empty(game_service, database):
     assert game_service.game_id_counter == 0
 
 
-async def test_graceful_shutdown(game_service):
+async def test_graceful_shutdown(players, game_service):
     await game_service.graceful_shutdown()
 
     with pytest.raises(DisabledError):
         game_service.create_game(
             game_mode="faf",
+            host=players.hosting,
             map=Map(None, "SCMP_007"),
-
         )
 
 
 @fast_forward(2)
-async def test_drain_games(game_service):
+async def test_drain_games(players, game_service):
     game = game_service.create_game(
         game_mode="faf",
+        host=players.hosting,
         name="TestGame"
     )
 

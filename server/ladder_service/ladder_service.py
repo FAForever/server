@@ -47,6 +47,11 @@ from server.matchmaker import (
 from server.metrics import MatchLaunch
 from server.players import Player, PlayerState
 from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
+from server.types.messages.server import (
+    MatchCancelled,
+    MatchFound,
+    SearchTimeoutTimeout
+)
 
 if TYPE_CHECKING:
     from server.lobbyconnection import LobbyConnection
@@ -298,7 +303,7 @@ class LadderService(Service):
         timeouts = self.violation_service.get_violations(players)
         if timeouts:
             self._logger.debug("timeouts: %s", timeouts)
-            times = [
+            times: list[SearchTimeoutTimeout] = [
                 {
                     "player": p.id,
                     "expires_at": violation.get_ban_expiration().isoformat()
@@ -463,7 +468,7 @@ class LadderService(Service):
         so it should only perform fast operations.
         """
         try:
-            msg = {"command": "match_found", "queue_name": queue.name}
+            msg: MatchFound = {"command": "match_found", "queue_name": queue.name}
 
             for player in s1.players + s2.players:
                 player.state = PlayerState.STARTING_AUTOMATCH
@@ -621,7 +626,7 @@ class LadderService(Service):
                 await game.on_game_finish()
 
             game_id = game.id if game else None
-            msg = {"command": "match_cancelled", "game_id": game_id}
+            msg: MatchCancelled = {"command": "match_cancelled", "game_id": game_id}
             for player in all_players:
                 player.write_message(msg)
 

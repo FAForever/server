@@ -145,11 +145,10 @@ the server API documentation:
 Work is ongoing to document these messages in a comprehensive way. For now, all
 commands that can be sent from the client -> server can be found via the server
 API documentation:
-[LobbyConnection](https://faforever.github.io/server/lobbyconnection.html)
-under the `command_*` methods. Check the source code for what fields the message
-is expected to have and any possible responses.
+[LobbyConnection](https://faforever.github.io/server/types/messages/).
 
-It may also be useful to look at the definitions in the
+For server -> client messages itt may also be useful to look at the definitions
+in the
 [faf-java-commons](https://github.com/FAForever/faf-java-commons/tree/develop/lobby/src/main/kotlin/com/faforever/commons/lobby)
 to see how the official client is deserializing messages from the server.
 

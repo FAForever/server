@@ -89,7 +89,10 @@ client.
 See `server.protocol`.
 
 ### Application messages
-See `server.lobbyconnection`.
+See `server.types.messages` for type definitions explaining what messages, and
+fields are available.
+
+See `server.lobbyconnection` for the implementation of those message handlers.
 
 Terms:
 

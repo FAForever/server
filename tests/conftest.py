@@ -205,11 +205,6 @@ def transport():
     return mock.Mock(spec=asyncio.Transport)
 
 
-@pytest.fixture
-async def game(database, players):
-    return make_game(database, 1, players)
-
-
 GAME_UID = 1
 COOP_GAME_UID = 2
 
@@ -233,17 +228,19 @@ async def coop_game(database, players):
 
 
 def make_game(database, uid, players, game_type=Game):
-    mock_parent = mock.AsyncMock()
     game = mock.create_autospec(
-        spec=game_type(uid, database, mock_parent, mock.AsyncMock())
+        spec=game_type(
+            id=uid,
+            database=database,
+            game_service=mock.Mock(),
+            game_stats_service=mock.Mock(),
+            host=players.hosting,
+        ),
+        init_mode=InitMode.NORMAL_LOBBY,
     )
-    players.hosting.getGame = mock.AsyncMock(return_value=game)
-    players.joining.getGame = mock.AsyncMock(return_value=game)
-    players.peer.getGame = mock.AsyncMock(return_value=game)
-    game.host = players.hosting
-    game.init_mode = InitMode.NORMAL_LOBBY
-    game.name = "Some game name"
     game.id = uid
+    game.name = "Some game name"
+    game.host = players.hosting,
     return game
 
 

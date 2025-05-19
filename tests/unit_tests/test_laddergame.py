@@ -12,19 +12,19 @@ from tests.unit_tests.test_game import add_connected_players
 
 
 @pytest.fixture()
-async def laddergame(database, game_service, game_stats_service):
+async def laddergame(database, game_service, game_stats_service, players):
     return LadderGame(
         id=465312,
         database=database,
         game_service=game_service,
         game_stats_service=game_stats_service,
-        rating_type=RatingType.LADDER_1V1
+        rating_type=RatingType.LADDER_1V1,
+        host=players.hosting,
     )
 
 
 async def test_handle_game_closed_manually(laddergame, players):
     laddergame.state = GameState.LOBBY
-    laddergame.host = players.hosting
     await laddergame.check_game_finish(players.hosting)
     e1 = laddergame._hosted_future.exception()
     assert isinstance(e1, GameClosedError)
@@ -150,8 +150,11 @@ async def test_rate_game(laddergame: LadderGame, database, game_add_players):
     assert rows[1].after_deviation < rows[0].deviation
 
 
-async def test_persist_rating_victory(laddergame: LadderGame, database,
-                                      game_add_players):
+async def test_persist_rating_victory(
+    laddergame: LadderGame,
+    database,
+    game_add_players,
+):
     laddergame.state = GameState.LOBBY
     players = game_add_players(laddergame, 2)
     laddergame.set_player_option(players[0].id, "Team", 2)

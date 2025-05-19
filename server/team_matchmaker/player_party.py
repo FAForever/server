@@ -5,6 +5,7 @@ from server.factions import Faction
 from server.matchmaker import Search
 from server.players import Player
 from server.team_matchmaker.party_member import PartyMember
+from server.types.messages.server import UpdatePartyBody
 
 PARTY_INVITE_TIMEOUT = 60 * 60 * 24  # secs
 
@@ -83,7 +84,7 @@ class PlayerParty():
         self._members.clear()
         self.invited_players.clear()
 
-    def to_dict(self):
+    def to_dict(self) -> UpdatePartyBody:
         return {
             "owner": self.owner.id,
             "members": [m.to_dict() for m in self._members.values()]

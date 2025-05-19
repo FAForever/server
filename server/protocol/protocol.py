@@ -4,6 +4,8 @@ import contextlib
 import json
 from abc import ABCMeta, abstractmethod
 from asyncio import StreamReader, StreamWriter
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import server.metrics as metrics
 
@@ -25,7 +27,7 @@ class Protocol(metaclass=ABCMeta):
 
     @staticmethod
     @abstractmethod
-    def encode_message(message: dict) -> bytes:
+    def encode_message(message: Mapping[str, Any]) -> bytes:
         """
         Encode a message as raw bytes. Can be used along with `*_raw` methods.
         """
@@ -33,7 +35,7 @@ class Protocol(metaclass=ABCMeta):
 
     @staticmethod
     @abstractmethod
-    def decode_message(data: bytes) -> dict:
+    def decode_message(data: bytes) -> dict[str, Any]:
         """
         Decode a message from raw bytes.
         """
@@ -46,7 +48,7 @@ class Protocol(metaclass=ABCMeta):
         return not self.writer.is_closing()
 
     @abstractmethod
-    async def read_message(self) -> dict:
+    async def read_message(self) -> dict[str, Any]:
         """
         Asynchronously read a message from the stream
 
@@ -58,7 +60,7 @@ class Protocol(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    async def send_message(self, message: dict) -> None:
+    async def send_message(self, message: Mapping[str, Any]) -> None:
         """
         Send a single message in the form of a dictionary
 
@@ -67,7 +69,7 @@ class Protocol(metaclass=ABCMeta):
         """
         await self.send_raw(self.encode_message(message))
 
-    async def send_messages(self, messages: list[dict]) -> None:
+    async def send_messages(self, messages: Sequence[Mapping[str, Any]]) -> None:
         """
         Send multiple messages in the form of a list of dictionaries.
 
@@ -89,7 +91,7 @@ class Protocol(metaclass=ABCMeta):
         self.write_raw(data)
         await self.drain()
 
-    def write_message(self, message: dict) -> None:
+    def write_message(self, message: Mapping[str, Any]) -> None:
         """
         Write a single message into the message buffer. Should be used when
         sending broadcasts or when sending messages that are triggered by
@@ -103,7 +105,7 @@ class Protocol(metaclass=ABCMeta):
 
         self.write_raw(self.encode_message(message))
 
-    def write_messages(self, messages: list[dict]) -> None:
+    def write_messages(self, messages: Sequence[Mapping[str, Any]]) -> None:
         """
         Write multiple message into the message buffer.
 

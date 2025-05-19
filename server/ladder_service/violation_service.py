@@ -10,6 +10,7 @@ from server.core import Service
 from server.decorators import with_logger
 from server.players import Player
 from server.timing import at_interval, datetime_now
+from server.types.messages.server import SearchViolationBody
 
 
 @dataclass
@@ -51,7 +52,7 @@ class Violation:
         exp = self.time + timedelta(seconds=config.LADDER_VIOLATIONS_RESET_TIME)
         return exp <= now
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> SearchViolationBody:
         return {
             "count": self.count,
             "time": self.time.isoformat()

@@ -3,7 +3,9 @@ Manages interactions between players and parties
 """
 
 import logging
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Iterable, Optional
+
+from server.types.messages.server import UpdateParty
 
 from .core import Service
 from .decorators import with_logger
@@ -11,6 +13,7 @@ from .exceptions import ClientError
 from .factions import Faction
 from .game_service import GameService
 from .players import Player, PlayerState
+from .team_matchmaker.party_member import PartyMember
 from .team_matchmaker.player_party import PlayerParty
 from .timing import at_interval
 
@@ -55,13 +58,17 @@ class PartyService(Service):
                     "Unexpected exception while sending party updates!"
                 )
 
-    def write_broadcast_party(self, party, members=None):
+    def write_broadcast_party(
+        self,
+        party: PlayerParty,
+        members: Optional[Iterable[PartyMember]] = None,
+    ) -> None:
         """
         Send a party update to all players in the party
         """
-        if not members:
+        if members is None:
             members = iter(party)
-        msg = {
+        msg: UpdateParty = {
             "command": "update_party",
             **party.to_dict()
         }

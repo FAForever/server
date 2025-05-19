@@ -6,7 +6,15 @@ import pathlib
 import time
 from collections import defaultdict
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Iterable, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Iterable,
+    Literal,
+    Optional
+)
 
 from sqlalchemy import and_, bindparam
 from sqlalchemy.exc import DBAPIError
@@ -32,6 +40,7 @@ from server.games.game_results import (
 from server.rating import InclusiveRange, RatingType
 from server.timing import datetime_now
 from server.types import MAP_DEFAULT, Map
+from server.types.messages.server import GameInfo
 
 from ..players import Player, PlayerState
 from .typedefs import (
@@ -58,6 +67,14 @@ class GameError(Exception):
     pass
 
 
+_CLIENT_STATES: dict[GameState, Literal["closed", "open", "playing"]] = {
+    GameState.LOBBY: "open",
+    GameState.LIVE: "playing",
+    GameState.ENDED: "closed",
+    GameState.INITIALIZING: "closed",
+}
+
+
 class Game:
     """
     Object that lasts for the lifetime of a game on FAF.
@@ -71,7 +88,7 @@ class Game:
         database: FAFDatabase,
         game_service: "GameService",
         game_stats_service: "GameStatsService",
-        host: Optional[Player] = None,
+        host: Player,
         name: str = "New Game",
         map: Map = MAP_DEFAULT,
         game_mode: str = FeaturedModType.FAF,
@@ -909,13 +926,8 @@ class Game:
         else:
             return player.id not in self.host.foes
 
-    def to_dict(self):
-        client_state = {
-            GameState.LOBBY: "open",
-            GameState.LIVE: "playing",
-            GameState.ENDED: "closed",
-            GameState.INITIALIZING: "closed",
-        }.get(self.state, "closed")
+    def to_dict(self) -> GameInfo:
+        client_state = _CLIENT_STATES.get(self.state, "closed")
         connected_players = self.get_connected_players()
         return {
             "command": "game_info",
@@ -949,6 +961,7 @@ class Game:
                 }
                 for team in self.teams if team is not None
             ],
+            # DEPRECATED: Use team_ids instead
             "teams": {
                 team: [
                     player.login for player in connected_players

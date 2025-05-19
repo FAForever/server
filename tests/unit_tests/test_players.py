@@ -91,6 +91,7 @@ def test_serialize():
         "id": 42,
         "login": "Something",
         "clan": "TOAST",
+        "country": "__",
         "state": "offline",
         "ratings": {
             "global": {

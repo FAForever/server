@@ -197,9 +197,9 @@ class GameService(Service):
     def create_game(
         self,
         game_mode: str,
+        host: Player,
         game_class: type[Game] = CustomGame,
         visibility=VisibilityState.PUBLIC,
-        host: Optional[Player] = None,
         name: Optional[str] = None,
         map: Map = MAP_DEFAULT,
         password: Optional[str] = None,
