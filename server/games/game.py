@@ -521,7 +521,8 @@ class Game:
                 self._outcome_override_hook()
                 or resolve_game(team_player_partial_outcomes)
             )
-        except GameResolutionError:
+        except GameResolutionError as e:
+            self._logger.warning("Game resolution failed: %s", e)
             if self.validity is ValidityState.VALID:
                 await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
 
