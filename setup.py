@@ -3,10 +3,6 @@ import subprocess
 from distutils.core import setup
 from pathlib import Path
 
-from setuptools import find_packages
-
-import server
-
 
 def get_version() -> str:
     output = subprocess.run(
@@ -27,13 +23,5 @@ def get_version() -> str:
 
 
 setup(
-    name="Forged Alliance Forever Server",
     version=get_version(),
-    packages=["server"] + find_packages(),
-    url="http://www.faforever.com",
-    license=server.__license__,
-    author=server.__author__,
-    author_email=server.__contact__,
-    description="Lobby/game server project",
-    include_package_data=True
 )
