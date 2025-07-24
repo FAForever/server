@@ -11,8 +11,7 @@ from server.exceptions import DisabledError
 from server.games import LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service import game_name
-from server.ladder_service.veto_system import VetoSystem
-from server.matchmaker import MapPool, MatchmakerQueue
+from server.matchmaker import MapPool, MatchmakerQueue, MatchmakerQueueMapPool
 from server.players import PlayerState
 from server.rating import RatingType
 from server.types import Map, NeroxisGeneratedMap
@@ -22,8 +21,18 @@ from tests.utils import autocontext, exhaust_callbacks, fast_forward
 from .strategies import st_players
 
 
-async def test_queue_initialization(database, game_service, player_service, violation_service):
-    ladder_service = LadderService(database, game_service, player_service, violation_service)
+async def test_queue_initialization(
+    database,
+    game_service,
+    violation_service,
+    veto_service,
+):
+    ladder_service = LadderService(
+        database,
+        game_service,
+        violation_service,
+        veto_service,
+    )
 
     def make_mock_queue(*args, **kwargs):
         queue = mock.create_autospec(MatchmakerQueue)
@@ -59,40 +68,40 @@ async def test_load_from_database(ladder_service, queue_factory):
         assert queue.rating_type == "ladder_1v1"
         assert queue.rating_peak == 1000.0
         assert len(queue.map_pools) == 3
-        assert list(queue.map_pools[1][0].maps.values()) == [
-            Map(15, "scmp_015", ranked=True),
-            Map(16, "scmp_015.v0002", ranked=True),
-            Map(17, "scmp_015.v0003", ranked=True),
+        assert list(queue.map_pools[1][1].maps.values()) == [
+            Map(15, "scmp_015", ranked=True, map_pool_map_version_id=1),
+            Map(16, "scmp_015.v0002", ranked=True, map_pool_map_version_id=2),
+            Map(17, "scmp_015.v0003", ranked=True, map_pool_map_version_id=3),
         ]
-        assert list(queue.map_pools[2][0].maps.values()) == [
-            Map(11, "scmp_011", ranked=True),
-            Map(14, "scmp_014", ranked=True),
-            Map(15, "scmp_015", ranked=True),
-            Map(16, "scmp_015.v0002", ranked=True),
-            Map(17, "scmp_015.v0003", ranked=True),
+        assert list(queue.map_pools[2][1].maps.values()) == [
+            Map(11, "scmp_011", ranked=True, map_pool_map_version_id=4),
+            Map(14, "scmp_014", ranked=True, map_pool_map_version_id=5),
+            Map(15, "scmp_015", ranked=True, map_pool_map_version_id=6),
+            Map(16, "scmp_015.v0002", ranked=True, map_pool_map_version_id=7),
+            Map(17, "scmp_015.v0003", ranked=True, map_pool_map_version_id=8),
         ]
-        assert list(queue.map_pools[3][0].maps.values()) == [
-            Map(1, "scmp_001", ranked=True),
-            Map(2, "scmp_002", ranked=True),
-            Map(3, "scmp_003", ranked=True),
+        assert list(queue.map_pools[3][1].maps.values()) == [
+            Map(1, "scmp_001", ranked=True, map_pool_map_version_id=9),
+            Map(2, "scmp_002", ranked=True, map_pool_map_version_id=10),
+            Map(3, "scmp_003", ranked=True, map_pool_map_version_id=11),
         ]
 
         queue = ladder_service.queues["neroxis1v1"]
         assert queue.name == "neroxis1v1"
         assert len(queue.map_pools) == 1
-        assert list(queue.map_pools[4][0].maps.values()) == [
+        assert list(queue.map_pools[4][1].maps.values()) == [
             NeroxisGeneratedMap.of({
                 "version": "0.0.0",
                 "spawns": 2,
                 "size": 512,
                 "type": "neroxis"
-            }),
+            }, map_pool_map_version_id=12),
             NeroxisGeneratedMap.of({
                 "version": "0.0.0",
                 "spawns": 2,
                 "size": 768,
                 "type": "neroxis"
-            }),
+            }, map_pool_map_version_id=13),
         ]
 
         queue = ladder_service.queues["tmm2v2"]
@@ -445,9 +454,12 @@ async def test_start_game_start_spots(
         rating_type=RatingType.GLOBAL
     )
     queue.add_map_pool(
-        MapPool(1, "test", [Map(1, "scmp_007", map_pool_map_version_id=1)]),
-        min_rating=None,
-        max_rating=None
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=MapPool(1, "test", [Map(1, "scmp_007", map_pool_map_version_id=1)]),
+            min_rating=None,
+            max_rating=None,
+        ),
     )
 
     monkeypatch.setattr(LadderGame, "wait_hosted", mock.AsyncMock())
@@ -840,25 +852,56 @@ async def test_start_game_called_on_match(
     (((400, 100), 10), ((300, 100), 1000))
 ))
 async def test_start_game_map_selection_newbie_pool(
+    mocker,
     ladder_service: LadderService,
     player_factory,
     ratings
 ):
     p1 = player_factory(
+        login="Test1",
         ladder_rating=ratings[0][0],
         ladder_games=ratings[0][1],
     )
     p2 = player_factory(
+        login="Test2",
         ladder_rating=ratings[1][0],
         ladder_games=ratings[1][1],
     )
 
     queue = ladder_service.queues["ladder1v1"]
     queue.map_pools.clear()
-    newbie_map_pool = mock.Mock()
-    full_map_pool = mock.Mock()
-    queue.add_map_pool(newbie_map_pool, None, 500)
-    queue.add_map_pool(full_map_pool, 500, None)
+    newbie_map_pool = MapPool(
+        map_pool_id=1,
+        name="newbie_map_pool",
+        maps=[Map(15, "scmp_015", ranked=True)],
+    )
+    mocker.patch.object(newbie_map_pool, "choose_map")
+    full_map_pool = MapPool(
+        map_pool_id=2,
+        name="full_map_pool",
+        maps=[
+            Map(15, "scmp_015", ranked=True),
+            Map(16, "scmp_016", ranked=True),
+            Map(17, "scmp_017", ranked=True),
+        ],
+    )
+    mocker.patch.object(full_map_pool, "choose_map")
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=newbie_map_pool,
+            min_rating=None,
+            max_rating=500,
+        ),
+    )
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=2,
+            map_pool=full_map_pool,
+            min_rating=500,
+            max_rating=None,
+        ),
+    )
 
     await ladder_service.start_game([p1], [p2], queue)
 
@@ -867,7 +910,9 @@ async def test_start_game_map_selection_newbie_pool(
 
 
 async def test_start_game_map_selection_pros(
-    ladder_service: LadderService, player_factory
+    mocker,
+    ladder_service: LadderService,
+    player_factory,
 ):
     p1 = player_factory(
         ladder_rating=(2000, 50),
@@ -880,10 +925,38 @@ async def test_start_game_map_selection_pros(
 
     queue = ladder_service.queues["ladder1v1"]
     queue.map_pools.clear()
-    newbie_map_pool = mock.Mock()
-    full_map_pool = mock.Mock()
-    queue.add_map_pool(newbie_map_pool, None, 500)
-    queue.add_map_pool(full_map_pool, 500, None)
+    newbie_map_pool = MapPool(
+        map_pool_id=1,
+        name="newbie_map_pool",
+        maps=[Map(15, "scmp_015", ranked=True)],
+    )
+    mocker.patch.object(newbie_map_pool, "choose_map")
+    full_map_pool = MapPool(
+        map_pool_id=2,
+        name="full_map_pool",
+        maps=[
+            Map(15, "scmp_015", ranked=True),
+            Map(16, "scmp_016", ranked=True),
+            Map(17, "scmp_017", ranked=True),
+        ],
+    )
+    mocker.patch.object(full_map_pool, "choose_map")
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=newbie_map_pool,
+            min_rating=None,
+            max_rating=500,
+        ),
+    )
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=2,
+            map_pool=full_map_pool,
+            min_rating=500,
+            max_rating=None,
+        ),
+    )
 
     await ladder_service.start_game([p1], [p2], queue)
 
@@ -892,7 +965,9 @@ async def test_start_game_map_selection_pros(
 
 
 async def test_start_game_map_selection_rating_type(
-    ladder_service: LadderService, player_factory
+    mocker,
+    ladder_service: LadderService,
+    player_factory,
 ):
     p1 = player_factory(
         ladder_rating=(2000, 50),
@@ -910,10 +985,38 @@ async def test_start_game_map_selection_rating_type(
     queue = ladder_service.queues["ladder1v1"]
     queue.rating_type = RatingType.GLOBAL
     queue.map_pools.clear()
-    newbie_map_pool = mock.Mock()
-    full_map_pool = mock.Mock()
-    queue.add_map_pool(newbie_map_pool, None, 500)
-    queue.add_map_pool(full_map_pool, 500, None)
+    newbie_map_pool = MapPool(
+        map_pool_id=1,
+        name="newbie_map_pool",
+        maps=[Map(15, "scmp_015", ranked=True)],
+    )
+    mocker.patch.object(newbie_map_pool, "choose_map")
+    full_map_pool = MapPool(
+        map_pool_id=2,
+        name="full_map_pool",
+        maps=[
+            Map(15, "scmp_015", ranked=True),
+            Map(16, "scmp_016", ranked=True),
+            Map(17, "scmp_017", ranked=True),
+        ],
+    )
+    mocker.patch.object(full_map_pool, "choose_map")
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=1,
+            map_pool=newbie_map_pool,
+            min_rating=None,
+            max_rating=500,
+        ),
+    )
+    queue.add_map_pool(
+        MatchmakerQueueMapPool(
+            id=2,
+            map_pool=full_map_pool,
+            min_rating=500,
+            max_rating=None,
+        ),
+    )
 
     await ladder_service.start_game([p1], [p2], queue)
 
@@ -1141,74 +1244,3 @@ async def test_graceful_shutdown_clears_queues(
 
     assert ladder_service.queues["ladder1v1"]._is_running is False
     assert ladder_service.queues["tmm2v2"]._is_running is False
-
-
-@pytest.mark.parametrize("M, tokens, expected", [
-    # Only 0-token maps, sufficient to meet M
-    (2.0, [0, 0, 0], 1.0),
-    # Three maps with 0 tokens, M=2 < 3, should return T=1 because taking all 0-token maps is enough
-
-    # Impossible setup, 1 full map required but the only map available is partially vetoed
-    (1, [1], 0),
-    # function returns 0 for bad input
-
-    # Include maps with 1 token
-    (2.0, [0, 1, 1], 2.0),
-    # One 0-token map (sum=1) isn't enough for M=2, include two 1-token maps, T=2 satisfies
-
-    # Non-integer M
-    (1.5, [0, 1, 1], 4/3),
-    # M=1.5, 0-token sum=1 < M, include 1-token maps, T=4/3 ≈ 1.333, sum=1.5
-
-    # Include maps with 2 tokens
-    (2.5, [0, 0, 2], 4.0),
-    # Two 0-token maps (sum=2) < M=2.5, include 2-token map, T=4, sum=2.5
-
-    # Another test because why not
-    (1.9, [0, 1], 10.0),
-    # M=1.9, one 0-token (sum=1) < M, include 1-token, final case T=10, sum=1.9
-
-    # More complex case
-    (3.5, [0, 0, 1, 1, 2], 8/3),
-    # M=3.5, 0 and 1-token maps insufficient, all maps give T=8/3 ≈ 2.667, sum=3.5
-
-    # All maps have 1 token, no 0-token maps
-    (1.0, [1, 1, 1], 1.5),
-    # T=1.5, each weight=1/3, sum=1
-
-    # All maps have 1 token, small M
-    (0.5, [1, 1, 1], 1.2),
-    # M=0.5, all 1-token maps, T=1.2, each weight=1/6, sum=0.5
-
-    # Mix of 0 and higher tokens, 0-tokens sufficient
-    (1.0, [0, 2], 1.0),
-    # M=1, one 0-token map suffices, T=1, sum=1
-
-    # Mix of 0 and 2 tokens
-    (1.5, [0, 2], 4.0),
-    # M=1.5, 0-token sum=1 < M, include 2-token, T=4, sum=1.5
-
-    # Larger set, T matches next token boundary
-    (4.0, [0, 0, 0, 1, 1, 2, 2], 2.0),
-    # M=4, 0 and 1-token maps (5 maps), T=2, sum=4
-
-    # Larger set, T in final case
-    (5.0, [0, 0, 0, 1, 1, 2, 2], 3.0),
-    # M=5, all maps included, T=3, sum=5
-
-    # Float M
-    (4.5, [0, 0, 0, 1, 1, 2, 2], 2.4),
-    # M=4.5, all maps, T=2.4, sum=4.5
-
-    # The same test, just checking that order of maps doesnt matter
-    (4.5, [2, 1, 2, 0, 1, 0, 0], 2.4),
-    # M=4.5, all maps, T=2.4, sum=4.5
-])
-def test_calculate_dynamic_tokens_per_map(database, game_service, player_service, violation_service, M, tokens, expected):
-    # ladder_service = LadderService(database, game_service, player_service, violation_service)
-    result = VetoSystem.calculate_dynamic_tokens_per_map(M, tokens)
-    assert result == pytest.approx(expected, rel=1e-9)
-    # Verify that the result produces a sum >= M
-    if (result != 0):
-        total_weight = sum(max((result - v) / result, 0) for v in tokens)
-        assert total_weight >= M - 1e-9  # Account for floating-point errors

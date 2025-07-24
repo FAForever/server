@@ -15,6 +15,7 @@ from server.gameconnection import GameConnection
 from server.games import CustomGame, Game, GameState, InitMode, VisibilityState
 from server.geoip_service import GeoIpService
 from server.ladder_service import LadderService
+from server.ladder_service.veto_system import VetoService
 from server.lobbyconnection import LobbyConnection
 from server.matchmaker import Search
 from server.oauth_service import OAuthService
@@ -95,8 +96,9 @@ async def lobbyconnection(
         players=mock_players,
         ladder_service=mock.create_autospec(LadderService),
         party_service=mock.create_autospec(PartyService),
+        rating_service=rating_service,
         oauth_service=mock.create_autospec(OAuthService),
-        rating_service=rating_service
+        veto_service=mock.create_autospec(VetoService),
     )
 
     lc.player = mock_player

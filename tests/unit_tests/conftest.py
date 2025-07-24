@@ -10,7 +10,9 @@ from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
 from server.ladder_service import LadderService
+from server.ladder_service.veto_system import VetoService
 from server.ladder_service.violation_service import ViolationService
+from server.player_service import PlayerService
 from server.protocol import QDataStreamProtocol
 
 
@@ -23,9 +25,10 @@ def ladder_and_game_service_context(
     async def make_ladder_and_game_service():
         async with database_context(request) as database:
             with mock.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1):
+                player_service = PlayerService(database)
                 game_service = GameService(
                     database,
-                    player_service=mock.Mock(),
+                    player_service=player_service,
                     game_stats_service=mock.Mock(),
                     rating_service=mock.Mock(),
                     message_queue_service=mock.Mock(
@@ -33,20 +36,26 @@ def ladder_and_game_service_context(
                     )
                 )
                 violation_service = ViolationService()
+                veto_service = VetoService(player_service)
                 ladder_service = LadderService(
                     database,
                     game_service,
-                    violation_service
+                    violation_service,
+                    veto_service,
                 )
 
+                await player_service.initialize()
                 await game_service.initialize()
                 await violation_service.initialize()
+                await veto_service.initialize()
                 await ladder_service.initialize()
 
                 yield ladder_service, game_service
 
+                await player_service.shutdown()
                 await game_service.shutdown()
                 await violation_service.shutdown()
+                await veto_service.shutdown()
                 await ladder_service.shutdown()
 
     return make_ladder_and_game_service
@@ -58,9 +67,15 @@ async def ladder_service(
     database,
     game_service,
     violation_service,
+    veto_service,
 ):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
-    ladder_service = LadderService(database, game_service, violation_service)
+    ladder_service = LadderService(
+        database,
+        game_service,
+        violation_service,
+        veto_service,
+    )
     await ladder_service.initialize()
     yield ladder_service
     await ladder_service.shutdown()
@@ -69,6 +84,14 @@ async def ladder_service(
 @pytest.fixture
 async def violation_service():
     service = ViolationService()
+    await service.initialize()
+    yield service
+    await service.shutdown()
+
+
+@pytest.fixture
+async def veto_service(player_service):
+    service = VetoService(player_service)
     await service.initialize()
     yield service
     await service.shutdown()

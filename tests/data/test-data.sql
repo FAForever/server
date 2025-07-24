@@ -289,27 +289,27 @@ insert into map_pool (id, name) values
   (3, "Large maps"),
   (4, "Generated Maps with Errors");
 
-insert into map_pool_map_version (map_pool_id, map_version_id, weight, map_params) values
-  (1, 15, 1, NULL), (1, 16, 1, NULL), (1, 17, 1, NULL),
-  (2, 11, 1, NULL), (2, 14, 1, NULL), (2, 15, 1, NULL), (2, 16, 1, NULL), (2, 17, 1, NULL),
-  (3, 1, 1, NULL), (3, 2, 1, NULL), (3, 3, 1, NULL),
-  (4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 2, "version": "0.0.0"}'),
-  (4, NULL, 1, '{"type": "neroxis", "size": 768, "spawns": 2, "version": "0.0.0"}'),
+insert into map_pool_map_version (id, map_pool_id, map_version_id, weight, map_params) values
+  (1, 1, 15, 1, NULL), (2, 1, 16, 1, NULL), (3, 1, 17, 1, NULL),
+  (4, 2, 11, 1, NULL), (5, 2, 14, 1, NULL), (6, 2, 15, 1, NULL), (7, 2, 16, 1, NULL), (8, 2, 17, 1, NULL),
+  (9,3, 1, 1, NULL), (10, 3, 2, 1, NULL), (11, 3, 3, 1, NULL),
+  (12, 4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 2, "version": "0.0.0"}'),
+  (13, 4, NULL, 1, '{"type": "neroxis", "size": 768, "spawns": 2, "version": "0.0.0"}'),
   -- Bad Generated Map Parameters should not be included in pool
-  (4, NULL, 1, '{"type": "neroxis"...'),
-  (4, NULL, 1, '{"type": "neroxis", "size": 513, "spawns": 2, "version": "0.0.0"}'),
-  (4, NULL, 1, '{"type": "neroxis", "size": 0, "spawns": 2, "version": "0.0.0"}'),
-  (4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 3, "version": "0.0.0"}'),
-  (4, NULL, 1, '{"type": "beroxis", "size": 512, "spawns": 2, "version": "0.0.0"}');
+  (14, 4, NULL, 1, '{"type": "neroxis"...'),
+  (15, 4, NULL, 1, '{"type": "neroxis", "size": 513, "spawns": 2, "version": "0.0.0"}'),
+  (16, 4, NULL, 1, '{"type": "neroxis", "size": 0, "spawns": 2, "version": "0.0.0"}'),
+  (17, 4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 3, "version": "0.0.0"}'),
+  (18, 4, NULL, 1, '{"type": "beroxis", "size": 512, "spawns": 2, "version": "0.0.0"}');
 
-insert into matchmaker_queue_map_pool (matchmaker_queue_id, map_pool_id, min_rating, max_rating) values
-  (1, 1, NULL, 800),
-  (1, 2, 800, NULL),
-  (1, 3, 1000, NULL),
-  (2, 3, NULL, NULL),
-  (4, 4, NULL, NULL),
-  (5, 1, NULL, NULL),
-  (6, 1, NULL, NULL);
+insert into matchmaker_queue_map_pool (id, matchmaker_queue_id, map_pool_id, min_rating, max_rating) values
+  (1, 1, 1, NULL, 800),
+  (2, 1, 2, 800, NULL),
+  (3, 1, 3, 1000, NULL),
+  (4, 2, 3, NULL, NULL),
+  (5, 4, 4, NULL, NULL),
+  (6, 5, 1, NULL, NULL),
+  (7, 6, 1, NULL, NULL);
 
 insert into friends_and_foes (user_id, subject_id, `status`) values
   (1, 400, 'FOE'),

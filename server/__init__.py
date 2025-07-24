@@ -126,6 +126,7 @@ from .game_service import GameService
 from .gameconnection import GameConnection
 from .geoip_service import GeoIpService
 from .ladder_service import LadderService
+from .ladder_service.veto_system import VetoService
 from .ladder_service.violation_service import ViolationService
 from .lobbyconnection import LobbyConnection
 from .message_queue_service import MessageQueueService
@@ -157,6 +158,7 @@ __all__ = (
     "RatingService",
     "RatingService",
     "ServerInstance",
+    "VetoService",
     "ViolationService",
     "game_service",
     "protocol",
@@ -204,6 +206,7 @@ class ServerInstance(object):
             party_service=self.services["party_service"],
             rating_service=self.services["rating_service"],
             oauth_service=self.services["oauth_service"],
+            veto_service=self.services["veto_service"],
         )
 
     def write_broadcast(
