@@ -563,12 +563,12 @@ class LadderService(Service):
             self._logger.debug("______queue.map_pools[map_pool.id]________________: %s", queue.map_pools[map_pool.id])
             initial_weights = VetoSystem.generate_initial_weights_for_match(all_players, queue.map_pools[map_pool.id])
             self._logger.debug("______initial_weights________________: %s", initial_weights)
-            game_map = map_pool.choose_map(played_map_ids, initial_weights)
+            game_map = map_pool.choose_map([], initial_weights)
 
             self._logger.debug("______game_map________________: %s", game_map)
-            # for player in all_players:
-            #   player.state = PlayerState.IDLE
-            # return
+            for player in all_players:
+              player.state = PlayerState.IDLE
+            return
             game = self.game_service.create_game(
                 game_class=LadderGame,
                 game_mode=queue.featured_mod,
