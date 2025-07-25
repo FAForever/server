@@ -83,7 +83,7 @@ class ConfigurationStore:
 
         self.DB_SERVER = "127.0.0.1"
         self.DB_PORT = 3306
-        self.DB_LOGIN = "faf-python-server"
+        self.DB_LOGIN = "root"
         self.DB_PASSWORD = "banana"
         self.DB_NAME = "faf"
         # An empty value will disable the database version check

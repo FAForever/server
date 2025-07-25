@@ -46,14 +46,19 @@ class VetoService(Service):
 
         self.pools_veto_data: list[MatchmakerQueueMapPoolVetoData] = []
 
-    def update_pools_veto_config(self, queues: dict[str, MatchmakerQueue]):
-        """Update the cached veto config to match the new queues"""
+    def update_pools_veto_config(self, queues: dict[str, MatchmakerQueue]) -> list[Player]:
+        """
+        Update the cached veto config to match the new queues.
+        
+        Returns list of players whose vetoes were force-adjusted due to config changes.
+        These players should be removed from matchmaking queues.
+        """
 
         pools_vetodata = self.extract_pools_veto_config(queues)
 
         if self.pools_veto_data != pools_vetodata:
             self.pools_veto_data = pools_vetodata
-
+            affected_players = []
             for player in self.player_service.all_players:
                 # TODO: Can we avoid force adjusting veto selections for players.
                 adjusted_vetoes = self._adjust_vetoes(player.vetoes._vetoes)
@@ -61,8 +66,14 @@ class VetoService(Service):
                     player.vetoes._vetoes = adjusted_vetoes
                     player.write_message({
                         "command": "vetoes_info",
+                        "forced": True,
                         **player.vetoes.to_dict(),
                     })
+                    affected_players.append(player)
+            
+            return affected_players
+        
+        return []
 
     def extract_pools_veto_config(
         self,
@@ -109,12 +120,13 @@ class VetoService(Service):
         if not _is_valid_vetoes(new_vetoes):
             raise ClientError("invalid veto data")
 
-        adjusted_vetoes = self._adjust_vetoes(player.vetoes._vetoes)
+        adjusted_vetoes = self._adjust_vetoes(new_vetoes)
 
         if adjusted_vetoes != player.vetoes._vetoes:
             player.vetoes._vetoes = adjusted_vetoes
             await player.send_message({
                 "command": "vetoes_info",
+                "forced": False,
                 **player.vetoes.to_dict(),
             })
 

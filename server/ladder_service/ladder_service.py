@@ -136,7 +136,13 @@ class LadderService(Service):
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
 
-        self.veto_service.update_pools_veto_config(self.queues)
+        affected_players = self.veto_service.update_pools_veto_config(self.queues)
+        
+        # Kick affected players from all queues
+        self._logger.info("AFFECTED PLAYERS %s", affected_players)
+        for player in affected_players:
+            self.cancel_search(player)
+
 
     async def fetch_map_pools(self, conn) -> dict[int, tuple[str, list[Map]]]:
         result = await conn.execute(
@@ -573,9 +579,10 @@ class LadderService(Service):
             game_map = map_pool.choose_map(played_map_ids, initial_weights)
 
             self._logger.debug("______game_map________________: %s", game_map)
-            for player in all_players:
-              player.state = PlayerState.IDLE
-            return
+            ## debug thing please ignore
+            # for player in all_players: 
+            #  player.state = PlayerState.IDLE
+            # return
             game = self.game_service.create_game(
                 game_class=LadderGame,
                 game_mode=queue.featured_mod,
