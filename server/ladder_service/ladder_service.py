@@ -137,8 +137,6 @@ class LadderService(Service):
                 del self.queues[queue_name]
 
         affected_players = self.veto_service.update_pools_veto_config(self.queues)
-        # Kick affected players from all queues
-        self._logger.info("AFFECTED PLAYERS %s", affected_players)
         for player in affected_players:
             self.cancel_search(player)
 
