@@ -49,7 +49,7 @@ class VetoService(Service):
     def update_pools_veto_config(self, queues: dict[str, MatchmakerQueue]) -> list[Player]:
         """
         Update the cached veto config to match the new queues.
-        
+
         Returns list of players whose vetoes were force-adjusted due to config changes.
         These players should be removed from matchmaking queues.
         """
@@ -70,9 +70,9 @@ class VetoService(Service):
                         **player.vetoes.to_dict(),
                     })
                     affected_players.append(player)
-            
+
             return affected_players
-        
+
         return []
 
     def extract_pools_veto_config(
