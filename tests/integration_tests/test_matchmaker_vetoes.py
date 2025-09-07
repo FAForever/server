@@ -1,5 +1,6 @@
 from tests.utils import fast_forward
 
+from server.players import PlayerState
 from .conftest import connect_and_sign_in, read_until_command
 from .test_game import queue_player_for_matchmaking, client_response, end_game_as_draw, gen_vetoes
 
@@ -11,8 +12,8 @@ async def test_vetoes_are_assigned_to_player_with_adjusting(lobby_server, player
             "vetoes": vetoes
         })
         msg = await read_until_command(proto, "vetoes_info")
-        assert msg['vetoes'] == expected_vetoes
-        assert player_service.get_player(player_id).vetoes.to_dict()['vetoes'] == expected_vetoes
+        assert msg["vetoes"] == expected_vetoes
+        assert player_service.get_player(player_id).vetoes.to_dict()["vetoes"] == expected_vetoes
 
     player_id, _, proto = await connect_and_sign_in(("test", "test_password"), lobby_server)
     await read_until_command(proto, "game_info")
@@ -122,3 +123,54 @@ async def test_vetoes_tmm(lobby_server, mocker):
         chosen_map_pool_version_id = msg1["map_pool_map_version_id"]
         assert chosen_map_pool_version_id == 10
         await end_game_as_draw(players, msg1["uid"])
+
+
+@fast_forward(120)
+async def test_pool_config_changes_causing_forced_update_and_stops_search(player_service, lobby_server, database, ladder_service):
+    player_id, proto = await queue_player_for_matchmaking(
+        ("test", "test_password"), lobby_server, "ladder1v1", gen_vetoes([(1, 1, 1)])
+    )
+    player = player_service.get_player(player_id)
+    assert player.state == PlayerState.SEARCHING_LADDER
+    try:
+        async with database.acquire() as conn:
+            await conn.execute(
+                "UPDATE matchmaker_queue_map_pool SET veto_tokens_per_player = 0 WHERE id = 1"
+            )
+        await ladder_service.update_data()
+        msg = await read_until_command(proto, "vetoes_info", timeout=10)
+        assert msg.get("forced") is True
+        assert msg["vetoes"] == gen_vetoes([])
+        assert player.vetoes.to_dict()["vetoes"] == gen_vetoes([])
+        assert player.state == PlayerState.IDLE
+    finally:
+        async with database.acquire() as conn:
+            await conn.execute(
+                "UPDATE matchmaker_queue_map_pool SET veto_tokens_per_player = 1 WHERE id = 1"
+            )
+
+
+@fast_forward(120)
+async def test_map_pool_changes_causing_silent_update_and_not_stops_search(player_service, lobby_server, database, ladder_service):
+    player_id, proto = await queue_player_for_matchmaking(
+        ("test", "test_password"), lobby_server, "ladder1v1", gen_vetoes([(1, 1, 1)])
+    )
+    player = player_service.get_player(player_id)
+    assert player.state == PlayerState.SEARCHING_LADDER
+
+    try:
+        async with database.acquire() as conn:
+            await conn.execute(
+                "DELETE FROM map_pool_map_version WHERE id = 1"
+            )
+        await ladder_service.update_data()
+        msg = await read_until_command(proto, "vetoes_info", timeout=10)
+        print(f"Received vetoes_info: {msg}")
+        assert msg.get("forced") is False
+        assert msg["vetoes"] == gen_vetoes([])
+        assert player.state == PlayerState.SEARCHING_LADDER
+    finally:
+        async with database.acquire() as conn:
+            await conn.execute(
+                "REPLACE INTO map_pool_map_version (id, map_pool_id, map_version_id, weight, map_params) VALUES (1, 1, 15, 1, NULL)"
+            )

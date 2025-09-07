@@ -50,7 +50,7 @@ class VetoService(Service):
         """
         Update the cached veto config to match the new queues.
 
-        Returns list of players who had maps unvetoed due to config changes.
+        Returns list of players whose vetoes were force-adjusted due to config changes.
         These players should be removed from matchmaking queues.
         """
 
@@ -58,6 +58,13 @@ class VetoService(Service):
 
         if self.pools_veto_data != pools_vetodata:
             self.pools_veto_data = pools_vetodata
+            
+            # Build lookup dict once for all players
+            pool_maps_by_bracket = {
+                pool_data.matchmaker_queue_map_pool_id: set(pool_data.map_pool_map_version_ids)
+                for pool_data in self.pools_veto_data
+            }
+            
             affected_players = []
             for player in self.player_service.all_players:
                 # TODO: Can we avoid force adjusting veto selections for players.
@@ -65,17 +72,18 @@ class VetoService(Service):
 
                 if adjusted_vetoes != player.vetoes._vetoes:
                     tokens_amount_for_some_map_was_reduced = any(
-                        adjusted_vetoes.get(bracket, {}).get(map_id, 0) < player.vetoes._vetoes.get(bracket, {}).get(map_id, 0)
-                        for bracket in adjusted_vetoes
-                        for map_id in adjusted_vetoes[bracket]
+                        map_id in pool_maps_by_bracket.get(bracket, set()) 
+                            and original_tokens > adjusted_vetoes.get(bracket, {}).get(map_id, 0)
+                        for bracket, bracket_vetoes in player.vetoes._vetoes.items()
+                        for map_id, original_tokens in bracket_vetoes.items()
                     )
                     player.vetoes._vetoes = adjusted_vetoes
+                    player.write_message({
+                        "command": "vetoes_info",
+                        "forced": tokens_amount_for_some_map_was_reduced,
+                        **player.vetoes.to_dict(),
+                    })
                     if tokens_amount_for_some_map_was_reduced:
-                        player.write_message({
-                            "command": "vetoes_info",
-                            "forced": True,
-                            **player.vetoes.to_dict(),
-                        })
                         affected_players.append(player)
 
             return affected_players
