@@ -29,6 +29,7 @@ class GameLaunchOptions(NamedTuple):
     expected_players: Optional[int] = None
     map_position: Optional[int] = None
     game_options: Optional[dict[str, Any]] = None
+    map_pool_map_version_id: Optional[int] = None
 
 
 class MatchmakerQueueMapPoolVetoData(NamedTuple):

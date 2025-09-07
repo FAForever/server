@@ -75,6 +75,10 @@ insert into login (id, login, email, password, create_time) values
   (104, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), '2000-01-01 00:00:00'),
   (105, 'tmm1', 'tmm1@example.com', SHA2('tmm1', 256), '2000-01-01 00:00:00'),
   (106, 'tmm2', 'tmm2@example.com', SHA2('tmm2', 256), '2000-01-01 00:00:00'),
+  (107, 'ladder801', 'ladder801@example.com', SHA2('ladder801', 256), '2000-01-01 00:00:00'),
+  (108, 'ladder802', 'ladder802@example.com', SHA2('ladder802', 256), '2000-01-01 00:00:00'),
+  (109, 'ladder1001', 'ladder1001@example.com', SHA2('ladder1001', 256), '2000-01-01 00:00:00'),
+  (110, 'ladder1002', 'ladder1002@example.com', SHA2('ladder1002', 256), '2000-01-01 00:00:00'),
   (200, 'banme', 'banme@example.com', SHA2('banme', 256), '2000-01-01 00:00:00'),
   (201, 'ban_revoked', 'ban_revoked@example.com', SHA2('ban_revoked', 256), '2000-01-01 00:00:00'),
   (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), '2000-01-01 00:00:00'),
@@ -127,7 +131,15 @@ insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderbo
   (102, 1500, 500, 0, 1),
   (102, 1500, 500, 0, 2),
   (105, 500, 100, 20, 3),
-  (106, 900, 75, 20, 3)
+  (106, 900, 75, 20, 3),
+  (107, 951, 50, 5, 1),
+  (107, 951, 50, 5, 2),
+  (108, 952, 50, 5, 1),
+  (108, 952, 50, 5, 2),
+  (109, 1151, 50, 5, 1),
+  (109, 1151, 50, 5, 2),
+  (110, 1152, 50, 5, 1),
+  (110, 1152, 50, 5, 2)
 ;
 
 -- UniqueID_exempt
@@ -302,14 +314,14 @@ insert into map_pool_map_version (id, map_pool_id, map_version_id, weight, map_p
   (17, 4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 3, "version": "0.0.0"}'),
   (18, 4, NULL, 1, '{"type": "beroxis", "size": 512, "spawns": 2, "version": "0.0.0"}');
 
-insert into matchmaker_queue_map_pool (id, matchmaker_queue_id, map_pool_id, min_rating, max_rating) values
-  (1, 1, 1, NULL, 800),
-  (2, 1, 2, 800, NULL),
-  (3, 1, 3, 1000, NULL),
-  (4, 2, 3, NULL, NULL),
-  (5, 4, 4, NULL, NULL),
-  (6, 5, 1, NULL, NULL),
-  (7, 6, 1, NULL, NULL);
+insert into matchmaker_queue_map_pool (id, matchmaker_queue_id, map_pool_id, min_rating, max_rating, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto) values
+  (1, 1, 1, NULL, 800, 1, 1, 1.0),
+  (2, 1, 2, 800, 999, 2, 0, 1.0),
+  (3, 1, 3, 1000, NULL, 2, 2, 1.0),
+  (4, 2, 3, NULL, NULL, 1, 2, 1.0),
+  (5, 4, 4, NULL, NULL, 0, 1, 1.0),
+  (6, 5, 1, NULL, NULL, 0, 1, 1.0),
+  (7, 6, 1, NULL, NULL, 0, 1, 1.0);
 
 insert into friends_and_foes (user_id, subject_id, `status`) values
   (1, 400, 'FOE'),

@@ -50,7 +50,7 @@ class VetoService(Service):
         """
         Update the cached veto config to match the new queues.
 
-        Returns list of players whose vetoes were force-adjusted due to config changes.
+        Returns list of players who had maps unvetoed due to config changes.
         These players should be removed from matchmaking queues.
         """
 
@@ -62,14 +62,21 @@ class VetoService(Service):
             for player in self.player_service.all_players:
                 # TODO: Can we avoid force adjusting veto selections for players.
                 adjusted_vetoes = self._adjust_vetoes(player.vetoes._vetoes)
+
                 if adjusted_vetoes != player.vetoes._vetoes:
+                    tokens_amount_for_some_map_was_reduced = any(
+                        adjusted_vetoes.get(bracket, {}).get(map_id, 0) < player.vetoes._vetoes.get(bracket, {}).get(map_id, 0)
+                        for bracket in adjusted_vetoes
+                        for map_id in adjusted_vetoes[bracket]
+                    )
                     player.vetoes._vetoes = adjusted_vetoes
-                    player.write_message({
-                        "command": "vetoes_info",
-                        "forced": True,
-                        **player.vetoes.to_dict(),
-                    })
-                    affected_players.append(player)
+                    if tokens_amount_for_some_map_was_reduced:
+                        player.write_message({
+                            "command": "vetoes_info",
+                            "forced": True,
+                            **player.vetoes.to_dict(),
+                        })
+                        affected_players.append(player)
 
             return affected_players
 
@@ -124,6 +131,7 @@ class VetoService(Service):
 
         if adjusted_vetoes != player.vetoes._vetoes:
             player.vetoes._vetoes = adjusted_vetoes
+        if adjusted_vetoes != new_vetoes:
             await player.send_message({
                 "command": "vetoes_info",
                 "forced": False,

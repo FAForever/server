@@ -168,9 +168,58 @@ async def start_search(proto, queue_name="ladder1v1"):
     )
 
 
-async def queue_player_for_matchmaking(user, lobby_server, queue_name="ladder1v1"):
+async def end_game_as_draw(protos, game_id):
+    if not protos:
+        raise ValueError("Need at least 1 proto")
+
+    for proto in protos:
+        await proto.send_message({
+            "command": "GameState",
+            "target": "game",
+            "args": ["Launching"]
+        })
+
+    for proto in protos:
+        await read_until_launched(proto, game_id)
+
+    for proto in protos:
+        for i in range(1, len(protos) + 1):
+            await proto.send_message({
+                "command": "GameResult",
+                "target": "game",
+                "args": [i, "draw 0"]
+            })
+
+    for proto in protos:
+        await proto.send_message({
+            "command": "GameEnded",
+            "target": "game",
+            "args": []
+        })
+
+
+def gen_vetoes(veto_tuples):
+    return [
+        {
+            "matchmaker_queue_map_pool_id": matchmaker_queue_map_pool_id,
+            "map_pool_map_version_id": map_pool_map_version_id,
+            "veto_tokens_applied": veto_tokens_applied
+        }
+        for matchmaker_queue_map_pool_id, map_pool_map_version_id, veto_tokens_applied in veto_tuples
+    ]
+
+
+async def queue_player_for_matchmaking(user, lobby_server, queue_name="ladder1v1", vetoes=[]):
     player_id, _, proto = await connect_and_sign_in(user, lobby_server)
     await read_until_command(proto, "game_info")
+
+    if vetoes:
+        await proto.send_message({
+            "command": "set_player_vetoes",
+            "vetoes": vetoes
+        })
+        await read_until_command(proto, "vetoes_info")
+
     await start_search(proto, queue_name)
 
     return player_id, proto

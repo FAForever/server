@@ -575,10 +575,7 @@ class LadderService(Service):
             game_map = map_pool.choose_map(played_map_ids, initial_weights)
 
             self._logger.debug("______game_map________________: %s", game_map)
-            # debug thing please ignore
-            # for player in all_players:
-            #  player.state = PlayerState.IDLE
-            # return
+
             game = self.game_service.create_game(
                 game_class=LadderGame,
                 game_mode=queue.featured_mod,
@@ -629,7 +626,8 @@ class LadderService(Service):
                     game_options=game_options,
                     team=game.get_player_option(player.id, "Team"),
                     faction=game.get_player_option(player.id, "Faction"),
-                    map_position=game.get_player_option(player.id, "StartSpot")
+                    map_position=game.get_player_option(player.id, "StartSpot"),
+                    map_pool_map_version_id=game_map.map_pool_map_version_id
                 )
 
             await self.launch_match(game, host, all_guests, make_game_options)
