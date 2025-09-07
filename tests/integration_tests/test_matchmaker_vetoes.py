@@ -1,8 +1,13 @@
+from server.players import PlayerState
 from tests.utils import fast_forward
 
-from server.players import PlayerState
 from .conftest import connect_and_sign_in, read_until_command
-from .test_game import queue_player_for_matchmaking, client_response, end_game_as_draw, gen_vetoes
+from .test_game import (
+    client_response,
+    end_game_as_draw,
+    gen_vetoes,
+    queue_player_for_matchmaking
+)
 
 
 async def test_vetoes_are_assigned_to_player_with_adjusting(lobby_server, player_service):
