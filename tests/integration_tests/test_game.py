@@ -408,21 +408,7 @@ async def test_game_join_log(lobby_server, database):
         "mod": "faf",
         "visibility": "public",
     })
-    msg = await read_until_command(host_proto, "game_launch")
-    game_id = int(msg["uid"])
-
-    msg = await read_until_command(host_proto, "game_info")
-
-    assert msg["hosted_at"] is None
-    assert msg["launched_at"] is None
-
-    await open_fa(host_proto)
-    await read_until_command(host_proto, "HostGame", target="game")
-
-    msg = await read_until_command(host_proto, "game_info")
-    hosted_at = msg["hosted_at"]
-    assert datetime.fromisoformat(hosted_at) <= datetime_now()
-    assert msg["launched_at"] is None
+    game_id = await host_game(host_proto)
 
     # Join a player
     await join_game(guest_proto, game_id)
@@ -438,6 +424,26 @@ async def test_game_join_log(lobby_server, database):
         )
         row = result.one()
         assert row is not None
+
+    # Leave and re-join
+    await guest_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Ended"]
+    })
+    await join_game(guest_proto, game_id)
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select(game_join_log).where(
+                and_(
+                    game_join_log.c.game_id == game_id,
+                    game_join_log.c.player_id == guest_id
+                )
+            )
+        )
+        rows = result.fetchall()
+        assert len(rows) == 2
 
 
 @fast_forward(60)
