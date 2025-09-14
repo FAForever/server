@@ -1,6 +1,7 @@
 from sqlalchemy import (
     TIME,
     TIMESTAMP,
+    BigInteger,
     Boolean,
     Column,
     DateTime,
@@ -111,6 +112,13 @@ game_featuredMods = Table(
     Column("git_branch",     String),
     Column("file_extension", String),
     Column("allow_override", Boolean)
+)
+
+game_join_log = Table(
+    "game_join_log", metadata,
+    Column("id",         BigInteger, primary_key=True),
+    Column("player_id",  Integer,    ForeignKey("login.id"), nullable=False),
+    Column("game_id",    Integer,    nullable=False),
 )
 
 game_player_stats = Table(
