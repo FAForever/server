@@ -1001,6 +1001,17 @@ class LobbyConnection:
         uuid = int(message[&#34;uid&#34;])
         password = message.get(&#34;password&#34;)
 
+        async with self._db.acquire() as conn:
+            try:
+                await conn.execute(
+                    game_join_log.insert().values(
+                        player_id=self.player.id,
+                        game_id=uuid,
+                    )
+                )
+            except DBAPIError:
+                self._logger.exception(&#34;writing to game join log failed&#34;)
+
         self._logger.debug(&#34;joining: %d with pw: %s&#34;, uuid, password)
         try:
             game = self.game_service[uuid]
@@ -2066,6 +2077,17 @@ async def command_game_join(self, message):
 
     uuid = int(message[&#34;uid&#34;])
     password = message.get(&#34;password&#34;)
+
+    async with self._db.acquire() as conn:
+        try:
+            await conn.execute(
+                game_join_log.insert().values(
+                    player_id=self.player.id,
+                    game_id=uuid,
+                )
+            )
+        except DBAPIError:
+            self._logger.exception(&#34;writing to game join log failed&#34;)
 
     self._logger.debug(&#34;joining: %d with pw: %s&#34;, uuid, password)
     try:
