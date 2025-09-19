@@ -1,13 +1,13 @@
 ###############
 # Build image #
 ###############
-FROM python:3.10-slim as builder
+FROM python:3.13-slim as builder
 
 # Need git for installing aiomysql
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends git
 
-RUN pip install pipenv==2023.4.20
+RUN pip install pipenv==2025.0.4
 
 WORKDIR /code/
 
@@ -22,7 +22,7 @@ RUN PIPENV_VENV_IN_PROJECT=1 pipenv run pip install .
 #################
 # Runtime image #
 #################
-FROM python:3.10-slim
+FROM python:3.13-slim
 
 ARG GITHUB_REF
 ENV VERSION=$GITHUB_REF
