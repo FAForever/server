@@ -14,11 +14,6 @@ DB_LOGIN: "root"
 DB_PASSWORD: "banana"
 DB_NAME: "faf"
 
-API_CLIENT_ID: "client_id"
-API_CLIENT_SECRET: "banana"
-API_TOKEN_URI: "https://api.test.faforever.com/oauth/token"
-API_BASE_URL: "https://api.test.faforever.com/"
-
 WWW_URL: "https://www.faforever.com"
 CONTENT_URL: "http://content.faforever.com"
 FAF_POLICY_SERVER_BASE_URL: "http://faf-policy-server"
