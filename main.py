@@ -42,7 +42,7 @@ def log_signal(func):
 
 
 async def main():
-    global startup_time, shutdown_time
+    global shutdown_time
 
     logger.info(
         "Lobby %s (Python %s) on %s named %s",
