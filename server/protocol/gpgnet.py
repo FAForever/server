@@ -6,7 +6,6 @@ class GpgNetServerProtocol(metaclass=ABCMeta):
     """
     Defines an interface for the server side GPGNet protocol
     """
-
     async def send_ConnectToPeer(self, player_name: str, player_uid: int, offer: bool):
         """
         Tells a client that has a listening LobbyComm instance to connect to the
