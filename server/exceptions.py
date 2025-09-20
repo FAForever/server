@@ -2,7 +2,7 @@
 Common exception definitions
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 
 import humanize
 
@@ -40,7 +40,7 @@ class BanError(Exception):
         )
 
     def _ban_duration_text(self):
-        ban_duration = self.ban_expiry - datetime.utcnow()
+        ban_duration = self.ban_expiry - datetime.now(UTC)
         if ban_duration.days > 365 * 100:
             return "forever"
         humanized_ban_duration = humanize.precisedelta(

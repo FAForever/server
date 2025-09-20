@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from unittest import mock
 
 import pytest
@@ -708,7 +708,7 @@ async def test_handle_action_OperationComplete_duplicate(
         await conn.execute(
             game_stats.insert().values(
                 id=coop_game.id,
-                startTime=datetime.utcnow(),
+                startTime=datetime.now(UTC),
                 gameName="Another test game",
                 gameType="0",
                 gameMod=6,

@@ -13,7 +13,7 @@ import os
 import signal
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, UTC
 from functools import wraps
 
 import humanize
@@ -147,7 +147,7 @@ async def main():
     server.metrics.info.info({
         "version": info.VERSION,
         "python_version": info.PYTHON_VERSION,
-        "start_time": datetime.utcnow().strftime("%m-%d %H:%M"),
+        "start_time": datetime.now(UTC).strftime("%m-%d %H:%M"),
         "game_uid": str(game_service.game_id_counter)
     })
     logger.info(
