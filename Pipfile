@@ -27,19 +27,19 @@ pyyaml = "*"
 sortedcontainers = "*"
 sqlalchemy = ">=2.0.0"
 trueskill = "*"
-uvloop = {version = "*", markers = "sys_platform != 'win32'"}
 tzdata = "*"
+uvloop = {version = "*", markers = "sys_platform != 'win32'"}
 
 [dev-packages]
 flaky = "*"
 hypothesis = "*"  # Versions between 6.47.1 and 6.56.4 added a prerelease dependency. See https://github.com/pypa/pipenv/issues/1760
 pdoc3 = "*"
-vulture = "*"
-websockets = "*"
-pytest-asyncio = "*"
 pytest = "*"
+pytest-asyncio = "*"
 pytest-cov = "*"
 pytest-mock = "*"
+vulture = "*"
+websockets = "*"
 
 [requires]
 python_version = "3.13"
