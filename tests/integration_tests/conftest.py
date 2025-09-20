@@ -535,7 +535,7 @@ async def connect_and_sign_in(
         credentials,
         lobby_server: ServerContext,
         address: Optional[tuple[str, int]] = None
-) -> AsyncGenerator[tuple[Any, Any, Protocol], Any]:
+):
     async with connect_client(lobby_server, address) as proto:
         session = await get_session(proto)
         await perform_login(proto, credentials)

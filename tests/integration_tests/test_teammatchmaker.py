@@ -537,10 +537,10 @@ async def test_game_ratings(lobby_server):
         # Report results
         for proto in protos:
             for result in (
-                    [1, "victory 10"],
-                    [2, "defeat -10"],
-                    [3, "victory 10"],
-                    [4, "defeat -10"]
+                [1, "victory 10"],
+                [2, "defeat -10"],
+                [3, "victory 10"],
+                [4, "defeat -10"]
             ):
                 await proto.send_message({
                     "target": "game",
@@ -694,10 +694,10 @@ async def test_ratings_initialized_based_on_global_persisted(
         army4 = msg4["map_position"]
 
         for result in (
-                [army1, "defeat -10"],
-                [army2, "defeat -10"],
-                [army3, "victory 10"],
-                [army4, "defeat -10"],
+            [army1, "defeat -10"],
+            [army2, "defeat -10"],
+            [army3, "victory 10"],
+            [army4, "defeat -10"],
         ):
             for proto in protos:
                 await proto.send_message({

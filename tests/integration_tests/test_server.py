@@ -61,7 +61,7 @@ async def test_server_proxy_mode_direct(lobby_server_proxy, caplog):
 async def test_login_timeout(lobby_server, monkeypatch, caplog):
     monkeypatch.setattr(config, "LOGIN_TIMEOUT", 5)
 
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await asyncio.sleep(5)
 
         with pytest.raises(DisconnectedError), caplog.at_level("TRACE"):
@@ -78,7 +78,7 @@ async def test_disconnect_before_login_timeout(
 ):
     monkeypatch.setattr(config, "LOGIN_TIMEOUT", 5)
 
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await asyncio.sleep(1)
 
         with pytest.raises(DisconnectedError), caplog.at_level("TRACE"):
@@ -91,7 +91,7 @@ async def test_disconnect_before_login_timeout(
 
 
 async def test_server_deprecated_client(lobby_server):
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await proto.send_message({
             "command": "ask_session",
             "user_agent": "faf-client",
@@ -101,7 +101,7 @@ async def test_server_deprecated_client(lobby_server):
 
         assert msg["command"] == "notice"
 
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await proto.send_message({"command": "ask_session", "version": "0.0.0"})
         msg = await proto.read_message()
 
@@ -331,19 +331,19 @@ async def test_player_info_broadcast(lobby_server):
             await read_until(
                 p2,
                 lambda m: (
-                        m["command"] == "player_info"
-                        and any(map(lambda d: d["login"] == "test", m["players"]))
+                    m["command"] == "player_info"
+                    and any(map(lambda d: d["login"] == "test", m["players"]))
                 )
             )
 
         await read_until(
             p2,
             lambda m: (
-                    m["command"] == "player_info"
-                    and any(map(
-                lambda d: d["login"] == "test" and d.get("state") == "offline",
-                m["players"]
-            ))
+                m["command"] == "player_info"
+                and any(map(
+                    lambda d: d["login"] == "test" and d.get("state") == "offline",
+                    m["players"]
+                ))
             )
         )
 
@@ -446,7 +446,7 @@ async def test_game_info_sent_to_friends(lobby_server):
         assert msg["title"] == "Friends Only"
         assert msg["visibility"] == "friends"
 
-        async with  connect_and_sign_in(
+        async with connect_and_sign_in(
                 ("test", "test_password"), lobby_server
         ) as (_, _, proto2), connect_and_sign_in(
             ("Rhiza", "puff_the_magic_dragon"), lobby_server

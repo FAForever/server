@@ -13,7 +13,7 @@ from .conftest import (
 
 
 async def test_server_login_invalid(lobby_server):
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         # Try a user that doesn't exist
         await perform_login(proto, ("Cat", "epic"))
         auth_failed_msg = {
@@ -34,7 +34,7 @@ async def test_server_login_invalid(lobby_server):
     ("ban_long_time", "ban_long_time")
 ])
 async def test_server_ban(lobby_server, user):
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await perform_login(proto, user)
         msg = await proto.read_message()
         assert msg == {
@@ -54,7 +54,7 @@ async def test_server_ban(lobby_server, user):
 ])
 async def test_server_ban_token(lobby_server, user, jwk_priv_key, jwk_kid):
     user_name, user_id = user
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await proto.send_message({
             "command": "auth",
             "version": "1.0.0-dev",
@@ -85,7 +85,7 @@ async def test_server_ban_token(lobby_server, user, jwk_priv_key, jwk_kid):
 
 @pytest.mark.parametrize("user", ["ban_revoked", "ban_expired"])
 async def test_server_ban_revoked_or_expired(lobby_server, user):
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await perform_login(proto, (user, user))
         msg = await proto.read_message()
 
@@ -94,7 +94,7 @@ async def test_server_ban_revoked_or_expired(lobby_server, user):
 
 
 async def test_server_login_valid(lobby_server, fixed_time):
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await perform_login(proto, ("Rhiza", "puff_the_magic_dragon"))
         msg = await proto.read_message()
         me = {
@@ -140,7 +140,7 @@ async def test_server_login_valid(lobby_server, fixed_time):
 
 
 async def test_server_login_valid_admin(lobby_server, fixed_time):
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await perform_login(proto, ("test", "test_password"))
         msg = await proto.read_message()
         me = {
@@ -186,7 +186,7 @@ async def test_server_login_valid_admin(lobby_server, fixed_time):
 
 
 async def test_server_login_valid_moderator(lobby_server, fixed_time):
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await perform_login(proto, ("moderator", "moderator"))
         msg = await proto.read_message()
         me = {
@@ -265,7 +265,7 @@ async def test_server_login_double(lobby_server):
 
 @fast_forward(20)
 async def test_server_login_double_message(lobby_server):
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await perform_login(proto, ("test", "test_password"))
         await read_until_command(proto, "game_info", timeout=5)
 
@@ -280,7 +280,7 @@ async def test_server_login_double_message(lobby_server):
 
 
 async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid, fixed_time):
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await proto.send_message({
             "command": "auth",
             "version": "1.0.0-dev",
@@ -344,7 +344,7 @@ async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid, fix
 
 
 async def test_server_login_token_bad_id(lobby_server, jwk_priv_key, jwk_kid):
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await proto.send_message({
             "command": "auth",
             "version": "1.0.0-dev",
@@ -370,7 +370,7 @@ async def test_server_login_token_bad_id(lobby_server, jwk_priv_key, jwk_kid):
 
 
 async def test_server_login_token_expired(lobby_server, jwk_priv_key, jwk_kid):
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await proto.send_message({
             "command": "auth",
             "version": "1.0.0-dev",
@@ -394,7 +394,7 @@ async def test_server_login_token_expired(lobby_server, jwk_priv_key, jwk_kid):
 async def test_server_login_token_malformed(lobby_server, jwk_priv_key, jwk_kid):
     """This scenario could only happen if the hydra signed a token that
     was missing critical data"""
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await proto.send_message({
             "command": "auth",
             "version": "1.0.0-dev",
@@ -420,7 +420,7 @@ async def test_server_login_token_lobby_scope_missing(
 ):
     """This scenario could only happen if the hydra signed a token that
     was missing critical data"""
-    async with  connect_client(lobby_server) as proto:
+    async with connect_client(lobby_server) as proto:
         await proto.send_message({
             "command": "auth",
             "version": "1.0.0-dev",
