@@ -4,7 +4,6 @@ import jwt
 import pytest
 
 from tests.utils import fast_forward
-
 from .conftest import (
     connect_and_sign_in,
     connect_client,
@@ -14,20 +13,20 @@ from .conftest import (
 
 
 async def test_server_login_invalid(lobby_server):
-    proto = await connect_client(lobby_server)
-    # Try a user that doesn't exist
-    await perform_login(proto, ("Cat", "epic"))
-    auth_failed_msg = {
-        "command": "authentication_failed",
-        "text": "Login not found or password incorrect. They are case sensitive."
-    }
-    msg = await proto.read_message()
-    assert msg == auth_failed_msg
+    async with  connect_client(lobby_server) as proto:
+        # Try a user that doesn't exist
+        await perform_login(proto, ("Cat", "epic"))
+        auth_failed_msg = {
+            "command": "authentication_failed",
+            "text": "Login not found or password incorrect. They are case sensitive."
+        }
+        msg = await proto.read_message()
+        assert msg == auth_failed_msg
 
-    # Try a user that exists, but use the wrong password
-    await perform_login(proto, ("test", "epic"))
-    msg = await proto.read_message()
-    assert msg == auth_failed_msg
+        # Try a user that exists, but use the wrong password
+        await perform_login(proto, ("test", "epic"))
+        msg = await proto.read_message()
+        assert msg == auth_failed_msg
 
 
 @pytest.mark.parametrize("user", [
@@ -35,18 +34,18 @@ async def test_server_login_invalid(lobby_server):
     ("ban_long_time", "ban_long_time")
 ])
 async def test_server_ban(lobby_server, user):
-    proto = await connect_client(lobby_server)
-    await perform_login(proto, user)
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "notice",
-        "style": "error",
-        "text": (
-            "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
-            "<br><br><i>If you would like to appeal this ban, please send an "
-            "email to: moderation@faforever.com</i>"
-        )
-    }
+    async with  connect_client(lobby_server) as proto:
+        await perform_login(proto, user)
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "notice",
+            "style": "error",
+            "text": (
+                "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
+                "<br><br><i>If you would like to appeal this ban, please send an "
+                "email to: moderation@faforever.com</i>"
+            )
+        }
 
 
 @pytest.mark.parametrize("user", [
@@ -55,180 +54,180 @@ async def test_server_ban(lobby_server, user):
 ])
 async def test_server_ban_token(lobby_server, user, jwk_priv_key, jwk_kid):
     user_name, user_id = user
-    proto = await connect_client(lobby_server)
-    await proto.send_message({
-        "command": "auth",
-        "version": "1.0.0-dev",
-        "user_agent": "faf-client",
-        "token": jwt.encode({
-            "sub": str(user_id),
-            "user_name": user_name,
-            "scp": ["lobby"],
-            "exp": int(time() + 1000),
-            "authorities": [],
-            "non_locked": True,
-            "jti": "",
-            "client_id": ""
-        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
-        "unique_id": "some_id"
-    })
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "notice",
-        "style": "error",
-        "text": (
-            "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
-            "<br><br><i>If you would like to appeal this ban, please send an "
-            "email to: moderation@faforever.com</i>"
-        )
-    }
+    async with  connect_client(lobby_server) as proto:
+        await proto.send_message({
+            "command": "auth",
+            "version": "1.0.0-dev",
+            "user_agent": "faf-client",
+            "token": jwt.encode({
+                "sub": str(user_id),
+                "user_name": user_name,
+                "scp": ["lobby"],
+                "exp": int(time() + 1000),
+                "authorities": [],
+                "non_locked": True,
+                "jti": "",
+                "client_id": ""
+            }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
+            "unique_id": "some_id"
+        })
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "notice",
+            "style": "error",
+            "text": (
+                "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
+                "<br><br><i>If you would like to appeal this ban, please send an "
+                "email to: moderation@faforever.com</i>"
+            )
+        }
 
 
 @pytest.mark.parametrize("user", ["ban_revoked", "ban_expired"])
 async def test_server_ban_revoked_or_expired(lobby_server, user):
-    proto = await connect_client(lobby_server)
-    await perform_login(proto, (user, user))
-    msg = await proto.read_message()
+    async with  connect_client(lobby_server) as proto:
+        await perform_login(proto, (user, user))
+        msg = await proto.read_message()
 
-    assert msg["command"] == "welcome"
-    assert msg["login"] == user
+        assert msg["command"] == "welcome"
+        assert msg["login"] == user
 
 
 async def test_server_login_valid(lobby_server, fixed_time):
-    proto = await connect_client(lobby_server)
-    await perform_login(proto, ("Rhiza", "puff_the_magic_dragon"))
-    msg = await proto.read_message()
-    me = {
-        "id": 3,
-        "login": "Rhiza",
-        "clan": "123",
-        "country": "",
-        "ratings": {
-            "global": {
-                "rating": [1650.0, 62.52],
-                "number_of_games": 2
+    async with  connect_client(lobby_server) as proto:
+        await perform_login(proto, ("Rhiza", "puff_the_magic_dragon"))
+        msg = await proto.read_message()
+        me = {
+            "id": 3,
+            "login": "Rhiza",
+            "clan": "123",
+            "country": "",
+            "ratings": {
+                "global": {
+                    "rating": [1650.0, 62.52],
+                    "number_of_games": 2
+                },
+                "ladder_1v1": {
+                    "rating": [1650.0, 62.52],
+                    "number_of_games": 2
+                }
             },
-            "ladder_1v1": {
-                "rating": [1650.0, 62.52],
-                "number_of_games": 2
-            }
-        },
-        "global_rating": [1650.0, 62.52],
-        "ladder_rating": [1650.0, 62.52],
-        "number_of_games": 2
-    }
-    assert msg == {
-        "command": "welcome",
-        "me": me,
-        "current_time": "1970-01-01T00:00:00+00:00",
-        "id": 3,
-        "login": "Rhiza"
-    }
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "player_info",
-        "players": [me]
-    }
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "social",
-        "autojoin": ["#123_clan"],
-        "channels": ["#123_clan"],
-        "friends": [],
-        "foes": [],
-        "power": 0
-    }
+            "global_rating": [1650.0, 62.52],
+            "ladder_rating": [1650.0, 62.52],
+            "number_of_games": 2
+        }
+        assert msg == {
+            "command": "welcome",
+            "me": me,
+            "current_time": "1970-01-01T00:00:00+00:00",
+            "id": 3,
+            "login": "Rhiza"
+        }
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "player_info",
+            "players": [me]
+        }
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "social",
+            "autojoin": ["#123_clan"],
+            "channels": ["#123_clan"],
+            "friends": [],
+            "foes": [],
+            "power": 0
+        }
 
 
 async def test_server_login_valid_admin(lobby_server, fixed_time):
-    proto = await connect_client(lobby_server)
-    await perform_login(proto, ("test", "test_password"))
-    msg = await proto.read_message()
-    me = {
-        "id": 1,
-        "login": "test",
-        "clan": "678",
-        "country": "",
-        "ratings": {
-            "global": {
-                "rating": [2000.0, 125.0],
-                "number_of_games": 5
+    async with  connect_client(lobby_server) as proto:
+        await perform_login(proto, ("test", "test_password"))
+        msg = await proto.read_message()
+        me = {
+            "id": 1,
+            "login": "test",
+            "clan": "678",
+            "country": "",
+            "ratings": {
+                "global": {
+                    "rating": [2000.0, 125.0],
+                    "number_of_games": 5
+                },
+                "ladder_1v1": {
+                    "rating": [2000.0, 125.0],
+                    "number_of_games": 5
+                }
             },
-            "ladder_1v1": {
-                "rating": [2000.0, 125.0],
-                "number_of_games": 5
-            }
-        },
-        "global_rating": [2000.0, 125.0],
-        "ladder_rating": [2000.0, 125.0],
-        "number_of_games": 5,
-    }
-    assert msg == {
-        "command": "welcome",
-        "me": me,
-        "current_time": "1970-01-01T00:00:00+00:00",
-        "id": 1,
-        "login": "test"
-    }
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "player_info",
-        "players": [me]
-    }
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "social",
-        "autojoin": ["#678_clan"],
-        "channels": ["#678_clan"],
-        "friends": [],
-        "foes": [400],
-        "power": 2
-    }
+            "global_rating": [2000.0, 125.0],
+            "ladder_rating": [2000.0, 125.0],
+            "number_of_games": 5,
+        }
+        assert msg == {
+            "command": "welcome",
+            "me": me,
+            "current_time": "1970-01-01T00:00:00+00:00",
+            "id": 1,
+            "login": "test"
+        }
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "player_info",
+            "players": [me]
+        }
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "social",
+            "autojoin": ["#678_clan"],
+            "channels": ["#678_clan"],
+            "friends": [],
+            "foes": [400],
+            "power": 2
+        }
 
 
 async def test_server_login_valid_moderator(lobby_server, fixed_time):
-    proto = await connect_client(lobby_server)
-    await perform_login(proto, ("moderator", "moderator"))
-    msg = await proto.read_message()
-    me = {
-        "id": 20,
-        "login": "moderator",
-        "country": "",
-        "ratings": {
-            "global": {
-                "rating": [1500, 500],
-                "number_of_games": 0
+    async with  connect_client(lobby_server) as proto:
+        await perform_login(proto, ("moderator", "moderator"))
+        msg = await proto.read_message()
+        me = {
+            "id": 20,
+            "login": "moderator",
+            "country": "",
+            "ratings": {
+                "global": {
+                    "rating": [1500, 500],
+                    "number_of_games": 0
+                },
+                "ladder_1v1": {
+                    "rating": [1500, 500],
+                    "number_of_games": 0
+                }
             },
-            "ladder_1v1": {
-                "rating": [1500, 500],
-                "number_of_games": 0
-            }
-        },
-        "global_rating": [1500, 500],
-        "ladder_rating": [1500, 500],
-        "number_of_games": 0
-    }
-    assert msg == {
-        "command": "welcome",
-        "me": me,
-        "current_time": "1970-01-01T00:00:00+00:00",
-        "id": 20,
-        "login": "moderator"
-    }
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "player_info",
-        "players": [me]
-    }
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "social",
-        "autojoin": ["#moderators"],
-        "channels": ["#moderators"],
-        "friends": [],
-        "foes": [],
-        "power": 1
-    }
+            "global_rating": [1500, 500],
+            "ladder_rating": [1500, 500],
+            "number_of_games": 0
+        }
+        assert msg == {
+            "command": "welcome",
+            "me": me,
+            "current_time": "1970-01-01T00:00:00+00:00",
+            "id": 20,
+            "login": "moderator"
+        }
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "player_info",
+            "players": [me]
+        }
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "social",
+            "autojoin": ["#moderators"],
+            "channels": ["#moderators"],
+            "friends": [],
+            "foes": [],
+            "power": 1
+        }
 
 
 @pytest.mark.parametrize("user", [
@@ -240,208 +239,207 @@ async def test_server_login_valid_moderator(lobby_server, fixed_time):
 async def test_policy_server_contacted(lobby_server, policy_server, player_service, user):
     player_service.is_uniqueid_exempt = lambda _: False
 
-    _, _, proto = await connect_and_sign_in(user, lobby_server)
-    await read_until_command(proto, "game_info")
+    async with connect_and_sign_in(user, lobby_server) as (_, _, proto):
+        await read_until_command(proto, "game_info")
 
-    policy_server.verify.assert_called_once()
+        policy_server.verify.assert_called_once()
 
 
 @fast_forward(15)
 async def test_server_login_double(lobby_server):
-    proto = await connect_client(lobby_server)
-    await perform_login(proto, ("test", "test_password"))
-    await read_until_command(proto, "game_info", timeout=5)
+    async with connect_client(lobby_server) as proto, connect_client(lobby_server) as proto2:
+        await perform_login(proto, ("test", "test_password"))
+        await read_until_command(proto, "game_info", timeout=5)
 
-    # Sign in again with a new protocol object
-    proto2 = await connect_client(lobby_server)
-    await perform_login(proto2, ("test", "test_password"))
-    await read_until_command(proto2, "welcome", timeout=5)
+        # Sign in again with a new protocol object
+        await perform_login(proto2, ("test", "test_password"))
+        await read_until_command(proto2, "welcome", timeout=5)
 
-    msg = await read_until_command(proto, "notice", timeout=10)
-    assert msg == {
-        "command": "notice",
-        "style": "kick",
-        "text": "You have been signed out because you signed in elsewhere."
-    }
+        msg = await read_until_command(proto, "notice", timeout=10)
+        assert msg == {
+            "command": "notice",
+            "style": "kick",
+            "text": "You have been signed out because you signed in elsewhere."
+        }
 
 
 @fast_forward(20)
 async def test_server_login_double_message(lobby_server):
-    proto = await connect_client(lobby_server)
-    await perform_login(proto, ("test", "test_password"))
-    await read_until_command(proto, "game_info", timeout=5)
+    async with  connect_client(lobby_server) as proto:
+        await perform_login(proto, ("test", "test_password"))
+        await read_until_command(proto, "game_info", timeout=5)
 
-    # Sign in again with the same connection
-    await perform_login(proto, ("test", "test_password"))
-    msg = await read_until_command(proto, "notice", timeout=10)
-    assert msg == {
-        "command": "notice",
-        "style": "info",
-        "text": "You are already signed in from this location!"
-    }
+        # Sign in again with the same connection
+        await perform_login(proto, ("test", "test_password"))
+        msg = await read_until_command(proto, "notice", timeout=10)
+        assert msg == {
+            "command": "notice",
+            "style": "info",
+            "text": "You are already signed in from this location!"
+        }
 
 
 async def test_server_login_token_valid(lobby_server, jwk_priv_key, jwk_kid, fixed_time):
-    proto = await connect_client(lobby_server)
-    await proto.send_message({
-        "command": "auth",
-        "version": "1.0.0-dev",
-        "user_agent": "faf-client",
-        "token": jwt.encode({
-            "sub": "3",
-            "user_name": "Rhiza",
-            "scp": ["lobby"],
-            "exp": int(time() + 1000),
-            "authorities": [],
-            "non_locked": True,
-            "jti": "",
-            "client_id": ""
-        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
-        "unique_id": "some_id"
-    })
+    async with  connect_client(lobby_server) as proto:
+        await proto.send_message({
+            "command": "auth",
+            "version": "1.0.0-dev",
+            "user_agent": "faf-client",
+            "token": jwt.encode({
+                "sub": "3",
+                "user_name": "Rhiza",
+                "scp": ["lobby"],
+                "exp": int(time() + 1000),
+                "authorities": [],
+                "non_locked": True,
+                "jti": "",
+                "client_id": ""
+            }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
+            "unique_id": "some_id"
+        })
 
-    msg = await proto.read_message()
-    assert msg["command"] == "irc_password"
-    msg = await proto.read_message()
-    me = {
-        "id": 3,
-        "login": "Rhiza",
-        "clan": "123",
-        "country": "",
-        "ratings": {
-            "global": {
-                "rating": [1650.0, 62.52],
-                "number_of_games": 2
+        msg = await proto.read_message()
+        assert msg["command"] == "irc_password"
+        msg = await proto.read_message()
+        me = {
+            "id": 3,
+            "login": "Rhiza",
+            "clan": "123",
+            "country": "",
+            "ratings": {
+                "global": {
+                    "rating": [1650.0, 62.52],
+                    "number_of_games": 2
+                },
+                "ladder_1v1": {
+                    "rating": [1650.0, 62.52],
+                    "number_of_games": 2
+                }
             },
-            "ladder_1v1": {
-                "rating": [1650.0, 62.52],
-                "number_of_games": 2
-            }
-        },
-        "global_rating": [1650.0, 62.52],
-        "ladder_rating": [1650.0, 62.52],
-        "number_of_games": 2
-    }
-    assert msg == {
-        "command": "welcome",
-        "me": me,
-        "current_time": "1970-01-01T00:00:00+00:00",
-        "id": 3,
-        "login": "Rhiza"
-    }
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "player_info",
-        "players": [me]
-    }
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "social",
-        "autojoin": ["#123_clan"],
-        "channels": ["#123_clan"],
-        "friends": [],
-        "foes": [],
-        "power": 0
-    }
+            "global_rating": [1650.0, 62.52],
+            "ladder_rating": [1650.0, 62.52],
+            "number_of_games": 2
+        }
+        assert msg == {
+            "command": "welcome",
+            "me": me,
+            "current_time": "1970-01-01T00:00:00+00:00",
+            "id": 3,
+            "login": "Rhiza"
+        }
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "player_info",
+            "players": [me]
+        }
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "social",
+            "autojoin": ["#123_clan"],
+            "channels": ["#123_clan"],
+            "friends": [],
+            "foes": [],
+            "power": 0
+        }
 
 
 async def test_server_login_token_bad_id(lobby_server, jwk_priv_key, jwk_kid):
-    proto = await connect_client(lobby_server)
-    await proto.send_message({
-        "command": "auth",
-        "version": "1.0.0-dev",
-        "user_agent": "faf-client",
-        "token": jwt.encode({
-            "sub": "-1",
-            "user_name": "Rhiza",
-            "scp": ["lobby"],
-            "exp": int(time() + 1000),
-            "authorities": [],
-            "non_locked": True,
-            "jti": "",
-            "client_id": ""
-        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
-        "unique_id": "some_id"
-    })
+    async with  connect_client(lobby_server) as proto:
+        await proto.send_message({
+            "command": "auth",
+            "version": "1.0.0-dev",
+            "user_agent": "faf-client",
+            "token": jwt.encode({
+                "sub": "-1",
+                "user_name": "Rhiza",
+                "scp": ["lobby"],
+                "exp": int(time() + 1000),
+                "authorities": [],
+                "non_locked": True,
+                "jti": "",
+                "client_id": ""
+            }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
+            "unique_id": "some_id"
+        })
 
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "authentication_failed",
-        "text": "Cannot find user id"
-    }
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "authentication_failed",
+            "text": "Cannot find user id"
+        }
 
 
 async def test_server_login_token_expired(lobby_server, jwk_priv_key, jwk_kid):
-    proto = await connect_client(lobby_server)
-    await proto.send_message({
-        "command": "auth",
-        "version": "1.0.0-dev",
-        "user_agent": "faf-client",
-        "token": jwt.encode({
-            "sub": "1",
-            "scp": ["lobby"],
-            "user_name": "test",
-            "exp": int(time() - 10)
-        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
-        "unique_id": "some_id"
-    })
+    async with  connect_client(lobby_server) as proto:
+        await proto.send_message({
+            "command": "auth",
+            "version": "1.0.0-dev",
+            "user_agent": "faf-client",
+            "token": jwt.encode({
+                "sub": "1",
+                "scp": ["lobby"],
+                "user_name": "test",
+                "exp": int(time() - 10)
+            }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
+            "unique_id": "some_id"
+        })
 
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "authentication_failed",
-        "text": "Token signature was invalid"
-    }
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "authentication_failed",
+            "text": "Token signature was invalid"
+        }
 
 
 async def test_server_login_token_malformed(lobby_server, jwk_priv_key, jwk_kid):
     """This scenario could only happen if the hydra signed a token that
     was missing critical data"""
-    proto = await connect_client(lobby_server)
-    await proto.send_message({
-        "command": "auth",
-        "version": "1.0.0-dev",
-        "user_agent": "faf-client",
-        "token": jwt.encode(
-            {"exp": int(time() + 10)}, jwk_priv_key, algorithm="RS256",
-            headers={"kid": jwk_kid}
-        ),
-        "unique_id": "some_id"
-    })
+    async with  connect_client(lobby_server) as proto:
+        await proto.send_message({
+            "command": "auth",
+            "version": "1.0.0-dev",
+            "user_agent": "faf-client",
+            "token": jwt.encode(
+                {"exp": int(time() + 10)}, jwk_priv_key, algorithm="RS256",
+                headers={"kid": jwk_kid}
+            ),
+            "unique_id": "some_id"
+        })
 
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "authentication_failed",
-        "text": "Token signature was invalid"
-    }
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "authentication_failed",
+            "text": "Token signature was invalid"
+        }
 
 
 async def test_server_login_token_lobby_scope_missing(
-    lobby_server,
-    jwk_priv_key,
-    jwk_kid,
+        lobby_server,
+        jwk_priv_key,
+        jwk_kid,
 ):
     """This scenario could only happen if the hydra signed a token that
     was missing critical data"""
-    proto = await connect_client(lobby_server)
-    await proto.send_message({
-        "command": "auth",
-        "version": "1.0.0-dev",
-        "user_agent": "faf-client",
-        "token": jwt.encode({
-            "sub": "3",
-            "user_name": "Rhiza",
-            "scp": [],
-            "exp": int(time() + 1000),
-            "authorities": [],
-            "non_locked": True,
-            "jti": "",
-            "client_id": ""
-        }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
-        "unique_id": "some_id"
-    })
+    async with  connect_client(lobby_server) as proto:
+        await proto.send_message({
+            "command": "auth",
+            "version": "1.0.0-dev",
+            "user_agent": "faf-client",
+            "token": jwt.encode({
+                "sub": "3",
+                "user_name": "Rhiza",
+                "scp": [],
+                "exp": int(time() + 1000),
+                "authorities": [],
+                "non_locked": True,
+                "jti": "",
+                "client_id": ""
+            }, jwk_priv_key, algorithm="RS256", headers={"kid": jwk_kid}),
+            "unique_id": "some_id"
+        })
 
-    msg = await proto.read_message()
-    assert msg == {
-        "command": "authentication_failed",
-        "text": "Token does not have permission to login to the lobby server"
-    }
+        msg = await proto.read_message()
+        assert msg == {
+            "command": "authentication_failed",
+            "text": "Token does not have permission to login to the lobby server"
+        }

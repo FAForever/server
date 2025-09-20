@@ -20,7 +20,7 @@ async def fast_config_service(monkeypatch):
 
 @fast_forward(20)
 async def test_configuration_refresh_callbacks(
-    fast_config_service, geoip_service, lobby_server, monkeypatch
+        fast_config_service, geoip_service, lobby_server, monkeypatch
 ):
     monkeypatch.setenv("CONFIGURATION_FILE", "tests/data/refresh_conf.yaml")
 

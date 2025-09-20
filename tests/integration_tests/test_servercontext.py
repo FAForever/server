@@ -69,9 +69,9 @@ async def context(mock_service):
 
 
 async def test_serverside_abort(
-    mock_context,
-    mock_connection,
-    mock_service
+        mock_context,
+        mock_connection,
+        mock_service
 ):
     srv, ctx = mock_context
     reader, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())

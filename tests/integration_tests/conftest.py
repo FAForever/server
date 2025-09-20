@@ -1,11 +1,12 @@
 import asyncio
+import contextlib
 import datetime
 import hashlib
 import json
 import logging
 import textwrap
 from collections import defaultdict
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, AsyncGenerator, Generator
 from unittest import mock
 
 import aio_pika
@@ -67,9 +68,9 @@ async def party_service(game_service):
 
 @pytest.fixture
 async def broadcast_service(
-    message_queue_service,
-    game_service,
-    player_service,
+        message_queue_service,
+        game_service,
+        player_service,
 ):
     # The reference to the ServerInstance needs to be established later
     service = BroadcastService(
@@ -121,19 +122,19 @@ def jwk_kid():
 
 @pytest.fixture
 async def lobby_server_factory(
-    database,
-    broadcast_service,
-    player_service,
-    game_service,
-    geoip_service,
-    ladder_service,
-    rating_service,
-    message_queue_service,
-    party_service,
-    oauth_service,
-    violation_service,
-    policy_server,
-    jwks_server,
+        database,
+        broadcast_service,
+        player_service,
+        game_service,
+        geoip_service,
+        ladder_service,
+        rating_service,
+        message_queue_service,
+        party_service,
+        oauth_service,
+        violation_service,
+        policy_server,
+        jwks_server,
 ):
     all_contexts = []
 
@@ -275,7 +276,7 @@ def fixed_time(monkeypatch):
 # TODO: This fixture is poorly named since it returns a ServerContext, however,
 # it is used in almost every tests, so renaming it is a large task.
 @pytest.fixture(params=("qstream", "json"))
-def lobby_server(request, lobby_contexts) -> ServerContext:
+def lobby_server(request, lobby_contexts) -> Generator[ServerContext, Any, None]:
     yield lobby_contexts[request.param]
 
 
@@ -443,21 +444,25 @@ def tmp_user(database):
     return make_user
 
 
+@contextlib.asynccontextmanager
 async def connect_client(
-    server: ServerContext,
-    address: Optional[tuple[str, int]] = None
-) -> Protocol:
+        server: ServerContext,
+        address: Optional[tuple[str, int]] = None
+) -> AsyncGenerator[Protocol, Any]:
     address = address or server.sockets[0].getsockname()
     proto = server.protocol_class(
         *(await asyncio.open_connection(*address))
     )
     if hasattr(server, "__connected_client_protos"):
         server.__connected_client_protos.append(proto)
-    return proto
+    try:
+        yield proto
+    finally:
+        await proto.close()
 
 
 async def perform_login(
-    proto: Protocol, credentials: tuple[str, str]
+        proto: Protocol, credentials: tuple[str, str]
 ) -> None:
     login, pw = credentials
     pw_hash = hashlib.sha256(pw.encode("utf-8"))
@@ -472,8 +477,8 @@ async def perform_login(
 
 
 async def _read_until(
-    proto: Protocol,
-    pred: Callable[[dict[str, Any]], bool]
+        proto: Protocol,
+        pred: Callable[[dict[str, Any]], bool]
 ) -> dict[str, Any]:
     while True:
         msg = await proto.read_message()
@@ -491,18 +496,18 @@ async def _read_until(
 
 
 async def read_until(
-    proto: Protocol,
-    pred: Callable[[dict[str, Any]], bool],
-    timeout: float = 60
+        proto: Protocol,
+        pred: Callable[[dict[str, Any]], bool],
+        timeout: float = 60
 ) -> dict[str, Any]:
     return await asyncio.wait_for(_read_until(proto, pred), timeout=timeout)
 
 
 async def read_until_command(
-    proto: Protocol,
-    command: str,
-    timeout: float = 60,
-    **kwargs
+        proto: Protocol,
+        command: str,
+        timeout: float = 60,
+        **kwargs
 ) -> dict[str, Any]:
     kwargs["command"] = command
     return await asyncio.wait_for(
@@ -525,17 +530,18 @@ async def get_session(proto):
     return msg["session"]
 
 
+@contextlib.asynccontextmanager
 async def connect_and_sign_in(
-    credentials,
-    lobby_server: ServerContext,
-    address: Optional[tuple[str, int]] = None
-) -> tuple[int, int, Protocol]:
-    proto = await connect_client(lobby_server, address)
-    session = await get_session(proto)
-    await perform_login(proto, credentials)
-    hello = await read_until_command(proto, "welcome", timeout=120)
-    player_id = hello["id"]
-    return player_id, session, proto
+        credentials,
+        lobby_server: ServerContext,
+        address: Optional[tuple[str, int]] = None
+) -> AsyncGenerator[tuple[Any, Any, Protocol], Any]:
+    async with connect_client(lobby_server, address) as proto:
+        session = await get_session(proto)
+        await perform_login(proto, credentials)
+        hello = await read_until_command(proto, "welcome", timeout=120)
+        player_id = hello["id"]
+        yield player_id, session, proto
 
 
 @pytest.fixture
