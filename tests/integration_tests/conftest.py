@@ -166,8 +166,6 @@ async def lobby_server_factory(
             for name, cfg in config.items()
         }
         all_contexts.extend(contexts.values())
-        for context in contexts.values():
-            context.__connected_client_protos = []
         player_service.is_uniqueid_exempt = lambda id: True
 
         return instance, contexts
@@ -180,12 +178,7 @@ async def lobby_server_factory(
         yield make_lobby_server
 
     for context in all_contexts:
-        await context.stop()
         await context.shutdown()
-        # Close connected protocol objects
-        # https://github.com/FAForever/server/issues/717
-        for proto in context.__connected_client_protos:
-            proto.abort()
     await exhaust_callbacks()
 
 
@@ -419,6 +412,7 @@ async def proxy_server(lobby_server_proxy):
     yield server
 
     server.close()
+    server.close_clients()
     await server.wait_closed()
 
 
@@ -451,8 +445,6 @@ async def connect_client(
     proto = server.protocol_class(
         *(await asyncio.open_connection(*address))
     )
-    if hasattr(server, "__connected_client_protos"):
-        server.__connected_client_protos.append(proto)
     return proto
 
 

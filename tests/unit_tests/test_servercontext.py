@@ -20,7 +20,6 @@ def test_repr(context):
 
 async def test_unstarted(context):
     # Does not raise
-    await context.stop()
     await context.shutdown()
     await context.shutdown(None)
     await context.drain_connections()
