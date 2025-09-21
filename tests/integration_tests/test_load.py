@@ -113,6 +113,7 @@ async def test_game_info_broadcast_on_connection_error(
     assert len(game_service.all_games) == 0
 
 
+@pytest.mark.slow
 @fast_forward(30)
 async def test_backpressure_handling(lobby_server, caplog):
     async with connect_and_sign_in(
