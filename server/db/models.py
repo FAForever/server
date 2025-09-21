@@ -4,7 +4,6 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     Column,
-    DateTime,
     Enum,
     Float,
     ForeignKey,
@@ -15,6 +14,7 @@ from sqlalchemy import (
     Text
 )
 
+from .custom_types import UTCDateTime
 from .typedefs import GameOutcome, Victory
 
 metadata = MetaData()
@@ -45,7 +45,7 @@ ban = Table(
     Column("player_id",     Integer,    ForeignKey("login.id"), nullable=False),
     Column("author_id",     Integer,    ForeignKey("login.id"), nullable=False),
     Column("reason",        Text,       nullable=False),
-    Column("expires_at",    DateTime),
+    Column("expires_at",    UTCDateTime),
     Column("level",         Enum("CHAT", "GLOBAL"), nullable=False),
     Column("create_time",   TIMESTAMP,  nullable=False),
     Column("update_time",   TIMESTAMP,  nullable=False),
@@ -221,7 +221,7 @@ lobby_ban = Table(
     "lobby_ban", metadata,
     Column("idUser",        Integer,    ForeignKey("login.id"), primary_key=True),
     Column("reason",        Text,       nullable=False),
-    Column("expires_at",    DateTime)
+    Column("expires_at",    UTCDateTime)
 )
 
 

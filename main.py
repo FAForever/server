@@ -13,7 +13,6 @@ import os
 import signal
 import sys
 import time
-from datetime import datetime
 from functools import wraps
 
 import humanize
@@ -30,6 +29,7 @@ from server.health import HealthServer
 from server.player_service import PlayerService
 from server.profiler import Profiler
 from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
+from server.timing import datetime_now
 
 
 def log_signal(func):
@@ -147,7 +147,7 @@ async def main():
     server.metrics.info.info({
         "version": info.VERSION,
         "python_version": info.PYTHON_VERSION,
-        "start_time": datetime.utcnow().strftime("%m-%d %H:%M"),
+        "start_time": datetime_now().strftime("%m-%d %H:%M"),
         "game_uid": str(game_service.game_id_counter)
     })
     logger.info(
