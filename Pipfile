@@ -11,7 +11,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-aio_pika = "~=8.2"
+aio_pika = "*"
 aiocron = "*"
 aiohttp = "*"
 aiomysql = {git = "https://github.com/aio-libs/aiomysql"}

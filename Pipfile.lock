@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "fc4db292df4746ec62c8c4f0036828ca1f9ac1789022749b21bb2d37b35bb0b0"
+            "sha256": "67adacda446396d91de50fe41c426c738226113aa0b3e3f16a00f2141ff7bc8a"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -18,12 +18,12 @@
     "default": {
         "aio-pika": {
             "hashes": [
-                "sha256:36c4742449f1cbcb83165b3733b090cf88f3d2f7f027225eedb8c7f300b05dde",
-                "sha256:c0e2601eda6a1097fe1d33c5f9965a86a27b328ac48914d20c23f675b3ab1797"
+                "sha256:0569b59d3c7b36ca76abcb213cdc3677e2a4710a3c371dd27359039f9724f4ee",
+                "sha256:684316a0e92157754bb2d6927c5568fd997518b123add342e97405aa9066772b"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.7' and python_version < '4'",
-            "version": "==8.3.0"
+            "markers": "python_version >= '3.10' and python_version < '4.0'",
+            "version": "==9.5.7"
         },
         "aiocron": {
             "hashes": [
@@ -142,11 +142,11 @@
         },
         "aiormq": {
             "hashes": [
-                "sha256:95835a4db6117263305d450f838ccdc3eabd427c0deb32fd617769ad4c989e98",
-                "sha256:9fb93dc871eb9c45a410e29669624790c01b70d27f20d512a22b146c411440ea"
+                "sha256:1c31f2098ad2beee6e95d0ad969c836876c1e3113e8c67142eb58565fedcab4c",
+                "sha256:e1d88db819d197646cabaea6d6b53497a5ba358a5b6ae8f45f61dcb446821fa6"
             ],
-            "markers": "python_version >= '3.7' and python_version < '4.0'",
-            "version": "==6.6.4"
+            "markers": "python_version >= '3.9' and python_version < '4.0'",
+            "version": "==6.9.0"
         },
         "aiosignal": {
             "hashes": [
@@ -751,11 +751,11 @@
         },
         "pamqp": {
             "hashes": [
-                "sha256:15acef752356593ca569d13dfedc8ada9f17deeeb8cec4f7b77825e2b6c7de3e",
-                "sha256:22550ceb1ca50aafda65873e77e8c1c1b139fb5975e1a09860fae940cf8e970a"
+                "sha256:40b8795bd4efcf2b0f8821c1de83d12ca16d5760f4507836267fd7a02b06763b",
+                "sha256:c901a684794157ae39b52cbf700db8c9aae7a470f13528b9d7b4e5f7202f8eb0"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==3.2.1"
+            "version": "==3.3.0"
         },
         "prometheus-client": {
             "hashes": [
