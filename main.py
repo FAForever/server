@@ -94,7 +94,7 @@ async def main():
     game_service: GameService = instance.services["game_service"]
 
     profiler = Profiler(player_service)
-    profiler.refresh()
+    await profiler.refresh()
     config.register_callback("PROFILING_COUNT", profiler.refresh)
     config.register_callback("PROFILING_DURATION", profiler.refresh)
     config.register_callback("PROFILING_INTERVAL", profiler.refresh)
