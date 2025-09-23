@@ -1,7 +1,6 @@
-import asyncio
 import contextlib
 import itertools
-from inspect import Parameter, Signature
+from inspect import Parameter, Signature, iscoroutinefunction
 
 import pytest
 from hypothesis.internal.reflection import (
@@ -22,7 +21,7 @@ def autocontext(*auto_args):
         original_signature = get_signature(test)
         signature = new_signature(original_signature, auto_args)
 
-        if asyncio.iscoroutinefunction(test):
+        if iscoroutinefunction(test):
             @pytest.mark.asyncio
             @impersonate(test)
             @define_function_signature(test.__name__, test.__doc__, signature)

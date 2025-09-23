@@ -3,6 +3,7 @@ Server config variables
 """
 
 import asyncio
+import inspect
 import logging
 import os
 import statistics
@@ -226,7 +227,7 @@ class ConfigurationStore:
 
     def _dispatch_callback(self, key: str) -> None:
         callback = self._callbacks[key]
-        if asyncio.iscoroutinefunction(callback):
+        if inspect.iscoroutinefunction(callback):
             asyncio.create_task(callback())
         else:
             callback()
