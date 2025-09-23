@@ -165,6 +165,15 @@ async def lobby_server_factory(
         # Set up the back reference
         broadcast_service.server = instance
 
+        # FIXME?: unlike ServerInstance, overriden services have no internal
+        # state to reflect that they are running.
+        # instance.listen(...) tries to start them if instance is not started yet
+        #
+        # overriden servivces were started in their corresponding fixtures
+        # therefore we manually set instance's flag here so it doesn't
+        # trye to start them again
+        instance.started = True
+
         contexts = {
             name: await instance.listen(
                 (cfg["ADDRESS"], cfg["PORT"]),
