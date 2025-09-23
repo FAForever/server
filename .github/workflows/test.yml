@@ -81,7 +81,7 @@ jobs:
 
       - name: Install dependencies with pipenv
         run: |
-          pip install pipenv==2024.4.1
+          pip install pipenv==2025.0.4
           pipenv sync --dev
           pipenv run pip install pytest-github-actions-annotate-failures
 
