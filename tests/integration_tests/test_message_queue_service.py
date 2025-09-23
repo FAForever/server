@@ -29,7 +29,7 @@ class Consumer:
         await self.queue.bind(self.exchange, routing_key="#")
         self.consumer_tag = await self.queue.consume(self.callback)
 
-    def callback(self, message):
+    async def callback(self, message):
         self._logger.debug("Received message %r", message)
         self._callback()
 

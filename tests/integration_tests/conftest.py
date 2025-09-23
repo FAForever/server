@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import datetime
 import hashlib
@@ -5,6 +7,7 @@ import json
 import logging
 import textwrap
 from collections import defaultdict
+from collections.abc import AsyncGenerator
 from typing import Any, Callable, Optional
 from unittest import mock
 
@@ -13,6 +16,11 @@ import proxyprotocol.dnsbl
 import proxyprotocol.server
 import proxyprotocol.server.protocol
 import pytest
+from aio_pika.abc import (
+    AbstractChannel,
+    AbstractIncomingMessage,
+    AbstractQueue
+)
 from aiohttp import web
 
 from server import (
@@ -531,7 +539,7 @@ async def connect_and_sign_in(
 
 
 @pytest.fixture
-async def channel():
+async def channel() -> AsyncGenerator[AbstractChannel]:
     connection = await aio_pika.connect(
         f"amqp://{config.MQ_USER}:{config.MQ_PASSWORD}@localhost/{config.MQ_VHOST}"
     )
@@ -539,7 +547,11 @@ async def channel():
         yield channel
 
 
-async def connect_mq_consumer(server, channel, routing_key):
+async def connect_mq_consumer(
+    server: ServerContext,
+    channel: AbstractChannel,
+    routing_key: str | None,
+) -> AioQueueProtocol:
     """
     Returns a subclass of Protocol that yields messages read from a rabbitmq
     exchange.
@@ -562,17 +574,16 @@ class AioQueueProtocol(Protocol):
     A wrapper around an asyncio `Queue` that exposes the `Protocol` interface.
     """
 
-    def __init__(self, queue):
+    def __init__(self, queue: AbstractQueue) -> None:
         self.queue = queue
         self.consumer_tag = None
         self.aio_queue = asyncio.Queue()
 
-    async def consume(self):
-        self.consumer_tag = await self.queue.consume(
-            lambda msg: self.aio_queue.put_nowait(
-                json.loads(msg.body.decode())
-            )
-        )
+    async def consume(self) -> None:
+        self.consumer_tag = await self.queue.consume(self._callback)
+
+    async def _callback(self, msg: AbstractIncomingMessage) -> None:
+        self.aio_queue.put_nowait(json.loads(msg.body.decode()))
 
     @staticmethod
     def encode_message(message: dict) -> bytes:
