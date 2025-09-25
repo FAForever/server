@@ -48,7 +48,7 @@ el.replaceWith(d);
 <dl>
 <dt id="server.stats.unit.Unit"><code class="flex name class">
 <span>class <span class="ident">Unit</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+<span>(</span><span>*args, **kwds)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -127,7 +127,56 @@ el.replaceWith(d);
     MERCY = &#34;daa0206&#34;
     FIRE_BEETLE = &#34;xrl0302&#34;</code></pre>
 </details>
-<div class="desc"><p>An enumeration.</p></div>
+<div class="desc"><p>Create a collection of name/value pairs.</p>
+<p>Example enumeration:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class Color(Enum):
+...     RED = 1
+...     BLUE = 2
+...     GREEN = 3
+</code></pre>
+<p>Access them by:</p>
+<ul>
+<li>attribute access:</li>
+</ul>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>Color.RED
+<Color.RED: 1></p>
+</blockquote>
+</blockquote>
+</blockquote>
+<ul>
+<li>value lookup:</li>
+</ul>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>Color(1)
+<Color.RED: 1></p>
+</blockquote>
+</blockquote>
+</blockquote>
+<ul>
+<li>name lookup:</li>
+</ul>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>Color['RED']
+<Color.RED: 1></p>
+</blockquote>
+</blockquote>
+</blockquote>
+<p>Enumerations can be iterated over, and know how many members they have:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; len(Color)
+3
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; list(Color)
+[&lt;Color.RED: 1&gt;, &lt;Color.BLUE: 2&gt;, &lt;Color.GREEN: 3&gt;]
+</code></pre>
+<p>Methods can be added to enumerations, and members can have their own
+attributes &ndash; see the documentation for details.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>enum.Enum</li>
@@ -136,211 +185,211 @@ el.replaceWith(d);
 <dl>
 <dt id="server.stats.unit.Unit.AEON_ACU"><code class="name">var <span class="ident">AEON_ACU</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.AEON_SACU"><code class="name">var <span class="ident">AEON_SACU</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.AEON_T1_ENGINEER"><code class="name">var <span class="ident">AEON_T1_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.AEON_T2_ENGINEER"><code class="name">var <span class="ident">AEON_T2_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.AEON_T3_ENGINEER"><code class="name">var <span class="ident">AEON_T3_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.AHWASSA"><code class="name">var <span class="ident">AHWASSA</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.ALUMINAR"><code class="name">var <span class="ident">ALUMINAR</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.ATLANTIS"><code class="name">var <span class="ident">ATLANTIS</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.C14_STAR_LIFTER"><code class="name">var <span class="ident">C14_STAR_LIFTER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.C6_COURIER"><code class="name">var <span class="ident">C6_COURIER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.CHARIOT"><code class="name">var <span class="ident">CHARIOT</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.CONTINENTAL"><code class="name">var <span class="ident">CONTINENTAL</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.CORONA"><code class="name">var <span class="ident">CORONA</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.CYBRAN_ACU"><code class="name">var <span class="ident">CYBRAN_ACU</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.CYBRAN_SACU"><code class="name">var <span class="ident">CYBRAN_SACU</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.CYBRAN_T1_ENGINEER"><code class="name">var <span class="ident">CYBRAN_T1_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.CYBRAN_T2_ENGINEER"><code class="name">var <span class="ident">CYBRAN_T2_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.CYBRAN_T3_ENGINEER"><code class="name">var <span class="ident">CYBRAN_T3_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.CZAR"><code class="name">var <span class="ident">CZAR</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.DRAGON_FLY"><code class="name">var <span class="ident">DRAGON_FLY</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.FATBOY"><code class="name">var <span class="ident">FATBOY</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.FIRE_BEETLE"><code class="name">var <span class="ident">FIRE_BEETLE</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.GALACTIC_COLOSSUS"><code class="name">var <span class="ident">GALACTIC_COLOSSUS</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.GEMINI"><code class="name">var <span class="ident">GEMINI</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.IAZYNE"><code class="name">var <span class="ident">IAZYNE</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.MAVOR"><code class="name">var <span class="ident">MAVOR</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.MEGALITH"><code class="name">var <span class="ident">MEGALITH</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.MERCY"><code class="name">var <span class="ident">MERCY</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.MONKEYLORD"><code class="name">var <span class="ident">MONKEYLORD</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.NOVAX_CENTER"><code class="name">var <span class="ident">NOVAX_CENTER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.PARAGON"><code class="name">var <span class="ident">PARAGON</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.SALVATION"><code class="name">var <span class="ident">SALVATION</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.SCATHIS"><code class="name">var <span class="ident">SCATHIS</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.SERAPHIM_ACU"><code class="name">var <span class="ident">SERAPHIM_ACU</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.SERAPHIM_SACU"><code class="name">var <span class="ident">SERAPHIM_SACU</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.SERAPHIM_T1_ENGINEER"><code class="name">var <span class="ident">SERAPHIM_T1_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.SERAPHIM_T2_ENGINEER"><code class="name">var <span class="ident">SERAPHIM_T2_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.SERAPHIM_T3_ENGINEER"><code class="name">var <span class="ident">SERAPHIM_T3_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.SKYHOOK"><code class="name">var <span class="ident">SKYHOOK</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.SOUL_RIPPER"><code class="name">var <span class="ident">SOUL_RIPPER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.TEMPEST"><code class="name">var <span class="ident">TEMPEST</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.UEF_ACU"><code class="name">var <span class="ident">UEF_ACU</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.UEF_SACU"><code class="name">var <span class="ident">UEF_SACU</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.UEF_T1_ENGINEER"><code class="name">var <span class="ident">UEF_T1_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.UEF_T2_ENGINEER"><code class="name">var <span class="ident">UEF_T2_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.UEF_T2_FIELD_ENGINEER"><code class="name">var <span class="ident">UEF_T2_FIELD_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.UEF_T3_ENGINEER"><code class="name">var <span class="ident">UEF_T3_ENGINEER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.VISH"><code class="name">var <span class="ident">VISH</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.VISHALA"><code class="name">var <span class="ident">VISHALA</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.WASP"><code class="name">var <span class="ident">WASP</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.YOLONA_OSS"><code class="name">var <span class="ident">YOLONA_OSS</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.stats.unit.Unit.YTHOTHA"><code class="name">var <span class="ident">YTHOTHA</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 </dl>
 </dd>

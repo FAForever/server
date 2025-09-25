@@ -264,7 +264,7 @@ class ConfigurationStore:
 
     def _dispatch_callback(self, key: str) -&gt; None:
         callback = self._callbacks[key]
-        if asyncio.iscoroutinefunction(callback):
+        if inspect.iscoroutinefunction(callback):
             asyncio.create_task(callback())
         else:
             callback()</code></pre>

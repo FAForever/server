@@ -101,7 +101,7 @@ el.replaceWith(d);
         )
 
     def _ban_duration_text(self):
-        ban_duration = self.ban_expiry - datetime.utcnow()
+        ban_duration = self.ban_expiry - datetime_now()
         if ban_duration.days &gt; 365 * 100:
             return &#34;forever&#34;
         humanized_ban_duration = humanize.precisedelta(

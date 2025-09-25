@@ -49,7 +49,7 @@ el.replaceWith(d);
 <dl>
 <dt id="server.factions.Faction"><code class="flex name class">
 <span>class <span class="ident">Faction</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+<span>(</span><span>*args, **kwds)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -79,34 +79,35 @@ class Faction(IntEnum):
 
         raise TypeError(f&#34;Unsupported faction type {type(value)}!&#34;)</code></pre>
 </details>
-<div class="desc"><p>An enumeration.</p></div>
+<div class="desc"><p>Enum where members are also (and must be) ints</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>enum.IntEnum</li>
 <li>builtins.int</li>
+<li>enum.ReprEnum</li>
 <li>enum.Enum</li>
 </ul>
 <h3>Class variables</h3>
 <dl>
 <dt id="server.factions.Faction.aeon"><code class="name">var <span class="ident">aeon</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.factions.Faction.cybran"><code class="name">var <span class="ident">cybran</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.factions.Faction.nomad"><code class="name">var <span class="ident">nomad</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.factions.Faction.seraphim"><code class="name">var <span class="ident">seraphim</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.factions.Faction.uef"><code class="name">var <span class="ident">uef</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 </dl>
 <h3>Static methods</h3>

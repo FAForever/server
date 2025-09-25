@@ -146,6 +146,11 @@ class ServerContext:
                 self.name,
                 humanize.naturaldelta(timeout)
             )
+
+        self._logger.debug(&#34;%s: stop serving&#34;, self.name)
+        if self._server:
+            self._server.close()
+
         for fut in asyncio.as_completed([
             close_or_abort(conn, proto)
             for conn, proto in self.connections.items()
@@ -153,10 +158,7 @@ class ServerContext:
             await fut
         self._logger.debug(&#34;%s: All connections closed&#34;, self.name)
 
-    async def stop(self):
-        self._logger.debug(&#34;%s: stop()&#34;, self.name)
         if self._server:
-            self._server.close()
             await self._server.wait_closed()
 
     async def drain_connections(self):
@@ -565,27 +567,19 @@ def sockets(self):
             self.name,
             humanize.naturaldelta(timeout)
         )
+
+    self._logger.debug(&#34;%s: stop serving&#34;, self.name)
+    if self._server:
+        self._server.close()
+
     for fut in asyncio.as_completed([
         close_or_abort(conn, proto)
         for conn, proto in self.connections.items()
     ]):
         await fut
-    self._logger.debug(&#34;%s: All connections closed&#34;, self.name)</code></pre>
-</details>
-<div class="desc"></div>
-</dd>
-<dt id="server.servercontext.ServerContext.stop"><code class="name flex">
-<span>async def <span class="ident">stop</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">async def stop(self):
-    self._logger.debug(&#34;%s: stop()&#34;, self.name)
+    self._logger.debug(&#34;%s: All connections closed&#34;, self.name)
+
     if self._server:
-        self._server.close()
         await self._server.wait_closed()</code></pre>
 </details>
 <div class="desc"></div>
@@ -679,7 +673,6 @@ def suppress_and_log(self, func, *exceptions: type[BaseException]):
 <li><code><a title="server.servercontext.ServerContext.listen" href="#server.servercontext.ServerContext.listen">listen</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.shutdown" href="#server.servercontext.ServerContext.shutdown">shutdown</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.sockets" href="#server.servercontext.ServerContext.sockets">sockets</a></code></li>
-<li><code><a title="server.servercontext.ServerContext.stop" href="#server.servercontext.ServerContext.stop">stop</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.suppress_and_log" href="#server.servercontext.ServerContext.suppress_and_log">suppress_and_log</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.write_broadcast" href="#server.servercontext.ServerContext.write_broadcast">write_broadcast</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.write_broadcast_raw" href="#server.servercontext.ServerContext.write_broadcast_raw">write_broadcast_raw</a></code></li>

@@ -80,13 +80,13 @@ class Profiler:
         self._running = False
         self._task: Optional[asyncio.Task] = None
 
-    def refresh(self):
+    async def refresh(self) -&gt; None:
         self.interval = config.PROFILING_INTERVAL
         self.duration = config.PROFILING_DURATION
         self.max_count = config.PROFILING_COUNT
         self.profile_count = 0
 
-        self.cancel()
+        await self.cancel()
         if self.interval &gt; 0 and self.duration &gt; 0 and self.max_count &gt; 0:
             self._start()
 
@@ -97,7 +97,7 @@ class Profiler:
         if self._task is None:
             self._task = asyncio.create_task(self._next_run())
 
-    async def _next_run(self):
+    async def _next_run(self) -&gt; None:
         await asyncio.sleep(self.interval)
 
         if self._running:
@@ -107,9 +107,9 @@ class Profiler:
                 pass
 
         if self.profile_count &lt; self.max_count and self._running:
-            self._task = asyncio.create_task(self._next_run())
+            await self._next_run()
         else:
-            self.cancel()
+            await self.cancel()
 
     async def _run(self):
         assert self.profiler is not None
@@ -133,12 +133,18 @@ class Profiler:
         if self._outfile is not None:
             self.profiler.dump_stats(self._outfile)
 
-    def cancel(self):
+    async def cancel(self) -&gt; None:
         self._running = False
         if self._task is not None:
             self._task.cancel()
+            try:
+                await self._task
+            except CancelledError:
+                pass
             self._task = None
 
+        if self.profiler is not None:
+            self.profiler.disable()
         del self.profiler
         self.profiler = None</code></pre>
 </details>
@@ -146,39 +152,45 @@ class Profiler:
 <h3>Methods</h3>
 <dl>
 <dt id="server.profiler.Profiler.cancel"><code class="name flex">
-<span>def <span class="ident">cancel</span></span>(<span>self)</span>
+<span>async def <span class="ident">cancel</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def cancel(self):
+<pre><code class="python">async def cancel(self) -&gt; None:
     self._running = False
     if self._task is not None:
         self._task.cancel()
+        try:
+            await self._task
+        except CancelledError:
+            pass
         self._task = None
 
+    if self.profiler is not None:
+        self.profiler.disable()
     del self.profiler
     self.profiler = None</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
 <dt id="server.profiler.Profiler.refresh"><code class="name flex">
-<span>def <span class="ident">refresh</span></span>(<span>self)</span>
+<span>async def <span class="ident">refresh</span></span>(<span>self) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def refresh(self):
+<pre><code class="python">async def refresh(self) -&gt; None:
     self.interval = config.PROFILING_INTERVAL
     self.duration = config.PROFILING_DURATION
     self.max_count = config.PROFILING_COUNT
     self.profile_count = 0
 
-    self.cancel()
+    await self.cancel()
     if self.interval &gt; 0 and self.duration &gt; 0 and self.max_count &gt; 0:
         self._start()</code></pre>
 </details>

@@ -3383,7 +3383,7 @@ class GeoIpService(Service):
             # We have loaded the file, so check if it has been updated
 
             date_modified = datetime.fromtimestamp(
-                os.path.getmtime(self.file_path)
+                os.path.getmtime(self.file_path), UTC
             )
             if date_modified &gt; self.db_update_time:
                 self.load_db()
@@ -3401,9 +3401,9 @@ class GeoIpService(Service):
         self._logger.debug(&#34;Checking if geoip database needs updating&#34;)
         try:
             date_modified = datetime.fromtimestamp(
-                os.path.getmtime(self.file_path)
+                os.path.getmtime(self.file_path), UTC
             )
-            delta = datetime.now() - date_modified
+            delta = datetime_now() - date_modified
 
             if delta.days &gt; config.GEO_IP_DATABASE_MAX_AGE_DAYS:
                 self._logger.info(&#34;Geoip database is out of date&#34;)
@@ -3508,7 +3508,7 @@ class GeoIpService(Service):
         &#34;&#34;&#34;
         # Set the time first, if the file is corrupted we don&#39;t need to try
         # loading it again anyways
-        self.db_update_time = datetime.now()
+        self.db_update_time = datetime_now()
 
         try:
             new_db = maxminddb.open_database(self.file_path)
@@ -3577,7 +3577,7 @@ the service will try to download a new file from tue url in <code><a title="serv
         # We have loaded the file, so check if it has been updated
 
         date_modified = datetime.fromtimestamp(
-            os.path.getmtime(self.file_path)
+            os.path.getmtime(self.file_path), UTC
         )
         if date_modified &gt; self.db_update_time:
             self.load_db()</code></pre>
@@ -3606,9 +3606,9 @@ and loads it if it has.</p></div>
     self._logger.debug(&#34;Checking if geoip database needs updating&#34;)
     try:
         date_modified = datetime.fromtimestamp(
-            os.path.getmtime(self.file_path)
+            os.path.getmtime(self.file_path), UTC
         )
-        delta = datetime.now() - date_modified
+        delta = datetime_now() - date_modified
 
         if delta.days &gt; config.GEO_IP_DATABASE_MAX_AGE_DAYS:
             self._logger.info(&#34;Geoip database is out of date&#34;)
@@ -3707,7 +3707,7 @@ a valid gzip file, then it does NOT overwrite the old file.</p></div>
     &#34;&#34;&#34;
     # Set the time first, if the file is corrupted we don&#39;t need to try
     # loading it again anyways
-    self.db_update_time = datetime.now()
+    self.db_update_time = datetime_now()
 
     try:
         new_db = maxminddb.open_database(self.file_path)
@@ -5097,14 +5097,14 @@ class MessageQueueService(Service):
                 ),
                 loop=asyncio.get_running_loop(),
             )
-        except ConnectionError as e:
-            self._logger.warning(
-                &#34;Unable to connect to RabbitMQ. Is it running?&#34;, exc_info=True
-            )
-            raise ConnectionAttemptFailed from e
         except ProbableAuthenticationError as e:
             self._logger.warning(
                 &#34;Unable to connect to RabbitMQ. Incorrect credentials?&#34;, exc_info=True
+            )
+            raise ConnectionAttemptFailed from e
+        except ConnectionError as e:
+            self._logger.warning(
+                &#34;Unable to connect to RabbitMQ. Is it running?&#34;, exc_info=True
             )
             raise ConnectionAttemptFailed from e
         except Exception as e:
@@ -5262,7 +5262,7 @@ and providing an interface to publish messages.</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="server.MessageQueueService.publish"><code class="name flex">
-<span>async def <span class="ident">publish</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payload: dict,<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
+<span>async def <span class="ident">publish</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payload: dict,<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = 2) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -5288,7 +5288,7 @@ and providing an interface to publish messages.</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="server.MessageQueueService.publish_many"><code class="name flex">
-<span>async def <span class="ident">publish_many</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payloads: Iterable[dict],<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
+<span>async def <span class="ident">publish_many</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payloads: Iterable[dict],<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = 2) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -7312,13 +7312,11 @@ atomic.</p></div>
         &#34;&#34;&#34;
         Immediately shutdown the server.
 
-        1. Stop accepting new connections
-        2. Stop all services
-        3. Close all existing connections
+        1. Stop all services
+        2. Stop accepting new and close all existing connections
         &#34;&#34;&#34;
         self._logger.info(&#34;Initiating full shutdown&#34;)
 
-        await self._stop_contexts()
         await self._shutdown_services()
         await self._shutdown_contexts()
 
@@ -7359,14 +7357,6 @@ atomic.</p></div>
             self.services.values(),
             logger=self._logger,
             msg=&#34;when shutting down service &#34;
-        )
-
-    async def _stop_contexts(self):
-        await map_suppress(
-            lambda ctx: ctx.stop(),
-            self.contexts,
-            logger=self._logger,
-            msg=&#34;when stopping context &#34;
         )
 
     async def _shutdown_contexts(self):
@@ -7512,13 +7502,11 @@ See: <a href="https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">https
     &#34;&#34;&#34;
     Immediately shutdown the server.
 
-    1. Stop accepting new connections
-    2. Stop all services
-    3. Close all existing connections
+    1. Stop all services
+    2. Stop accepting new and close all existing connections
     &#34;&#34;&#34;
     self._logger.info(&#34;Initiating full shutdown&#34;)
 
-    await self._stop_contexts()
     await self._shutdown_services()
     await self._shutdown_contexts()
 
@@ -7527,9 +7515,8 @@ See: <a href="https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">https
 </details>
 <div class="desc"><p>Immediately shutdown the server.</p>
 <ol>
-<li>Stop accepting new connections</li>
 <li>Stop all services</li>
-<li>Close all existing connections</li>
+<li>Stop accepting new and close all existing connections</li>
 </ol></div>
 </dd>
 <dt id="server.ServerInstance.start_services"><code class="name flex">

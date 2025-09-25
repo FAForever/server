@@ -138,7 +138,7 @@ either VICTORY and DEFEAT or DRAW and DRAW.</p>
 <dl>
 <dt id="server.games.game_results.ArmyOutcome"><code class="flex name class">
 <span>class <span class="ident">ArmyOutcome</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+<span>(</span><span>*args, **kwds)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -164,29 +164,29 @@ either VICTORY and DEFEAT or DRAW and DRAW.</p>
 <dl>
 <dt id="server.games.game_results.ArmyOutcome.CONFLICTING"><code class="name">var <span class="ident">CONFLICTING</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.games.game_results.ArmyOutcome.DEFEAT"><code class="name">var <span class="ident">DEFEAT</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.games.game_results.ArmyOutcome.DRAW"><code class="name">var <span class="ident">DRAW</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.games.game_results.ArmyOutcome.UNKNOWN"><code class="name">var <span class="ident">UNKNOWN</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.games.game_results.ArmyOutcome.VICTORY"><code class="name">var <span class="ident">VICTORY</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 </dl>
 </dd>
 <dt id="server.games.game_results.ArmyReportedOutcome"><code class="flex name class">
 <span>class <span class="ident">ArmyReportedOutcome</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+<span>(</span><span>*args, **kwds)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -222,19 +222,19 @@ either VICTORY and DEFEAT or DRAW and DRAW.</p>
 <dl>
 <dt id="server.games.game_results.ArmyReportedOutcome.DEFEAT"><code class="name">var <span class="ident">DEFEAT</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.games.game_results.ArmyReportedOutcome.DRAW"><code class="name">var <span class="ident">DRAW</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.games.game_results.ArmyReportedOutcome.MUTUAL_DRAW"><code class="name">var <span class="ident">MUTUAL_DRAW</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.games.game_results.ArmyReportedOutcome.VICTORY"><code class="name">var <span class="ident">VICTORY</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -359,7 +359,7 @@ results agree.</p></div>
 </dd>
 <dt id="server.games.game_results.GameOutcome"><code class="flex name class">
 <span>class <span class="ident">GameOutcome</span></span>
-<span>(</span><span>value, names=None, *, module=None, qualname=None, type=None, start=1)</span>
+<span>(</span><span>*args, **kwds)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -373,7 +373,56 @@ class GameOutcome(Enum):
     DRAW = &#34;DRAW&#34;
     UNKNOWN = &#34;UNKNOWN&#34;</code></pre>
 </details>
-<div class="desc"><p>An enumeration.</p></div>
+<div class="desc"><p>Create a collection of name/value pairs.</p>
+<p>Example enumeration:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class Color(Enum):
+...     RED = 1
+...     BLUE = 2
+...     GREEN = 3
+</code></pre>
+<p>Access them by:</p>
+<ul>
+<li>attribute access:</li>
+</ul>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>Color.RED
+<Color.RED: 1></p>
+</blockquote>
+</blockquote>
+</blockquote>
+<ul>
+<li>value lookup:</li>
+</ul>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>Color(1)
+<Color.RED: 1></p>
+</blockquote>
+</blockquote>
+</blockquote>
+<ul>
+<li>name lookup:</li>
+</ul>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>Color['RED']
+<Color.RED: 1></p>
+</blockquote>
+</blockquote>
+</blockquote>
+<p>Enumerations can be iterated over, and know how many members they have:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; len(Color)
+3
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; list(Color)
+[&lt;Color.RED: 1&gt;, &lt;Color.BLUE: 2&gt;, &lt;Color.GREEN: 3&gt;]
+</code></pre>
+<p>Methods can be added to enumerations, and members can have their own
+attributes &ndash; see the documentation for details.</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>enum.Enum</li>
@@ -382,19 +431,19 @@ class GameOutcome(Enum):
 <dl>
 <dt id="server.games.game_results.GameOutcome.DEFEAT"><code class="name">var <span class="ident">DEFEAT</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.games.game_results.GameOutcome.DRAW"><code class="name">var <span class="ident">DRAW</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.games.game_results.GameOutcome.UNKNOWN"><code class="name">var <span class="ident">UNKNOWN</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 <dt id="server.games.game_results.GameOutcome.VICTORY"><code class="name">var <span class="ident">VICTORY</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>The type of the None singleton.</p></div>
 </dd>
 </dl>
 </dd>

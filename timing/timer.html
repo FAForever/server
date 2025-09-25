@@ -87,7 +87,7 @@ el.replaceWith(d);
         _func = func.func
     else:
         _func = func
-    if not asyncio.iscoroutinefunction(_func):
+    if not inspect.iscoroutinefunction(_func):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             return func(*args, **kwargs)

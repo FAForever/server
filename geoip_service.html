@@ -149,7 +149,7 @@ class GeoIpService(Service):
             # We have loaded the file, so check if it has been updated
 
             date_modified = datetime.fromtimestamp(
-                os.path.getmtime(self.file_path)
+                os.path.getmtime(self.file_path), UTC
             )
             if date_modified &gt; self.db_update_time:
                 self.load_db()
@@ -167,9 +167,9 @@ class GeoIpService(Service):
         self._logger.debug(&#34;Checking if geoip database needs updating&#34;)
         try:
             date_modified = datetime.fromtimestamp(
-                os.path.getmtime(self.file_path)
+                os.path.getmtime(self.file_path), UTC
             )
-            delta = datetime.now() - date_modified
+            delta = datetime_now() - date_modified
 
             if delta.days &gt; config.GEO_IP_DATABASE_MAX_AGE_DAYS:
                 self._logger.info(&#34;Geoip database is out of date&#34;)
@@ -274,7 +274,7 @@ class GeoIpService(Service):
         &#34;&#34;&#34;
         # Set the time first, if the file is corrupted we don&#39;t need to try
         # loading it again anyways
-        self.db_update_time = datetime.now()
+        self.db_update_time = datetime_now()
 
         try:
             new_db = maxminddb.open_database(self.file_path)
@@ -343,7 +343,7 @@ the service will try to download a new file from tue url in <code><a title="serv
         # We have loaded the file, so check if it has been updated
 
         date_modified = datetime.fromtimestamp(
-            os.path.getmtime(self.file_path)
+            os.path.getmtime(self.file_path), UTC
         )
         if date_modified &gt; self.db_update_time:
             self.load_db()</code></pre>
@@ -372,9 +372,9 @@ and loads it if it has.</p></div>
     self._logger.debug(&#34;Checking if geoip database needs updating&#34;)
     try:
         date_modified = datetime.fromtimestamp(
-            os.path.getmtime(self.file_path)
+            os.path.getmtime(self.file_path), UTC
         )
-        delta = datetime.now() - date_modified
+        delta = datetime_now() - date_modified
 
         if delta.days &gt; config.GEO_IP_DATABASE_MAX_AGE_DAYS:
             self._logger.info(&#34;Geoip database is out of date&#34;)
@@ -473,7 +473,7 @@ a valid gzip file, then it does NOT overwrite the old file.</p></div>
     &#34;&#34;&#34;
     # Set the time first, if the file is corrupted we don&#39;t need to try
     # loading it again anyways
-    self.db_update_time = datetime.now()
+    self.db_update_time = datetime_now()
 
     try:
         new_db = maxminddb.open_database(self.file_path)

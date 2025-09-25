@@ -123,14 +123,14 @@ class MessageQueueService(Service):
                 ),
                 loop=asyncio.get_running_loop(),
             )
-        except ConnectionError as e:
-            self._logger.warning(
-                &#34;Unable to connect to RabbitMQ. Is it running?&#34;, exc_info=True
-            )
-            raise ConnectionAttemptFailed from e
         except ProbableAuthenticationError as e:
             self._logger.warning(
                 &#34;Unable to connect to RabbitMQ. Incorrect credentials?&#34;, exc_info=True
+            )
+            raise ConnectionAttemptFailed from e
+        except ConnectionError as e:
+            self._logger.warning(
+                &#34;Unable to connect to RabbitMQ. Is it running?&#34;, exc_info=True
             )
             raise ConnectionAttemptFailed from e
         except Exception as e:
@@ -288,7 +288,7 @@ and providing an interface to publish messages.</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="server.message_queue_service.MessageQueueService.publish"><code class="name flex">
-<span>async def <span class="ident">publish</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payload: dict,<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
+<span>async def <span class="ident">publish</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payload: dict,<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = 2) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -314,7 +314,7 @@ and providing an interface to publish messages.</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="server.message_queue_service.MessageQueueService.publish_many"><code class="name flex">
-<span>async def <span class="ident">publish_many</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payloads: Iterable[dict],<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = DeliveryMode.PERSISTENT) ‑> None</span>
+<span>async def <span class="ident">publish_many</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payloads: Iterable[dict],<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = 2) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">

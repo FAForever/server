@@ -160,7 +160,8 @@ is to use a value based on the decorated function name.</li>
         ...
 </code></pre>
 <p>Such classes are primarily used with static type checkers that recognize
-structural subtyping (static duck-typing), for example::</p>
+structural subtyping (static duck-typing).</p>
+<p>For example::</p>
 <pre><code>class C:
     def meth(self) -&gt; int:
         return 0
@@ -174,7 +175,7 @@ func(C())  # Passes static type check
 @typing.runtime_checkable act as simple-minded runtime protocols that check
 only the presence of given attributes, ignoring their type signatures.
 Protocol classes can be generic, they are defined as::</p>
-<pre><code>class GenProto(Protocol[T]):
+<pre><code>class GenProto[T](Protocol):
     def meth(self) -&gt; T:
         ...
 </code></pre></div>

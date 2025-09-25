@@ -87,7 +87,7 @@ def all_searches(self) -&gt; set[Search]:
 </details>
 <div class="desc"></div>
 </dd>
-<dt id="server.matchmaker.algorithm.team_matchmaker.GameCandidate.match"><code class="name">var <span class="ident">match</span> : tuple['Search', 'Search']</code></dt>
+<dt id="server.matchmaker.algorithm.team_matchmaker.GameCandidate.match"><code class="name">var <span class="ident">match</span> : tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]</code></dt>
 <dd>
 <details class="source">
 <summary>
@@ -618,7 +618,7 @@ until there are enough players for a full game.</p>
 <div class="desc"></div>
 </dd>
 <dt id="server.matchmaker.algorithm.team_matchmaker.TeamMatchMaker.find"><code class="name flex">
-<span>def <span class="ident">find</span></span>(<span>self,<br>searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>],<br>team_size: int,<br>rating_peak: float) ‑> tuple[list[tuple['Search', 'Search']], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
+<span>def <span class="ident">find</span></span>(<span>self,<br>searches: Iterable[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>],<br>team_size: int,<br>rating_peak: float) ‑> tuple[list[tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]], list[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -748,7 +748,7 @@ Raises UnevenTeamsException if one of the teams doesn't have the right size.</p>
 <p>The two teams</p></div>
 </dd>
 <dt id="server.matchmaker.algorithm.team_matchmaker.TeamMatchMaker.pick_noncolliding_games"><code class="name flex">
-<span>def <span class="ident">pick_noncolliding_games</span></span>(<span>self,<br>games: Sequence[<a title="server.matchmaker.algorithm.team_matchmaker.GameCandidate" href="#server.matchmaker.algorithm.team_matchmaker.GameCandidate">GameCandidate</a>]) ‑> list[tuple['Search', 'Search']]</span>
+<span>def <span class="ident">pick_noncolliding_games</span></span>(<span>self,<br>games: Sequence[<a title="server.matchmaker.algorithm.team_matchmaker.GameCandidate" href="#server.matchmaker.algorithm.team_matchmaker.GameCandidate">GameCandidate</a>]) ‑> list[tuple[<a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="../search.html#server.matchmaker.search.Search">Search</a>]]</span>
 </code></dt>
 <dd>
 <details class="source">

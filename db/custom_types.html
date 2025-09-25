@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>server.db.custom_types API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>server.db.custom_types</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="server.db.custom_types.UTCDateTime"><code class="flex name class">
+<span>class <span class="ident">UTCDateTime</span></span>
+<span>(</span><span>*args: Any, **kwargs: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class UTCDateTime(TypeDecorator):
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value: datetime | None, dialect: Dialect) -&gt; datetime | None:
+        if value is not None:
+            if not value.tzinfo or value.tzinfo.utcoffset(value) is None:
+                raise TypeError(&#34;tzinfo is required&#34;)
+            value = value.astimezone(UTC).replace(tzinfo=None)
+        return value
+
+    def process_result_value(self, value: datetime | None, dialect: Dialect) -&gt; datetime | None:
+        if value is not None:
+            value = value.replace(tzinfo=UTC)
+        return value</code></pre>
+</details>
+<div class="desc"><p>Allows the creation of types which add additional functionality
+to an existing type.</p>
+<p>This method is preferred to direct subclassing of SQLAlchemy's
+built-in types as it ensures that all required functionality of
+the underlying type is kept in place.</p>
+<p>Typical usage::</p>
+<p>import sqlalchemy.types as types</p>
+<p>class MyType(types.TypeDecorator):
+"""Prefixes Unicode values with "PREFIX:" on the way in and
+strips it off on the way out.
+"""</p>
+<pre><code>  impl = types.Unicode
+
+  cache_ok = True
+
+  def process_bind_param(self, value, dialect):
+      return "PREFIX:" + value
+
+  def process_result_value(self, value, dialect):
+      return value[7:]
+
+  def copy(self, **kw):
+      return MyType(self.impl.length)
+</code></pre>
+<p>The class-level <code>impl</code> attribute is required, and can reference any
+:class:<code>.TypeEngine</code> class.
+Alternatively, the :meth:<code>load_dialect_impl</code>
+method can be used to provide different type classes based on the dialect
+given; in this case, the <code>impl</code> variable can reference
+<code>TypeEngine</code> as a placeholder.</p>
+<p>The :attr:<code>.TypeDecorator.cache_ok</code> class-level flag indicates if this
+custom :class:<code>.TypeDecorator</code> is safe to be used as part of a cache key.
+This flag defaults to <code>None</code> which will initially generate a warning
+when the SQL compiler attempts to generate a cache key for a statement
+that uses this type.
+If the :class:<code>.TypeDecorator</code> is not guaranteed
+to produce the same bind/result behavior and SQL generation
+every time, this flag should be set to <code>False</code>; otherwise if the
+class produces the same behavior each time, it may be set to <code>True</code>.
+See :attr:<code>.TypeDecorator.cache_ok</code> for further notes on how this works.</p>
+<p>Types that receive a Python type that isn't similar to the ultimate type
+used may want to define the :meth:<code>TypeDecorator.coerce_compared_value</code>
+method. This is used to give the expression system a hint when coercing
+Python objects into bind parameters within expressions. Consider this
+expression::</p>
+<pre><code>mytable.c.somecol + datetime.date(2009, 5, 15)
+</code></pre>
+<p>Above, if "somecol" is an <code>Integer</code> variant, it makes sense that
+we're doing date arithmetic, where above is usually interpreted
+by databases as adding a number of days to the given date.
+The expression system does the right thing by not attempting to
+coerce the "date()" value into an integer-oriented bind parameter.</p>
+<p>However, in the case of <code>TypeDecorator</code>, we are usually changing an
+incoming Python type to something new - <code>TypeDecorator</code> by default will
+"coerce" the non-typed side to be the same type as itself. Such as below,
+we define an "epoch" type that stores a date value as an integer::</p>
+<pre><code>class MyEpochType(types.TypeDecorator):
+    impl = types.Integer
+
+    cache_ok = True
+
+    epoch = datetime.date(1970, 1, 1)
+
+    def process_bind_param(self, value, dialect):
+        return (value - self.epoch).days
+
+    def process_result_value(self, value, dialect):
+        return self.epoch + timedelta(days=value)
+</code></pre>
+<p>Our expression of <code>somecol + date</code> with the above type will coerce the
+"date" on the right side to also be treated as <code>MyEpochType</code>.</p>
+<p>This behavior can be overridden via the
+:meth:<code>~TypeDecorator.coerce_compared_value</code> method, which returns a type
+that should be used for the value of the expression. Below we set it such
+that an integer value will be treated as an <code>Integer</code>, and any other
+value is assumed to be a date and will be treated as a <code>MyEpochType</code>::</p>
+<pre><code>def coerce_compared_value(self, op, value):
+    if isinstance(value, int):
+        return Integer()
+    else:
+        return self
+</code></pre>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Note that the <strong>behavior of coerce_compared_value is not inherited
+by default from that of the base type</strong>.
+If the :class:<code>.TypeDecorator</code> is augmenting a
+type that requires special logic for certain types of operators,
+this method <strong>must</strong> be overridden.
+A key example is when decorating
+the :class:<code>_postgresql.JSON</code> and :class:<code>_postgresql.JSONB</code> types;
+the default rules of :meth:<code>.TypeEngine.coerce_compared_value</code> should
+be used in order to deal with operators like index operations::</p>
+<pre><code> from sqlalchemy import JSON
+ from sqlalchemy import TypeDecorator
+
+ class MyJsonType(TypeDecorator):
+     impl = JSON
+
+     cache_ok = True
+
+     def coerce_compared_value(self, op, value):
+         return self.impl.coerce_compared_value(op, value)
+</code></pre>
+<p>Without the above step, index operations such as <code>mycol['foo']</code>
+will cause the index value <code>'foo'</code> to be JSON encoded.</p>
+<p>Similarly, when working with the :class:<code>.ARRAY</code> datatype, the
+type coercion for index operations (e.g. <code>mycol[5]</code>) is also
+handled by :meth:<code>.TypeDecorator.coerce_compared_value</code>, where
+again a simple override is sufficient unless special rules are needed
+for particular operators::</p>
+<pre><code> from sqlalchemy import ARRAY
+ from sqlalchemy import TypeDecorator
+
+ class MyArrayType(TypeDecorator):
+     impl = ARRAY
+
+     cache_ok = True
+
+     def coerce_compared_value(self, op, value):
+         return self.impl.coerce_compared_value(op, value)
+</code></pre>
+</div>
+<p>Construct a :class:<code>.TypeDecorator</code>.</p>
+<p>Arguments sent here are passed to the constructor
+of the class assigned to the <code>impl</code> class level attribute,
+assuming the <code>impl</code> is a callable, and the resulting
+object is assigned to the <code>self.impl</code> instance attribute
+(thus overriding the class attribute of the same name).</p>
+<p>If the class level <code>impl</code> is not a callable (the unusual case),
+it will be assigned to the same instance attribute 'as-is',
+ignoring those arguments passed to the constructor.</p>
+<p>Subclasses can override this to customize the generation
+of <code>self.impl</code> entirely.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>sqlalchemy.sql.type_api.TypeDecorator</li>
+<li>sqlalchemy.sql.base.SchemaEventTarget</li>
+<li>sqlalchemy.event.registry.EventTarget</li>
+<li>sqlalchemy.sql.type_api.ExternalType</li>
+<li>sqlalchemy.sql.type_api.TypeEngineMixin</li>
+<li>sqlalchemy.sql.type_api.TypeEngine</li>
+<li>sqlalchemy.sql.visitors.Visitable</li>
+<li>typing.Generic</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="server.db.custom_types.UTCDateTime.cache_ok"><code class="name">var <span class="ident">cache_ok</span></code></dt>
+<dd>
+<div class="desc"><p>The type of the None singleton.</p></div>
+</dd>
+<dt id="server.db.custom_types.UTCDateTime.impl"><code class="name">var <span class="ident">impl</span></code></dt>
+<dd>
+<div class="desc"><p>A type for <code>datetime.datetime()</code> objects.</p>
+<p>Date and time types return objects from the Python <code>datetime</code>
+module.
+Most DBAPIs have built in support for the datetime
+module, with the noted exception of SQLite.
+In the case of
+SQLite, date and time types are stored as strings which are then
+converted back to datetime objects when rows are returned.</p>
+<p>For the time representation within the datetime type, some
+backends include additional options, such as timezone support and
+fractional seconds support.
+For fractional seconds, use the
+dialect-specific datatype, such as :class:<code>.mysql.TIME</code>.
+For
+timezone support, use at least the :class:<code>_types.TIMESTAMP</code> datatype,
+if not the dialect-specific datatype object.</p></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="server.db.custom_types.UTCDateTime.process_bind_param"><code class="name flex">
+<span>def <span class="ident">process_bind_param</span></span>(<span>self,<br>value: datetime.datetime | None,<br>dialect: sqlalchemy.engine.interfaces.Dialect) ‑> datetime.datetime | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process_bind_param(self, value: datetime | None, dialect: Dialect) -&gt; datetime | None:
+    if value is not None:
+        if not value.tzinfo or value.tzinfo.utcoffset(value) is None:
+            raise TypeError(&#34;tzinfo is required&#34;)
+        value = value.astimezone(UTC).replace(tzinfo=None)
+    return value</code></pre>
+</details>
+<div class="desc"><p>Receive a bound parameter value to be converted.</p>
+<p>Custom subclasses of :class:<code>_types.TypeDecorator</code> should override
+this method to provide custom behaviors for incoming data values.
+This method is called at <strong>statement execution time</strong> and is passed
+the literal Python data value which is to be associated with a bound
+parameter in the statement.</p>
+<p>The operation could be anything desired to perform custom
+behavior, such as transforming or serializing data.
+This could also be used as a hook for validating logic.</p>
+<p>:param value: Data to operate upon, of any type expected by
+this method in the subclass.
+Can be <code>None</code>.
+:param dialect: the :class:<code>.Dialect</code> in use.</p>
+<div class="admonition seealso">
+<p class="admonition-title">Seealso</p>
+<p>:ref:<code>types_typedecorator</code></p>
+<p>:meth:<code>_types.TypeDecorator.process_result_value</code></p>
+</div></div>
+</dd>
+<dt id="server.db.custom_types.UTCDateTime.process_result_value"><code class="name flex">
+<span>def <span class="ident">process_result_value</span></span>(<span>self,<br>value: datetime.datetime | None,<br>dialect: sqlalchemy.engine.interfaces.Dialect) ‑> datetime.datetime | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process_result_value(self, value: datetime | None, dialect: Dialect) -&gt; datetime | None:
+    if value is not None:
+        value = value.replace(tzinfo=UTC)
+    return value</code></pre>
+</details>
+<div class="desc"><p>Receive a result-row column value to be converted.</p>
+<p>Custom subclasses of :class:<code>_types.TypeDecorator</code> should override
+this method to provide custom behaviors for data values
+being received in result rows coming from the database.
+This method is called at <strong>result fetching time</strong> and is passed
+the literal Python data value that's extracted from a database result
+row.</p>
+<p>The operation could be anything desired to perform custom
+behavior, such as transforming or deserializing data.</p>
+<p>:param value: Data to operate upon, of any type expected by
+this method in the subclass.
+Can be <code>None</code>.
+:param dialect: the :class:<code>.Dialect</code> in use.</p>
+<div class="admonition seealso">
+<p class="admonition-title">Seealso</p>
+<p>:ref:<code>types_typedecorator</code></p>
+<p>:meth:<code>_types.TypeDecorator.process_bind_param</code></p>
+</div></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="server.db" href="index.html">server.db</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="server.db.custom_types.UTCDateTime" href="#server.db.custom_types.UTCDateTime">UTCDateTime</a></code></h4>
+<ul class="">
+<li><code><a title="server.db.custom_types.UTCDateTime.cache_ok" href="#server.db.custom_types.UTCDateTime.cache_ok">cache_ok</a></code></li>
+<li><code><a title="server.db.custom_types.UTCDateTime.impl" href="#server.db.custom_types.UTCDateTime.impl">impl</a></code></li>
+<li><code><a title="server.db.custom_types.UTCDateTime.process_bind_param" href="#server.db.custom_types.UTCDateTime.process_bind_param">process_bind_param</a></code></li>
+<li><code><a title="server.db.custom_types.UTCDateTime.process_result_value" href="#server.db.custom_types.UTCDateTime.process_result_value">process_result_value</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>
