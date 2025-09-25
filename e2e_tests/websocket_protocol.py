@@ -10,7 +10,7 @@ from server.protocol import DisconnectedError, Protocol
 class WebsocketProtocol:
     def __init__(
         self,
-        websocket: websockets.client.WebSocketClientProtocol,
+        websocket: websockets.ClientConnection,
         protocol_class: type[Protocol],
     ):
         self.websocket = websocket
@@ -25,7 +25,7 @@ class WebsocketProtocol:
         """
         Return whether or not the connection is still alive
         """
-        return self.websocket.open
+        return self.websocket.state == websockets.protocol.OPEN
 
     async def read_message(self) -> dict:
         if self.proto.reader._buffer:

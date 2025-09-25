@@ -1018,7 +1018,6 @@ async def test_restore_game_session_lobby(lobby_server):
     ]
 
 
-@fast_forward(30)
 async def test_restore_game_session_live(lobby_server):
     host_id, _, host_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server

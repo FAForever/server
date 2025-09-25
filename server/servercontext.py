@@ -116,6 +116,11 @@ class ServerContext:
                 self.name,
                 humanize.naturaldelta(timeout)
             )
+
+        self._logger.debug("%s: stop serving", self.name)
+        if self._server:
+            self._server.close()
+
         for fut in asyncio.as_completed([
             close_or_abort(conn, proto)
             for conn, proto in self.connections.items()
@@ -123,10 +128,7 @@ class ServerContext:
             await fut
         self._logger.debug("%s: All connections closed", self.name)
 
-    async def stop(self):
-        self._logger.debug("%s: stop()", self.name)
         if self._server:
-            self._server.close()
             await self._server.wait_closed()
 
     async def drain_connections(self):

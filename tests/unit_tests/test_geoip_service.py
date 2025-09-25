@@ -4,7 +4,6 @@ import random
 import shutil
 import string
 import tarfile
-from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from time import time
@@ -15,6 +14,7 @@ from aiohttp import web
 
 import server.config
 from server.geoip_service import GeoIpService
+from server.timing import datetime_now
 
 
 @pytest.fixture
@@ -64,7 +64,7 @@ async def test_check_file_exist(fake_geoip_service, fake_geoip_path):
 
     assert fake_geoip_service.load_db.call_count == 1
     fake_geoip_service.db = mock.Mock()
-    fake_geoip_service.db_update_time = datetime.now()
+    fake_geoip_service.db_update_time = datetime_now()
 
     fake_geoip_service.check_geoip_db_file_updated()
     fake_geoip_service.check_geoip_db_file_updated()

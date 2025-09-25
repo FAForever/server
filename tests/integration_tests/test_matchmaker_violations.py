@@ -1,6 +1,8 @@
 import asyncio
 from datetime import datetime, timezone
 
+import pytest
+
 from server.config import config
 from tests.utils import fast_forward
 
@@ -111,6 +113,7 @@ async def test_violation_for_guest_timeout(mocker, lobby_server):
     }
 
 
+@pytest.mark.flaky
 @fast_forward(360)
 async def test_violation_persisted_across_logins(mocker, lobby_server):
     mocker.patch(

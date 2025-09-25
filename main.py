@@ -13,7 +13,6 @@ import os
 import signal
 import sys
 import time
-from datetime import datetime
 from functools import wraps
 
 import humanize
@@ -30,6 +29,7 @@ from server.health import HealthServer
 from server.player_service import PlayerService
 from server.profiler import Profiler
 from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
+from server.timing import datetime_now
 
 
 def log_signal(func):
@@ -42,7 +42,7 @@ def log_signal(func):
 
 
 async def main():
-    global startup_time, shutdown_time
+    global shutdown_time
 
     logger.info(
         "Lobby %s (Python %s) on %s named %s",
@@ -94,7 +94,7 @@ async def main():
     game_service: GameService = instance.services["game_service"]
 
     profiler = Profiler(player_service)
-    profiler.refresh()
+    await profiler.refresh()
     config.register_callback("PROFILING_COUNT", profiler.refresh)
     config.register_callback("PROFILING_DURATION", profiler.refresh)
     config.register_callback("PROFILING_INTERVAL", profiler.refresh)
@@ -147,7 +147,7 @@ async def main():
     server.metrics.info.info({
         "version": info.VERSION,
         "python_version": info.PYTHON_VERSION,
-        "start_time": datetime.utcnow().strftime("%m-%d %H:%M"),
+        "start_time": datetime_now().strftime("%m-%d %H:%M"),
         "game_uid": str(game_service.game_id_counter)
     })
     logger.info(

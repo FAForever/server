@@ -8,7 +8,7 @@ import logging
 import os
 import shutil
 import tarfile
-from datetime import datetime
+from datetime import UTC, datetime
 from tempfile import TemporaryFile
 from typing import IO, ClassVar
 
@@ -20,7 +20,7 @@ from maxminddb.errors import InvalidDatabaseError
 from .config import config
 from .core import Service
 from .decorators import with_logger
-from .timing import Timer
+from .timing import Timer, datetime_now
 
 
 @with_logger
@@ -75,7 +75,7 @@ class GeoIpService(Service):
             # We have loaded the file, so check if it has been updated
 
             date_modified = datetime.fromtimestamp(
-                os.path.getmtime(self.file_path)
+                os.path.getmtime(self.file_path), UTC
             )
             if date_modified > self.db_update_time:
                 self.load_db()
@@ -93,9 +93,9 @@ class GeoIpService(Service):
         self._logger.debug("Checking if geoip database needs updating")
         try:
             date_modified = datetime.fromtimestamp(
-                os.path.getmtime(self.file_path)
+                os.path.getmtime(self.file_path), UTC
             )
-            delta = datetime.now() - date_modified
+            delta = datetime_now() - date_modified
 
             if delta.days > config.GEO_IP_DATABASE_MAX_AGE_DAYS:
                 self._logger.info("Geoip database is out of date")
@@ -200,7 +200,7 @@ class GeoIpService(Service):
         """
         # Set the time first, if the file is corrupted we don't need to try
         # loading it again anyways
-        self.db_update_time = datetime.now()
+        self.db_update_time = datetime_now()
 
         try:
             new_db = maxminddb.open_database(self.file_path)

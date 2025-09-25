@@ -9,7 +9,6 @@ import logging
 import random
 import urllib.parse
 import urllib.request
-from datetime import datetime
 from functools import wraps
 from typing import ClassVar, Optional
 
@@ -533,7 +532,7 @@ class LobbyConnection:
         if dbPassword != password:
             raise AuthenticationError(auth_error_message, auth_method)
 
-        now = datetime.utcnow()
+        now = datetime_now()
         if ban_reason is not None and now < ban_expiry:
             self._logger.debug(
                 "Rejected login from banned user: %s, %s, %s",
@@ -660,7 +659,7 @@ class LobbyConnection:
             ban_reason = row.reason
             ban_expiry = row.expires_at
 
-            now = datetime.utcnow()
+            now = datetime_now()
             if ban_reason is not None and now < ban_expiry:
                 self._logger.debug(
                     "Rejected login from banned user: %s, %s, %s",
@@ -1455,7 +1454,7 @@ class LobbyConnection:
         assert self.player is not None
 
         async with self._db.acquire() as conn:
-            now = datetime.utcnow()
+            now = datetime_now()
             result = await conn.execute(
                 select(lobby_ban.c.reason, lobby_ban.c.expires_at)
                 .where(lobby_ban.c.idUser == self.player.id)
