@@ -72,7 +72,7 @@ el.replaceWith(d);
 </dd>
 <dt id="server.games.ladder_game.LadderGame"><code class="flex name class">
 <span>class <span class="ident">LadderGame</span></span>
-<span>(</span><span>id, *args, **kwargs)</span>
+<span>(</span><span>id: int,<br>database: <a title="server.db.FAFDatabase" href="../db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>game_service: GameService,<br>game_stats_service: GameStatsService,<br>host: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a> | None = None,<br>name: str = 'New Game',<br>map: <a title="server.types.Map" href="../types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1),<br>game_mode: str = 'faf',<br>matchmaker_queue_id: int | None = None,<br>rating_type: str | None = None,<br>displayed_rating_range: <a title="server.rating.InclusiveRange" href="../rating.html#server.rating.InclusiveRange">InclusiveRange</a> | None = None,<br>enforce_rating_range: bool = False,<br>max_players: int = 12,<br>setup_timeout: int = 60)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -85,9 +85,9 @@ el.replaceWith(d);
     init_mode = InitMode.AUTO_LOBBY
     game_type = GameType.MATCHMAKER
 
-    def __init__(self, id, *args, **kwargs):
-        super().__init__(id, *args, **kwargs)
-        self._launch_future: asyncio.Future[None] = asyncio.Future()
+    @cached_property
+    def _launch_future(self) -&gt; asyncio.Future:
+        return asyncio.get_running_loop().create_future()
 
     async def wait_hosted(self, timeout: float):
         return await asyncio.wait_for(

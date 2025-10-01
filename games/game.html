@@ -136,11 +136,14 @@ el.replaceWith(d);
         self.game_options.add_callback(&#34;Title&#34;, self.on_title_changed)
 
         self.mods: dict[str, str] = {}
-        self._hosted_future: asyncio.Future[None] = asyncio.Future()
         self._finish_lock = asyncio.Lock()
 
         self._logger.debug(&#34;%s created&#34;, self)
         asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
+
+    @cached_property
+    def _hosted_future(self) -&gt; asyncio.Future:
+        return asyncio.get_running_loop().create_future()
 
     async def timeout_game(self, timeout: int = 60):
         await asyncio.sleep(timeout)
