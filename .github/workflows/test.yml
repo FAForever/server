@@ -2,6 +2,7 @@
 name: Test
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -11,7 +12,7 @@ on:
     - cron: '0 0 * * *'
 
 env:
-  FAF_DB_VERSION: v136
+  FAF_DB_VERSION: v138
   FLYWAY_VERSION: 7.5.4
 
 jobs:
@@ -62,7 +63,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.13'
 
       - name: Run flyway db migrations
         env:
@@ -81,7 +82,7 @@ jobs:
 
       - name: Install dependencies with pipenv
         run: |
-          pip install pipenv==2024.4.1
+          pip install pipenv==2025.0.4
           pipenv sync --dev
           pipenv run pip install pytest-github-actions-annotate-failures
 

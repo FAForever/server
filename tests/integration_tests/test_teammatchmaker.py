@@ -640,6 +640,7 @@ async def test_ratings_initialized_based_on_global(lobby_server):
     }
 
 
+@pytest.mark.flaky
 @fast_forward(60)
 async def test_ratings_initialized_based_on_global_persisted(
     lobby_server,

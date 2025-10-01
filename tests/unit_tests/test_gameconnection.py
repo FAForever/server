@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from datetime import datetime
 from unittest import mock
 
 import pytest
@@ -19,6 +18,7 @@ from server.games import (
 )
 from server.players import PlayerState
 from server.protocol import DisconnectedError
+from server.timing import datetime_now
 from server.types import Map
 from tests.utils import exhaust_callbacks
 
@@ -708,7 +708,7 @@ async def test_handle_action_OperationComplete_duplicate(
         await conn.execute(
             game_stats.insert().values(
                 id=coop_game.id,
-                startTime=datetime.utcnow(),
+                startTime=datetime_now(),
                 gameName="Another test game",
                 gameType="0",
                 gameMod=6,

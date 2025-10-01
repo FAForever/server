@@ -134,5 +134,8 @@ async def test_backpressure_handling(lobby_server, caplog):
             "This is just to increase the message size": "DATA" * 1024
         })
 
+    # FIXME: This test effectively does nothing
+    # In #532 server handled this TimeoutError and aborted connection,
+    # but in #548 handling was removed and no alternative handling was added
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(proto.drain(), timeout=10)

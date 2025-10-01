@@ -6,6 +6,7 @@ import pathlib
 import time
 from collections import defaultdict
 from datetime import datetime
+from functools import cached_property
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Iterable, Optional
 
 from sqlalchemy import and_, bindparam
@@ -139,11 +140,14 @@ class Game:
         self.game_options.add_callback("Title", self.on_title_changed)
 
         self.mods: dict[str, str] = {}
-        self._hosted_future: asyncio.Future[None] = asyncio.Future()
         self._finish_lock = asyncio.Lock()
 
         self._logger.debug("%s created", self)
         asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
+
+    @cached_property
+    def _hosted_future(self) -> asyncio.Future:
+        return asyncio.get_running_loop().create_future()
 
     async def timeout_game(self, timeout: int = 60):
         await asyncio.sleep(timeout)
@@ -521,7 +525,8 @@ class Game:
                 self._outcome_override_hook()
                 or resolve_game(team_player_partial_outcomes)
             )
-        except GameResolutionError:
+        except GameResolutionError as e:
+            self._logger.warning("Game resolution failed: %s", e)
             if self.validity is ValidityState.VALID:
                 await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
 

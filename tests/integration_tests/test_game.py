@@ -7,9 +7,9 @@ from datetime import datetime
 from unittest import mock
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import and_, select
 
-from server.db.models import game_player_stats
+from server.db.models import game_join_log, game_player_stats
 from server.games.game_results import GameOutcome
 from server.protocol import Protocol
 from server.timing import datetime_now
@@ -438,6 +438,61 @@ async def test_game_with_foed_player(lobby_server):
     game_id = await host_game(host_proto)
     with pytest.raises(asyncio.TimeoutError):
         await join_game(guest_proto, game_id)
+
+
+@fast_forward(60)
+async def test_game_join_log(lobby_server, database):
+    _, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    guest_id, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    await read_until_command(guest_proto, "game_info")
+    await read_until_command(host_proto, "game_info")
+
+    # Host game
+    await host_proto.send_message({
+        "command": "game_host",
+        "mod": "faf",
+        "visibility": "public",
+    })
+    game_id = await host_game(host_proto)
+
+    # Join a player
+    await join_game(guest_proto, game_id)
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select(game_join_log).where(
+                and_(
+                    game_join_log.c.game_id == game_id,
+                    game_join_log.c.player_id == guest_id
+                )
+            )
+        )
+        row = result.one()
+        assert row is not None
+
+    # Leave and re-join
+    await guest_proto.send_message({
+        "target": "game",
+        "command": "GameState",
+        "args": ["Ended"]
+    })
+    await join_game(guest_proto, game_id)
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select(game_join_log).where(
+                and_(
+                    game_join_log.c.game_id == game_id,
+                    game_join_log.c.player_id == guest_id
+                )
+            )
+        )
+        rows = result.fetchall()
+        assert len(rows) == 2
 
 
 @fast_forward(60)
@@ -1012,7 +1067,6 @@ async def test_restore_game_session_lobby(lobby_server):
     ]
 
 
-@fast_forward(30)
 async def test_restore_game_session_live(lobby_server):
     host_id, _, host_proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
@@ -1175,9 +1229,9 @@ async def test_partial_game_ended_rates_game(lobby_server, tmp_user):
         # Set player options
         await send_player_options(
             host_proto,
-            [guest_id, "Army", i+2],
-            [guest_id, "StartSpot", i+2],
-            [guest_id, "Color", i+2],
+            [guest_id, "Army", i + 2],
+            [guest_id, "StartSpot", i + 2],
+            [guest_id, "Color", i + 2],
             [guest_id, "Faction", 1],
             [guest_id, "Team", 3 if i % 2 == 0 else 2]
         )

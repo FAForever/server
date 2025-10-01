@@ -2,9 +2,9 @@
 Common exception definitions
 """
 
-from datetime import datetime
-
 import humanize
+
+from server.timing import datetime_now
 
 
 class ClientError(Exception):
@@ -40,7 +40,7 @@ class BanError(Exception):
         )
 
     def _ban_duration_text(self):
-        ban_duration = self.ban_expiry - datetime.utcnow()
+        ban_duration = self.ban_expiry - datetime_now()
         if ban_duration.days > 365 * 100:
             return "forever"
         humanized_ban_duration = humanize.precisedelta(

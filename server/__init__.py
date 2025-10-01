@@ -306,13 +306,11 @@ class ServerInstance(object):
         """
         Immediately shutdown the server.
 
-        1. Stop accepting new connections
-        2. Stop all services
-        3. Close all existing connections
+        1. Stop all services
+        2. Stop accepting new and close all existing connections
         """
         self._logger.info("Initiating full shutdown")
 
-        await self._stop_contexts()
         await self._shutdown_services()
         await self._shutdown_contexts()
 
@@ -353,14 +351,6 @@ class ServerInstance(object):
             self.services.values(),
             logger=self._logger,
             msg="when shutting down service "
-        )
-
-    async def _stop_contexts(self):
-        await map_suppress(
-            lambda ctx: ctx.stop(),
-            self.contexts,
-            logger=self._logger,
-            msg="when stopping context "
         )
 
     async def _shutdown_contexts(self):

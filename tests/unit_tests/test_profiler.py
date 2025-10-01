@@ -29,7 +29,7 @@ async def test_profiler_cancel():
 
     profiler._start()
     await asyncio.sleep(1)
-    profiler.cancel()
+    await profiler.cancel()
     await asyncio.sleep(10)
 
     assert profiler.profile_count < 20
@@ -44,7 +44,7 @@ async def test_profiler_immediately_cancelled():
 
     profiler._start()
     await asyncio.sleep(0)
-    profiler.cancel()
+    await profiler.cancel()
     await asyncio.sleep(10)
 
     assert profiler.profile_count == 0
@@ -68,7 +68,7 @@ async def test_profiler():
 
     profiler.profiler.dump_stats.assert_called()
 
-    profiler.cancel()
+    await profiler.cancel()
     assert profiler.profiler is None
 
 
@@ -90,7 +90,7 @@ async def test_profiler_not_running_under_high_load():
 
     profiler.profiler.dump_stats.assert_not_called()
 
-    profiler.cancel()
+    await profiler.cancel()
     assert profiler.profiler is None
 
 
@@ -115,10 +115,10 @@ async def test_profiler_refreshing():
     mock_player_service = []
     profiler = Profiler(mock_player_service, outfile=None)
 
-    profiler.refresh()
+    await profiler.refresh()
     await asyncio.sleep(5)
 
-    profiler.refresh()
+    await profiler.refresh()
     await asyncio.sleep(5)
 
 
@@ -132,12 +132,12 @@ async def test_profiler_refresh_cancels():
 
     enable_mock = mock.Mock()
 
-    profiler.refresh()
+    await profiler.refresh()
     profiler.profiler.enable = enable_mock
     await asyncio.sleep(10)
 
     config.PROFILING_INTERVAL = -1
-    profiler.refresh()
+    await profiler.refresh()
     await asyncio.sleep(10)
 
     assert profiler._running is False
