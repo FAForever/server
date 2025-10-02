@@ -162,7 +162,8 @@ class VetoService(Service):
                 total_tokens,
                 max_per_map,
             )
-            adjusted_vetoes[bracket_id] = bracket_vetoes
+            if bracket_vetoes:
+                adjusted_vetoes[bracket_id] = bracket_vetoes
 
         return adjusted_vetoes
 
