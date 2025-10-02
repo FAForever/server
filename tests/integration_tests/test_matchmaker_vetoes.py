@@ -1,5 +1,5 @@
 from server.players import PlayerState
-from tests.utils import fast_forward
+from tests.utils import exhaust_callbacks, fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
 from .test_game import (
@@ -16,8 +16,11 @@ async def test_vetoes_are_assigned_to_player_with_adjusting(lobby_server, player
             "command": "set_player_vetoes",
             "vetoes": vetoes
         })
-        msg = await read_until_command(proto, "vetoes_info")
-        assert msg["vetoes"] == expected_vetoes
+        if vetoes != expected_vetoes:
+            msg = await read_until_command(proto, "vetoes_info")
+            assert msg["vetoes"] == expected_vetoes
+        else:
+            await exhaust_callbacks()
         assert player_service.get_player(player_id).vetoes.to_dict()["vetoes"] == expected_vetoes
 
     player_id, _, proto = await connect_and_sign_in(("test", "test_password"), lobby_server)

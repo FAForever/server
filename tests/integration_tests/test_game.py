@@ -218,7 +218,6 @@ async def queue_player_for_matchmaking(user, lobby_server, queue_name="ladder1v1
             "command": "set_player_vetoes",
             "vetoes": vetoes
         })
-        await read_until_command(proto, "vetoes_info")
 
     await start_search(proto, queue_name)
 
