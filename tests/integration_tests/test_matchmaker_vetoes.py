@@ -10,7 +10,9 @@ from .test_game import (
 )
 
 
-async def test_vetoes_are_assigned_to_player_with_adjusting(lobby_server, player_service):
+async def test_vetoes_are_assigned_to_player_with_adjusting(lobby_server, ladder_service, player_service):
+    await ladder_service.update_data()
+
     async def test_vetoes(proto, vetoes, expected_vetoes):
         await proto.send_message({
             "command": "set_player_vetoes",
