@@ -7,6 +7,7 @@ https://github.com/gawel/aiocron/blob/e82a53c3f9a7950209cee7b3e493204c1dfc8b12/a
 
 import asyncio
 import functools
+import inspect
 
 
 async def null_callback(*args):
@@ -19,7 +20,7 @@ def wrap_func(func):
         _func = func.func
     else:
         _func = func
-    if not asyncio.iscoroutinefunction(_func):
+    if not inspect.iscoroutinefunction(_func):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             return func(*args, **kwargs)

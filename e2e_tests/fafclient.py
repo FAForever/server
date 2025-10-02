@@ -2,7 +2,7 @@ import asyncio
 import subprocess
 from hashlib import sha256
 
-from websockets.client import connect as ws_connect
+from websockets import connect as ws_connect
 
 from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
 from tests.integration_tests.conftest import read_until, read_until_command

@@ -37,13 +37,13 @@ class Profiler:
         self._running = False
         self._task: Optional[asyncio.Task] = None
 
-    def refresh(self):
+    async def refresh(self) -> None:
         self.interval = config.PROFILING_INTERVAL
         self.duration = config.PROFILING_DURATION
         self.max_count = config.PROFILING_COUNT
         self.profile_count = 0
 
-        self.cancel()
+        await self.cancel()
         if self.interval > 0 and self.duration > 0 and self.max_count > 0:
             self._start()
 
@@ -54,7 +54,7 @@ class Profiler:
         if self._task is None:
             self._task = asyncio.create_task(self._next_run())
 
-    async def _next_run(self):
+    async def _next_run(self) -> None:
         await asyncio.sleep(self.interval)
 
         if self._running:
@@ -64,9 +64,9 @@ class Profiler:
                 pass
 
         if self.profile_count < self.max_count and self._running:
-            self._task = asyncio.create_task(self._next_run())
+            await self._next_run()
         else:
-            self.cancel()
+            await self.cancel()
 
     async def _run(self):
         assert self.profiler is not None
@@ -90,11 +90,17 @@ class Profiler:
         if self._outfile is not None:
             self.profiler.dump_stats(self._outfile)
 
-    def cancel(self):
+    async def cancel(self) -> None:
         self._running = False
         if self._task is not None:
             self._task.cancel()
+            try:
+                await self._task
+            except CancelledError:
+                pass
             self._task = None
 
+        if self.profiler is not None:
+            self.profiler.disable()
         del self.profiler
         self.profiler = None

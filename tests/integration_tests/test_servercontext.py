@@ -44,7 +44,6 @@ def mock_service():
 async def mock_context(mock_connection, mock_service):
     ctx = ServerContext("TestServer", lambda: mock_connection, [mock_service])
     yield await ctx.listen("127.0.0.1", None), ctx
-    await ctx.stop()
     await ctx.shutdown()
 
 
@@ -65,7 +64,6 @@ async def context(mock_service):
 
     ctx = ServerContext("TestServer", make_connection, [mock_service])
     yield await ctx.listen("127.0.0.1", None), ctx
-    await ctx.stop()
     await ctx.shutdown()
 
 

@@ -53,16 +53,12 @@ async def rating_service(database, player_service):
     mock_ratings = defaultdict(dict)
 
     def set_mock_rating(player_id, rating_type, rating):
-        nonlocal mock_ratings
-        nonlocal mock_service
         mock_service._logger.debug(
             f"Set mock {rating_type} rating for player {player_id}: {rating}"
         )
         mock_ratings[player_id][rating_type] = rating
 
     def get_mock_ratings(conn, player_ids, **kwargs):
-        nonlocal mock_ratings
-        nonlocal mock_service
         player_ratings = {
             player_id: PlayerRatings(mock_service.leaderboards, init=False)
             for player_id in player_ids
