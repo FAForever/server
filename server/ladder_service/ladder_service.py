@@ -683,7 +683,10 @@ class LadderService(Service):
             raise NotConnectedError([
                 player for player in guests
                 if player not in connected_players
-            ])
+            # The host is included here, because he might be responsible for
+            # a guest being unable to connect, e.g. because they didn't
+            # receive his connect message.
+            ] + [host])
 
     async def get_game_history(
         self,
