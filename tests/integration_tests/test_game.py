@@ -209,7 +209,9 @@ def gen_vetoes(veto_tuples):
     ]
 
 
-async def queue_player_for_matchmaking(user, lobby_server, queue_name="ladder1v1", vetoes=[]):
+async def queue_player_for_matchmaking(user, lobby_server, queue_name="ladder1v1", vetoes=None):
+    if vetoes is None:
+        vetoes = []
     player_id, _, proto = await connect_and_sign_in(user, lobby_server)
     await read_until_command(proto, "game_info")
 

@@ -38,7 +38,7 @@ async def test_if_veto_bans_working(lobby_server, mocker):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 0.02)
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MIN", 0.01)
 
-    for i in range(20):
+    for _ in range(20):
         _, proto1 = await queue_player_for_matchmaking(
             ("ladder1", "ladder1"), lobby_server, "ladder1v1", gen_vetoes([(1, 1, 1)])
         )
