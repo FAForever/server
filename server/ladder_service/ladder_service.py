@@ -8,7 +8,7 @@ import random
 import re
 import statistics
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Coroutine, Optional
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Coroutine, Optional, cast
 
 import aiocron
 import humanize
@@ -48,7 +48,7 @@ from server.matchmaker import (
 )
 from server.metrics import MatchLaunch
 from server.players import Player, PlayerState
-from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
+from server.types import GameLaunchOptions, Map, MapPoolMap, NeroxisGeneratedMap
 
 if TYPE_CHECKING:
     from server.lobbyconnection import LobbyConnection
@@ -122,7 +122,7 @@ class LadderService(Service):
                 queue.add_map_pool(
                     MatchmakerQueueMapPool(
                         matchmaker_queue_map_pool_id,
-                        MapPool(map_pool_id, map_pool_name, map_list),
+                        MapPool(map_pool_id, map_pool_name, cast(list[MapPoolMap], map_list)),
                         min_rating,
                         max_rating,
                         veto_tokens_per_player,

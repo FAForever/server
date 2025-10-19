@@ -300,7 +300,7 @@ def _adjust_vetoes_for_bracket(
     new_bracket_vetoes: VetosMap,
     map_ids: list[MapPoolMapVersionId],
     total_tokens: int,
-    max_per_map: int,
+    max_per_map: float,
 ) -> VetosMap:
     assert total_tokens >= 0
 
@@ -324,7 +324,7 @@ def _adjust_vetoes_for_bracket(
 def _cap_tokens(
     tokens: int,
     total_remaining: int,
-    max_per_map: int,
+    max_per_map: float,
 ) -> int:
     assert total_remaining >= 0
 

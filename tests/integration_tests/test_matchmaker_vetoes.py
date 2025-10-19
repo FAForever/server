@@ -10,7 +10,7 @@ from .test_game import (
 )
 
 
-async def test_vetoes_are_assigned_to_player_with_adjusting(lobby_server, ladder_service, player_service):
+async def test_vetoes_are_assigned_to_player_with_adjusting(lobby_server, player_service):
     async def test_vetoes(proto, vetoes, expected_vetoes):
         await proto.send_message({
             "command": "set_player_vetoes",
@@ -62,7 +62,7 @@ async def test_dynamic_max_tokens_per_map(lobby_server, mocker):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 0.02)
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MIN", 0.01)
 
-    for i in range(20):
+    for _ in range(20):
         _, proto1 = await queue_player_for_matchmaking(
             ("ladder801", "ladder801"), lobby_server, "ladder1v1", gen_vetoes([(2, 4, 1), (2, 5, 1)])
         )
@@ -86,7 +86,7 @@ async def test_partial_vetoes(lobby_server, mocker):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MIN", 0.01)
     chosen_maps = set()
 
-    for i in range(20):
+    for _ in range(20):
         _, proto1 = await queue_player_for_matchmaking(
             ("ladder1001", "ladder1001"), lobby_server, "ladder1v1", gen_vetoes([(3, 9, 1), (3, 11, 1)])
         )
@@ -111,7 +111,7 @@ async def test_partial_vetoes(lobby_server, mocker):
 async def test_vetoes_tmm(lobby_server, mocker):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 0.02)
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MIN", 0.01)
-    for i in range(20):
+    for _ in range(20):
         player_vetoes = [
             ("ladder1", gen_vetoes([(4, 9, 1)])),
             ("ladder2", gen_vetoes([(4, 9, 1)])),

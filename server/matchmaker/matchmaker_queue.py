@@ -66,7 +66,7 @@ class MatchmakerQueue:
         self.team_size = team_size
         self.rating_peak = 1000.0
         self.params = params or {}
-        self.map_pools = {info[0].id: info for info in map_pools}
+        self.map_pools = {info.id: info for info in map_pools}
 
         self._queue: dict[Search, None] = OrderedDict()
         self.on_match_found = on_match_found

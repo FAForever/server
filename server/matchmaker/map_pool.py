@@ -112,5 +112,5 @@ class MatchmakerQueueMapPool(NamedTuple):
     min_rating: Optional[int]
     max_rating: Optional[int]
     veto_tokens_per_player: int = 0
-    max_tokens_per_map: int = 0
+    max_tokens_per_map: float = 0
     minimum_maps_after_veto: float = 1
