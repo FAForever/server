@@ -331,6 +331,6 @@ def _cap_tokens(
     applied = min(max(tokens, 0), total_remaining)
 
     if max_per_map > 0:
-        applied = min(applied, max_per_map)
+        applied = int(min(applied, max_per_map))
 
     return applied

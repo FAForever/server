@@ -8,7 +8,15 @@ import random
 import re
 import statistics
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Coroutine, Optional, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Coroutine,
+    Optional,
+    cast
+)
 
 import aiocron
 import humanize
@@ -48,7 +56,12 @@ from server.matchmaker import (
 )
 from server.metrics import MatchLaunch
 from server.players import Player, PlayerState
-from server.types import GameLaunchOptions, Map, MapPoolMap, NeroxisGeneratedMap
+from server.types import (
+    GameLaunchOptions,
+    Map,
+    MapPoolMap,
+    NeroxisGeneratedMap
+)
 
 if TYPE_CHECKING:
     from server.lobbyconnection import LobbyConnection
