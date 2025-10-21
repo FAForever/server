@@ -38,11 +38,16 @@ class MapPool(object):
         adjusted_weights = notzero_weights.copy()
 
         def get_notrepeated_weight_transfer_targets(current_weight, rep_count):
-            for base_threshold in base_thresholds:
+            thresholds = list(base_thresholds)
+            factor = repeat_factor ** (rep_count - 1)
+            if factor < 1:
+                thresholds.extend(t * factor for t in base_thresholds if t * factor < base_thresholds[-1])
+
+            for threshold in thresholds:
                 targets = [
                     target_id for target_id in notzero_weights
                     if repetition_counts.get(target_id, 0) == 0 and
-                    notzero_weights[target_id] >= base_threshold * repeat_factor ** (rep_count - 1) * current_weight
+                    notzero_weights[target_id] >= threshold * current_weight
                 ]
                 if targets:
                     return targets

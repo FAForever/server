@@ -250,7 +250,7 @@ def test_choose_map_raises_on_empty_map_pool(map_pool_factory):
             {1: 0, 2: 1.5, 3: 1.5}
         ),
         # Really complex redistribution test
-        # 1 -> [5,6], [2,3] -> [5,6,8], [7,9] -> 5
+        # 1 -> [5], [2,3] -> [5,6,8], [7,9] -> 5
         (
             {1: 0.9, 2: 0.6, 3: 0.4, 4: 0.2, 5: 0.75, 6: 0.6, 7: 1, 8: 0.5, 9: 1},
             [1, 1, 2, 3, 7, 9],
@@ -261,8 +261,8 @@ def test_choose_map_raises_on_empty_map_pool(map_pool_factory):
                 2: 0,
                 3: 0,
                 4: 0.2,
-                5: pytest.approx(3.655405, rel=1e-6),
-                6: pytest.approx(1.324324, rel=1e-6),
+                5: pytest.approx(4.055405, rel=1e-6),
+                6: pytest.approx(0.924324, rel=1e-6),
                 7: 0,
                 8: pytest.approx(0.770270, rel=1e-6),
                 9: 0
@@ -279,8 +279,8 @@ def test_choose_map_raises_on_empty_map_pool(map_pool_factory):
                 2: 0,
                 3: 0,
                 4: 0.2,
-                5: pytest.approx(3.655405, rel=1e-6),
-                6: pytest.approx(1.324324, rel=1e-6),
+                5: pytest.approx(4.055405, rel=1e-6),
+                6: pytest.approx(0.924324, rel=1e-6),
                 7: 0,
                 8: pytest.approx(0.770270, rel=1e-6),
                 9: 0

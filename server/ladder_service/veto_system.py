@@ -274,7 +274,7 @@ def _is_valid_veto_config_for_queue(
         # tokens/map > number of maps that may be vetoed
         # TODO: because vetoable_maps >= 0 this inequality also implies
         # queue_config.minimum_maps_after_veto > num_maps
-        # Why is it strictly greater than here but greater than or equal to above?
+
         if vetoable_maps > num_maps - queue_config.minimum_maps_after_veto:
             return False
 
