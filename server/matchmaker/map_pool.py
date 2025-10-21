@@ -105,7 +105,7 @@ class MapPool(object):
         self._logger.debug("______map_list________________: %s", map_list)
         final_weights = [adjusted_weights.get(mp_mv_id, 0) * m.weight for mp_mv_id, m in map_list]
         self._logger.debug("______final_weights________________: %s", final_weights)
-        return random.choices([map for _, map in map_list], weights=final_weights, k=1)[0].get_map()
+        return random.choices([map for _, map in map_list], weights=final_weights, k=1)[0].get_map()  # nosec B311
 
     def __repr__(self) -> str:
         return f"MapPool({self.id}, {self.name}, {list(self.maps.values())})"
