@@ -146,6 +146,7 @@ class NeroxisGeneratedMap(NamedTuple):
             folder_name=folder_name,
             ranked=True,
             weight=self.weight,
+            map_pool_map_version_id=self.map_pool_map_version_id,
         )
 
 
