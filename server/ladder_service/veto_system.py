@@ -260,9 +260,13 @@ def _is_valid_veto_config_for_queue(
 ) -> bool:
     num_maps = len(queue_config.map_pool.maps)
 
+    if (queue_config.minimum_maps_after_veto > num_maps):
+        return False
+
     if (
         queue_config.max_tokens_per_map == 0
-        and queue_config.minimum_maps_after_veto >= num_maps
+        and queue_config.minimum_maps_after_veto == num_maps
+        and queue_config.veto_tokens_per_player > 0
     ):
         return False
 
@@ -270,11 +274,6 @@ def _is_valid_veto_config_for_queue(
         total_players = queue.team_size * 2
         vetoable_maps_per_player = queue_config.veto_tokens_per_player / queue_config.max_tokens_per_map
         vetoable_maps = total_players * vetoable_maps_per_player
-
-        # tokens/map > number of maps that may be vetoed
-        # TODO: because vetoable_maps >= 0 this inequality also implies
-        # queue_config.minimum_maps_after_veto > num_maps
-
         if vetoable_maps > num_maps - queue_config.minimum_maps_after_veto:
             return False
 
