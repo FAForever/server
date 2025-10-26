@@ -116,7 +116,7 @@ class VetoService(Service):
                         map_pool_map_version_ids=[
                             map.map_pool_map_version_id
                             for map in matchmaker_queue_map_pool.map_pool.maps.values()
-                        ] + [-1],
+                        ],
                         veto_tokens_per_player=veto_tokens_per_player,
                         max_tokens_per_map=max_tokens_per_map,
                         minimum_maps_after_veto=minimum_maps_after_veto
