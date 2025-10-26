@@ -175,7 +175,7 @@ async def test_map_pool_changes_causing_silent_update_and_not_stops_search(playe
             )
         await ladder_service.update_data()
         msg = await read_until_command(proto, "vetoes_info", timeout=10)
-        print(f"Received vetoes_info: {msg}")
+
         assert msg.get("forced") is False
         assert msg["vetoes"] == gen_vetoes([])
         assert player.state == PlayerState.SEARCHING_LADDER
