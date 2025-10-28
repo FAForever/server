@@ -27,8 +27,6 @@ def test_is_valid_veto_config_for_queue(queue_factory):
     ) is False
 
     # minimum_maps_after_veto equal to map pool size
-    # TODO: Is calling this invalid really the desired behavior? When
-    # max_tokens_per_map != 0, they are allowed to be equal
     assert _is_valid_veto_config_for_queue(
         queue,
         MatchmakerQueueMapPool(
@@ -40,7 +38,7 @@ def test_is_valid_veto_config_for_queue(queue_factory):
             max_tokens_per_map=0,
             minimum_maps_after_veto=1,
         )
-    ) is False
+    ) is True
 
     assert _is_valid_veto_config_for_queue(
         queue,

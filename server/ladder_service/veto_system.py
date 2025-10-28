@@ -116,7 +116,7 @@ class VetoService(Service):
                         map_pool_map_version_ids=[
                             map.map_pool_map_version_id
                             for map in matchmaker_queue_map_pool.map_pool.maps.values()
-                        ] + [-1],
+                        ],
                         veto_tokens_per_player=veto_tokens_per_player,
                         max_tokens_per_map=max_tokens_per_map,
                         minimum_maps_after_veto=minimum_maps_after_veto
@@ -260,9 +260,13 @@ def _is_valid_veto_config_for_queue(
 ) -> bool:
     num_maps = len(queue_config.map_pool.maps)
 
+    if (queue_config.minimum_maps_after_veto > num_maps):
+        return False
+
     if (
         queue_config.max_tokens_per_map == 0
-        and queue_config.minimum_maps_after_veto >= num_maps
+        and queue_config.minimum_maps_after_veto == num_maps
+        and queue_config.veto_tokens_per_player > 0
     ):
         return False
 
@@ -270,11 +274,6 @@ def _is_valid_veto_config_for_queue(
         total_players = queue.team_size * 2
         vetoable_maps_per_player = queue_config.veto_tokens_per_player / queue_config.max_tokens_per_map
         vetoable_maps = total_players * vetoable_maps_per_player
-
-        # tokens/map > number of maps that may be vetoed
-        # TODO: because vetoable_maps >= 0 this inequality also implies
-        # queue_config.minimum_maps_after_veto > num_maps
-        # Why is it strictly greater than here but greater than or equal to above?
         if vetoable_maps > num_maps - queue_config.minimum_maps_after_veto:
             return False
 
