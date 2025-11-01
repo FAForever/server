@@ -58,7 +58,7 @@ class VetoService(Service):
 
         if self.pools_veto_data == pools_vetodata:
             return []
-        
+
         self.pools_veto_data = pools_vetodata
 
         pool_maps_by_bracket = {
