@@ -29,11 +29,22 @@ class GameLaunchOptions(NamedTuple):
     expected_players: Optional[int] = None
     map_position: Optional[int] = None
     game_options: Optional[dict[str, Any]] = None
+    map_pool_map_version_id: Optional[int] = None
+
+
+class MatchmakerQueueMapPoolVetoData(NamedTuple):
+    matchmaker_queue_map_pool_id: int
+    map_pool_map_version_ids: list[int]
+    veto_tokens_per_player: int
+    max_tokens_per_map: float
+    minimum_maps_after_veto: float
 
 
 class MapPoolMap(Protocol):
     @property
     def id(self) -> Optional[int]: ...
+    @property
+    def map_pool_map_version_id(self) -> int: ...
 
     @property
     def weight(self) -> int: ...
@@ -47,6 +58,7 @@ class Map(NamedTuple):
     ranked: bool = False
     # Map pool only
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @property
     def file_path(self) -> str:
@@ -70,6 +82,7 @@ class NeroxisGeneratedMap(NamedTuple):
     spawns: int
     map_size_pixels: int
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -> bool:
@@ -77,7 +90,7 @@ class NeroxisGeneratedMap(NamedTuple):
         return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
-    def of(cls, params: dict, weight: int = 1):
+    def of(cls, params: dict, weight: int = 1, map_pool_map_version_id: Optional[int] = None):
         """Create a NeroxisGeneratedMap from params dict"""
         assert params["type"] == "neroxis"
 
@@ -100,6 +113,7 @@ class NeroxisGeneratedMap(NamedTuple):
             spawns,
             map_size_pixels,
             weight,
+            map_pool_map_version_id,
         )
 
     @staticmethod
@@ -132,6 +146,7 @@ class NeroxisGeneratedMap(NamedTuple):
             folder_name=folder_name,
             ranked=True,
             weight=self.weight,
+            map_pool_map_version_id=self.map_pool_map_version_id,
         )
 
 
@@ -139,6 +154,7 @@ class NeroxisGeneratedMap(NamedTuple):
 # the map argument in unit tests.
 MAP_DEFAULT = Map(
     id=None,
+    map_pool_map_version_id=None,
     folder_name="scmp_007",
     ranked=False,
 )

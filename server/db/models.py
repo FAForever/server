@@ -295,10 +295,14 @@ matchmaker_queue_game = Table(
 
 matchmaker_queue_map_pool = Table(
     "matchmaker_queue_map_pool", metadata,
-    Column("matchmaker_queue_id",   Integer,    ForeignKey("matchmaker_queue.id"),  nullable=False),
-    Column("map_pool_id",           Integer,    ForeignKey("map_pool.id"),          nullable=False),
-    Column("min_rating",            Integer),
-    Column("max_rating",            Integer),
+    Column("id",                       Integer, primary_key=True),
+    Column("matchmaker_queue_id",      Integer, ForeignKey("matchmaker_queue.id"), nullable=False),
+    Column("map_pool_id",              Integer, ForeignKey("map_pool.id"),         nullable=False),
+    Column("min_rating",               Integer),
+    Column("max_rating",               Integer),
+    Column("veto_tokens_per_player",   Integer, nullable=False),
+    Column("max_tokens_per_map",       Integer, nullable=False),
+    Column("minimum_maps_after_veto",  Float,   nullable=False),
 )
 
 teamkills = Table(

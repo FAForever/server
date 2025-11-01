@@ -2,11 +2,13 @@
 Player type definitions
 """
 
+import logging
 from collections import defaultdict
 from contextlib import suppress
 from enum import Enum, unique
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, ClassVar, Optional, Union
 
+from .decorators import with_logger
 from .factions import Faction
 from .protocol import DisconnectedError
 from .rating import Leaderboard, PlayerRatings, RatingType
@@ -29,7 +31,9 @@ class PlayerState(Enum):
     STARTING_GAME = 7
 
 
+@with_logger
 class Player:
+    _logger: ClassVar[logging.Logger]
     """
     Standard player object used for representing signed-in players.
 
@@ -52,7 +56,9 @@ class Player:
         game_count: Optional[dict[str, int]] = None,
         lobby_connection: Optional["LobbyConnection"] = None
     ) -> None:
+        from server.ladder_service.veto_system import PlayerVetoes
         self._faction = Faction.uef
+        self.vetoes = PlayerVetoes()
 
         # The player_id of the user in the `login` table of the database.
         self.id = player_id

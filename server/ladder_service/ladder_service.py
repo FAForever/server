@@ -8,7 +8,15 @@ import random
 import re
 import statistics
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Coroutine, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Coroutine,
+    Optional,
+    cast
+)
 
 import aiocron
 import humanize
@@ -37,16 +45,23 @@ from server.game_service import GameService
 from server.games import InitMode, LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service.game_name import game_name
+from server.ladder_service.veto_system import VetoService
 from server.ladder_service.violation_service import ViolationService
 from server.matchmaker import (
     MapPool,
     MatchmakerQueue,
+    MatchmakerQueueMapPool,
     OnMatchedCallback,
     Search
 )
 from server.metrics import MatchLaunch
 from server.players import Player, PlayerState
-from server.types import GameLaunchOptions, Map, NeroxisGeneratedMap
+from server.types import (
+    GameLaunchOptions,
+    Map,
+    MapPoolMap,
+    NeroxisGeneratedMap
+)
 
 if TYPE_CHECKING:
     from server.lobbyconnection import LobbyConnection
@@ -66,12 +81,14 @@ class LadderService(Service):
         database: FAFDatabase,
         game_service: GameService,
         violation_service: ViolationService,
+        veto_service: VetoService,
     ):
         self._db = database
         self._informed_players: set[Player] = set()
         self.game_service = game_service
         self.queues: dict[str, MatchmakerQueue] = {}
         self.violation_service = violation_service
+        self.veto_service = veto_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
         self._allow_new_searches = True
@@ -106,7 +123,7 @@ class LadderService(Service):
                 queue.team_size = info["team_size"]
                 queue.rating_peak = await self.fetch_rating_peak(info["rating_type"])
             queue.map_pools.clear()
-            for map_pool_id, min_rating, max_rating in info["map_pools"]:
+            for matchmaker_queue_map_pool_id, map_pool_id, min_rating, max_rating, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto in info["map_pools"]:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]
                 if not map_list:
                     self._logger.warning(
@@ -116,9 +133,15 @@ class LadderService(Service):
                         name
                     )
                 queue.add_map_pool(
-                    MapPool(map_pool_id, map_pool_name, map_list),
-                    min_rating,
-                    max_rating
+                    MatchmakerQueueMapPool(
+                        matchmaker_queue_map_pool_id,
+                        MapPool(map_pool_id, map_pool_name, cast(list[MapPoolMap], map_list)),
+                        min_rating,
+                        max_rating,
+                        veto_tokens_per_player,
+                        max_tokens_per_map,
+                        minimum_maps_after_veto
+                    )
                 )
         # Remove queues that don't exist anymore
         for queue_name in list(self.queues.keys()):
@@ -126,11 +149,16 @@ class LadderService(Service):
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
 
+        affected_players = self.veto_service.update_pools_veto_config(self.queues)
+        for player in affected_players:
+            self.cancel_search(player)
+
     async def fetch_map_pools(self, conn) -> dict[int, tuple[str, list[Map]]]:
         result = await conn.execute(
             select(
                 map_pool.c.id,
                 map_pool.c.name,
+                map_pool_map_version.c.id.label("map_pool_map_version_id"),
                 map_pool_map_version.c.weight,
                 map_pool_map_version.c.map_params,
                 map_version.c.id.label("map_id"),
@@ -159,6 +187,7 @@ class LadderService(Service):
                 map_list.append(
                     Map(
                         id=row.map_id,
+                        map_pool_map_version_id=row.map_pool_map_version_id,
                         folder_name=folder_name,
                         ranked=row.ranked,
                         weight=row.weight,
@@ -170,7 +199,7 @@ class LadderService(Service):
                     map_type = params["type"]
                     if map_type == "neroxis":
                         map_list.append(
-                            NeroxisGeneratedMap.of(params, row.weight)
+                            NeroxisGeneratedMap.of(params, row.weight, row.map_pool_map_version_id)
                         )
                     else:
                         self._logger.warning(
@@ -197,9 +226,13 @@ class LadderService(Service):
                 matchmaker_queue.c.technical_name,
                 matchmaker_queue.c.team_size,
                 matchmaker_queue.c.params,
+                matchmaker_queue_map_pool.c.id.label("matchmaker_queue_map_pool_id"),
                 matchmaker_queue_map_pool.c.map_pool_id,
                 matchmaker_queue_map_pool.c.min_rating,
                 matchmaker_queue_map_pool.c.max_rating,
+                matchmaker_queue_map_pool.c.veto_tokens_per_player,
+                matchmaker_queue_map_pool.c.max_tokens_per_map,
+                matchmaker_queue_map_pool.c.minimum_maps_after_veto,
                 game_featuredMods.c.gamemod,
                 leaderboard.c.technical_name.label("rating_type")
             )
@@ -228,9 +261,13 @@ class LadderService(Service):
                 info["team_size"] = row.team_size
                 info["params"] = json.loads(row.params) if row.params else None
                 info["map_pools"].append((
+                    row.matchmaker_queue_map_pool_id,
                     row.map_pool_id,
                     row.min_rating,
-                    row.max_rating
+                    row.max_rating,
+                    row.veto_tokens_per_player,
+                    row.max_tokens_per_map,
+                    row.minimum_maps_after_veto
                 ))
             except Exception:
                 self._logger.warning(
@@ -532,10 +569,25 @@ class LadderService(Service):
             )
             rating = func(ratings)
 
-            pool = queue.get_map_pool_for_rating(rating)
-            if not pool:
+            map_pool = queue.get_map_pool_for_rating(rating)
+            if not map_pool:
                 raise RuntimeError(f"No map pool available for rating {rating}!")
-            game_map = pool.choose_map(played_map_ids)
+
+            self._logger.debug(
+                "______queue.map_pools[map_pool.id]________________: %s",
+                queue.map_pools[map_pool.id],
+            )
+            initial_weights = self.veto_service.generate_initial_weights_for_match(
+                all_players,
+                queue.map_pools[map_pool.id],
+            )
+            self._logger.debug(
+                "______initial_weights________________: %s",
+                initial_weights,
+            )
+            game_map = map_pool.choose_map(played_map_ids, initial_weights)
+
+            self._logger.debug("______game_map________________: %s", game_map)
 
             game = self.game_service.create_game(
                 game_class=LadderGame,
@@ -587,7 +639,8 @@ class LadderService(Service):
                     game_options=game_options,
                     team=game.get_player_option(player.id, "Team"),
                     faction=game.get_player_option(player.id, "Faction"),
-                    map_position=game.get_player_option(player.id, "StartSpot")
+                    map_position=game.get_player_option(player.id, "StartSpot"),
+                    map_pool_map_version_id=game_map.map_pool_map_version_id
                 )
 
             await self.launch_match(game, host, all_guests, make_game_options)

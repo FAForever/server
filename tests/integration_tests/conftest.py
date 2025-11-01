@@ -30,6 +30,7 @@ from server import (
     OAuthService,
     PartyService,
     ServerInstance,
+    VetoService,
     ViolationService
 )
 from server.config import config
@@ -47,9 +48,20 @@ def mock_games():
 
 
 @pytest.fixture
-async def ladder_service(mocker, database, game_service, violation_service):
+async def ladder_service(
+    mocker,
+    database,
+    game_service,
+    violation_service,
+    veto_service,
+):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
-    ladder_service = LadderService(database, game_service, violation_service)
+    ladder_service = LadderService(
+        database,
+        game_service,
+        violation_service,
+        veto_service,
+    )
     await ladder_service.initialize()
     yield ladder_service
     await ladder_service.shutdown()
@@ -58,6 +70,14 @@ async def ladder_service(mocker, database, game_service, violation_service):
 @pytest.fixture
 async def violation_service():
     service = ViolationService()
+    await service.initialize()
+    yield service
+    await service.shutdown()
+
+
+@pytest.fixture
+async def veto_service(player_service):
+    service = VetoService(player_service)
     await service.initialize()
     yield service
     await service.shutdown()
@@ -140,6 +160,7 @@ async def lobby_server_factory(
     party_service,
     oauth_service,
     violation_service,
+    veto_service,
     policy_server,
     jwks_server,
 ):
@@ -161,6 +182,7 @@ async def lobby_server_factory(
                 "party_service": party_service,
                 "oauth_service": oauth_service,
                 "violation_service": violation_service,
+                "veto_service": veto_service,
             })
         # Set up the back reference
         broadcast_service.server = instance

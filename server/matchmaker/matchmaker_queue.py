@@ -12,7 +12,7 @@ from ..asyncio_extensions import SpinLock, synchronized
 from ..decorators import with_logger
 from ..players import PlayerState
 from .algorithm.team_matchmaker import TeamMatchMaker
-from .map_pool import MapPool
+from .map_pool import MapPool, MatchmakerQueueMapPool
 from .pop_timer import PopTimer
 from .search import Match, Search
 
@@ -56,7 +56,7 @@ class MatchmakerQueue:
         rating_type: str,
         team_size: int = 1,
         params: Optional[dict[str, Any]] = None,
-        map_pools: Iterable[tuple[MapPool, Optional[int], Optional[int]]] = (),
+        map_pools: Iterable[MatchmakerQueueMapPool] = (),
     ):
         self.game_service = game_service
         self.name = name
@@ -66,7 +66,7 @@ class MatchmakerQueue:
         self.team_size = team_size
         self.rating_peak = 1000.0
         self.params = params or {}
-        self.map_pools = {info[0].id: info for info in map_pools}
+        self.map_pools = {info.map_pool.id: info for info in map_pools}
 
         self._queue: dict[Search, None] = OrderedDict()
         self.on_match_found = on_match_found
@@ -82,14 +82,12 @@ class MatchmakerQueue:
 
     def add_map_pool(
         self,
-        map_pool: MapPool,
-        min_rating: Optional[int],
-        max_rating: Optional[int]
+        matchmaker_queue_map_pool: MatchmakerQueueMapPool
     ) -> None:
-        self.map_pools[map_pool.id] = (map_pool, min_rating, max_rating)
+        self.map_pools[matchmaker_queue_map_pool.map_pool.id] = matchmaker_queue_map_pool
 
     def get_map_pool_for_rating(self, rating: float) -> Optional[MapPool]:
-        for map_pool, min_rating, max_rating in self.map_pools.values():
+        for _, map_pool, min_rating, max_rating, *_, in self.map_pools.values():
             if min_rating is not None and rating < min_rating:
                 continue
             if max_rating is not None and rating > max_rating:
