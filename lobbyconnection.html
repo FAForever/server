@@ -102,7 +102,7 @@ is IDLE.</p></div>
 <dl>
 <dt id="server.lobbyconnection.LobbyConnection"><code class="flex name class">
 <span>class <span class="ident">LobbyConnection</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>,<br>players: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>,<br>geoip: <a title="server.geoip_service.GeoIpService" href="geoip_service.html#server.geoip_service.GeoIpService">GeoIpService</a>,<br>ladder_service: <a title="server.ladder_service.ladder_service.LadderService" href="ladder_service/ladder_service.html#server.ladder_service.ladder_service.LadderService">LadderService</a>,<br>party_service: <a title="server.party_service.PartyService" href="party_service.html#server.party_service.PartyService">PartyService</a>,<br>rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>,<br>oauth_service: <a title="server.oauth_service.OAuthService" href="oauth_service.html#server.oauth_service.OAuthService">OAuthService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>,<br>players: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>,<br>geoip: <a title="server.geoip_service.GeoIpService" href="geoip_service.html#server.geoip_service.GeoIpService">GeoIpService</a>,<br>ladder_service: <a title="server.ladder_service.ladder_service.LadderService" href="ladder_service/ladder_service.html#server.ladder_service.ladder_service.LadderService">LadderService</a>,<br>party_service: <a title="server.party_service.PartyService" href="party_service.html#server.party_service.PartyService">PartyService</a>,<br>rating_service: <a title="server.rating_service.rating_service.RatingService" href="rating_service/rating_service.html#server.rating_service.rating_service.RatingService">RatingService</a>,<br>oauth_service: <a title="server.oauth_service.OAuthService" href="oauth_service.html#server.oauth_service.OAuthService">OAuthService</a>,<br>veto_service: <a title="server.ladder_service.veto_system.VetoService" href="ladder_service/veto_system.html#server.ladder_service.veto_system.VetoService">VetoService</a>)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -124,6 +124,7 @@ class LobbyConnection:
         party_service: PartyService,
         rating_service: RatingService,
         oauth_service: OAuthService,
+        veto_service: VetoService,
     ):
         self._db = database
         self.geoip_service = geoip
@@ -133,6 +134,7 @@ class LobbyConnection:
         self.party_service = party_service
         self.rating_service = rating_service
         self.oauth_service = oauth_service
+        self.veto_service = veto_service
         self._authenticated = False
         self.player: Optional[Player] = None
         self.game_connection: Optional[GameConnection] = None
@@ -1401,6 +1403,22 @@ class LobbyConnection:
 
         self.party_service.set_factions(self.player, list(factions))
 
+    async def command_set_player_vetoes(self, message):
+        assert self.player is not None
+
+        vetoes = {}
+        for v in message[&#34;vetoes&#34;]:
+            matchmaker_queue_map_pool = v.get(&#34;matchmaker_queue_map_pool_id&#34;)
+            map_pool_map_version_id = v[&#34;map_pool_map_version_id&#34;]
+            veto_tokens_applied = v[&#34;veto_tokens_applied&#34;]
+
+            if matchmaker_queue_map_pool not in vetoes:
+                vetoes[matchmaker_queue_map_pool] = {}
+
+            vetoes[matchmaker_queue_map_pool][map_pool_map_version_id] = veto_tokens_applied
+
+        await self.veto_service.set_player_vetoes(self.player, vetoes)
+
     async def send_warning(self, message: str, fatal: bool = False):
         &#34;&#34;&#34;
         Display a warning message to the client
@@ -2551,6 +2569,32 @@ async def command_restore_game_session(self, message):
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="server.lobbyconnection.LobbyConnection.command_set_player_vetoes"><code class="name flex">
+<span>async def <span class="ident">command_set_player_vetoes</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def command_set_player_vetoes(self, message):
+    assert self.player is not None
+
+    vetoes = {}
+    for v in message[&#34;vetoes&#34;]:
+        matchmaker_queue_map_pool = v.get(&#34;matchmaker_queue_map_pool_id&#34;)
+        map_pool_map_version_id = v[&#34;map_pool_map_version_id&#34;]
+        veto_tokens_applied = v[&#34;veto_tokens_applied&#34;]
+
+        if matchmaker_queue_map_pool not in vetoes:
+            vetoes[matchmaker_queue_map_pool] = {}
+
+        vetoes[matchmaker_queue_map_pool][map_pool_map_version_id] = veto_tokens_applied
+
+    await self.veto_service.set_player_vetoes(self.player, vetoes)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="server.lobbyconnection.LobbyConnection.command_social_add"><code class="name flex">
 <span>async def <span class="ident">command_social_add</span></span>(<span>self, message)</span>
 </code></dt>
@@ -2681,7 +2725,7 @@ async def command_restore_game_session(self, message):
 <div class="desc"></div>
 </dd>
 <dt id="server.lobbyconnection.LobbyConnection.launch_game"><code class="name flex">
-<span>async def <span class="ident">launch_game</span></span>(<span>self,<br>game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>,<br>is_host: bool = False,<br>options: <a title="server.types.GameLaunchOptions" href="types.html#server.types.GameLaunchOptions">GameLaunchOptions</a> = GameLaunchOptions(mapname=None, team=None, faction=None, expected_players=None, map_position=None, game_options=None)) ‑> None</span>
+<span>async def <span class="ident">launch_game</span></span>(<span>self,<br>game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>,<br>is_host: bool = False,<br>options: <a title="server.types.GameLaunchOptions" href="types.html#server.types.GameLaunchOptions">GameLaunchOptions</a> = GameLaunchOptions(mapname=None, team=None, faction=None, expected_players=None, map_position=None, game_options=None, map_pool_map_version_id=None)) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -3113,7 +3157,7 @@ a fatal warning it should disconnect and not attempt to reconnect.</li>
 <div class="desc"><p>Write a message into the send buffer.</p></div>
 </dd>
 <dt id="server.lobbyconnection.LobbyConnection.write_launch_game"><code class="name flex">
-<span>def <span class="ident">write_launch_game</span></span>(<span>self,<br>game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>,<br>is_host: bool = False,<br>options: <a title="server.types.GameLaunchOptions" href="types.html#server.types.GameLaunchOptions">GameLaunchOptions</a> = GameLaunchOptions(mapname=None, team=None, faction=None, expected_players=None, map_position=None, game_options=None)) ‑> None</span>
+<span>def <span class="ident">write_launch_game</span></span>(<span>self,<br>game: <a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>,<br>is_host: bool = False,<br>options: <a title="server.types.GameLaunchOptions" href="types.html#server.types.GameLaunchOptions">GameLaunchOptions</a> = GameLaunchOptions(mapname=None, team=None, faction=None, expected_players=None, map_position=None, game_options=None, map_pool_map_version_id=None)) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -3221,6 +3265,7 @@ a fatal warning it should disconnect and not attempt to reconnect.</li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.command_pong" href="#server.lobbyconnection.LobbyConnection.command_pong">command_pong</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.command_restore_game_session" href="#server.lobbyconnection.LobbyConnection.command_restore_game_session">command_restore_game_session</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.command_set_party_factions" href="#server.lobbyconnection.LobbyConnection.command_set_party_factions">command_set_party_factions</a></code></li>
+<li><code><a title="server.lobbyconnection.LobbyConnection.command_set_player_vetoes" href="#server.lobbyconnection.LobbyConnection.command_set_player_vetoes">command_set_player_vetoes</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.command_social_add" href="#server.lobbyconnection.LobbyConnection.command_social_add">command_social_add</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.command_social_remove" href="#server.lobbyconnection.LobbyConnection.command_social_remove">command_social_remove</a></code></li>
 <li><code><a title="server.lobbyconnection.LobbyConnection.ensure_authenticated" href="#server.lobbyconnection.LobbyConnection.ensure_authenticated">ensure_authenticated</a></code></li>

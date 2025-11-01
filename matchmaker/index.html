@@ -369,39 +369,86 @@ class MapPool(object):
     def set_maps(self, maps: Iterable[MapPoolMap]) -&gt; None:
         self.maps = {map_.id: map_ for map_ in maps}
 
-    def choose_map(self, played_map_ids: Iterable[int] = ()) -&gt; Map:
+    def apply_antirepetition_adjustment(self, initial_weights: dict[int, float], played_map_ids: Iterable[int], base_thresholds: list[float], repeat_factor: float) -&gt; dict[int, float]:
         &#34;&#34;&#34;
-        Select a random map who&#39;s id does not appear in `played_map_ids`. If
-        all map ids appear in the list, then pick one that appears the least
-        amount of times.
+            Transfers weights from played maps to not-played (if possible) or less-played (otherwise) maps,
+            base_thresholds and repeat_factor adjusts the level of respect to the veto system:
+            base_thresholds used to determine, which not-played maps are available as transfer targets
+            the bigger the repeat_factor, the stronger algo tries to get rid of maps with playcount &gt;= 2
+        &#34;&#34;&#34;
+        notzero_weights = {map_id: weight for map_id, weight in initial_weights.items() if weight &gt; 0}
+        repetition_counts = Counter(map_id for map_id in played_map_ids if map_id in notzero_weights)
+        adjusted_weights = notzero_weights.copy()
+
+        def get_notrepeated_weight_transfer_targets(current_weight, rep_count):
+            thresholds = list(base_thresholds)
+            factor = repeat_factor ** (rep_count - 1)
+            if factor &lt; 1:
+                thresholds.extend(t * factor for t in base_thresholds if t * factor &lt; base_thresholds[-1])
+
+            for threshold in thresholds:
+                targets = [
+                    target_id for target_id in notzero_weights
+                    if repetition_counts.get(target_id, 0) == 0 and
+                    notzero_weights[target_id] &gt;= threshold * current_weight
+                ]
+                if targets:
+                    return targets
+            return []
+
+        def get_repeated_weight_transfer_targets(current_weight, rep_count):
+            return [
+                target_id for target_id in notzero_weights
+                if 0 &lt; (target_rep := repetition_counts.get(target_id, 0)) &lt; rep_count and
+                notzero_weights[target_id] &gt;= repeat_factor ** (rep_count - target_rep) * current_weight
+            ]
+
+        def transfer_weight_proportionally(from_id, to_ids):
+            v = adjusted_weights[from_id]
+            adjusted_weights[from_id] = 0
+            weight_sum = sum(notzero_weights[c] for c in to_ids)
+            for c in to_ids:
+                adjusted_weights[c] += (notzero_weights[c] / weight_sum) * v
+
+        for map_id, rep_count in repetition_counts.most_common():
+            current_weight = notzero_weights[map_id]
+            notrepeated_targets = get_notrepeated_weight_transfer_targets(current_weight, rep_count)
+            repeated_targets = get_repeated_weight_transfer_targets(current_weight, rep_count)
+            weight_transfer_targets = notrepeated_targets or repeated_targets
+            if weight_transfer_targets:
+                transfer_weight_proportionally(map_id, weight_transfer_targets)
+
+        return adjusted_weights
+
+    def choose_map(self, played_map_ids: Iterable[int] = (), initial_weights: Optional[dict[int, float]] = None) -&gt; Map:
+        &#34;&#34;&#34;
+            Selects a random map using veto system weights with an anti-repetition adjustment.
         &#34;&#34;&#34;
         if not self.maps:
-            self._logger.critical(
-                &#34;Trying to choose a map from an empty map pool: %s&#34;, self.name
-            )
+            self._logger.critical(&#34;Trying to choose a map from an empty map pool: %s&#34;, self.name)
             raise RuntimeError(f&#34;Map pool {self.name} not set!&#34;)
 
-        # Make sure the counter has every available map
-        counter = Counter(self.maps.keys())
-        counter.update(id_ for id_ in played_map_ids if id_ in self.maps)
+        self._logger.debug(&#34;______initial_played_map_ids___________: %s&#34;, list(played_map_ids))
+        played_map_pool_map_version_ids = [
+            self.maps[id].map_pool_map_version_id
+            for id in played_map_ids
+            if id in self.maps
+        ]
+        self._logger.debug(&#34;______played_map_pool_map_version_ids_________: %s&#34;, played_map_pool_map_version_ids)
 
-        least_common = counter.most_common()[::-1]
-        least_count = 1
-        for id_, count in least_common:
-            if isinstance(self.maps[id_], Map):
-                least_count = count
-                break
+        map_list = [(m.map_pool_map_version_id, m) for m in self.maps.values()]
 
-        # Trim off the maps with higher play counts
-        for i, (_, count) in enumerate(least_common):
-            if count &gt; least_count:
-                least_common = least_common[:i]
-                break
+        if initial_weights is None:
+            initial_weights = {mp_mv_id: 1.0 for mp_mv_id, _ in map_list}
 
-        weights = [self.maps[id_].weight for id_, _ in least_common]
-
-        map_id = random.choices(least_common, weights=weights, k=1)[0][0]
-        return self.maps[map_id].get_map()
+        adjusted_weights = self.apply_antirepetition_adjustment(
+            initial_weights, played_map_pool_map_version_ids, config.LADDER_ANTI_REPETITION_WEIGHT_BASE_THRESHOLDS, config.LADDER_ANTI_REPETITION_REPEAT_COUNTS_FACTOR
+        )
+        self._logger.debug(&#34;______adjusted_weights________________: %s&#34;, adjusted_weights)
+        self._logger.debug(&#34;______map_list________________: %s&#34;, map_list)
+        final_weights = [adjusted_weights.get(mp_mv_id, 0) * m.weight for mp_mv_id, m in map_list]
+        self._logger.debug(&#34;______final_weights________________: %s&#34;, final_weights)
+        return random.choices([map for _, map in map_list], weights=final_weights, k=1)[0].get_map()  # nosec B311
 
     def __repr__(self) -&gt; str:
         return f&#34;MapPool({self.id}, {self.name}, {list(self.maps.values())})&#34;</code></pre>
@@ -409,51 +456,109 @@ class MapPool(object):
 <div class="desc"></div>
 <h3>Methods</h3>
 <dl>
-<dt id="server.matchmaker.MapPool.choose_map"><code class="name flex">
-<span>def <span class="ident">choose_map</span></span>(<span>self, played_map_ids: Iterable[int] = ()) ‑> <a title="server.types.Map" href="../types.html#server.types.Map">Map</a></span>
+<dt id="server.matchmaker.MapPool.apply_antirepetition_adjustment"><code class="name flex">
+<span>def <span class="ident">apply_antirepetition_adjustment</span></span>(<span>self,<br>initial_weights: dict[int, float],<br>played_map_ids: Iterable[int],<br>base_thresholds: list[float],<br>repeat_factor: float) ‑> dict[int, float]</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def choose_map(self, played_map_ids: Iterable[int] = ()) -&gt; Map:
+<pre><code class="python">def apply_antirepetition_adjustment(self, initial_weights: dict[int, float], played_map_ids: Iterable[int], base_thresholds: list[float], repeat_factor: float) -&gt; dict[int, float]:
     &#34;&#34;&#34;
-    Select a random map who&#39;s id does not appear in `played_map_ids`. If
-    all map ids appear in the list, then pick one that appears the least
-    amount of times.
+        Transfers weights from played maps to not-played (if possible) or less-played (otherwise) maps,
+        base_thresholds and repeat_factor adjusts the level of respect to the veto system:
+        base_thresholds used to determine, which not-played maps are available as transfer targets
+        the bigger the repeat_factor, the stronger algo tries to get rid of maps with playcount &gt;= 2
+    &#34;&#34;&#34;
+    notzero_weights = {map_id: weight for map_id, weight in initial_weights.items() if weight &gt; 0}
+    repetition_counts = Counter(map_id for map_id in played_map_ids if map_id in notzero_weights)
+    adjusted_weights = notzero_weights.copy()
+
+    def get_notrepeated_weight_transfer_targets(current_weight, rep_count):
+        thresholds = list(base_thresholds)
+        factor = repeat_factor ** (rep_count - 1)
+        if factor &lt; 1:
+            thresholds.extend(t * factor for t in base_thresholds if t * factor &lt; base_thresholds[-1])
+
+        for threshold in thresholds:
+            targets = [
+                target_id for target_id in notzero_weights
+                if repetition_counts.get(target_id, 0) == 0 and
+                notzero_weights[target_id] &gt;= threshold * current_weight
+            ]
+            if targets:
+                return targets
+        return []
+
+    def get_repeated_weight_transfer_targets(current_weight, rep_count):
+        return [
+            target_id for target_id in notzero_weights
+            if 0 &lt; (target_rep := repetition_counts.get(target_id, 0)) &lt; rep_count and
+            notzero_weights[target_id] &gt;= repeat_factor ** (rep_count - target_rep) * current_weight
+        ]
+
+    def transfer_weight_proportionally(from_id, to_ids):
+        v = adjusted_weights[from_id]
+        adjusted_weights[from_id] = 0
+        weight_sum = sum(notzero_weights[c] for c in to_ids)
+        for c in to_ids:
+            adjusted_weights[c] += (notzero_weights[c] / weight_sum) * v
+
+    for map_id, rep_count in repetition_counts.most_common():
+        current_weight = notzero_weights[map_id]
+        notrepeated_targets = get_notrepeated_weight_transfer_targets(current_weight, rep_count)
+        repeated_targets = get_repeated_weight_transfer_targets(current_weight, rep_count)
+        weight_transfer_targets = notrepeated_targets or repeated_targets
+        if weight_transfer_targets:
+            transfer_weight_proportionally(map_id, weight_transfer_targets)
+
+    return adjusted_weights</code></pre>
+</details>
+<div class="desc"><p>Transfers weights from played maps to not-played (if possible) or less-played (otherwise) maps,
+base_thresholds and repeat_factor adjusts the level of respect to the veto system:
+base_thresholds used to determine, which not-played maps are available as transfer targets
+the bigger the repeat_factor, the stronger algo tries to get rid of maps with playcount &gt;= 2</p></div>
+</dd>
+<dt id="server.matchmaker.MapPool.choose_map"><code class="name flex">
+<span>def <span class="ident">choose_map</span></span>(<span>self,<br>played_map_ids: Iterable[int] = (),<br>initial_weights: dict[int, float] | None = None) ‑> <a title="server.types.Map" href="../types.html#server.types.Map">Map</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def choose_map(self, played_map_ids: Iterable[int] = (), initial_weights: Optional[dict[int, float]] = None) -&gt; Map:
+    &#34;&#34;&#34;
+        Selects a random map using veto system weights with an anti-repetition adjustment.
     &#34;&#34;&#34;
     if not self.maps:
-        self._logger.critical(
-            &#34;Trying to choose a map from an empty map pool: %s&#34;, self.name
-        )
+        self._logger.critical(&#34;Trying to choose a map from an empty map pool: %s&#34;, self.name)
         raise RuntimeError(f&#34;Map pool {self.name} not set!&#34;)
 
-    # Make sure the counter has every available map
-    counter = Counter(self.maps.keys())
-    counter.update(id_ for id_ in played_map_ids if id_ in self.maps)
+    self._logger.debug(&#34;______initial_played_map_ids___________: %s&#34;, list(played_map_ids))
+    played_map_pool_map_version_ids = [
+        self.maps[id].map_pool_map_version_id
+        for id in played_map_ids
+        if id in self.maps
+    ]
+    self._logger.debug(&#34;______played_map_pool_map_version_ids_________: %s&#34;, played_map_pool_map_version_ids)
 
-    least_common = counter.most_common()[::-1]
-    least_count = 1
-    for id_, count in least_common:
-        if isinstance(self.maps[id_], Map):
-            least_count = count
-            break
+    map_list = [(m.map_pool_map_version_id, m) for m in self.maps.values()]
 
-    # Trim off the maps with higher play counts
-    for i, (_, count) in enumerate(least_common):
-        if count &gt; least_count:
-            least_common = least_common[:i]
-            break
+    if initial_weights is None:
+        initial_weights = {mp_mv_id: 1.0 for mp_mv_id, _ in map_list}
 
-    weights = [self.maps[id_].weight for id_, _ in least_common]
-
-    map_id = random.choices(least_common, weights=weights, k=1)[0][0]
-    return self.maps[map_id].get_map()</code></pre>
+    adjusted_weights = self.apply_antirepetition_adjustment(
+        initial_weights, played_map_pool_map_version_ids, config.LADDER_ANTI_REPETITION_WEIGHT_BASE_THRESHOLDS, config.LADDER_ANTI_REPETITION_REPEAT_COUNTS_FACTOR
+    )
+    self._logger.debug(&#34;______adjusted_weights________________: %s&#34;, adjusted_weights)
+    self._logger.debug(&#34;______map_list________________: %s&#34;, map_list)
+    final_weights = [adjusted_weights.get(mp_mv_id, 0) * m.weight for mp_mv_id, m in map_list]
+    self._logger.debug(&#34;______final_weights________________: %s&#34;, final_weights)
+    return random.choices([map for _, map in map_list], weights=final_weights, k=1)[0].get_map()  # nosec B311</code></pre>
 </details>
-<div class="desc"><p>Select a random map who's id does not appear in <code>played_map_ids</code>. If
-all map ids appear in the list, then pick one that appears the least
-amount of times.</p></div>
+<div class="desc"><p>Selects a random map using veto system weights with an anti-repetition adjustment.</p></div>
 </dd>
 <dt id="server.matchmaker.MapPool.set_maps"><code class="name flex">
 <span>def <span class="ident">set_maps</span></span>(<span>self,<br>maps: Iterable[<a title="server.types.MapPoolMap" href="../types.html#server.types.MapPoolMap">MapPoolMap</a>]) ‑> None</span>
@@ -472,7 +577,7 @@ amount of times.</p></div>
 </dd>
 <dt id="server.matchmaker.MatchmakerQueue"><code class="flex name class">
 <span>class <span class="ident">MatchmakerQueue</span></span>
-<span>(</span><span>game_service: GameService,<br>on_match_found: Callable[[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, ForwardRef('<a title="server.matchmaker.MatchmakerQueue" href="#server.matchmaker.MatchmakerQueue">MatchmakerQueue</a>')], Any],<br>name: str,<br>queue_id: int,<br>featured_mod: str,<br>rating_type: str,<br>team_size: int = 1,<br>params: dict[str, typing.Any] | None = None,<br>map_pools: Iterable[tuple[<a title="server.matchmaker.map_pool.MapPool" href="map_pool.html#server.matchmaker.map_pool.MapPool">MapPool</a>, int | None, int | None]] = ())</span>
+<span>(</span><span>game_service: GameService,<br>on_match_found: Callable[[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, ForwardRef('<a title="server.matchmaker.MatchmakerQueue" href="#server.matchmaker.MatchmakerQueue">MatchmakerQueue</a>')], Any],<br>name: str,<br>queue_id: int,<br>featured_mod: str,<br>rating_type: str,<br>team_size: int = 1,<br>params: dict[str, typing.Any] | None = None,<br>map_pools: Iterable[<a title="server.matchmaker.map_pool.MatchmakerQueueMapPool" href="map_pool.html#server.matchmaker.map_pool.MatchmakerQueueMapPool">MatchmakerQueueMapPool</a>] = ())</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -493,7 +598,7 @@ class MatchmakerQueue:
         rating_type: str,
         team_size: int = 1,
         params: Optional[dict[str, Any]] = None,
-        map_pools: Iterable[tuple[MapPool, Optional[int], Optional[int]]] = (),
+        map_pools: Iterable[MatchmakerQueueMapPool] = (),
     ):
         self.game_service = game_service
         self.name = name
@@ -503,7 +608,7 @@ class MatchmakerQueue:
         self.team_size = team_size
         self.rating_peak = 1000.0
         self.params = params or {}
-        self.map_pools = {info[0].id: info for info in map_pools}
+        self.map_pools = {info.map_pool.id: info for info in map_pools}
 
         self._queue: dict[Search, None] = OrderedDict()
         self.on_match_found = on_match_found
@@ -519,14 +624,12 @@ class MatchmakerQueue:
 
     def add_map_pool(
         self,
-        map_pool: MapPool,
-        min_rating: Optional[int],
-        max_rating: Optional[int]
+        matchmaker_queue_map_pool: MatchmakerQueueMapPool
     ) -&gt; None:
-        self.map_pools[map_pool.id] = (map_pool, min_rating, max_rating)
+        self.map_pools[matchmaker_queue_map_pool.map_pool.id] = matchmaker_queue_map_pool
 
     def get_map_pool_for_rating(self, rating: float) -&gt; Optional[MapPool]:
-        for map_pool, min_rating, max_rating in self.map_pools.values():
+        for _, map_pool, min_rating, max_rating, *_, in self.map_pools.values():
             if min_rating is not None and rating &lt; min_rating:
                 continue
             if max_rating is not None and rating &gt; max_rating:
@@ -773,7 +876,7 @@ def num_players(self) -&gt; int:
 <h3>Methods</h3>
 <dl>
 <dt id="server.matchmaker.MatchmakerQueue.add_map_pool"><code class="name flex">
-<span>def <span class="ident">add_map_pool</span></span>(<span>self,<br>map_pool: <a title="server.matchmaker.map_pool.MapPool" href="map_pool.html#server.matchmaker.map_pool.MapPool">MapPool</a>,<br>min_rating: int | None,<br>max_rating: int | None) ‑> None</span>
+<span>def <span class="ident">add_map_pool</span></span>(<span>self,<br>matchmaker_queue_map_pool: <a title="server.matchmaker.map_pool.MatchmakerQueueMapPool" href="map_pool.html#server.matchmaker.map_pool.MatchmakerQueueMapPool">MatchmakerQueueMapPool</a>) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -782,11 +885,9 @@ def num_players(self) -&gt; int:
 </summary>
 <pre><code class="python">def add_map_pool(
     self,
-    map_pool: MapPool,
-    min_rating: Optional[int],
-    max_rating: Optional[int]
+    matchmaker_queue_map_pool: MatchmakerQueueMapPool
 ) -&gt; None:
-    self.map_pools[map_pool.id] = (map_pool, min_rating, max_rating)</code></pre>
+    self.map_pools[matchmaker_queue_map_pool.map_pool.id] = matchmaker_queue_map_pool</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -881,7 +982,7 @@ needed in order to safely enable multiqueuing.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_map_pool_for_rating(self, rating: float) -&gt; Optional[MapPool]:
-    for map_pool, min_rating, max_rating in self.map_pools.values():
+    for _, map_pool, min_rating, max_rating, *_, in self.map_pools.values():
         if min_rating is not None and rating &lt; min_rating:
             continue
         if max_rating is not None and rating &gt; max_rating:
@@ -1086,6 +1187,152 @@ in the queue.</p></div>
     }</code></pre>
 </details>
 <div class="desc"><p>Return a fuzzy representation of the searches currently in the queue</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="server.matchmaker.MatchmakerQueueMapPool"><code class="flex name class">
+<span>class <span class="ident">MatchmakerQueueMapPool</span></span>
+<span>(</span><span>id: int,<br>map_pool: <a title="server.matchmaker.map_pool.MapPool" href="map_pool.html#server.matchmaker.map_pool.MapPool">MapPool</a>,<br>min_rating: int | None,<br>max_rating: int | None,<br>veto_tokens_per_player: int = 0,<br>max_tokens_per_map: float = 0,<br>minimum_maps_after_veto: float = 1)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPool(NamedTuple):
+    id: int
+    map_pool: MapPool
+    min_rating: Optional[int]
+    max_rating: Optional[int]
+    veto_tokens_per_player: int = 0
+    max_tokens_per_map: float = 0
+    minimum_maps_after_veto: float = 1</code></pre>
+</details>
+<div class="desc"><p>MatchmakerQueueMapPool(id, map_pool, min_rating, max_rating, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto)</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.tuple</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="server.matchmaker.MatchmakerQueueMapPool.id"><code class="name">var <span class="ident">id</span> : int</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPool(NamedTuple):
+    id: int
+    map_pool: MapPool
+    min_rating: Optional[int]
+    max_rating: Optional[int]
+    veto_tokens_per_player: int = 0
+    max_tokens_per_map: float = 0
+    minimum_maps_after_veto: float = 1</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 0</p></div>
+</dd>
+<dt id="server.matchmaker.MatchmakerQueueMapPool.map_pool"><code class="name">var <span class="ident">map_pool</span> : <a title="server.matchmaker.map_pool.MapPool" href="map_pool.html#server.matchmaker.map_pool.MapPool">MapPool</a></code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPool(NamedTuple):
+    id: int
+    map_pool: MapPool
+    min_rating: Optional[int]
+    max_rating: Optional[int]
+    veto_tokens_per_player: int = 0
+    max_tokens_per_map: float = 0
+    minimum_maps_after_veto: float = 1</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 1</p></div>
+</dd>
+<dt id="server.matchmaker.MatchmakerQueueMapPool.max_rating"><code class="name">var <span class="ident">max_rating</span> : int | None</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPool(NamedTuple):
+    id: int
+    map_pool: MapPool
+    min_rating: Optional[int]
+    max_rating: Optional[int]
+    veto_tokens_per_player: int = 0
+    max_tokens_per_map: float = 0
+    minimum_maps_after_veto: float = 1</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 3</p></div>
+</dd>
+<dt id="server.matchmaker.MatchmakerQueueMapPool.max_tokens_per_map"><code class="name">var <span class="ident">max_tokens_per_map</span> : float</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPool(NamedTuple):
+    id: int
+    map_pool: MapPool
+    min_rating: Optional[int]
+    max_rating: Optional[int]
+    veto_tokens_per_player: int = 0
+    max_tokens_per_map: float = 0
+    minimum_maps_after_veto: float = 1</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 5</p></div>
+</dd>
+<dt id="server.matchmaker.MatchmakerQueueMapPool.min_rating"><code class="name">var <span class="ident">min_rating</span> : int | None</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPool(NamedTuple):
+    id: int
+    map_pool: MapPool
+    min_rating: Optional[int]
+    max_rating: Optional[int]
+    veto_tokens_per_player: int = 0
+    max_tokens_per_map: float = 0
+    minimum_maps_after_veto: float = 1</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 2</p></div>
+</dd>
+<dt id="server.matchmaker.MatchmakerQueueMapPool.minimum_maps_after_veto"><code class="name">var <span class="ident">minimum_maps_after_veto</span> : float</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPool(NamedTuple):
+    id: int
+    map_pool: MapPool
+    min_rating: Optional[int]
+    max_rating: Optional[int]
+    veto_tokens_per_player: int = 0
+    max_tokens_per_map: float = 0
+    minimum_maps_after_veto: float = 1</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 6</p></div>
+</dd>
+<dt id="server.matchmaker.MatchmakerQueueMapPool.veto_tokens_per_player"><code class="name">var <span class="ident">veto_tokens_per_player</span> : int</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPool(NamedTuple):
+    id: int
+    map_pool: MapPool
+    min_rating: Optional[int]
+    max_rating: Optional[int]
+    veto_tokens_per_player: int = 0
+    max_tokens_per_map: float = 0
+    minimum_maps_after_veto: float = 1</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 4</p></div>
 </dd>
 </dl>
 </dd>
@@ -2103,6 +2350,7 @@ and increase internal counter by one.</p></div>
 <li>
 <h4><code><a title="server.matchmaker.MapPool" href="#server.matchmaker.MapPool">MapPool</a></code></h4>
 <ul class="">
+<li><code><a title="server.matchmaker.MapPool.apply_antirepetition_adjustment" href="#server.matchmaker.MapPool.apply_antirepetition_adjustment">apply_antirepetition_adjustment</a></code></li>
 <li><code><a title="server.matchmaker.MapPool.choose_map" href="#server.matchmaker.MapPool.choose_map">choose_map</a></code></li>
 <li><code><a title="server.matchmaker.MapPool.set_maps" href="#server.matchmaker.MapPool.set_maps">set_maps</a></code></li>
 </ul>
@@ -2123,6 +2371,18 @@ and increase internal counter by one.</p></div>
 <li><code><a title="server.matchmaker.MatchmakerQueue.search" href="#server.matchmaker.MatchmakerQueue.search">search</a></code></li>
 <li><code><a title="server.matchmaker.MatchmakerQueue.shutdown" href="#server.matchmaker.MatchmakerQueue.shutdown">shutdown</a></code></li>
 <li><code><a title="server.matchmaker.MatchmakerQueue.to_dict" href="#server.matchmaker.MatchmakerQueue.to_dict">to_dict</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.matchmaker.MatchmakerQueueMapPool" href="#server.matchmaker.MatchmakerQueueMapPool">MatchmakerQueueMapPool</a></code></h4>
+<ul class="">
+<li><code><a title="server.matchmaker.MatchmakerQueueMapPool.id" href="#server.matchmaker.MatchmakerQueueMapPool.id">id</a></code></li>
+<li><code><a title="server.matchmaker.MatchmakerQueueMapPool.map_pool" href="#server.matchmaker.MatchmakerQueueMapPool.map_pool">map_pool</a></code></li>
+<li><code><a title="server.matchmaker.MatchmakerQueueMapPool.max_rating" href="#server.matchmaker.MatchmakerQueueMapPool.max_rating">max_rating</a></code></li>
+<li><code><a title="server.matchmaker.MatchmakerQueueMapPool.max_tokens_per_map" href="#server.matchmaker.MatchmakerQueueMapPool.max_tokens_per_map">max_tokens_per_map</a></code></li>
+<li><code><a title="server.matchmaker.MatchmakerQueueMapPool.min_rating" href="#server.matchmaker.MatchmakerQueueMapPool.min_rating">min_rating</a></code></li>
+<li><code><a title="server.matchmaker.MatchmakerQueueMapPool.minimum_maps_after_veto" href="#server.matchmaker.MatchmakerQueueMapPool.minimum_maps_after_veto">minimum_maps_after_veto</a></code></li>
+<li><code><a title="server.matchmaker.MatchmakerQueueMapPool.veto_tokens_per_player" href="#server.matchmaker.MatchmakerQueueMapPool.veto_tokens_per_player">veto_tokens_per_player</a></code></li>
 </ul>
 </li>
 <li>

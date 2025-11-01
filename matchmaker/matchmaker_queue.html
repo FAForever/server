@@ -48,7 +48,7 @@ el.replaceWith(d);
 <dl>
 <dt id="server.matchmaker.matchmaker_queue.MatchmakerQueue"><code class="flex name class">
 <span>class <span class="ident">MatchmakerQueue</span></span>
-<span>(</span><span>game_service: GameService,<br>on_match_found: Callable[[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, ForwardRef('<a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>')], Any],<br>name: str,<br>queue_id: int,<br>featured_mod: str,<br>rating_type: str,<br>team_size: int = 1,<br>params: dict[str, typing.Any] | None = None,<br>map_pools: Iterable[tuple[<a title="server.matchmaker.map_pool.MapPool" href="map_pool.html#server.matchmaker.map_pool.MapPool">MapPool</a>, int | None, int | None]] = ())</span>
+<span>(</span><span>game_service: GameService,<br>on_match_found: Callable[[<a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, <a title="server.matchmaker.search.Search" href="search.html#server.matchmaker.search.Search">Search</a>, ForwardRef('<a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>')], Any],<br>name: str,<br>queue_id: int,<br>featured_mod: str,<br>rating_type: str,<br>team_size: int = 1,<br>params: dict[str, typing.Any] | None = None,<br>map_pools: Iterable[<a title="server.matchmaker.map_pool.MatchmakerQueueMapPool" href="map_pool.html#server.matchmaker.map_pool.MatchmakerQueueMapPool">MatchmakerQueueMapPool</a>] = ())</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -69,7 +69,7 @@ class MatchmakerQueue:
         rating_type: str,
         team_size: int = 1,
         params: Optional[dict[str, Any]] = None,
-        map_pools: Iterable[tuple[MapPool, Optional[int], Optional[int]]] = (),
+        map_pools: Iterable[MatchmakerQueueMapPool] = (),
     ):
         self.game_service = game_service
         self.name = name
@@ -79,7 +79,7 @@ class MatchmakerQueue:
         self.team_size = team_size
         self.rating_peak = 1000.0
         self.params = params or {}
-        self.map_pools = {info[0].id: info for info in map_pools}
+        self.map_pools = {info.map_pool.id: info for info in map_pools}
 
         self._queue: dict[Search, None] = OrderedDict()
         self.on_match_found = on_match_found
@@ -95,14 +95,12 @@ class MatchmakerQueue:
 
     def add_map_pool(
         self,
-        map_pool: MapPool,
-        min_rating: Optional[int],
-        max_rating: Optional[int]
+        matchmaker_queue_map_pool: MatchmakerQueueMapPool
     ) -&gt; None:
-        self.map_pools[map_pool.id] = (map_pool, min_rating, max_rating)
+        self.map_pools[matchmaker_queue_map_pool.map_pool.id] = matchmaker_queue_map_pool
 
     def get_map_pool_for_rating(self, rating: float) -&gt; Optional[MapPool]:
-        for map_pool, min_rating, max_rating in self.map_pools.values():
+        for _, map_pool, min_rating, max_rating, *_, in self.map_pools.values():
             if min_rating is not None and rating &lt; min_rating:
                 continue
             if max_rating is not None and rating &gt; max_rating:
@@ -349,7 +347,7 @@ def num_players(self) -&gt; int:
 <h3>Methods</h3>
 <dl>
 <dt id="server.matchmaker.matchmaker_queue.MatchmakerQueue.add_map_pool"><code class="name flex">
-<span>def <span class="ident">add_map_pool</span></span>(<span>self,<br>map_pool: <a title="server.matchmaker.map_pool.MapPool" href="map_pool.html#server.matchmaker.map_pool.MapPool">MapPool</a>,<br>min_rating: int | None,<br>max_rating: int | None) ‑> None</span>
+<span>def <span class="ident">add_map_pool</span></span>(<span>self,<br>matchmaker_queue_map_pool: <a title="server.matchmaker.map_pool.MatchmakerQueueMapPool" href="map_pool.html#server.matchmaker.map_pool.MatchmakerQueueMapPool">MatchmakerQueueMapPool</a>) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -358,11 +356,9 @@ def num_players(self) -&gt; int:
 </summary>
 <pre><code class="python">def add_map_pool(
     self,
-    map_pool: MapPool,
-    min_rating: Optional[int],
-    max_rating: Optional[int]
+    matchmaker_queue_map_pool: MatchmakerQueueMapPool
 ) -&gt; None:
-    self.map_pools[map_pool.id] = (map_pool, min_rating, max_rating)</code></pre>
+    self.map_pools[matchmaker_queue_map_pool.map_pool.id] = matchmaker_queue_map_pool</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -457,7 +453,7 @@ needed in order to safely enable multiqueuing.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_map_pool_for_rating(self, rating: float) -&gt; Optional[MapPool]:
-    for map_pool, min_rating, max_rating in self.map_pools.values():
+    for _, map_pool, min_rating, max_rating, *_, in self.map_pools.values():
         if min_rating is not None and rating &lt; min_rating:
             continue
         if max_rating is not None and rating &gt; max_rating:

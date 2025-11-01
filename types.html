@@ -125,7 +125,7 @@ el.replaceWith(d);
 </dd>
 <dt id="server.types.GameLaunchOptions"><code class="flex name class">
 <span>class <span class="ident">GameLaunchOptions</span></span>
-<span>(</span><span>mapname: str | None = None,<br>team: int | None = None,<br>faction: int | None = None,<br>expected_players: int | None = None,<br>map_position: int | None = None,<br>game_options: dict[str, typing.Any] | None = None)</span>
+<span>(</span><span>mapname: str | None = None,<br>team: int | None = None,<br>faction: int | None = None,<br>expected_players: int | None = None,<br>map_position: int | None = None,<br>game_options: dict[str, typing.Any] | None = None,<br>map_pool_map_version_id: int | None = None)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -140,7 +140,8 @@ el.replaceWith(d);
     faction: Optional[int] = None
     expected_players: Optional[int] = None
     map_position: Optional[int] = None
-    game_options: Optional[dict[str, Any]] = None</code></pre>
+    game_options: Optional[dict[str, Any]] = None
+    map_pool_map_version_id: Optional[int] = None</code></pre>
 </details>
 <div class="desc"><p>Additional options used to configure the FA lobby</p></div>
 <h3>Ancestors</h3>
@@ -163,7 +164,8 @@ el.replaceWith(d);
     faction: Optional[int] = None
     expected_players: Optional[int] = None
     map_position: Optional[int] = None
-    game_options: Optional[dict[str, Any]] = None</code></pre>
+    game_options: Optional[dict[str, Any]] = None
+    map_pool_map_version_id: Optional[int] = None</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 3</p></div>
 </dd>
@@ -181,7 +183,8 @@ el.replaceWith(d);
     faction: Optional[int] = None
     expected_players: Optional[int] = None
     map_position: Optional[int] = None
-    game_options: Optional[dict[str, Any]] = None</code></pre>
+    game_options: Optional[dict[str, Any]] = None
+    map_pool_map_version_id: Optional[int] = None</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 2</p></div>
 </dd>
@@ -199,9 +202,29 @@ el.replaceWith(d);
     faction: Optional[int] = None
     expected_players: Optional[int] = None
     map_position: Optional[int] = None
-    game_options: Optional[dict[str, Any]] = None</code></pre>
+    game_options: Optional[dict[str, Any]] = None
+    map_pool_map_version_id: Optional[int] = None</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 5</p></div>
+</dd>
+<dt id="server.types.GameLaunchOptions.map_pool_map_version_id"><code class="name">var <span class="ident">map_pool_map_version_id</span> : int | None</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GameLaunchOptions(NamedTuple):
+    &#34;&#34;&#34;Additional options used to configure the FA lobby&#34;&#34;&#34;
+
+    mapname: Optional[str] = None
+    team: Optional[int] = None
+    faction: Optional[int] = None
+    expected_players: Optional[int] = None
+    map_position: Optional[int] = None
+    game_options: Optional[dict[str, Any]] = None
+    map_pool_map_version_id: Optional[int] = None</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 6</p></div>
 </dd>
 <dt id="server.types.GameLaunchOptions.map_position"><code class="name">var <span class="ident">map_position</span> : int | None</code></dt>
 <dd>
@@ -217,7 +240,8 @@ el.replaceWith(d);
     faction: Optional[int] = None
     expected_players: Optional[int] = None
     map_position: Optional[int] = None
-    game_options: Optional[dict[str, Any]] = None</code></pre>
+    game_options: Optional[dict[str, Any]] = None
+    map_pool_map_version_id: Optional[int] = None</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 4</p></div>
 </dd>
@@ -235,7 +259,8 @@ el.replaceWith(d);
     faction: Optional[int] = None
     expected_players: Optional[int] = None
     map_position: Optional[int] = None
-    game_options: Optional[dict[str, Any]] = None</code></pre>
+    game_options: Optional[dict[str, Any]] = None
+    map_pool_map_version_id: Optional[int] = None</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 0</p></div>
 </dd>
@@ -253,7 +278,8 @@ el.replaceWith(d);
     faction: Optional[int] = None
     expected_players: Optional[int] = None
     map_position: Optional[int] = None
-    game_options: Optional[dict[str, Any]] = None</code></pre>
+    game_options: Optional[dict[str, Any]] = None
+    map_pool_map_version_id: Optional[int] = None</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 1</p></div>
 </dd>
@@ -261,7 +287,7 @@ el.replaceWith(d);
 </dd>
 <dt id="server.types.Map"><code class="flex name class">
 <span>class <span class="ident">Map</span></span>
-<span>(</span><span>id: int | None, folder_name: str, ranked: bool = False, weight: int = 1)</span>
+<span>(</span><span>id: int | None,<br>folder_name: str,<br>ranked: bool = False,<br>weight: int = 1,<br>map_pool_map_version_id: int | None = None)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -274,6 +300,7 @@ el.replaceWith(d);
     ranked: bool = False
     # Map pool only
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @property
     def file_path(self) -&gt; str:
@@ -287,7 +314,7 @@ el.replaceWith(d);
     def get_map(self) -&gt; &#34;Map&#34;:
         return self</code></pre>
 </details>
-<div class="desc"><p>Map(id, folder_name, ranked, weight)</p></div>
+<div class="desc"><p>Map(id, folder_name, ranked, weight, map_pool_map_version_id)</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.tuple</li>
@@ -319,6 +346,7 @@ def file_path(self) -&gt; str:
     ranked: bool = False
     # Map pool only
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @property
     def file_path(self) -&gt; str:
@@ -346,6 +374,7 @@ def file_path(self) -&gt; str:
     ranked: bool = False
     # Map pool only
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @property
     def file_path(self) -&gt; str:
@@ -361,6 +390,34 @@ def file_path(self) -&gt; str:
 </details>
 <div class="desc"><p>Alias for field number 0</p></div>
 </dd>
+<dt id="server.types.Map.map_pool_map_version_id"><code class="name">var <span class="ident">map_pool_map_version_id</span> : int | None</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Map(NamedTuple):
+    id: Optional[int]
+    folder_name: str
+    ranked: bool = False
+    # Map pool only
+    weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
+
+    @property
+    def file_path(self) -&gt; str:
+        &#34;&#34;&#34;A representation of the map name as it looks in the database&#34;&#34;&#34;
+        return f&#34;maps/{self.folder_name}.zip&#34;
+
+    @property
+    def scenario_file(self) -&gt; str:
+        return f&#34;/maps/{self.folder_name}/{self.folder_name}_scenario.lua&#34;
+
+    def get_map(self) -&gt; &#34;Map&#34;:
+        return self</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 4</p></div>
+</dd>
 <dt id="server.types.Map.ranked"><code class="name">var <span class="ident">ranked</span> : bool</code></dt>
 <dd>
 <details class="source">
@@ -373,6 +430,7 @@ def file_path(self) -&gt; str:
     ranked: bool = False
     # Map pool only
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @property
     def file_path(self) -&gt; str:
@@ -412,6 +470,7 @@ def scenario_file(self) -&gt; str:
     ranked: bool = False
     # Map pool only
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @property
     def file_path(self) -&gt; str:
@@ -457,6 +516,8 @@ def scenario_file(self) -&gt; str:
 <pre><code class="python">class MapPoolMap(Protocol):
     @property
     def id(self) -&gt; Optional[int]: ...
+    @property
+    def map_pool_map_version_id(self) -&gt; int: ...
 
     @property
     def weight(self) -&gt; int: ...
@@ -507,6 +568,17 @@ def id(self) -&gt; Optional[int]: ...</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="server.types.MapPoolMap.map_pool_map_version_id"><code class="name">prop <span class="ident">map_pool_map_version_id</span> : int</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def map_pool_map_version_id(self) -&gt; int: ...</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
 <dt id="server.types.MapPoolMap.weight"><code class="name">prop <span class="ident">weight</span> : int</code></dt>
 <dd>
 <details class="source">
@@ -535,9 +607,109 @@ def weight(self) -&gt; int: ...</code></pre>
 </dd>
 </dl>
 </dd>
+<dt id="server.types.MatchmakerQueueMapPoolVetoData"><code class="flex name class">
+<span>class <span class="ident">MatchmakerQueueMapPoolVetoData</span></span>
+<span>(</span><span>matchmaker_queue_map_pool_id: int,<br>map_pool_map_version_ids: list[int],<br>veto_tokens_per_player: int,<br>max_tokens_per_map: float,<br>minimum_maps_after_veto: float)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPoolVetoData(NamedTuple):
+    matchmaker_queue_map_pool_id: int
+    map_pool_map_version_ids: list[int]
+    veto_tokens_per_player: int
+    max_tokens_per_map: float
+    minimum_maps_after_veto: float</code></pre>
+</details>
+<div class="desc"><p>MatchmakerQueueMapPoolVetoData(matchmaker_queue_map_pool_id, map_pool_map_version_ids, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto)</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.tuple</li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="server.types.MatchmakerQueueMapPoolVetoData.map_pool_map_version_ids"><code class="name">var <span class="ident">map_pool_map_version_ids</span> : list[int]</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPoolVetoData(NamedTuple):
+    matchmaker_queue_map_pool_id: int
+    map_pool_map_version_ids: list[int]
+    veto_tokens_per_player: int
+    max_tokens_per_map: float
+    minimum_maps_after_veto: float</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 1</p></div>
+</dd>
+<dt id="server.types.MatchmakerQueueMapPoolVetoData.matchmaker_queue_map_pool_id"><code class="name">var <span class="ident">matchmaker_queue_map_pool_id</span> : int</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPoolVetoData(NamedTuple):
+    matchmaker_queue_map_pool_id: int
+    map_pool_map_version_ids: list[int]
+    veto_tokens_per_player: int
+    max_tokens_per_map: float
+    minimum_maps_after_veto: float</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 0</p></div>
+</dd>
+<dt id="server.types.MatchmakerQueueMapPoolVetoData.max_tokens_per_map"><code class="name">var <span class="ident">max_tokens_per_map</span> : float</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPoolVetoData(NamedTuple):
+    matchmaker_queue_map_pool_id: int
+    map_pool_map_version_ids: list[int]
+    veto_tokens_per_player: int
+    max_tokens_per_map: float
+    minimum_maps_after_veto: float</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 3</p></div>
+</dd>
+<dt id="server.types.MatchmakerQueueMapPoolVetoData.minimum_maps_after_veto"><code class="name">var <span class="ident">minimum_maps_after_veto</span> : float</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPoolVetoData(NamedTuple):
+    matchmaker_queue_map_pool_id: int
+    map_pool_map_version_ids: list[int]
+    veto_tokens_per_player: int
+    max_tokens_per_map: float
+    minimum_maps_after_veto: float</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 4</p></div>
+</dd>
+<dt id="server.types.MatchmakerQueueMapPoolVetoData.veto_tokens_per_player"><code class="name">var <span class="ident">veto_tokens_per_player</span> : int</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MatchmakerQueueMapPoolVetoData(NamedTuple):
+    matchmaker_queue_map_pool_id: int
+    map_pool_map_version_ids: list[int]
+    veto_tokens_per_player: int
+    max_tokens_per_map: float
+    minimum_maps_after_veto: float</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 2</p></div>
+</dd>
+</dl>
+</dd>
 <dt id="server.types.NeroxisGeneratedMap"><code class="flex name class">
 <span>class <span class="ident">NeroxisGeneratedMap</span></span>
-<span>(</span><span>id: int, version: str, spawns: int, map_size_pixels: int, weight: int = 1)</span>
+<span>(</span><span>id: int,<br>version: str,<br>spawns: int,<br>map_size_pixels: int,<br>weight: int = 1,<br>map_pool_map_version_id: int | None = None)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -550,6 +722,7 @@ def weight(self) -&gt; int: ...</code></pre>
     spawns: int
     map_size_pixels: int
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -&gt; bool:
@@ -557,7 +730,7 @@ def weight(self) -&gt; int: ...</code></pre>
         return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
-    def of(cls, params: dict, weight: int = 1):
+    def of(cls, params: dict, weight: int = 1, map_pool_map_version_id: Optional[int] = None):
         &#34;&#34;&#34;Create a NeroxisGeneratedMap from params dict&#34;&#34;&#34;
         assert params[&#34;type&#34;] == &#34;neroxis&#34;
 
@@ -580,6 +753,7 @@ def weight(self) -&gt; int: ...</code></pre>
             spawns,
             map_size_pixels,
             weight,
+            map_pool_map_version_id,
         )
 
     @staticmethod
@@ -612,9 +786,10 @@ def weight(self) -&gt; int: ...</code></pre>
             folder_name=folder_name,
             ranked=True,
             weight=self.weight,
+            map_pool_map_version_id=self.map_pool_map_version_id,
         )</code></pre>
 </details>
-<div class="desc"><p>NeroxisGeneratedMap(id, version, spawns, map_size_pixels, weight)</p></div>
+<div class="desc"><p>NeroxisGeneratedMap(id, version, spawns, map_size_pixels, weight, map_pool_map_version_id)</p></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>builtins.tuple</li>
@@ -628,7 +803,7 @@ def weight(self) -&gt; int: ...</code></pre>
 <div class="desc"><p>Check if mapname is map generator</p></div>
 </dd>
 <dt id="server.types.NeroxisGeneratedMap.of"><code class="name flex">
-<span>def <span class="ident">of</span></span>(<span>params: dict, weight: int = 1)</span>
+<span>def <span class="ident">of</span></span>(<span>params: dict, weight: int = 1, map_pool_map_version_id: int | None = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a NeroxisGeneratedMap from params dict</p></div>
@@ -648,6 +823,7 @@ def weight(self) -&gt; int: ...</code></pre>
     spawns: int
     map_size_pixels: int
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -&gt; bool:
@@ -655,7 +831,7 @@ def weight(self) -&gt; int: ...</code></pre>
         return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
-    def of(cls, params: dict, weight: int = 1):
+    def of(cls, params: dict, weight: int = 1, map_pool_map_version_id: Optional[int] = None):
         &#34;&#34;&#34;Create a NeroxisGeneratedMap from params dict&#34;&#34;&#34;
         assert params[&#34;type&#34;] == &#34;neroxis&#34;
 
@@ -678,6 +854,7 @@ def weight(self) -&gt; int: ...</code></pre>
             spawns,
             map_size_pixels,
             weight,
+            map_pool_map_version_id,
         )
 
     @staticmethod
@@ -710,9 +887,91 @@ def weight(self) -&gt; int: ...</code></pre>
             folder_name=folder_name,
             ranked=True,
             weight=self.weight,
+            map_pool_map_version_id=self.map_pool_map_version_id,
         )</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 0</p></div>
+</dd>
+<dt id="server.types.NeroxisGeneratedMap.map_pool_map_version_id"><code class="name">var <span class="ident">map_pool_map_version_id</span> : int | None</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class NeroxisGeneratedMap(NamedTuple):
+    id: int
+    version: str
+    spawns: int
+    map_size_pixels: int
+    weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
+
+    @classmethod
+    def is_neroxis_map(cls, folder_name: str) -&gt; bool:
+        &#34;&#34;&#34;Check if mapname is map generator&#34;&#34;&#34;
+        return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
+
+    @classmethod
+    def of(cls, params: dict, weight: int = 1, map_pool_map_version_id: Optional[int] = None):
+        &#34;&#34;&#34;Create a NeroxisGeneratedMap from params dict&#34;&#34;&#34;
+        assert params[&#34;type&#34;] == &#34;neroxis&#34;
+
+        map_size_pixels = int(params[&#34;size&#34;])
+
+        if map_size_pixels &lt;= 0:
+            raise Exception(&#34;Map size is zero or negative&#34;)
+
+        if map_size_pixels % 64 != 0:
+            raise Exception(&#34;Map size is not a multiple of 64&#34;)
+
+        spawns = int(params[&#34;spawns&#34;])
+        if spawns % 2 != 0:
+            raise Exception(&#34;spawns is not a multiple of 2&#34;)
+
+        version = params[&#34;version&#34;]
+        return cls(
+            cls._get_id(version, spawns, map_size_pixels),
+            version,
+            spawns,
+            map_size_pixels,
+            weight,
+            map_pool_map_version_id,
+        )
+
+    @staticmethod
+    def _get_id(version: str, spawns: int, map_size_pixels: int) -&gt; int:
+        return -int.from_bytes(
+            bytes(
+                f&#34;{version}_{spawns}_{map_size_pixels}&#34;,
+                encoding=&#34;ascii&#34;
+            ),
+            &#34;big&#34;
+        )
+
+    def get_map(self) -&gt; Map:
+        &#34;&#34;&#34;
+        Generate a map name based on the version and parameters. If invalid
+        parameters are specified hand back None
+        &#34;&#34;&#34;
+        seed_bytes = random.getrandbits(64).to_bytes(8, &#34;big&#34;)
+        seed_str = base64.b32encode(seed_bytes).decode(&#34;ascii&#34;).replace(&#34;=&#34;, &#34;&#34;).lower()
+
+        size_byte = (self.map_size_pixels // 64).to_bytes(1, &#34;big&#34;)
+        spawn_byte = self.spawns.to_bytes(1, &#34;big&#34;)
+        option_bytes = spawn_byte + size_byte
+        option_str = base64.b32encode(option_bytes).decode(&#34;ascii&#34;).replace(&#34;=&#34;, &#34;&#34;).lower()
+
+        folder_name = f&#34;neroxis_map_generator_{self.version}_{seed_str}_{option_str}&#34;
+
+        return Map(
+            id=self.id,
+            folder_name=folder_name,
+            ranked=True,
+            weight=self.weight,
+            map_pool_map_version_id=self.map_pool_map_version_id,
+        )</code></pre>
+</details>
+<div class="desc"><p>Alias for field number 5</p></div>
 </dd>
 <dt id="server.types.NeroxisGeneratedMap.map_size_pixels"><code class="name">var <span class="ident">map_size_pixels</span> : int</code></dt>
 <dd>
@@ -726,6 +985,7 @@ def weight(self) -&gt; int: ...</code></pre>
     spawns: int
     map_size_pixels: int
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -&gt; bool:
@@ -733,7 +993,7 @@ def weight(self) -&gt; int: ...</code></pre>
         return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
-    def of(cls, params: dict, weight: int = 1):
+    def of(cls, params: dict, weight: int = 1, map_pool_map_version_id: Optional[int] = None):
         &#34;&#34;&#34;Create a NeroxisGeneratedMap from params dict&#34;&#34;&#34;
         assert params[&#34;type&#34;] == &#34;neroxis&#34;
 
@@ -756,6 +1016,7 @@ def weight(self) -&gt; int: ...</code></pre>
             spawns,
             map_size_pixels,
             weight,
+            map_pool_map_version_id,
         )
 
     @staticmethod
@@ -788,6 +1049,7 @@ def weight(self) -&gt; int: ...</code></pre>
             folder_name=folder_name,
             ranked=True,
             weight=self.weight,
+            map_pool_map_version_id=self.map_pool_map_version_id,
         )</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 3</p></div>
@@ -804,6 +1066,7 @@ def weight(self) -&gt; int: ...</code></pre>
     spawns: int
     map_size_pixels: int
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -&gt; bool:
@@ -811,7 +1074,7 @@ def weight(self) -&gt; int: ...</code></pre>
         return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
-    def of(cls, params: dict, weight: int = 1):
+    def of(cls, params: dict, weight: int = 1, map_pool_map_version_id: Optional[int] = None):
         &#34;&#34;&#34;Create a NeroxisGeneratedMap from params dict&#34;&#34;&#34;
         assert params[&#34;type&#34;] == &#34;neroxis&#34;
 
@@ -834,6 +1097,7 @@ def weight(self) -&gt; int: ...</code></pre>
             spawns,
             map_size_pixels,
             weight,
+            map_pool_map_version_id,
         )
 
     @staticmethod
@@ -866,6 +1130,7 @@ def weight(self) -&gt; int: ...</code></pre>
             folder_name=folder_name,
             ranked=True,
             weight=self.weight,
+            map_pool_map_version_id=self.map_pool_map_version_id,
         )</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 2</p></div>
@@ -882,6 +1147,7 @@ def weight(self) -&gt; int: ...</code></pre>
     spawns: int
     map_size_pixels: int
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -&gt; bool:
@@ -889,7 +1155,7 @@ def weight(self) -&gt; int: ...</code></pre>
         return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
-    def of(cls, params: dict, weight: int = 1):
+    def of(cls, params: dict, weight: int = 1, map_pool_map_version_id: Optional[int] = None):
         &#34;&#34;&#34;Create a NeroxisGeneratedMap from params dict&#34;&#34;&#34;
         assert params[&#34;type&#34;] == &#34;neroxis&#34;
 
@@ -912,6 +1178,7 @@ def weight(self) -&gt; int: ...</code></pre>
             spawns,
             map_size_pixels,
             weight,
+            map_pool_map_version_id,
         )
 
     @staticmethod
@@ -944,6 +1211,7 @@ def weight(self) -&gt; int: ...</code></pre>
             folder_name=folder_name,
             ranked=True,
             weight=self.weight,
+            map_pool_map_version_id=self.map_pool_map_version_id,
         )</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 1</p></div>
@@ -960,6 +1228,7 @@ def weight(self) -&gt; int: ...</code></pre>
     spawns: int
     map_size_pixels: int
     weight: int = 1
+    map_pool_map_version_id: Optional[int] = None
 
     @classmethod
     def is_neroxis_map(cls, folder_name: str) -&gt; bool:
@@ -967,7 +1236,7 @@ def weight(self) -&gt; int: ...</code></pre>
         return _NEROXIS_MAP_NAME_PATTERN.fullmatch(folder_name) is not None
 
     @classmethod
-    def of(cls, params: dict, weight: int = 1):
+    def of(cls, params: dict, weight: int = 1, map_pool_map_version_id: Optional[int] = None):
         &#34;&#34;&#34;Create a NeroxisGeneratedMap from params dict&#34;&#34;&#34;
         assert params[&#34;type&#34;] == &#34;neroxis&#34;
 
@@ -990,6 +1259,7 @@ def weight(self) -&gt; int: ...</code></pre>
             spawns,
             map_size_pixels,
             weight,
+            map_pool_map_version_id,
         )
 
     @staticmethod
@@ -1022,6 +1292,7 @@ def weight(self) -&gt; int: ...</code></pre>
             folder_name=folder_name,
             ranked=True,
             weight=self.weight,
+            map_pool_map_version_id=self.map_pool_map_version_id,
         )</code></pre>
 </details>
 <div class="desc"><p>Alias for field number 4</p></div>
@@ -1057,6 +1328,7 @@ def weight(self) -&gt; int: ...</code></pre>
         folder_name=folder_name,
         ranked=True,
         weight=self.weight,
+        map_pool_map_version_id=self.map_pool_map_version_id,
     )</code></pre>
 </details>
 <div class="desc"><p>Generate a map name based on the version and parameters. If invalid
@@ -1089,10 +1361,11 @@ parameters are specified hand back None</p></div>
 </li>
 <li>
 <h4><code><a title="server.types.GameLaunchOptions" href="#server.types.GameLaunchOptions">GameLaunchOptions</a></code></h4>
-<ul class="two-column">
+<ul class="">
 <li><code><a title="server.types.GameLaunchOptions.expected_players" href="#server.types.GameLaunchOptions.expected_players">expected_players</a></code></li>
 <li><code><a title="server.types.GameLaunchOptions.faction" href="#server.types.GameLaunchOptions.faction">faction</a></code></li>
 <li><code><a title="server.types.GameLaunchOptions.game_options" href="#server.types.GameLaunchOptions.game_options">game_options</a></code></li>
+<li><code><a title="server.types.GameLaunchOptions.map_pool_map_version_id" href="#server.types.GameLaunchOptions.map_pool_map_version_id">map_pool_map_version_id</a></code></li>
 <li><code><a title="server.types.GameLaunchOptions.map_position" href="#server.types.GameLaunchOptions.map_position">map_position</a></code></li>
 <li><code><a title="server.types.GameLaunchOptions.mapname" href="#server.types.GameLaunchOptions.mapname">mapname</a></code></li>
 <li><code><a title="server.types.GameLaunchOptions.team" href="#server.types.GameLaunchOptions.team">team</a></code></li>
@@ -1100,11 +1373,12 @@ parameters are specified hand back None</p></div>
 </li>
 <li>
 <h4><code><a title="server.types.Map" href="#server.types.Map">Map</a></code></h4>
-<ul class="two-column">
+<ul class="">
 <li><code><a title="server.types.Map.file_path" href="#server.types.Map.file_path">file_path</a></code></li>
 <li><code><a title="server.types.Map.folder_name" href="#server.types.Map.folder_name">folder_name</a></code></li>
 <li><code><a title="server.types.Map.get_map" href="#server.types.Map.get_map">get_map</a></code></li>
 <li><code><a title="server.types.Map.id" href="#server.types.Map.id">id</a></code></li>
+<li><code><a title="server.types.Map.map_pool_map_version_id" href="#server.types.Map.map_pool_map_version_id">map_pool_map_version_id</a></code></li>
 <li><code><a title="server.types.Map.ranked" href="#server.types.Map.ranked">ranked</a></code></li>
 <li><code><a title="server.types.Map.scenario_file" href="#server.types.Map.scenario_file">scenario_file</a></code></li>
 <li><code><a title="server.types.Map.weight" href="#server.types.Map.weight">weight</a></code></li>
@@ -1115,15 +1389,27 @@ parameters are specified hand back None</p></div>
 <ul class="">
 <li><code><a title="server.types.MapPoolMap.get_map" href="#server.types.MapPoolMap.get_map">get_map</a></code></li>
 <li><code><a title="server.types.MapPoolMap.id" href="#server.types.MapPoolMap.id">id</a></code></li>
+<li><code><a title="server.types.MapPoolMap.map_pool_map_version_id" href="#server.types.MapPoolMap.map_pool_map_version_id">map_pool_map_version_id</a></code></li>
 <li><code><a title="server.types.MapPoolMap.weight" href="#server.types.MapPoolMap.weight">weight</a></code></li>
 </ul>
 </li>
 <li>
+<h4><code><a title="server.types.MatchmakerQueueMapPoolVetoData" href="#server.types.MatchmakerQueueMapPoolVetoData">MatchmakerQueueMapPoolVetoData</a></code></h4>
+<ul class="">
+<li><code><a title="server.types.MatchmakerQueueMapPoolVetoData.map_pool_map_version_ids" href="#server.types.MatchmakerQueueMapPoolVetoData.map_pool_map_version_ids">map_pool_map_version_ids</a></code></li>
+<li><code><a title="server.types.MatchmakerQueueMapPoolVetoData.matchmaker_queue_map_pool_id" href="#server.types.MatchmakerQueueMapPoolVetoData.matchmaker_queue_map_pool_id">matchmaker_queue_map_pool_id</a></code></li>
+<li><code><a title="server.types.MatchmakerQueueMapPoolVetoData.max_tokens_per_map" href="#server.types.MatchmakerQueueMapPoolVetoData.max_tokens_per_map">max_tokens_per_map</a></code></li>
+<li><code><a title="server.types.MatchmakerQueueMapPoolVetoData.minimum_maps_after_veto" href="#server.types.MatchmakerQueueMapPoolVetoData.minimum_maps_after_veto">minimum_maps_after_veto</a></code></li>
+<li><code><a title="server.types.MatchmakerQueueMapPoolVetoData.veto_tokens_per_player" href="#server.types.MatchmakerQueueMapPoolVetoData.veto_tokens_per_player">veto_tokens_per_player</a></code></li>
+</ul>
+</li>
+<li>
 <h4><code><a title="server.types.NeroxisGeneratedMap" href="#server.types.NeroxisGeneratedMap">NeroxisGeneratedMap</a></code></h4>
-<ul class="two-column">
+<ul class="">
 <li><code><a title="server.types.NeroxisGeneratedMap.get_map" href="#server.types.NeroxisGeneratedMap.get_map">get_map</a></code></li>
 <li><code><a title="server.types.NeroxisGeneratedMap.id" href="#server.types.NeroxisGeneratedMap.id">id</a></code></li>
 <li><code><a title="server.types.NeroxisGeneratedMap.is_neroxis_map" href="#server.types.NeroxisGeneratedMap.is_neroxis_map">is_neroxis_map</a></code></li>
+<li><code><a title="server.types.NeroxisGeneratedMap.map_pool_map_version_id" href="#server.types.NeroxisGeneratedMap.map_pool_map_version_id">map_pool_map_version_id</a></code></li>
 <li><code><a title="server.types.NeroxisGeneratedMap.map_size_pixels" href="#server.types.NeroxisGeneratedMap.map_size_pixels">map_size_pixels</a></code></li>
 <li><code><a title="server.types.NeroxisGeneratedMap.of" href="#server.types.NeroxisGeneratedMap.of">of</a></code></li>
 <li><code><a title="server.types.NeroxisGeneratedMap.spawns" href="#server.types.NeroxisGeneratedMap.spawns">spawns</a></code></li>

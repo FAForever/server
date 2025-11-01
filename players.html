@@ -56,7 +56,9 @@ el.replaceWith(d);
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Player:
+<pre><code class="python">@with_logger
+class Player:
+    _logger: ClassVar[logging.Logger]
     &#34;&#34;&#34;
     Standard player object used for representing signed-in players.
 
@@ -79,7 +81,9 @@ el.replaceWith(d);
         game_count: Optional[dict[str, int]] = None,
         lobby_connection: Optional[&#34;LobbyConnection&#34;] = None
     ) -&gt; None:
+        from server.ladder_service.veto_system import PlayerVetoes
         self._faction = Faction.uef
+        self.vetoes = PlayerVetoes()
 
         # The player_id of the user in the `login` table of the database.
         self.id = player_id
@@ -205,9 +209,7 @@ el.replaceWith(d);
                 f&#34;id={self.id}, ratings={dict(self.ratings)}, &#34;
                 f&#34;clan={self.clan}, game_count={dict(self.game_count)})&#34;)</code></pre>
 </details>
-<div class="desc"><p>Standard player object used for representing signed-in players.</p>
-<p>In the context of a game, the Game object holds game-specific
-information about players.</p></div>
+<div class="desc"></div>
 <h3>Instance variables</h3>
 <dl>
 <dt id="server.players.Player.faction"><code class="name">prop <span class="ident">faction</span> : <a title="server.factions.Faction" href="factions.html#server.factions.Faction">Faction</a></code></dt>

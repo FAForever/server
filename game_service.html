@@ -497,7 +497,7 @@ def pending_games(self) -&gt; list[Game]:
 <div class="desc"></div>
 </dd>
 <dt id="server.game_service.GameService.create_game"><code class="name flex">
-<span>def <span class="ident">create_game</span></span>(<span>self,<br>game_mode: str,<br>game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame,<br>visibility=VisibilityState.PUBLIC,<br>host: <a title="server.players.Player" href="players.html#server.players.Player">Player</a> | None = None,<br>name: str | None = None,<br>map: <a title="server.types.Map" href="types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1),<br>password: str | None = None,<br>matchmaker_queue_id: int | None = None,<br>**kwargs)</span>
+<span>def <span class="ident">create_game</span></span>(<span>self,<br>game_mode: str,<br>game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame,<br>visibility=VisibilityState.PUBLIC,<br>host: <a title="server.players.Player" href="players.html#server.players.Player">Player</a> | None = None,<br>name: str | None = None,<br>map: <a title="server.types.Map" href="types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1, map_pool_map_version_id=None),<br>password: str | None = None,<br>matchmaker_queue_id: int | None = None,<br>**kwargs)</span>
 </code></dt>
 <dd>
 <details class="source">

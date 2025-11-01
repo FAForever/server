@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>server.ladder_service.veto_system API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>server.ladder_service.veto_system</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="server.ladder_service.veto_system.PlayerVetoes"><code class="flex name class">
+<span>class <span class="ident">PlayerVetoes</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PlayerVetoes:
+    def __init__(self):
+        self._vetoes: dict[BracketID, VetoesMap] = {}
+
+    def get_vetoes_for_bracket(self, bracket_id: BracketID) -&gt; VetoesMap:
+        return self._vetoes.get(bracket_id, {})
+
+    def to_dict(self) -&gt; dict:
+        return {
+            &#34;vetoes&#34;: [
+                {
+                    &#34;map_pool_map_version_id&#34;: map_id,
+                    &#34;veto_tokens_applied&#34;: tokens,
+                    &#34;matchmaker_queue_map_pool_id&#34;: bracket_id
+                }
+                for bracket_id, vetoes in self._vetoes.items()
+                for map_id, tokens in vetoes.items()
+            ]
+        }</code></pre>
+</details>
+<div class="desc"></div>
+<h3>Methods</h3>
+<dl>
+<dt id="server.ladder_service.veto_system.PlayerVetoes.get_vetoes_for_bracket"><code class="name flex">
+<span>def <span class="ident">get_vetoes_for_bracket</span></span>(<span>self, bracket_id: int) ‑> dict[int, int]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_vetoes_for_bracket(self, bracket_id: BracketID) -&gt; VetoesMap:
+    return self._vetoes.get(bracket_id, {})</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="server.ladder_service.veto_system.PlayerVetoes.to_dict"><code class="name flex">
+<span>def <span class="ident">to_dict</span></span>(<span>self) ‑> dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_dict(self) -&gt; dict:
+    return {
+        &#34;vetoes&#34;: [
+            {
+                &#34;map_pool_map_version_id&#34;: map_id,
+                &#34;veto_tokens_applied&#34;: tokens,
+                &#34;matchmaker_queue_map_pool_id&#34;: bracket_id
+            }
+            for bracket_id, vetoes in self._vetoes.items()
+            for map_id, tokens in vetoes.items()
+        ]
+    }</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="server.ladder_service.veto_system.VetoService"><code class="flex name class">
+<span>class <span class="ident">VetoService</span></span>
+<span>(</span><span>player_service: <a title="server.player_service.PlayerService" href="../player_service.html#server.player_service.PlayerService">PlayerService</a>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@with_logger
+class VetoService(Service):
+    _logger: ClassVar[logging.Logger]
+
+    def __init__(self, player_service: PlayerService):
+        self.player_service = player_service
+
+        self.pools_veto_data: list[MatchmakerQueueMapPoolVetoData] = []
+
+    def update_pools_veto_config(self, queues: dict[str, MatchmakerQueue]) -&gt; list[Player]:
+        &#34;&#34;&#34;
+        Update the cached veto config to match the new queues.
+
+        Returns list of players whose vetoes were force-adjusted due to config changes.
+        These players should be removed from matchmaking queues.
+        &#34;&#34;&#34;
+
+        pools_vetodata = self.extract_pools_veto_config(queues)
+
+        if self.pools_veto_data == pools_vetodata:
+            return []
+
+        self.pools_veto_data = pools_vetodata
+
+        pool_maps_by_bracket = {
+            pool_data.matchmaker_queue_map_pool_id: set(pool_data.map_pool_map_version_ids)
+            for pool_data in self.pools_veto_data
+        }
+
+        affected_players = []
+        for player in self.player_service.all_players:
+            # TODO: Can we avoid force adjusting veto selections for players.
+            adjusted_vetoes = self._adjust_vetoes(player.vetoes._vetoes)
+
+            if adjusted_vetoes != player.vetoes._vetoes:
+                tokens_amount_for_some_map_was_reduced = any(
+                    map_id in pool_maps_by_bracket.get(bracket, set())
+                    and original_tokens &gt; adjusted_vetoes.get(bracket, {}).get(map_id, 0)
+                    for bracket, bracket_vetoes in player.vetoes._vetoes.items()
+                    for map_id, original_tokens in bracket_vetoes.items()
+                )
+                player.vetoes._vetoes = adjusted_vetoes
+                player.write_message({
+                    &#34;command&#34;: &#34;vetoes_info&#34;,
+                    &#34;forced&#34;: tokens_amount_for_some_map_was_reduced,
+                    **player.vetoes.to_dict(),
+                })
+                if tokens_amount_for_some_map_was_reduced:
+                    affected_players.append(player)
+
+        return affected_players
+
+    def extract_pools_veto_config(
+        self,
+        queues: dict[str, MatchmakerQueue],
+    ) -&gt; list[MatchmakerQueueMapPoolVetoData]:
+        result = []
+        for queue in queues.values():
+            for matchmaker_queue_map_pool in queue.map_pools.values():
+                veto_tokens_per_player = matchmaker_queue_map_pool.veto_tokens_per_player
+                max_tokens_per_map = matchmaker_queue_map_pool.max_tokens_per_map
+                minimum_maps_after_veto = matchmaker_queue_map_pool.minimum_maps_after_veto
+
+                if not _is_valid_veto_config_for_queue(queue, matchmaker_queue_map_pool):
+                    veto_tokens_per_player = 0
+                    max_tokens_per_map = 1
+                    minimum_maps_after_veto = 1
+                    self._logger.error(
+                        &#34;Wrong vetoes setup detected for pool %s in queue %s&#34;,
+                        matchmaker_queue_map_pool.map_pool.id,
+                        queue.id,
+                    )
+
+                result.append(
+                    MatchmakerQueueMapPoolVetoData(
+                        matchmaker_queue_map_pool_id=matchmaker_queue_map_pool.id,
+                        map_pool_map_version_ids=[
+                            map.map_pool_map_version_id
+                            for map in matchmaker_queue_map_pool.map_pool.maps.values()
+                        ],
+                        veto_tokens_per_player=veto_tokens_per_player,
+                        max_tokens_per_map=max_tokens_per_map,
+                        minimum_maps_after_veto=minimum_maps_after_veto
+                    )
+                )
+
+        return result
+
+    async def set_player_vetoes(
+        self,
+        player: Player,
+        new_vetoes: dict[BracketID, VetoesMap],
+    ):
+        &#34;&#34;&#34;Validates and sets vetoes based on new vetoes and pool constraints.&#34;&#34;&#34;
+        if not _is_valid_vetoes(new_vetoes):
+            raise ClientError(&#34;invalid veto data&#34;)
+
+        adjusted_vetoes = self._adjust_vetoes(new_vetoes)
+
+        if adjusted_vetoes != player.vetoes._vetoes:
+            player.vetoes._vetoes = adjusted_vetoes
+        if adjusted_vetoes != new_vetoes:
+            await player.send_message({
+                &#34;command&#34;: &#34;vetoes_info&#34;,
+                &#34;forced&#34;: False,
+                **player.vetoes.to_dict(),
+            })
+
+    def _adjust_vetoes(
+        self,
+        new_vetoes: dict[BracketID, VetoesMap],
+    ) -&gt; dict[BracketID, VetoesMap]:
+        # TODO: How can we avoid doing this adjustment? It would be better to
+        # simply check if the veto selection is valid, and return an error if
+        # not so that the client can display that to the user and force a new
+        # selection. Or, if we expect the client to do that already, we can
+        # simply raise a ClientError on invalid veto selections.
+        adjusted_vetoes = {}
+        for bracket_id, map_ids, total_tokens, max_per_map, _ in self.pools_veto_data:
+            bracket_vetoes = _adjust_vetoes_for_bracket(
+                new_vetoes.get(bracket_id, {}),
+                map_ids,
+                total_tokens,
+                max_per_map,
+            )
+            if bracket_vetoes:
+                adjusted_vetoes[bracket_id] = bracket_vetoes
+
+        return adjusted_vetoes
+
+    def generate_initial_weights_for_match(
+        self,
+        players_in_match,
+        matchmaker_queue_map_pool: MatchmakerQueueMapPool,
+    ) -&gt; dict[int, float]:
+        (
+            pool_id,
+            pool,
+            *_,
+            max_tokens_per_map,
+            minimum_maps_after_veto
+        ) = matchmaker_queue_map_pool
+
+        vetoes_map: dict[int, int] = defaultdict(int)
+
+        for m in pool.maps.values():
+            for player in players_in_match:
+                bracket_vetoes = player.vetoes.get_vetoes_for_bracket(pool_id)
+                vetoes_map[m.map_pool_map_version_id] += bracket_vetoes.get(m.map_pool_map_version_id, 0)
+
+        self._logger.debug(&#34;______vetoes_map________________: %s&#34;, vetoes_map)
+
+        if max_tokens_per_map == 0:
+            max_tokens_per_map = self.calculate_dynamic_tokens_per_map(minimum_maps_after_veto, vetoes_map.values())
+            # This should never happen
+            if max_tokens_per_map == 0:
+                self._logger.error(
+                    &#34;calculate_dynamic_tokens_per_map received impossible &#34;
+                    &#34;vetoes setup, all vetoes cancelled for a match&#34;,
+                )
+                vetoes_map = {}
+                max_tokens_per_map = 1
+
+        return {
+            m.map_pool_map_version_id: max(
+                0,
+                1 - vetoes_map.get(m.map_pool_map_version_id, 0) / max_tokens_per_map,
+            )
+            for m in pool.maps.values()
+        }
+
+    def calculate_dynamic_tokens_per_map(
+        self,
+        M: float,
+        tokens_applied_to_maps: Iterable[int],
+    ) -&gt; float:
+        &#34;&#34;&#34;
+        Calculate the smallest positive T such that the sum of weights w = max((T - V)/T, 0) for each map is at least M,
+        where V is the number of tokens applied to that map. If the condition is met with maps that have zero tokens, returns 1.
+
+        The function groups maps by the number of tokens applied to them and processes these groups in ascending order of token values.
+        For each group, it checks if a solution T exists such that the sum of weights for the maps considered so far is at least M.
+        If a solution is found, it returns that T. If no solution is found after considering all maps, it returns 0.
+        &#34;&#34;&#34;
+        def calculate_solution(
+            tokens_sum: float,
+            map_count: int,
+            M: float,
+            upper_bound: Optional[float],
+        ) -&gt; Optional[float]:
+            if tokens_sum == 0 and map_count &gt;= M:
+                return 1
+            if map_count &gt; M:
+                candidate = tokens_sum / (map_count - M)
+                if upper_bound is None or candidate &lt;= upper_bound:
+                    return candidate
+            return None
+
+        # grouping maps with the same tokens applied count
+        group_sizes = Counter(tokens_applied_to_maps)
+        sorted_tokens = sorted(group_sizes.keys())
+
+        total_map_count_in_selected_groups = 0
+        total_tokens_applied_to_selected_groups = 0.0
+
+        for i, token in enumerate(sorted_tokens):
+            next_map_group_size = group_sizes[token]
+            total_map_count_in_selected_groups += next_map_group_size
+            total_tokens_applied_to_selected_groups += token * next_map_group_size
+            upper_bound = sorted_tokens[i + 1] if i &lt; len(sorted_tokens) - 1 else None
+            solution = calculate_solution(total_tokens_applied_to_selected_groups, total_map_count_in_selected_groups, M, upper_bound)
+            if solution is not None:
+                return solution
+
+        return 0</code></pre>
+</details>
+<div class="desc"><p>All services should inherit from this class.</p>
+<p>Services are singleton objects which manage some server task.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.core.service.Service" href="../core/service.html#server.core.service.Service">Service</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="server.ladder_service.veto_system.VetoService.calculate_dynamic_tokens_per_map"><code class="name flex">
+<span>def <span class="ident">calculate_dynamic_tokens_per_map</span></span>(<span>self, M: float, tokens_applied_to_maps: Iterable[int]) ‑> float</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calculate_dynamic_tokens_per_map(
+    self,
+    M: float,
+    tokens_applied_to_maps: Iterable[int],
+) -&gt; float:
+    &#34;&#34;&#34;
+    Calculate the smallest positive T such that the sum of weights w = max((T - V)/T, 0) for each map is at least M,
+    where V is the number of tokens applied to that map. If the condition is met with maps that have zero tokens, returns 1.
+
+    The function groups maps by the number of tokens applied to them and processes these groups in ascending order of token values.
+    For each group, it checks if a solution T exists such that the sum of weights for the maps considered so far is at least M.
+    If a solution is found, it returns that T. If no solution is found after considering all maps, it returns 0.
+    &#34;&#34;&#34;
+    def calculate_solution(
+        tokens_sum: float,
+        map_count: int,
+        M: float,
+        upper_bound: Optional[float],
+    ) -&gt; Optional[float]:
+        if tokens_sum == 0 and map_count &gt;= M:
+            return 1
+        if map_count &gt; M:
+            candidate = tokens_sum / (map_count - M)
+            if upper_bound is None or candidate &lt;= upper_bound:
+                return candidate
+        return None
+
+    # grouping maps with the same tokens applied count
+    group_sizes = Counter(tokens_applied_to_maps)
+    sorted_tokens = sorted(group_sizes.keys())
+
+    total_map_count_in_selected_groups = 0
+    total_tokens_applied_to_selected_groups = 0.0
+
+    for i, token in enumerate(sorted_tokens):
+        next_map_group_size = group_sizes[token]
+        total_map_count_in_selected_groups += next_map_group_size
+        total_tokens_applied_to_selected_groups += token * next_map_group_size
+        upper_bound = sorted_tokens[i + 1] if i &lt; len(sorted_tokens) - 1 else None
+        solution = calculate_solution(total_tokens_applied_to_selected_groups, total_map_count_in_selected_groups, M, upper_bound)
+        if solution is not None:
+            return solution
+
+    return 0</code></pre>
+</details>
+<div class="desc"><p>Calculate the smallest positive T such that the sum of weights w = max((T - V)/T, 0) for each map is at least M,
+where V is the number of tokens applied to that map. If the condition is met with maps that have zero tokens, returns 1.</p>
+<p>The function groups maps by the number of tokens applied to them and processes these groups in ascending order of token values.
+For each group, it checks if a solution T exists such that the sum of weights for the maps considered so far is at least M.
+If a solution is found, it returns that T. If no solution is found after considering all maps, it returns 0.</p></div>
+</dd>
+<dt id="server.ladder_service.veto_system.VetoService.extract_pools_veto_config"><code class="name flex">
+<span>def <span class="ident">extract_pools_veto_config</span></span>(<span>self,<br>queues: dict[str, <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="../matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>]) ‑> list[<a title="server.types.MatchmakerQueueMapPoolVetoData" href="../types.html#server.types.MatchmakerQueueMapPoolVetoData">MatchmakerQueueMapPoolVetoData</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_pools_veto_config(
+    self,
+    queues: dict[str, MatchmakerQueue],
+) -&gt; list[MatchmakerQueueMapPoolVetoData]:
+    result = []
+    for queue in queues.values():
+        for matchmaker_queue_map_pool in queue.map_pools.values():
+            veto_tokens_per_player = matchmaker_queue_map_pool.veto_tokens_per_player
+            max_tokens_per_map = matchmaker_queue_map_pool.max_tokens_per_map
+            minimum_maps_after_veto = matchmaker_queue_map_pool.minimum_maps_after_veto
+
+            if not _is_valid_veto_config_for_queue(queue, matchmaker_queue_map_pool):
+                veto_tokens_per_player = 0
+                max_tokens_per_map = 1
+                minimum_maps_after_veto = 1
+                self._logger.error(
+                    &#34;Wrong vetoes setup detected for pool %s in queue %s&#34;,
+                    matchmaker_queue_map_pool.map_pool.id,
+                    queue.id,
+                )
+
+            result.append(
+                MatchmakerQueueMapPoolVetoData(
+                    matchmaker_queue_map_pool_id=matchmaker_queue_map_pool.id,
+                    map_pool_map_version_ids=[
+                        map.map_pool_map_version_id
+                        for map in matchmaker_queue_map_pool.map_pool.maps.values()
+                    ],
+                    veto_tokens_per_player=veto_tokens_per_player,
+                    max_tokens_per_map=max_tokens_per_map,
+                    minimum_maps_after_veto=minimum_maps_after_veto
+                )
+            )
+
+    return result</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="server.ladder_service.veto_system.VetoService.generate_initial_weights_for_match"><code class="name flex">
+<span>def <span class="ident">generate_initial_weights_for_match</span></span>(<span>self,<br>players_in_match,<br>matchmaker_queue_map_pool: <a title="server.matchmaker.map_pool.MatchmakerQueueMapPool" href="../matchmaker/map_pool.html#server.matchmaker.map_pool.MatchmakerQueueMapPool">MatchmakerQueueMapPool</a>) ‑> dict[int, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_initial_weights_for_match(
+    self,
+    players_in_match,
+    matchmaker_queue_map_pool: MatchmakerQueueMapPool,
+) -&gt; dict[int, float]:
+    (
+        pool_id,
+        pool,
+        *_,
+        max_tokens_per_map,
+        minimum_maps_after_veto
+    ) = matchmaker_queue_map_pool
+
+    vetoes_map: dict[int, int] = defaultdict(int)
+
+    for m in pool.maps.values():
+        for player in players_in_match:
+            bracket_vetoes = player.vetoes.get_vetoes_for_bracket(pool_id)
+            vetoes_map[m.map_pool_map_version_id] += bracket_vetoes.get(m.map_pool_map_version_id, 0)
+
+    self._logger.debug(&#34;______vetoes_map________________: %s&#34;, vetoes_map)
+
+    if max_tokens_per_map == 0:
+        max_tokens_per_map = self.calculate_dynamic_tokens_per_map(minimum_maps_after_veto, vetoes_map.values())
+        # This should never happen
+        if max_tokens_per_map == 0:
+            self._logger.error(
+                &#34;calculate_dynamic_tokens_per_map received impossible &#34;
+                &#34;vetoes setup, all vetoes cancelled for a match&#34;,
+            )
+            vetoes_map = {}
+            max_tokens_per_map = 1
+
+    return {
+        m.map_pool_map_version_id: max(
+            0,
+            1 - vetoes_map.get(m.map_pool_map_version_id, 0) / max_tokens_per_map,
+        )
+        for m in pool.maps.values()
+    }</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="server.ladder_service.veto_system.VetoService.set_player_vetoes"><code class="name flex">
+<span>async def <span class="ident">set_player_vetoes</span></span>(<span>self,<br>player: <a title="server.players.Player" href="../players.html#server.players.Player">Player</a>,<br>new_vetoes: dict[int, dict[int, int]])</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def set_player_vetoes(
+    self,
+    player: Player,
+    new_vetoes: dict[BracketID, VetoesMap],
+):
+    &#34;&#34;&#34;Validates and sets vetoes based on new vetoes and pool constraints.&#34;&#34;&#34;
+    if not _is_valid_vetoes(new_vetoes):
+        raise ClientError(&#34;invalid veto data&#34;)
+
+    adjusted_vetoes = self._adjust_vetoes(new_vetoes)
+
+    if adjusted_vetoes != player.vetoes._vetoes:
+        player.vetoes._vetoes = adjusted_vetoes
+    if adjusted_vetoes != new_vetoes:
+        await player.send_message({
+            &#34;command&#34;: &#34;vetoes_info&#34;,
+            &#34;forced&#34;: False,
+            **player.vetoes.to_dict(),
+        })</code></pre>
+</details>
+<div class="desc"><p>Validates and sets vetoes based on new vetoes and pool constraints.</p></div>
+</dd>
+<dt id="server.ladder_service.veto_system.VetoService.update_pools_veto_config"><code class="name flex">
+<span>def <span class="ident">update_pools_veto_config</span></span>(<span>self,<br>queues: dict[str, <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="../matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>]) ‑> list[<a title="server.players.Player" href="../players.html#server.players.Player">Player</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_pools_veto_config(self, queues: dict[str, MatchmakerQueue]) -&gt; list[Player]:
+    &#34;&#34;&#34;
+    Update the cached veto config to match the new queues.
+
+    Returns list of players whose vetoes were force-adjusted due to config changes.
+    These players should be removed from matchmaking queues.
+    &#34;&#34;&#34;
+
+    pools_vetodata = self.extract_pools_veto_config(queues)
+
+    if self.pools_veto_data == pools_vetodata:
+        return []
+
+    self.pools_veto_data = pools_vetodata
+
+    pool_maps_by_bracket = {
+        pool_data.matchmaker_queue_map_pool_id: set(pool_data.map_pool_map_version_ids)
+        for pool_data in self.pools_veto_data
+    }
+
+    affected_players = []
+    for player in self.player_service.all_players:
+        # TODO: Can we avoid force adjusting veto selections for players.
+        adjusted_vetoes = self._adjust_vetoes(player.vetoes._vetoes)
+
+        if adjusted_vetoes != player.vetoes._vetoes:
+            tokens_amount_for_some_map_was_reduced = any(
+                map_id in pool_maps_by_bracket.get(bracket, set())
+                and original_tokens &gt; adjusted_vetoes.get(bracket, {}).get(map_id, 0)
+                for bracket, bracket_vetoes in player.vetoes._vetoes.items()
+                for map_id, original_tokens in bracket_vetoes.items()
+            )
+            player.vetoes._vetoes = adjusted_vetoes
+            player.write_message({
+                &#34;command&#34;: &#34;vetoes_info&#34;,
+                &#34;forced&#34;: tokens_amount_for_some_map_was_reduced,
+                **player.vetoes.to_dict(),
+            })
+            if tokens_amount_for_some_map_was_reduced:
+                affected_players.append(player)
+
+    return affected_players</code></pre>
+</details>
+<div class="desc"><p>Update the cached veto config to match the new queues.</p>
+<p>Returns list of players whose vetoes were force-adjusted due to config changes.
+These players should be removed from matchmaking queues.</p></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="server.core.service.Service" href="../core/service.html#server.core.service.Service">Service</a></b></code>:
+<ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="../core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
+<li><code><a title="server.core.service.Service.initialize" href="../core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
+<li><code><a title="server.core.service.Service.on_connection_lost" href="../core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
+<li><code><a title="server.core.service.Service.shutdown" href="../core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="server.ladder_service" href="index.html">server.ladder_service</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="server.ladder_service.veto_system.PlayerVetoes" href="#server.ladder_service.veto_system.PlayerVetoes">PlayerVetoes</a></code></h4>
+<ul class="">
+<li><code><a title="server.ladder_service.veto_system.PlayerVetoes.get_vetoes_for_bracket" href="#server.ladder_service.veto_system.PlayerVetoes.get_vetoes_for_bracket">get_vetoes_for_bracket</a></code></li>
+<li><code><a title="server.ladder_service.veto_system.PlayerVetoes.to_dict" href="#server.ladder_service.veto_system.PlayerVetoes.to_dict">to_dict</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.ladder_service.veto_system.VetoService" href="#server.ladder_service.veto_system.VetoService">VetoService</a></code></h4>
+<ul class="">
+<li><code><a title="server.ladder_service.veto_system.VetoService.calculate_dynamic_tokens_per_map" href="#server.ladder_service.veto_system.VetoService.calculate_dynamic_tokens_per_map">calculate_dynamic_tokens_per_map</a></code></li>
+<li><code><a title="server.ladder_service.veto_system.VetoService.extract_pools_veto_config" href="#server.ladder_service.veto_system.VetoService.extract_pools_veto_config">extract_pools_veto_config</a></code></li>
+<li><code><a title="server.ladder_service.veto_system.VetoService.generate_initial_weights_for_match" href="#server.ladder_service.veto_system.VetoService.generate_initial_weights_for_match">generate_initial_weights_for_match</a></code></li>
+<li><code><a title="server.ladder_service.veto_system.VetoService.set_player_vetoes" href="#server.ladder_service.veto_system.VetoService.set_player_vetoes">set_player_vetoes</a></code></li>
+<li><code><a title="server.ladder_service.veto_system.VetoService.update_pools_veto_config" href="#server.ladder_service.veto_system.VetoService.update_pools_veto_config">update_pools_veto_config</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

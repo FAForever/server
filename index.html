@@ -2615,7 +2615,7 @@ def pending_games(self) -&gt; list[Game]:
 <div class="desc"></div>
 </dd>
 <dt id="server.GameService.create_game"><code class="name flex">
-<span>def <span class="ident">create_game</span></span>(<span>self,<br>game_mode: str,<br>game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame,<br>visibility=VisibilityState.PUBLIC,<br>host: <a title="server.players.Player" href="players.html#server.players.Player">Player</a> | None = None,<br>name: str | None = None,<br>map: <a title="server.types.Map" href="types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1),<br>password: str | None = None,<br>matchmaker_queue_id: int | None = None,<br>**kwargs)</span>
+<span>def <span class="ident">create_game</span></span>(<span>self,<br>game_mode: str,<br>game_class: type[<a title="server.games.game.Game" href="games/game.html#server.games.game.Game">Game</a>] = server.games.custom_game.CustomGame,<br>visibility=VisibilityState.PUBLIC,<br>host: <a title="server.players.Player" href="players.html#server.players.Player">Player</a> | None = None,<br>name: str | None = None,<br>map: <a title="server.types.Map" href="types.html#server.types.Map">Map</a> = Map(id=None, folder_name='scmp_007', ranked=False, weight=1, map_pool_map_version_id=None),<br>password: str | None = None,<br>matchmaker_queue_id: int | None = None,<br>**kwargs)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -3754,7 +3754,7 @@ a valid gzip file, then it does NOT overwrite the old file.</p></div>
 </dd>
 <dt id="server.LadderService"><code class="flex name class">
 <span>class <span class="ident">LadderService</span></span>
-<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>,<br>violation_service: <a title="server.ladder_service.violation_service.ViolationService" href="ladder_service/violation_service.html#server.ladder_service.violation_service.ViolationService">ViolationService</a>)</span>
+<span>(</span><span>database: <a title="server.db.FAFDatabase" href="db/index.html#server.db.FAFDatabase">FAFDatabase</a>,<br>game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>,<br>violation_service: <a title="server.ladder_service.violation_service.ViolationService" href="ladder_service/violation_service.html#server.ladder_service.violation_service.ViolationService">ViolationService</a>,<br>veto_service: <a title="server.ladder_service.veto_system.VetoService" href="ladder_service/veto_system.html#server.ladder_service.veto_system.VetoService">VetoService</a>)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -3775,12 +3775,14 @@ class LadderService(Service):
         database: FAFDatabase,
         game_service: GameService,
         violation_service: ViolationService,
+        veto_service: VetoService,
     ):
         self._db = database
         self._informed_players: set[Player] = set()
         self.game_service = game_service
         self.queues: dict[str, MatchmakerQueue] = {}
         self.violation_service = violation_service
+        self.veto_service = veto_service
 
         self._searches: dict[Player, dict[str, Search]] = defaultdict(dict)
         self._allow_new_searches = True
@@ -3815,7 +3817,7 @@ class LadderService(Service):
                 queue.team_size = info[&#34;team_size&#34;]
                 queue.rating_peak = await self.fetch_rating_peak(info[&#34;rating_type&#34;])
             queue.map_pools.clear()
-            for map_pool_id, min_rating, max_rating in info[&#34;map_pools&#34;]:
+            for matchmaker_queue_map_pool_id, map_pool_id, min_rating, max_rating, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto in info[&#34;map_pools&#34;]:
                 map_pool_name, map_list = map_pool_maps[map_pool_id]
                 if not map_list:
                     self._logger.warning(
@@ -3825,9 +3827,15 @@ class LadderService(Service):
                         name
                     )
                 queue.add_map_pool(
-                    MapPool(map_pool_id, map_pool_name, map_list),
-                    min_rating,
-                    max_rating
+                    MatchmakerQueueMapPool(
+                        matchmaker_queue_map_pool_id,
+                        MapPool(map_pool_id, map_pool_name, cast(list[MapPoolMap], map_list)),
+                        min_rating,
+                        max_rating,
+                        veto_tokens_per_player,
+                        max_tokens_per_map,
+                        minimum_maps_after_veto
+                    )
                 )
         # Remove queues that don&#39;t exist anymore
         for queue_name in list(self.queues.keys()):
@@ -3835,11 +3843,16 @@ class LadderService(Service):
                 self.queues[queue_name].shutdown()
                 del self.queues[queue_name]
 
+        affected_players = self.veto_service.update_pools_veto_config(self.queues)
+        for player in affected_players:
+            self.cancel_search(player)
+
     async def fetch_map_pools(self, conn) -&gt; dict[int, tuple[str, list[Map]]]:
         result = await conn.execute(
             select(
                 map_pool.c.id,
                 map_pool.c.name,
+                map_pool_map_version.c.id.label(&#34;map_pool_map_version_id&#34;),
                 map_pool_map_version.c.weight,
                 map_pool_map_version.c.map_params,
                 map_version.c.id.label(&#34;map_id&#34;),
@@ -3868,6 +3881,7 @@ class LadderService(Service):
                 map_list.append(
                     Map(
                         id=row.map_id,
+                        map_pool_map_version_id=row.map_pool_map_version_id,
                         folder_name=folder_name,
                         ranked=row.ranked,
                         weight=row.weight,
@@ -3879,7 +3893,7 @@ class LadderService(Service):
                     map_type = params[&#34;type&#34;]
                     if map_type == &#34;neroxis&#34;:
                         map_list.append(
-                            NeroxisGeneratedMap.of(params, row.weight)
+                            NeroxisGeneratedMap.of(params, row.weight, row.map_pool_map_version_id)
                         )
                     else:
                         self._logger.warning(
@@ -3906,9 +3920,13 @@ class LadderService(Service):
                 matchmaker_queue.c.technical_name,
                 matchmaker_queue.c.team_size,
                 matchmaker_queue.c.params,
+                matchmaker_queue_map_pool.c.id.label(&#34;matchmaker_queue_map_pool_id&#34;),
                 matchmaker_queue_map_pool.c.map_pool_id,
                 matchmaker_queue_map_pool.c.min_rating,
                 matchmaker_queue_map_pool.c.max_rating,
+                matchmaker_queue_map_pool.c.veto_tokens_per_player,
+                matchmaker_queue_map_pool.c.max_tokens_per_map,
+                matchmaker_queue_map_pool.c.minimum_maps_after_veto,
                 game_featuredMods.c.gamemod,
                 leaderboard.c.technical_name.label(&#34;rating_type&#34;)
             )
@@ -3937,9 +3955,13 @@ class LadderService(Service):
                 info[&#34;team_size&#34;] = row.team_size
                 info[&#34;params&#34;] = json.loads(row.params) if row.params else None
                 info[&#34;map_pools&#34;].append((
+                    row.matchmaker_queue_map_pool_id,
                     row.map_pool_id,
                     row.min_rating,
-                    row.max_rating
+                    row.max_rating,
+                    row.veto_tokens_per_player,
+                    row.max_tokens_per_map,
+                    row.minimum_maps_after_veto
                 ))
             except Exception:
                 self._logger.warning(
@@ -4241,10 +4263,25 @@ class LadderService(Service):
             )
             rating = func(ratings)
 
-            pool = queue.get_map_pool_for_rating(rating)
-            if not pool:
+            map_pool = queue.get_map_pool_for_rating(rating)
+            if not map_pool:
                 raise RuntimeError(f&#34;No map pool available for rating {rating}!&#34;)
-            game_map = pool.choose_map(played_map_ids)
+
+            self._logger.debug(
+                &#34;______queue.map_pools[map_pool.id]________________: %s&#34;,
+                queue.map_pools[map_pool.id],
+            )
+            initial_weights = self.veto_service.generate_initial_weights_for_match(
+                all_players,
+                queue.map_pools[map_pool.id],
+            )
+            self._logger.debug(
+                &#34;______initial_weights________________: %s&#34;,
+                initial_weights,
+            )
+            game_map = map_pool.choose_map(played_map_ids, initial_weights)
+
+            self._logger.debug(&#34;______game_map________________: %s&#34;, game_map)
 
             game = self.game_service.create_game(
                 game_class=LadderGame,
@@ -4296,7 +4333,8 @@ class LadderService(Service):
                     game_options=game_options,
                     team=game.get_player_option(player.id, &#34;Team&#34;),
                     faction=game.get_player_option(player.id, &#34;Faction&#34;),
-                    map_position=game.get_player_option(player.id, &#34;StartSpot&#34;)
+                    map_position=game.get_player_option(player.id, &#34;StartSpot&#34;),
+                    map_pool_map_version_id=game_map.map_pool_map_version_id
                 )
 
             await self.launch_match(game, host, all_guests, make_game_options)
@@ -4494,6 +4532,7 @@ statistics, and launches the games.</p></div>
         select(
             map_pool.c.id,
             map_pool.c.name,
+            map_pool_map_version.c.id.label(&#34;map_pool_map_version_id&#34;),
             map_pool_map_version.c.weight,
             map_pool_map_version.c.map_params,
             map_version.c.id.label(&#34;map_id&#34;),
@@ -4522,6 +4561,7 @@ statistics, and launches the games.</p></div>
             map_list.append(
                 Map(
                     id=row.map_id,
+                    map_pool_map_version_id=row.map_pool_map_version_id,
                     folder_name=folder_name,
                     ranked=row.ranked,
                     weight=row.weight,
@@ -4533,7 +4573,7 @@ statistics, and launches the games.</p></div>
                 map_type = params[&#34;type&#34;]
                 if map_type == &#34;neroxis&#34;:
                     map_list.append(
-                        NeroxisGeneratedMap.of(params, row.weight)
+                        NeroxisGeneratedMap.of(params, row.weight, row.map_pool_map_version_id)
                     )
                 else:
                     self._logger.warning(
@@ -4570,9 +4610,13 @@ statistics, and launches the games.</p></div>
             matchmaker_queue.c.technical_name,
             matchmaker_queue.c.team_size,
             matchmaker_queue.c.params,
+            matchmaker_queue_map_pool.c.id.label(&#34;matchmaker_queue_map_pool_id&#34;),
             matchmaker_queue_map_pool.c.map_pool_id,
             matchmaker_queue_map_pool.c.min_rating,
             matchmaker_queue_map_pool.c.max_rating,
+            matchmaker_queue_map_pool.c.veto_tokens_per_player,
+            matchmaker_queue_map_pool.c.max_tokens_per_map,
+            matchmaker_queue_map_pool.c.minimum_maps_after_veto,
             game_featuredMods.c.gamemod,
             leaderboard.c.technical_name.label(&#34;rating_type&#34;)
         )
@@ -4601,9 +4645,13 @@ statistics, and launches the games.</p></div>
             info[&#34;team_size&#34;] = row.team_size
             info[&#34;params&#34;] = json.loads(row.params) if row.params else None
             info[&#34;map_pools&#34;].append((
+                row.matchmaker_queue_map_pool_id,
                 row.map_pool_id,
                 row.min_rating,
-                row.max_rating
+                row.max_rating,
+                row.veto_tokens_per_player,
+                row.max_tokens_per_map,
+                row.minimum_maps_after_veto
             ))
         except Exception:
             self._logger.warning(
@@ -4975,7 +5023,7 @@ so it should only perform fast operations.</p></div>
             queue.team_size = info[&#34;team_size&#34;]
             queue.rating_peak = await self.fetch_rating_peak(info[&#34;rating_type&#34;])
         queue.map_pools.clear()
-        for map_pool_id, min_rating, max_rating in info[&#34;map_pools&#34;]:
+        for matchmaker_queue_map_pool_id, map_pool_id, min_rating, max_rating, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto in info[&#34;map_pools&#34;]:
             map_pool_name, map_list = map_pool_maps[map_pool_id]
             if not map_list:
                 self._logger.warning(
@@ -4985,15 +5033,25 @@ so it should only perform fast operations.</p></div>
                     name
                 )
             queue.add_map_pool(
-                MapPool(map_pool_id, map_pool_name, map_list),
-                min_rating,
-                max_rating
+                MatchmakerQueueMapPool(
+                    matchmaker_queue_map_pool_id,
+                    MapPool(map_pool_id, map_pool_name, cast(list[MapPoolMap], map_list)),
+                    min_rating,
+                    max_rating,
+                    veto_tokens_per_player,
+                    max_tokens_per_map,
+                    minimum_maps_after_veto
+                )
             )
     # Remove queues that don&#39;t exist anymore
     for queue_name in list(self.queues.keys()):
         if queue_name not in db_queues:
             self.queues[queue_name].shutdown()
-            del self.queues[queue_name]</code></pre>
+            del self.queues[queue_name]
+
+    affected_players = self.veto_service.update_pools_veto_config(self.queues)
+    for player in affected_players:
+        self.cancel_search(player)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -7213,6 +7271,7 @@ atomic.</p></div>
             party_service=self.services[&#34;party_service&#34;],
             rating_service=self.services[&#34;rating_service&#34;],
             oauth_service=self.services[&#34;oauth_service&#34;],
+            veto_service=self.services[&#34;veto_service&#34;],
         )
 
     def write_broadcast(
@@ -7585,6 +7644,493 @@ async def start_services(self) -&gt; None:
 <div class="desc"><p>Queue a message to be sent to all connected clients.</p></div>
 </dd>
 </dl>
+</dd>
+<dt id="server.VetoService"><code class="flex name class">
+<span>class <span class="ident">VetoService</span></span>
+<span>(</span><span>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@with_logger
+class VetoService(Service):
+    _logger: ClassVar[logging.Logger]
+
+    def __init__(self, player_service: PlayerService):
+        self.player_service = player_service
+
+        self.pools_veto_data: list[MatchmakerQueueMapPoolVetoData] = []
+
+    def update_pools_veto_config(self, queues: dict[str, MatchmakerQueue]) -&gt; list[Player]:
+        &#34;&#34;&#34;
+        Update the cached veto config to match the new queues.
+
+        Returns list of players whose vetoes were force-adjusted due to config changes.
+        These players should be removed from matchmaking queues.
+        &#34;&#34;&#34;
+
+        pools_vetodata = self.extract_pools_veto_config(queues)
+
+        if self.pools_veto_data == pools_vetodata:
+            return []
+
+        self.pools_veto_data = pools_vetodata
+
+        pool_maps_by_bracket = {
+            pool_data.matchmaker_queue_map_pool_id: set(pool_data.map_pool_map_version_ids)
+            for pool_data in self.pools_veto_data
+        }
+
+        affected_players = []
+        for player in self.player_service.all_players:
+            # TODO: Can we avoid force adjusting veto selections for players.
+            adjusted_vetoes = self._adjust_vetoes(player.vetoes._vetoes)
+
+            if adjusted_vetoes != player.vetoes._vetoes:
+                tokens_amount_for_some_map_was_reduced = any(
+                    map_id in pool_maps_by_bracket.get(bracket, set())
+                    and original_tokens &gt; adjusted_vetoes.get(bracket, {}).get(map_id, 0)
+                    for bracket, bracket_vetoes in player.vetoes._vetoes.items()
+                    for map_id, original_tokens in bracket_vetoes.items()
+                )
+                player.vetoes._vetoes = adjusted_vetoes
+                player.write_message({
+                    &#34;command&#34;: &#34;vetoes_info&#34;,
+                    &#34;forced&#34;: tokens_amount_for_some_map_was_reduced,
+                    **player.vetoes.to_dict(),
+                })
+                if tokens_amount_for_some_map_was_reduced:
+                    affected_players.append(player)
+
+        return affected_players
+
+    def extract_pools_veto_config(
+        self,
+        queues: dict[str, MatchmakerQueue],
+    ) -&gt; list[MatchmakerQueueMapPoolVetoData]:
+        result = []
+        for queue in queues.values():
+            for matchmaker_queue_map_pool in queue.map_pools.values():
+                veto_tokens_per_player = matchmaker_queue_map_pool.veto_tokens_per_player
+                max_tokens_per_map = matchmaker_queue_map_pool.max_tokens_per_map
+                minimum_maps_after_veto = matchmaker_queue_map_pool.minimum_maps_after_veto
+
+                if not _is_valid_veto_config_for_queue(queue, matchmaker_queue_map_pool):
+                    veto_tokens_per_player = 0
+                    max_tokens_per_map = 1
+                    minimum_maps_after_veto = 1
+                    self._logger.error(
+                        &#34;Wrong vetoes setup detected for pool %s in queue %s&#34;,
+                        matchmaker_queue_map_pool.map_pool.id,
+                        queue.id,
+                    )
+
+                result.append(
+                    MatchmakerQueueMapPoolVetoData(
+                        matchmaker_queue_map_pool_id=matchmaker_queue_map_pool.id,
+                        map_pool_map_version_ids=[
+                            map.map_pool_map_version_id
+                            for map in matchmaker_queue_map_pool.map_pool.maps.values()
+                        ],
+                        veto_tokens_per_player=veto_tokens_per_player,
+                        max_tokens_per_map=max_tokens_per_map,
+                        minimum_maps_after_veto=minimum_maps_after_veto
+                    )
+                )
+
+        return result
+
+    async def set_player_vetoes(
+        self,
+        player: Player,
+        new_vetoes: dict[BracketID, VetoesMap],
+    ):
+        &#34;&#34;&#34;Validates and sets vetoes based on new vetoes and pool constraints.&#34;&#34;&#34;
+        if not _is_valid_vetoes(new_vetoes):
+            raise ClientError(&#34;invalid veto data&#34;)
+
+        adjusted_vetoes = self._adjust_vetoes(new_vetoes)
+
+        if adjusted_vetoes != player.vetoes._vetoes:
+            player.vetoes._vetoes = adjusted_vetoes
+        if adjusted_vetoes != new_vetoes:
+            await player.send_message({
+                &#34;command&#34;: &#34;vetoes_info&#34;,
+                &#34;forced&#34;: False,
+                **player.vetoes.to_dict(),
+            })
+
+    def _adjust_vetoes(
+        self,
+        new_vetoes: dict[BracketID, VetoesMap],
+    ) -&gt; dict[BracketID, VetoesMap]:
+        # TODO: How can we avoid doing this adjustment? It would be better to
+        # simply check if the veto selection is valid, and return an error if
+        # not so that the client can display that to the user and force a new
+        # selection. Or, if we expect the client to do that already, we can
+        # simply raise a ClientError on invalid veto selections.
+        adjusted_vetoes = {}
+        for bracket_id, map_ids, total_tokens, max_per_map, _ in self.pools_veto_data:
+            bracket_vetoes = _adjust_vetoes_for_bracket(
+                new_vetoes.get(bracket_id, {}),
+                map_ids,
+                total_tokens,
+                max_per_map,
+            )
+            if bracket_vetoes:
+                adjusted_vetoes[bracket_id] = bracket_vetoes
+
+        return adjusted_vetoes
+
+    def generate_initial_weights_for_match(
+        self,
+        players_in_match,
+        matchmaker_queue_map_pool: MatchmakerQueueMapPool,
+    ) -&gt; dict[int, float]:
+        (
+            pool_id,
+            pool,
+            *_,
+            max_tokens_per_map,
+            minimum_maps_after_veto
+        ) = matchmaker_queue_map_pool
+
+        vetoes_map: dict[int, int] = defaultdict(int)
+
+        for m in pool.maps.values():
+            for player in players_in_match:
+                bracket_vetoes = player.vetoes.get_vetoes_for_bracket(pool_id)
+                vetoes_map[m.map_pool_map_version_id] += bracket_vetoes.get(m.map_pool_map_version_id, 0)
+
+        self._logger.debug(&#34;______vetoes_map________________: %s&#34;, vetoes_map)
+
+        if max_tokens_per_map == 0:
+            max_tokens_per_map = self.calculate_dynamic_tokens_per_map(minimum_maps_after_veto, vetoes_map.values())
+            # This should never happen
+            if max_tokens_per_map == 0:
+                self._logger.error(
+                    &#34;calculate_dynamic_tokens_per_map received impossible &#34;
+                    &#34;vetoes setup, all vetoes cancelled for a match&#34;,
+                )
+                vetoes_map = {}
+                max_tokens_per_map = 1
+
+        return {
+            m.map_pool_map_version_id: max(
+                0,
+                1 - vetoes_map.get(m.map_pool_map_version_id, 0) / max_tokens_per_map,
+            )
+            for m in pool.maps.values()
+        }
+
+    def calculate_dynamic_tokens_per_map(
+        self,
+        M: float,
+        tokens_applied_to_maps: Iterable[int],
+    ) -&gt; float:
+        &#34;&#34;&#34;
+        Calculate the smallest positive T such that the sum of weights w = max((T - V)/T, 0) for each map is at least M,
+        where V is the number of tokens applied to that map. If the condition is met with maps that have zero tokens, returns 1.
+
+        The function groups maps by the number of tokens applied to them and processes these groups in ascending order of token values.
+        For each group, it checks if a solution T exists such that the sum of weights for the maps considered so far is at least M.
+        If a solution is found, it returns that T. If no solution is found after considering all maps, it returns 0.
+        &#34;&#34;&#34;
+        def calculate_solution(
+            tokens_sum: float,
+            map_count: int,
+            M: float,
+            upper_bound: Optional[float],
+        ) -&gt; Optional[float]:
+            if tokens_sum == 0 and map_count &gt;= M:
+                return 1
+            if map_count &gt; M:
+                candidate = tokens_sum / (map_count - M)
+                if upper_bound is None or candidate &lt;= upper_bound:
+                    return candidate
+            return None
+
+        # grouping maps with the same tokens applied count
+        group_sizes = Counter(tokens_applied_to_maps)
+        sorted_tokens = sorted(group_sizes.keys())
+
+        total_map_count_in_selected_groups = 0
+        total_tokens_applied_to_selected_groups = 0.0
+
+        for i, token in enumerate(sorted_tokens):
+            next_map_group_size = group_sizes[token]
+            total_map_count_in_selected_groups += next_map_group_size
+            total_tokens_applied_to_selected_groups += token * next_map_group_size
+            upper_bound = sorted_tokens[i + 1] if i &lt; len(sorted_tokens) - 1 else None
+            solution = calculate_solution(total_tokens_applied_to_selected_groups, total_map_count_in_selected_groups, M, upper_bound)
+            if solution is not None:
+                return solution
+
+        return 0</code></pre>
+</details>
+<div class="desc"><p>All services should inherit from this class.</p>
+<p>Services are singleton objects which manage some server task.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="server.VetoService.calculate_dynamic_tokens_per_map"><code class="name flex">
+<span>def <span class="ident">calculate_dynamic_tokens_per_map</span></span>(<span>self, M: float, tokens_applied_to_maps: Iterable[int]) ‑> float</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calculate_dynamic_tokens_per_map(
+    self,
+    M: float,
+    tokens_applied_to_maps: Iterable[int],
+) -&gt; float:
+    &#34;&#34;&#34;
+    Calculate the smallest positive T such that the sum of weights w = max((T - V)/T, 0) for each map is at least M,
+    where V is the number of tokens applied to that map. If the condition is met with maps that have zero tokens, returns 1.
+
+    The function groups maps by the number of tokens applied to them and processes these groups in ascending order of token values.
+    For each group, it checks if a solution T exists such that the sum of weights for the maps considered so far is at least M.
+    If a solution is found, it returns that T. If no solution is found after considering all maps, it returns 0.
+    &#34;&#34;&#34;
+    def calculate_solution(
+        tokens_sum: float,
+        map_count: int,
+        M: float,
+        upper_bound: Optional[float],
+    ) -&gt; Optional[float]:
+        if tokens_sum == 0 and map_count &gt;= M:
+            return 1
+        if map_count &gt; M:
+            candidate = tokens_sum / (map_count - M)
+            if upper_bound is None or candidate &lt;= upper_bound:
+                return candidate
+        return None
+
+    # grouping maps with the same tokens applied count
+    group_sizes = Counter(tokens_applied_to_maps)
+    sorted_tokens = sorted(group_sizes.keys())
+
+    total_map_count_in_selected_groups = 0
+    total_tokens_applied_to_selected_groups = 0.0
+
+    for i, token in enumerate(sorted_tokens):
+        next_map_group_size = group_sizes[token]
+        total_map_count_in_selected_groups += next_map_group_size
+        total_tokens_applied_to_selected_groups += token * next_map_group_size
+        upper_bound = sorted_tokens[i + 1] if i &lt; len(sorted_tokens) - 1 else None
+        solution = calculate_solution(total_tokens_applied_to_selected_groups, total_map_count_in_selected_groups, M, upper_bound)
+        if solution is not None:
+            return solution
+
+    return 0</code></pre>
+</details>
+<div class="desc"><p>Calculate the smallest positive T such that the sum of weights w = max((T - V)/T, 0) for each map is at least M,
+where V is the number of tokens applied to that map. If the condition is met with maps that have zero tokens, returns 1.</p>
+<p>The function groups maps by the number of tokens applied to them and processes these groups in ascending order of token values.
+For each group, it checks if a solution T exists such that the sum of weights for the maps considered so far is at least M.
+If a solution is found, it returns that T. If no solution is found after considering all maps, it returns 0.</p></div>
+</dd>
+<dt id="server.VetoService.extract_pools_veto_config"><code class="name flex">
+<span>def <span class="ident">extract_pools_veto_config</span></span>(<span>self,<br>queues: dict[str, <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>]) ‑> list[<a title="server.types.MatchmakerQueueMapPoolVetoData" href="types.html#server.types.MatchmakerQueueMapPoolVetoData">MatchmakerQueueMapPoolVetoData</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_pools_veto_config(
+    self,
+    queues: dict[str, MatchmakerQueue],
+) -&gt; list[MatchmakerQueueMapPoolVetoData]:
+    result = []
+    for queue in queues.values():
+        for matchmaker_queue_map_pool in queue.map_pools.values():
+            veto_tokens_per_player = matchmaker_queue_map_pool.veto_tokens_per_player
+            max_tokens_per_map = matchmaker_queue_map_pool.max_tokens_per_map
+            minimum_maps_after_veto = matchmaker_queue_map_pool.minimum_maps_after_veto
+
+            if not _is_valid_veto_config_for_queue(queue, matchmaker_queue_map_pool):
+                veto_tokens_per_player = 0
+                max_tokens_per_map = 1
+                minimum_maps_after_veto = 1
+                self._logger.error(
+                    &#34;Wrong vetoes setup detected for pool %s in queue %s&#34;,
+                    matchmaker_queue_map_pool.map_pool.id,
+                    queue.id,
+                )
+
+            result.append(
+                MatchmakerQueueMapPoolVetoData(
+                    matchmaker_queue_map_pool_id=matchmaker_queue_map_pool.id,
+                    map_pool_map_version_ids=[
+                        map.map_pool_map_version_id
+                        for map in matchmaker_queue_map_pool.map_pool.maps.values()
+                    ],
+                    veto_tokens_per_player=veto_tokens_per_player,
+                    max_tokens_per_map=max_tokens_per_map,
+                    minimum_maps_after_veto=minimum_maps_after_veto
+                )
+            )
+
+    return result</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="server.VetoService.generate_initial_weights_for_match"><code class="name flex">
+<span>def <span class="ident">generate_initial_weights_for_match</span></span>(<span>self,<br>players_in_match,<br>matchmaker_queue_map_pool: <a title="server.matchmaker.map_pool.MatchmakerQueueMapPool" href="matchmaker/map_pool.html#server.matchmaker.map_pool.MatchmakerQueueMapPool">MatchmakerQueueMapPool</a>) ‑> dict[int, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_initial_weights_for_match(
+    self,
+    players_in_match,
+    matchmaker_queue_map_pool: MatchmakerQueueMapPool,
+) -&gt; dict[int, float]:
+    (
+        pool_id,
+        pool,
+        *_,
+        max_tokens_per_map,
+        minimum_maps_after_veto
+    ) = matchmaker_queue_map_pool
+
+    vetoes_map: dict[int, int] = defaultdict(int)
+
+    for m in pool.maps.values():
+        for player in players_in_match:
+            bracket_vetoes = player.vetoes.get_vetoes_for_bracket(pool_id)
+            vetoes_map[m.map_pool_map_version_id] += bracket_vetoes.get(m.map_pool_map_version_id, 0)
+
+    self._logger.debug(&#34;______vetoes_map________________: %s&#34;, vetoes_map)
+
+    if max_tokens_per_map == 0:
+        max_tokens_per_map = self.calculate_dynamic_tokens_per_map(minimum_maps_after_veto, vetoes_map.values())
+        # This should never happen
+        if max_tokens_per_map == 0:
+            self._logger.error(
+                &#34;calculate_dynamic_tokens_per_map received impossible &#34;
+                &#34;vetoes setup, all vetoes cancelled for a match&#34;,
+            )
+            vetoes_map = {}
+            max_tokens_per_map = 1
+
+    return {
+        m.map_pool_map_version_id: max(
+            0,
+            1 - vetoes_map.get(m.map_pool_map_version_id, 0) / max_tokens_per_map,
+        )
+        for m in pool.maps.values()
+    }</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="server.VetoService.set_player_vetoes"><code class="name flex">
+<span>async def <span class="ident">set_player_vetoes</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>,<br>new_vetoes: dict[int, dict[int, int]])</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def set_player_vetoes(
+    self,
+    player: Player,
+    new_vetoes: dict[BracketID, VetoesMap],
+):
+    &#34;&#34;&#34;Validates and sets vetoes based on new vetoes and pool constraints.&#34;&#34;&#34;
+    if not _is_valid_vetoes(new_vetoes):
+        raise ClientError(&#34;invalid veto data&#34;)
+
+    adjusted_vetoes = self._adjust_vetoes(new_vetoes)
+
+    if adjusted_vetoes != player.vetoes._vetoes:
+        player.vetoes._vetoes = adjusted_vetoes
+    if adjusted_vetoes != new_vetoes:
+        await player.send_message({
+            &#34;command&#34;: &#34;vetoes_info&#34;,
+            &#34;forced&#34;: False,
+            **player.vetoes.to_dict(),
+        })</code></pre>
+</details>
+<div class="desc"><p>Validates and sets vetoes based on new vetoes and pool constraints.</p></div>
+</dd>
+<dt id="server.VetoService.update_pools_veto_config"><code class="name flex">
+<span>def <span class="ident">update_pools_veto_config</span></span>(<span>self,<br>queues: dict[str, <a title="server.matchmaker.matchmaker_queue.MatchmakerQueue" href="matchmaker/matchmaker_queue.html#server.matchmaker.matchmaker_queue.MatchmakerQueue">MatchmakerQueue</a>]) ‑> list[<a title="server.players.Player" href="players.html#server.players.Player">Player</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_pools_veto_config(self, queues: dict[str, MatchmakerQueue]) -&gt; list[Player]:
+    &#34;&#34;&#34;
+    Update the cached veto config to match the new queues.
+
+    Returns list of players whose vetoes were force-adjusted due to config changes.
+    These players should be removed from matchmaking queues.
+    &#34;&#34;&#34;
+
+    pools_vetodata = self.extract_pools_veto_config(queues)
+
+    if self.pools_veto_data == pools_vetodata:
+        return []
+
+    self.pools_veto_data = pools_vetodata
+
+    pool_maps_by_bracket = {
+        pool_data.matchmaker_queue_map_pool_id: set(pool_data.map_pool_map_version_ids)
+        for pool_data in self.pools_veto_data
+    }
+
+    affected_players = []
+    for player in self.player_service.all_players:
+        # TODO: Can we avoid force adjusting veto selections for players.
+        adjusted_vetoes = self._adjust_vetoes(player.vetoes._vetoes)
+
+        if adjusted_vetoes != player.vetoes._vetoes:
+            tokens_amount_for_some_map_was_reduced = any(
+                map_id in pool_maps_by_bracket.get(bracket, set())
+                and original_tokens &gt; adjusted_vetoes.get(bracket, {}).get(map_id, 0)
+                for bracket, bracket_vetoes in player.vetoes._vetoes.items()
+                for map_id, original_tokens in bracket_vetoes.items()
+            )
+            player.vetoes._vetoes = adjusted_vetoes
+            player.write_message({
+                &#34;command&#34;: &#34;vetoes_info&#34;,
+                &#34;forced&#34;: tokens_amount_for_some_map_was_reduced,
+                **player.vetoes.to_dict(),
+            })
+            if tokens_amount_for_some_map_was_reduced:
+                affected_players.append(player)
+
+    return affected_players</code></pre>
+</details>
+<div class="desc"><p>Update the cached veto config to match the new queues.</p>
+<p>Returns list of players whose vetoes were force-adjusted due to config changes.
+These players should be removed from matchmaking queues.</p></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
+<ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
+<li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
+<li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
+<li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
+</ul>
+</li>
+</ul>
 </dd>
 <dt id="server.ViolationService"><code class="flex name class">
 <span>class <span class="ident">ViolationService</span></span>
@@ -8065,6 +8611,16 @@ to connect to a game.</p></div>
 <li><code><a title="server.ServerInstance.shutdown" href="#server.ServerInstance.shutdown">shutdown</a></code></li>
 <li><code><a title="server.ServerInstance.start_services" href="#server.ServerInstance.start_services">start_services</a></code></li>
 <li><code><a title="server.ServerInstance.write_broadcast" href="#server.ServerInstance.write_broadcast">write_broadcast</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="server.VetoService" href="#server.VetoService">VetoService</a></code></h4>
+<ul class="">
+<li><code><a title="server.VetoService.calculate_dynamic_tokens_per_map" href="#server.VetoService.calculate_dynamic_tokens_per_map">calculate_dynamic_tokens_per_map</a></code></li>
+<li><code><a title="server.VetoService.extract_pools_veto_config" href="#server.VetoService.extract_pools_veto_config">extract_pools_veto_config</a></code></li>
+<li><code><a title="server.VetoService.generate_initial_weights_for_match" href="#server.VetoService.generate_initial_weights_for_match">generate_initial_weights_for_match</a></code></li>
+<li><code><a title="server.VetoService.set_player_vetoes" href="#server.VetoService.set_player_vetoes">set_player_vetoes</a></code></li>
+<li><code><a title="server.VetoService.update_pools_veto_config" href="#server.VetoService.update_pools_veto_config">update_pools_veto_config</a></code></li>
 </ul>
 </li>
 <li>
