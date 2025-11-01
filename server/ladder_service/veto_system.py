@@ -13,14 +13,14 @@ from server.types import MatchmakerQueueMapPoolVetoData
 BracketID = int
 MapPoolMapVersionId = int
 VetoTokensApplied = int
-VetosMap = dict[MapPoolMapVersionId, VetoTokensApplied]
+VetoesMap = dict[MapPoolMapVersionId, VetoTokensApplied]
 
 
 class PlayerVetoes:
     def __init__(self):
-        self._vetoes: dict[BracketID, VetosMap] = {}
+        self._vetoes: dict[BracketID, VetoesMap] = {}
 
-    def get_vetoes_for_bracket(self, bracket_id: BracketID) -> VetosMap:
+    def get_vetoes_for_bracket(self, bracket_id: BracketID) -> VetoesMap:
         return self._vetoes.get(bracket_id, {})
 
     def to_dict(self) -> dict:
@@ -56,38 +56,38 @@ class VetoService(Service):
 
         pools_vetodata = self.extract_pools_veto_config(queues)
 
-        if self.pools_veto_data != pools_vetodata:
-            self.pools_veto_data = pools_vetodata
+        if self.pools_veto_data == pools_vetodata:
+            return []
+        
+        self.pools_veto_data = pools_vetodata
 
-            pool_maps_by_bracket = {
-                pool_data.matchmaker_queue_map_pool_id: set(pool_data.map_pool_map_version_ids)
-                for pool_data in self.pools_veto_data
-            }
+        pool_maps_by_bracket = {
+            pool_data.matchmaker_queue_map_pool_id: set(pool_data.map_pool_map_version_ids)
+            for pool_data in self.pools_veto_data
+        }
 
-            affected_players = []
-            for player in self.player_service.all_players:
-                # TODO: Can we avoid force adjusting veto selections for players.
-                adjusted_vetoes = self._adjust_vetoes(player.vetoes._vetoes)
+        affected_players = []
+        for player in self.player_service.all_players:
+            # TODO: Can we avoid force adjusting veto selections for players.
+            adjusted_vetoes = self._adjust_vetoes(player.vetoes._vetoes)
 
-                if adjusted_vetoes != player.vetoes._vetoes:
-                    tokens_amount_for_some_map_was_reduced = any(
-                        map_id in pool_maps_by_bracket.get(bracket, set())
-                        and original_tokens > adjusted_vetoes.get(bracket, {}).get(map_id, 0)
-                        for bracket, bracket_vetoes in player.vetoes._vetoes.items()
-                        for map_id, original_tokens in bracket_vetoes.items()
-                    )
-                    player.vetoes._vetoes = adjusted_vetoes
-                    player.write_message({
-                        "command": "vetoes_info",
-                        "forced": tokens_amount_for_some_map_was_reduced,
-                        **player.vetoes.to_dict(),
-                    })
-                    if tokens_amount_for_some_map_was_reduced:
-                        affected_players.append(player)
+            if adjusted_vetoes != player.vetoes._vetoes:
+                tokens_amount_for_some_map_was_reduced = any(
+                    map_id in pool_maps_by_bracket.get(bracket, set())
+                    and original_tokens > adjusted_vetoes.get(bracket, {}).get(map_id, 0)
+                    for bracket, bracket_vetoes in player.vetoes._vetoes.items()
+                    for map_id, original_tokens in bracket_vetoes.items()
+                )
+                player.vetoes._vetoes = adjusted_vetoes
+                player.write_message({
+                    "command": "vetoes_info",
+                    "forced": tokens_amount_for_some_map_was_reduced,
+                    **player.vetoes.to_dict(),
+                })
+                if tokens_amount_for_some_map_was_reduced:
+                    affected_players.append(player)
 
-            return affected_players
-
-        return []
+        return affected_players
 
     def extract_pools_veto_config(
         self,
@@ -128,7 +128,7 @@ class VetoService(Service):
     async def set_player_vetoes(
         self,
         player: Player,
-        new_vetoes: dict[BracketID, VetosMap],
+        new_vetoes: dict[BracketID, VetoesMap],
     ):
         """Validates and sets vetoes based on new vetoes and pool constraints."""
         if not _is_valid_vetoes(new_vetoes):
@@ -147,8 +147,8 @@ class VetoService(Service):
 
     def _adjust_vetoes(
         self,
-        new_vetoes: dict[BracketID, VetosMap],
-    ) -> dict[BracketID, VetosMap]:
+        new_vetoes: dict[BracketID, VetoesMap],
+    ) -> dict[BracketID, VetoesMap]:
         # TODO: How can we avoid doing this adjustment? It would be better to
         # simply check if the veto selection is valid, and return an error if
         # not so that the client can display that to the user and force a new
@@ -296,11 +296,11 @@ def _is_valid_vetoes(vetoes: Any) -> bool:
 
 
 def _adjust_vetoes_for_bracket(
-    new_bracket_vetoes: VetosMap,
+    new_bracket_vetoes: VetoesMap,
     map_ids: list[MapPoolMapVersionId],
     total_tokens: int,
     max_per_map: float,
-) -> VetosMap:
+) -> VetoesMap:
     assert total_tokens >= 0
 
     adjusted_vetoes = {}
