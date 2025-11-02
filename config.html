@@ -174,8 +174,17 @@ class ConfigurationStore:
         self.GEO_IP_DATABASE_MAX_AGE_DAYS = 22
 
         self.LADDER_1V1_OUTCOME_OVERRIDE = True
+        # Number of recent games in the queue per player to check for anti-repetition (within last 24h)
+        # Higher values make antirep system eliminate more maps from the pool
+        # which counteracts player vetoes and may lead to worse user experience if pool is not big enough
         self.LADDER_ANTI_REPETITION_LIMIT = 1
+        # Controls how strictly played maps are replaced with unplayed ones
+        # Higher values = more restrictive, only replaces with similarly-popular maps
+        # Lower values = less restrictive, allows more varied replacements
         self.LADDER_ANTI_REPETITION_WEIGHT_BASE_THRESHOLDS = [0.75, 0.5]
+        # How strongly to avoid maps played multiple times / by multiple players
+        # Higher (closer to 1) = weaker avoidance
+        # Lower (closer to 0) = stronger avoidance
         self.LADDER_ANTI_REPETITION_REPEAT_COUNTS_FACTOR = 0.8
         self.LADDER_SEARCH_EXPANSION_MAX = 0.25
         self.LADDER_SEARCH_EXPANSION_STEP = 0.05
