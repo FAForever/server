@@ -487,7 +487,7 @@ class Game:
 
             self.game_service.mark_dirty(self)
 
-    async def _run_pre_rate_validity_checks(self):
+    async def _run_pre_rate_validity_checks(self, team_army_results: list[set[ArmyOutcome]]):
         pass
 
     async def process_game_results(self):
@@ -504,8 +504,6 @@ class Game:
         if self.state not in (GameState.LIVE, GameState.ENDED):
             raise GameError("Cannot rate game that has not been launched.")
 
-        await self._run_pre_rate_validity_checks()
-
         basic_info = self.get_basic_info()
 
         team_army_results = [
@@ -518,6 +516,8 @@ class Game:
             {self.get_player_outcome(player) for player in team}
             for team in basic_info.teams
         ]
+        
+        await self._run_pre_rate_validity_checks(team_player_partial_outcomes)
 
         try:
             # TODO: Remove override once game result messages are reliable

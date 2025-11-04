@@ -12,6 +12,29 @@ async def custom_game(database, game_service, game_stats_service):
     return CustomGame(42, database, game_service, game_stats_service)
 
 
+
+async def test_rate_game_early_recall(
+    custom_game: CustomGame,
+    player_factory
+):
+    custom_game.state = GameState.LOBBY
+    players = [
+        player_factory("Dostya", player_id=1, global_rating=(1500, 500)),
+        player_factory("Rhiza", player_id=2, global_rating=(1500, 500)),
+    ]
+    add_connected_players(custom_game, players)
+    custom_game.set_player_option(1, "Team", 2)
+    custom_game.set_player_option(2, "Team", 3)
+    await custom_game.launch()
+    await custom_game.add_result(0, 0, "victory", 5)
+    await custom_game.add_result(0, 1, "recall", -5)
+
+    custom_game.launched_at = time.time() - 60  # seconds
+
+    await custom_game.on_game_finish()
+    assert custom_game.validity == ValidityState.VALID
+
+
 async def test_rate_game_early_abort_no_enforce(
     custom_game: CustomGame,
     player_factory

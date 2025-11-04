@@ -37,68 +37,39 @@ def testresolve():
 def test_ranks_all_1v1_possibilities():
     """
     Document expectations for all outcomes of 1v1 games.
-    Assumes that the order of teams doesn't matter.
-    With five possible outcomes there are 15 possibilities.
+    With six possible outcomes there are 36 possibilities.
     """
-    team_outcomes = [{ArmyOutcome.VICTORY}, {ArmyOutcome.VICTORY}]
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
 
-    team_outcomes = [{ArmyOutcome.VICTORY}, {ArmyOutcome.DEFEAT}]
-    ranks = resolve_game(team_outcomes)
-    assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
+    ERROR = 0
+    DRAW = 1
+    WIN = 2
+    LOSS = 3
+    #        Victory  Defeat   Recall   Draw     Unknown  Conflicting
+    grid = [[ERROR,   WIN,     WIN,     WIN,     WIN,     WIN  ]  # Victory
+            [LOSS,    DRAW,    DRAW,    ERROR,   ERROR,   ERROR]  # Defeat
+            [LOSS,    DRAW,    DRAW,    ERROR,   ERROR,   ERROR]  # Recall
+            [LOSS,    ERROR,   ERROR,   DRAW,    ERROR,   ERROR]  # Draw
+            [LOSS,    ERROR,   ERROR,   ERROR,   ERROR,   ERROR]  # Unknown
+            [LOSS,    ERROR,   ERROR,   ERROR,   ERROR,   ERROR]] # Conflicting
+    outcome_list = [ArmyOutcome.VICTORY, ArmyOutcome.DEFEAT, ArmyOutcome.RECALL,
+            ArmyOutcome.DRAW, ArmyOutcome.UNKNOWN, ArmyOutcome.CONFLICTING]
 
-    team_outcomes = [{ArmyOutcome.VICTORY}, {ArmyOutcome.DRAW}]
-    resolve_game(team_outcomes)
-    assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
+    win_resolution = [GameOutcome.VICTORY, GameOutcome.DEFEAT]
+    draw_resolution = [GameOutcome.DRAW, GameOutcome.DRAW]
+    loss_resolution = [GameOutcome.DEFEAT, GameOutcome.VICTORY]
 
-    team_outcomes = [{ArmyOutcome.VICTORY}, {ArmyOutcome.UNKNOWN}]
-    ranks = resolve_game(team_outcomes)
-    assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
-
-    team_outcomes = [{ArmyOutcome.VICTORY}, {ArmyOutcome.CONFLICTING}]
-    ranks = resolve_game(team_outcomes)
-    assert ranks == [GameOutcome.VICTORY, GameOutcome.DEFEAT]
-
-    team_outcomes = [{ArmyOutcome.DEFEAT}, {ArmyOutcome.DEFEAT}]
-    ranks = resolve_game(team_outcomes)
-    assert ranks == [GameOutcome.DRAW, GameOutcome.DRAW]
-
-    team_outcomes = [{ArmyOutcome.DEFEAT}, {ArmyOutcome.DRAW}]
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
-
-    team_outcomes = [{ArmyOutcome.DEFEAT}, {ArmyOutcome.UNKNOWN}]
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
-
-    team_outcomes = [{ArmyOutcome.DEFEAT}, {ArmyOutcome.CONFLICTING}]
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
-
-    team_outcomes = [{ArmyOutcome.DRAW}, {ArmyOutcome.DRAW}]
-    ranks = resolve_game(team_outcomes)
-    assert ranks == [GameOutcome.DRAW, GameOutcome.DRAW]
-
-    team_outcomes = [{ArmyOutcome.DRAW}, {ArmyOutcome.UNKNOWN}]
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
-
-    team_outcomes = [{ArmyOutcome.DRAW}, {ArmyOutcome.CONFLICTING}]
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
-
-    team_outcomes = [{ArmyOutcome.UNKNOWN}, {ArmyOutcome.UNKNOWN}]
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
-
-    team_outcomes = [{ArmyOutcome.UNKNOWN}, {ArmyOutcome.CONFLICTING}]
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
-
-    team_outcomes = [{ArmyOutcome.CONFLICTING}, {ArmyOutcome.CONFLICTING}]
-    with pytest.raises(GameResolutionError):
-        resolve_game(team_outcomes)
+    for outcome1, row in grid:
+        for outcome2, resolution in row:
+            team_outcomes = [{outcome_list[outcome1]}, {outcome_list[outcome2]}]
+            if resolution == ERROR:
+                with pytest.raises(GameResolutionError):
+                    resolve_game(team_outcomes)
+            elif resolution == WIN:
+                assert resolve_game(team_outcomes) == win_resolution
+            elif resolution == DRAW:
+                assert resolve_game(team_outcomes) == draw_resolution
+            elif resolution == LOSS:
+                assert resolve_game(team_outcomes) == loss_resolution
 
 
 def test_team_outcome_ignores_unknown():

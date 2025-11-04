@@ -18,6 +18,7 @@ class ArmyOutcome(Enum):
     """
     VICTORY = "VICTORY"
     DEFEAT = "DEFEAT"
+    RECALL = "RECALL" # treated the same as `DEFEAT` except for conn issues
     DRAW = "DRAW"
     UNKNOWN = "UNKNOWN"
     CONFLICTING = "CONFLICTING"
@@ -29,6 +30,7 @@ class ArmyReportedOutcome(Enum):
     """
     VICTORY = "VICTORY"
     DEFEAT = "DEFEAT"
+    RECALL = "RECALL"
     DRAW = "DRAW"
     # This doesn't seem to be reported by the game anymore
     MUTUAL_DRAW = "MUTUAL_DRAW"

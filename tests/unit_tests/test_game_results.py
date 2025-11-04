@@ -19,6 +19,7 @@ def game_results():
 def test_reported_result_to_resolved():
     assert ArmyReportedOutcome.VICTORY.to_resolved() is ArmyOutcome.VICTORY
     assert ArmyReportedOutcome.DEFEAT.to_resolved() is ArmyOutcome.DEFEAT
+    assert ArmyReportedOutcome.RECALL.to_resolved() is ArmyOutcome.RECALL
     assert ArmyReportedOutcome.DRAW.to_resolved() is ArmyOutcome.DRAW
     assert ArmyReportedOutcome.MUTUAL_DRAW.to_resolved() is ArmyOutcome.DRAW
 
