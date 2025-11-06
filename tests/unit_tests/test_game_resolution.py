@@ -6,6 +6,7 @@ from server.games.game_results import (
     GameResolutionError,
     resolve_game
 )
+from typing import Optional
 
 
 class ResolutionTest:
