@@ -34,7 +34,7 @@ class CustomGame(Game):
         # In other words, only if a team unaminously recalled would we know
         # there weren't any connection issues.
         looks_like_quitting = {ArmyOutcome.DEFEAT, ArmyOutcome.UNKNOWN, ArmyOutcome.CONFLICTING}
-        all_outcomes = {}
+        all_outcomes = set()
         for outcome in team_army_outcomes:
             all_outcomes |= outcome
         possible_conn_issues = len(all_outcomes & looks_like_quitting) > 0

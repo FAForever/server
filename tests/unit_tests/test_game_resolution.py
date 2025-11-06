@@ -7,6 +7,7 @@ from server.games.game_results import (
     resolve_game
 )
 
+
 class ResolutionTest:
     resolution: Optional[list[GameOutcome]]
 
@@ -19,6 +20,7 @@ class ResolutionTest:
                 resolve_game(partial_outcomes)
         else:
             assert resolve_game(partial_outcomes) == self.resolution
+
 
 ResolveError = ResolutionTest(None)
 ResolveWin = ResolutionTest([GameOutcome.VICTORY, GameOutcome.DEFEAT])
