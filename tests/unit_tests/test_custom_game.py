@@ -12,7 +12,6 @@ async def custom_game(database, game_service, game_stats_service):
     return CustomGame(42, database, game_service, game_stats_service)
 
 
-
 async def test_rate_game_early_recall(
     custom_game: CustomGame,
     player_factory

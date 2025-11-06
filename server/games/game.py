@@ -516,7 +516,7 @@ class Game:
             {self.get_player_outcome(player) for player in team}
             for team in basic_info.teams
         ]
-        
+
         await self._run_pre_rate_validity_checks(team_player_partial_outcomes)
 
         try:

@@ -18,7 +18,7 @@ class ArmyOutcome(Enum):
     """
     VICTORY = "VICTORY"
     DEFEAT = "DEFEAT"
-    RECALL = "RECALL" # treated the same as `DEFEAT` except for conn issues
+    RECALL = "RECALL"  # treated the same as `DEFEAT` except for conn issues
     DRAW = "DRAW"
     UNKNOWN = "UNKNOWN"
     CONFLICTING = "CONFLICTING"
