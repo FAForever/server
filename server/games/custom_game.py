@@ -31,7 +31,7 @@ class CustomGame(Game):
         # As we only get extremely limited data (the army results), our lens of
         # what can look like "quitting out" is rather large (i.e. the player is
         # "defeated").
-        # In other words, only if a team unaminously recalled would we know
+        # In other words, only if a team unanimously recalled would we know
         # there weren't any connection issues.
         looks_like_quitting = {ArmyOutcome.DEFEAT, ArmyOutcome.UNKNOWN, ArmyOutcome.CONFLICTING}
         all_outcomes = set()
