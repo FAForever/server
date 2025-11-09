@@ -428,13 +428,13 @@ class MapPool(object):
             self._logger.critical(&#34;Trying to choose a map from an empty map pool: %s&#34;, self.name)
             raise RuntimeError(f&#34;Map pool {self.name} not set!&#34;)
 
-        self._logger.debug(&#34;______initial_played_map_ids___________: %s&#34;, list(played_map_ids))
+        self._logger.debug(&#34;initial_played_map_ids: %s&#34;, list(played_map_ids))
         played_map_pool_map_version_ids = [
             self.maps[id].map_pool_map_version_id
             for id in played_map_ids
             if id in self.maps
         ]
-        self._logger.debug(&#34;______played_map_pool_map_version_ids_________: %s&#34;, played_map_pool_map_version_ids)
+        self._logger.debug(&#34;played_map_pool_map_version_ids: %s&#34;, played_map_pool_map_version_ids)
 
         map_list = [(m.map_pool_map_version_id, m) for m in self.maps.values()]
 
@@ -444,10 +444,10 @@ class MapPool(object):
         adjusted_weights = self.apply_antirepetition_adjustment(
             initial_weights, played_map_pool_map_version_ids, config.LADDER_ANTI_REPETITION_WEIGHT_BASE_THRESHOLDS, config.LADDER_ANTI_REPETITION_REPEAT_COUNTS_FACTOR
         )
-        self._logger.debug(&#34;______adjusted_weights________________: %s&#34;, adjusted_weights)
-        self._logger.debug(&#34;______map_list________________: %s&#34;, map_list)
+        self._logger.debug(&#34;adjusted_weights: %s&#34;, adjusted_weights)
+        self._logger.debug(&#34;map_list: %s&#34;, map_list)
         final_weights = [adjusted_weights.get(mp_mv_id, 0) * m.weight for mp_mv_id, m in map_list]
-        self._logger.debug(&#34;______final_weights________________: %s&#34;, final_weights)
+        self._logger.debug(&#34;final_weights: %s&#34;, final_weights)
         return random.choices([map for _, map in map_list], weights=final_weights, k=1)[0].get_map()  # nosec B311
 
     def __repr__(self) -&gt; str:
@@ -536,13 +536,13 @@ the bigger the repeat_factor, the stronger algo tries to get rid of maps with pl
         self._logger.critical(&#34;Trying to choose a map from an empty map pool: %s&#34;, self.name)
         raise RuntimeError(f&#34;Map pool {self.name} not set!&#34;)
 
-    self._logger.debug(&#34;______initial_played_map_ids___________: %s&#34;, list(played_map_ids))
+    self._logger.debug(&#34;initial_played_map_ids: %s&#34;, list(played_map_ids))
     played_map_pool_map_version_ids = [
         self.maps[id].map_pool_map_version_id
         for id in played_map_ids
         if id in self.maps
     ]
-    self._logger.debug(&#34;______played_map_pool_map_version_ids_________: %s&#34;, played_map_pool_map_version_ids)
+    self._logger.debug(&#34;played_map_pool_map_version_ids: %s&#34;, played_map_pool_map_version_ids)
 
     map_list = [(m.map_pool_map_version_id, m) for m in self.maps.values()]
 
@@ -552,10 +552,10 @@ the bigger the repeat_factor, the stronger algo tries to get rid of maps with pl
     adjusted_weights = self.apply_antirepetition_adjustment(
         initial_weights, played_map_pool_map_version_ids, config.LADDER_ANTI_REPETITION_WEIGHT_BASE_THRESHOLDS, config.LADDER_ANTI_REPETITION_REPEAT_COUNTS_FACTOR
     )
-    self._logger.debug(&#34;______adjusted_weights________________: %s&#34;, adjusted_weights)
-    self._logger.debug(&#34;______map_list________________: %s&#34;, map_list)
+    self._logger.debug(&#34;adjusted_weights: %s&#34;, adjusted_weights)
+    self._logger.debug(&#34;map_list: %s&#34;, map_list)
     final_weights = [adjusted_weights.get(mp_mv_id, 0) * m.weight for mp_mv_id, m in map_list]
-    self._logger.debug(&#34;______final_weights________________: %s&#34;, final_weights)
+    self._logger.debug(&#34;final_weights: %s&#34;, final_weights)
     return random.choices([map for _, map in map_list], weights=final_weights, k=1)[0].get_map()  # nosec B311</code></pre>
 </details>
 <div class="desc"><p>Selects a random map using veto system weights with an anti-repetition adjustment.</p></div>
