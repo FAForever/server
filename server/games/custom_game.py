@@ -39,5 +39,5 @@ class CustomGame(Game):
             all_outcomes |= outcome
         possible_conn_issues = len(all_outcomes & looks_like_quitting) > 0
 
-        if not self.enforce_rating and (possible_conn_issues and duration < limit):
+        if not self.enforce_rating and possible_conn_issues and duration < limit:
             await self.mark_invalid(ValidityState.TOO_SHORT)

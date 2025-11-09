@@ -24,10 +24,10 @@ class ResolutionTest:
             assert resolve_game(partial_outcomes) == self.resolution
 
 
-ResolveError = ResolutionTest(None)
-ResolveWin = ResolutionTest([GameOutcome.VICTORY, GameOutcome.DEFEAT])
-ResolveDraw = ResolutionTest([GameOutcome.DRAW, GameOutcome.DRAW])
-ResolveLoss = ResolutionTest([GameOutcome.DEFEAT, GameOutcome.VICTORY])
+resolve_to_error = ResolutionTest(None)
+resolve_to_win = ResolutionTest([GameOutcome.VICTORY, GameOutcome.DEFEAT])
+resolve_to_draw = ResolutionTest([GameOutcome.DRAW, GameOutcome.DRAW])
+resolve_to_loss = ResolutionTest([GameOutcome.DEFEAT, GameOutcome.VICTORY])
 
 
 def test_only_rate_with_two_parties():
@@ -39,14 +39,14 @@ def test_only_rate_with_two_parties():
         {ArmyOutcome.DEFEAT}
     ]
 
-    ResolveError(one_party)
-    ResolveError(three_parties)
+    resolve_to_error(one_party)
+    resolve_to_error(three_parties)
     resolve_game(two_parties)
 
 
 def testresolve():
     team_outcomes = [{ArmyOutcome.VICTORY}, {ArmyOutcome.DEFEAT}]
-    ResolveWin(team_outcomes)
+    resolve_to_win(team_outcomes)
 
 
 def test_ranks_all_1v1_possibilities():
@@ -55,24 +55,22 @@ def test_ranks_all_1v1_possibilities():
     With six possible outcomes there are 36 possibilities.
     """
 
-    ERR_ = ResolveError
-    WIN_ = ResolveWin
-    DRAW = ResolveDraw
-    LOSS = ResolveLoss
+    err_, win_, draw, loss = (resolve_to_error, resolve_to_win, resolve_to_draw, resolve_to_loss)
     #        Victory     Recall      Unknown
     #              Defeat      Draw        Conflicting
-    grid = [[ERR_, WIN_, WIN_, WIN_, WIN_, WIN_],  # Victory
-            [LOSS, DRAW, DRAW, ERR_, ERR_, ERR_],  # Defeat
-            [LOSS, DRAW, DRAW, ERR_, ERR_, ERR_],  # Recall
-            [LOSS, ERR_, ERR_, DRAW, ERR_, ERR_],  # Draw
-            [LOSS, ERR_, ERR_, ERR_, ERR_, ERR_],  # Unknown
-            [LOSS, ERR_, ERR_, ERR_, ERR_, ERR_]]  # Conflicting
-    outcome_list = [o for o in ArmyOutcome]
+    grid = [[err_, win_, win_, win_, win_, win_],  # Victory
+            [loss, draw, draw, err_, err_, err_],  # Defeat
+            [loss, draw, draw, err_, err_, err_],  # Recall
+            [loss, err_, err_, draw, err_, err_],  # Draw
+            [loss, err_, err_, err_, err_, err_],  # Unknown
+            [loss, err_, err_, err_, err_, err_]]  # Conflicting
+    outcome_list = list(ArmyOutcome)
+    assert len(outcome_list) == len(grid) == len(grid[0])
 
     for outcome1, row in enumerate(grid):
-        for outcome2, Resolution in enumerate(row):
+        for outcome2, resolution in enumerate(row):
             team_outcomes = [{outcome_list[outcome1]}, {outcome_list[outcome2]}]
-            Resolution(team_outcomes)
+            resolution(team_outcomes)
 
 
 def test_team_outcome_ignores_unknown():
@@ -80,7 +78,7 @@ def test_team_outcome_ignores_unknown():
         {ArmyOutcome.VICTORY, ArmyOutcome.UNKNOWN},
         {ArmyOutcome.DEFEAT, ArmyOutcome.UNKNOWN},
     ]
-    ResolveWin(team_outcomes)
+    resolve_to_win(team_outcomes)
 
 
 def test_team_outcome_throws_if_unilateral_draw():
@@ -88,7 +86,7 @@ def test_team_outcome_throws_if_unilateral_draw():
         {ArmyOutcome.DRAW, ArmyOutcome.DEFEAT},
         {ArmyOutcome.DEFEAT, ArmyOutcome.UNKNOWN},
     ]
-    ResolveError(team_outcomes)
+    resolve_to_error(team_outcomes)
 
 
 def test_team_outcome_victory_has_priority_over_defeat():
@@ -96,7 +94,7 @@ def test_team_outcome_victory_has_priority_over_defeat():
         {ArmyOutcome.VICTORY, ArmyOutcome.DEFEAT},
         {ArmyOutcome.DEFEAT, ArmyOutcome.DEFEAT},
     ]
-    ResolveWin(team_outcomes)
+    resolve_to_win(team_outcomes)
 
 
 def test_team_outcome_victory_has_priority_over_draw():
@@ -104,7 +102,7 @@ def test_team_outcome_victory_has_priority_over_draw():
         {ArmyOutcome.VICTORY, ArmyOutcome.DRAW},
         {ArmyOutcome.DRAW, ArmyOutcome.DEFEAT},
     ]
-    ResolveWin(team_outcomes)
+    resolve_to_win(team_outcomes)
 
 
 def test_team_outcome_no_double_victory():
@@ -112,7 +110,7 @@ def test_team_outcome_no_double_victory():
         {ArmyOutcome.VICTORY, ArmyOutcome.VICTORY},
         {ArmyOutcome.VICTORY, ArmyOutcome.DEFEAT},
     ]
-    ResolveError(team_outcomes)
+    resolve_to_error(team_outcomes)
 
 
 def test_team_outcome_unranked_if_ambiguous():
@@ -120,4 +118,4 @@ def test_team_outcome_unranked_if_ambiguous():
         {ArmyOutcome.UNKNOWN, ArmyOutcome.DEFEAT},
         {ArmyOutcome.DEFEAT, ArmyOutcome.DEFEAT},
     ]
-    ResolveError(team_outcomes)
+    resolve_to_error(team_outcomes)
