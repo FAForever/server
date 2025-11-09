@@ -187,7 +187,7 @@ class VetoService(Service):
                 bracket_vetoes = player.vetoes.get_vetoes_for_bracket(pool_id)
                 vetoes_map[m.map_pool_map_version_id] += bracket_vetoes.get(m.map_pool_map_version_id, 0)
 
-        self._logger.debug("______vetoes_map________________: %s", vetoes_map)
+        self._logger.debug("vetoes_map: %s", vetoes_map)
 
         if max_tokens_per_map == 0:
             max_tokens_per_map = self.calculate_dynamic_tokens_per_map(minimum_maps_after_veto, vetoes_map.values())

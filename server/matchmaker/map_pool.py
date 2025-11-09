@@ -85,13 +85,13 @@ class MapPool(object):
             self._logger.critical("Trying to choose a map from an empty map pool: %s", self.name)
             raise RuntimeError(f"Map pool {self.name} not set!")
 
-        self._logger.debug("______initial_played_map_ids___________: %s", list(played_map_ids))
+        self._logger.debug("initial_played_map_ids: %s", list(played_map_ids))
         played_map_pool_map_version_ids = [
             self.maps[id].map_pool_map_version_id
             for id in played_map_ids
             if id in self.maps
         ]
-        self._logger.debug("______played_map_pool_map_version_ids_________: %s", played_map_pool_map_version_ids)
+        self._logger.debug("played_map_pool_map_version_ids: %s", played_map_pool_map_version_ids)
 
         map_list = [(m.map_pool_map_version_id, m) for m in self.maps.values()]
 
@@ -101,10 +101,10 @@ class MapPool(object):
         adjusted_weights = self.apply_antirepetition_adjustment(
             initial_weights, played_map_pool_map_version_ids, config.LADDER_ANTI_REPETITION_WEIGHT_BASE_THRESHOLDS, config.LADDER_ANTI_REPETITION_REPEAT_COUNTS_FACTOR
         )
-        self._logger.debug("______adjusted_weights________________: %s", adjusted_weights)
-        self._logger.debug("______map_list________________: %s", map_list)
+        self._logger.debug("adjusted_weights: %s", adjusted_weights)
+        self._logger.debug("map_list: %s", map_list)
         final_weights = [adjusted_weights.get(mp_mv_id, 0) * m.weight for mp_mv_id, m in map_list]
-        self._logger.debug("______final_weights________________: %s", final_weights)
+        self._logger.debug("final_weights: %s", final_weights)
         return random.choices([map for _, map in map_list], weights=final_weights, k=1)[0].get_map()  # nosec B311
 
     def __repr__(self) -> str:
