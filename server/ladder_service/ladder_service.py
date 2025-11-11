@@ -574,7 +574,7 @@ class LadderService(Service):
                 raise RuntimeError(f"No map pool available for rating {rating}!")
 
             self._logger.debug(
-                "______queue.map_pools[map_pool.id]________________: %s",
+                "queue.map_pools[map_pool.id]: %s",
                 queue.map_pools[map_pool.id],
             )
             initial_weights = self.veto_service.generate_initial_weights_for_match(
@@ -582,12 +582,12 @@ class LadderService(Service):
                 queue.map_pools[map_pool.id],
             )
             self._logger.debug(
-                "______initial_weights________________: %s",
+                "initial_weights: %s",
                 initial_weights,
             )
             game_map = map_pool.choose_map(played_map_ids, initial_weights)
 
-            self._logger.debug("______game_map________________: %s", game_map)
+            self._logger.debug("game_map: %s", game_map)
 
             game = self.game_service.create_game(
                 game_class=LadderGame,
