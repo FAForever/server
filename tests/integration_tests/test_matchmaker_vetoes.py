@@ -11,16 +11,20 @@ from .test_game import (
 
 
 async def test_used_pools_have_some_maps_and_all_map_names_are_unique(ladder_service):
-    all_map_pools = []
+    used_map_pools = {}
     for queue in ladder_service.queues.values():
-        all_map_pools.extend(queue.map_pools)
+        for mq_map_pool in queue.map_pools.values():
+            pool_id = mq_map_pool.map_pool.id
+            if pool_id in [1, 2, 3]:
+                used_map_pools[pool_id] = mq_map_pool
 
-    for mq_map_pool in all_map_pools:
-        if mq_map_pool.map_pool.id in [1, 2, 3, 4]:
-            maps = list(mq_map_pool.map_pool.maps.values())
-            folder_names = [m.folder_name for m in maps if hasattr(m, "folder_name")]
-            assert len(folder_names) > 0, f"Pool {mq_map_pool.map_pool.id} has no regular maps"
-            assert len(folder_names) == len(set(folder_names)), f"Pool {mq_map_pool.map_pool.id} has duplicate map names: {folder_names}"
+    assert len(used_map_pools) == 3
+
+    for mq_map_pool in used_map_pools.values():
+        maps = list(mq_map_pool.map_pool.maps.values())
+        folder_names = [m.folder_name for m in maps if hasattr(m, "folder_name")]
+        assert len(folder_names) > 0, f"Pool {mq_map_pool.map_pool.id} has no regular maps"
+        assert len(folder_names) == len(set(folder_names)), f"Pool {mq_map_pool.map_pool.id} has duplicate map names: {folder_names}"
 
 
 async def test_vetoes_are_assigned_to_player_with_adjusting(lobby_server, player_service):
