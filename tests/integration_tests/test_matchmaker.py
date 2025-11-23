@@ -57,7 +57,7 @@ async def test_game_launch_message(lobby_server):
         "team": 2,
         "faction": 1,
         "expected_players": 2,
-        "map_position": 1
+        "map_position": 1,
     }
 
 

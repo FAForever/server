@@ -639,7 +639,7 @@ class LadderService(Service):
                     game_options=game_options,
                     team=game.get_player_option(player.id, "Team"),
                     faction=game.get_player_option(player.id, "Faction"),
-                    map_position=game.get_player_option(player.id, "StartSpot")
+                    map_position=game.get_player_option(player.id, "StartSpot"),
                 )
 
             await self.launch_match(game, host, all_guests, make_game_options)
