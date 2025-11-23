@@ -10,12 +10,13 @@ from .test_game import (
 )
 
 
-async def test_used_pools_have_unique_map_names(database, ladder_service):
+async def test_used_pools_have_some_maps_and_all_map_names_are_unique(database, ladder_service):
     async with database.acquire() as conn:
         map_pools = await ladder_service.fetch_map_pools(conn)
         for pool_id in [1, 2, 3, 4]:
             _, maps = map_pools[pool_id]
-            folder_names = [m.folder_name for m in maps]
+            folder_names = [m.folder_name for m in maps if hasattr(m, "folder_name")]
+            assert len(folder_names) > 0
             assert len(folder_names) == len(set(folder_names)), f"Pool {pool_id} has duplicate map names: {folder_names}"
 
 
