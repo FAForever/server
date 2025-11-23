@@ -45,8 +45,6 @@ async def test_game_launch_message(lobby_server):
 
     assert "scmp_015" in msg1["mapname"]
     del msg1["mapname"]
-    mpmv_id = msg1["map_pool_map_version_id"]
-    assert mpmv_id in [1, 2, 3]
     assert msg1 == {
         "command": "game_launch",
         "args": ["/numgames", 0],
@@ -59,8 +57,7 @@ async def test_game_launch_message(lobby_server):
         "team": 2,
         "faction": 1,
         "expected_players": 2,
-        "map_position": 1,
-        "map_pool_map_version_id": mpmv_id
+        "map_position": 1
     }
 
 
