@@ -2,9 +2,6 @@
 Common exception definitions
 """
 
-import humanize
-
-from server.timing import datetime_now
 
 
 class ClientError(Exception):
@@ -31,23 +28,22 @@ class BanError(Exception):
         self.ban_expiry = ban_expiry
         self.ban_reason = ban_reason
 
-    def message(self):
-        return (
-            f"You are banned from FAF {self._ban_duration_text()}. <br>"
-            f"Reason: <br>{self.ban_reason}<br><br>"
-            "<i>If you would like to appeal this ban, please send an email to: "
-            "moderation@faforever.com</i>"
-        )
+    def as_payload(self):
+        expires_at = None
+        if self.ban_expiry is not None:
+            expires_at = self.ban_expiry.isoformat()
 
-    def _ban_duration_text(self):
-        ban_duration = self.ban_expiry - datetime_now()
-        if ban_duration.days > 365 * 100:
-            return "forever"
-        humanized_ban_duration = humanize.precisedelta(
-            ban_duration,
-            minimum_unit="hours"
-        )
-        return f"for {humanized_ban_duration}"
+        return {
+            "command": "banned",
+            "expires_at": expires_at,
+            "reason": self.ban_reason,
+        }
+
+    def message(self):
+        # Keep a non-localized internal abort message for connection logs.
+        if self.ban_expiry is None:
+            return "banned (expires: never)"
+        return f"banned (expires: {self.ban_expiry.isoformat()})"
 
 
 class AuthenticationError(Exception):
