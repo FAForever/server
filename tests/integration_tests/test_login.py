@@ -39,13 +39,9 @@ async def test_server_ban(lobby_server, user):
     await perform_login(proto, user)
     msg = await proto.read_message()
     assert msg == {
-        "command": "notice",
-        "style": "error",
-        "text": (
-            "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
-            "<br><br><i>If you would like to appeal this ban, please send an "
-            "email to: moderation@faforever.com</i>"
-        )
+        "command": "banned",
+        "reason": "Test permanent ban",
+        "expires_at": "9999-12-31T00:00:00"
     }
 
 
@@ -74,13 +70,9 @@ async def test_server_ban_token(lobby_server, user, jwk_priv_key, jwk_kid):
     })
     msg = await proto.read_message()
     assert msg == {
-        "command": "notice",
-        "style": "error",
-        "text": (
-            "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
-            "<br><br><i>If you would like to appeal this ban, please send an "
-            "email to: moderation@faforever.com</i>"
-        )
+        "command": "banned",
+        "reason": "Test permanent ban",
+        "expires_at": "9999-12-31T00:00:00"
     }
 
 

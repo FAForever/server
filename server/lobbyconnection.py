@@ -223,9 +223,9 @@ class LobbyConnection:
             })
         except BanError as e:
             await self.send({
-                "command": "notice",
-                "style": "error",
-                "text": e.message()
+                "command": "banned",
+                "reason": e.ban_reason,
+                "expires_at": e.ban_expiry.isoformat()
             })
             await self.abort(e.message())
         except ClientError as e:
