@@ -1,4 +1,3 @@
-import re
 from hashlib import sha256
 from unittest import mock
 
@@ -1303,18 +1302,17 @@ async def test_abort_connection_if_banned(
     lobbyconnection.player.id = 203
     with pytest.raises(BanError) as banned_error:
         await lobbyconnection.abort_connection_if_banned()
-    assert banned_error.value.message() == (
-        "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
-        "<br><br><i>If you would like to appeal this ban, please send an email "
-        "to: moderation@faforever.com</i>"
-    )
+    assert banned_error.value.as_payload() == {
+        "command": "banned",
+        "expires_at": None,
+        "reason": "Test permanent ban",
+    }
 
-    # test user who is banned for another 46 hours
+    # test user who is banned for another ~46 hours
     lobbyconnection.player.id = 204
     with pytest.raises(BanError) as banned_error:
         await lobbyconnection.abort_connection_if_banned()
-    assert re.match(
-        r"You are banned from FAF for 1 day and 2[12]\.[0-9]+ hours. <br>"
-        "Reason: <br>Test ongoing ban with 46 hours left",
-        banned_error.value.message()
-    )
+    payload = banned_error.value.as_payload()
+    assert payload["command"] == "banned"
+    assert payload["reason"] == "Test ongoing ban with 46 hours left"
+    assert payload["expires_at"] is not None
