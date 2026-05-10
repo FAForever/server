@@ -39,6 +39,19 @@ class BanError(Exception):
             "moderation@faforever.com</i>"
         )
 
+    def notice(self):
+        return {
+            "command": "notice",
+            "style": "error",
+            "text": self.message(),
+            "i18n_key": "login.error.banned",
+            "i18n_args": [
+                self.ban_expiry.isoformat(),
+                self.ban_reason
+            ],
+            "expires_at": self.ban_expiry.isoformat()
+        }
+
     def _ban_duration_text(self):
         ban_duration = self.ban_expiry - datetime_now()
         if ban_duration.days > 365 * 100:

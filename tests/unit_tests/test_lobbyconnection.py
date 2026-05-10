@@ -1308,6 +1308,17 @@ async def test_abort_connection_if_banned(
         "<br><br><i>If you would like to appeal this ban, please send an email "
         "to: moderation@faforever.com</i>"
     )
+    assert banned_error.value.notice() == {
+        "command": "notice",
+        "style": "error",
+        "text": banned_error.value.message(),
+        "i18n_key": "login.error.banned",
+        "i18n_args": [
+            banned_error.value.ban_expiry.isoformat(),
+            "Test permanent ban"
+        ],
+        "expires_at": banned_error.value.ban_expiry.isoformat()
+    }
 
     # test user who is banned for another 46 hours
     lobbyconnection.player.id = 204
