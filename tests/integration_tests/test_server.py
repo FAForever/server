@@ -845,15 +845,15 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
     await proto.send_message({"command": command})
 
     msg = await proto.read_message()
-    assert msg == {
-        "command": "notice",
-        "style": "error",
-        "text": (
-            "You are banned from FAF forever. <br>Reason: <br>Test live ban<br>"
-            "<br><i>If you would like to appeal this ban, please send an email "
-            "to: moderation@faforever.com</i>"
-        )
-    }
+    assert msg["command"] == "notice"
+    assert msg["style"] == "error"
+    assert msg["i18n_key"] == "login.error.banned"
+    assert msg["i18n_args"] == [msg["expires_at"], "Test live ban"]
+    assert msg["text"] == (
+        "You are banned from FAF forever. <br>Reason: <br>Test live ban<br>"
+        "<br><i>If you would like to appeal this ban, please send an email "
+        "to: moderation@faforever.com</i>"
+    )
 
 
 @fast_forward(5)
