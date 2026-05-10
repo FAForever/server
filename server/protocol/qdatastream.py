@@ -92,7 +92,7 @@ class QDataStreamProtocol(Protocol):
                 raise NotImplementedError("Only string serialization is supported")
 
             msg += QDataStreamProtocol.pack_qstring(arg)
-        return QDataStreamProtocol.pack_block(msg)
+        return QDataStreamProtocol.pack_block(bytes(msg))
 
     @staticmethod
     def encode_message(message: dict) -> bytes:
