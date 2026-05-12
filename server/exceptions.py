@@ -6,6 +6,9 @@ import humanize
 
 from server.timing import datetime_now
 
+BAN_NOTICE_I18N_KEY = "notice.ban"
+BAN_APPEAL_EMAIL = "moderation@faforever.com"
+
 
 class ClientError(Exception):
     """
@@ -31,12 +34,23 @@ class BanError(Exception):
         self.ban_expiry = ban_expiry
         self.ban_reason = ban_reason
 
+    def localization(self):
+        return {
+            "i18n_key": BAN_NOTICE_I18N_KEY,
+            "i18n_args": {
+                "duration": self._ban_duration_text(),
+                "reason": self.ban_reason,
+                "appeal_email": BAN_APPEAL_EMAIL
+            }
+        }
+
     def message(self):
+        data = self.localization()["i18n_args"]
         return (
-            f"You are banned from FAF {self._ban_duration_text()}. <br>"
-            f"Reason: <br>{self.ban_reason}<br><br>"
+            f"You are banned from FAF {data['duration']}. <br>"
+            f"Reason: <br>{data['reason']}<br><br>"
             "<i>If you would like to appeal this ban, please send an email to: "
-            "moderation@faforever.com</i>"
+            f"{data['appeal_email']}</i>"
         )
 
     def _ban_duration_text(self):

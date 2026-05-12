@@ -45,7 +45,13 @@ async def test_server_ban(lobby_server, user):
             "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
             "<br><br><i>If you would like to appeal this ban, please send an "
             "email to: moderation@faforever.com</i>"
-        )
+        ),
+        "i18n_key": "notice.ban",
+        "i18n_args": {
+            "duration": "forever",
+            "reason": "Test permanent ban",
+            "appeal_email": "moderation@faforever.com"
+        }
     }
 
 
@@ -80,7 +86,13 @@ async def test_server_ban_token(lobby_server, user, jwk_priv_key, jwk_kid):
             "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
             "<br><br><i>If you would like to appeal this ban, please send an "
             "email to: moderation@faforever.com</i>"
-        )
+        ),
+        "i18n_key": "notice.ban",
+        "i18n_args": {
+            "duration": "forever",
+            "reason": "Test permanent ban",
+            "appeal_email": "moderation@faforever.com"
+        }
     }
 
 
