@@ -222,12 +222,8 @@ class LobbyConnection:
                 "text": e.message
             })
         except BanError as e:
-            await self.send({
-                "command": "notice",
-                "style": "error",
-                "text": e.message()
-            })
-            await self.abort(e.message())
+            await self.send(e.to_payload())
+            await self.abort("Banned user blocked from lobby session")
         except ClientError as e:
             self._logger.warning(
                 "ClientError[%s]: %s",
