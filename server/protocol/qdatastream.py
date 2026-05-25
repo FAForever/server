@@ -72,6 +72,12 @@ class QDataStreamProtocol(Protocol):
 
     @staticmethod
     def pack_block(block: bytes | bytearray) -> bytes:
+        """
+        Pack a bytes-like payload while preserving bytearray inputs.
+
+        pack_message builds a mutable buffer and passes it through unchanged to
+        avoid qstream behavior regressions seen when forcing bytes conversion.
+        """
         return struct.pack("!I", len(block)) + block
 
     @staticmethod
