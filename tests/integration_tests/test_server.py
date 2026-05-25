@@ -721,7 +721,7 @@ async def test_game_host_name_non_ascii(lobby_server):
         "command": "game_host",
         "mod": "",
         "visibility": "public",
-        "title": "Ã‡Ã’Ã–L GÃƒMÃŠ"
+        "title": "ÇÖL GÂMÊ"
     })
 
     msg = await read_until_command(proto, "notice", timeout=10)

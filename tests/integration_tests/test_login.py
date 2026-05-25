@@ -1,5 +1,5 @@
-from time import time
 from datetime import datetime, timezone
+from time import time
 
 import jwt
 import pytest

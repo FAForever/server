@@ -4,6 +4,7 @@ Common exception definitions
 
 from datetime import timezone
 
+
 class ClientError(Exception):
     """
     Represents a protocol violation by the client.
