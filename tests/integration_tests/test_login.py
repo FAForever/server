@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from time import time
 
 import jwt
@@ -38,15 +39,9 @@ async def test_server_ban(lobby_server, user):
     proto = await connect_client(lobby_server)
     await perform_login(proto, user)
     msg = await proto.read_message()
-    assert msg == {
-        "command": "notice",
-        "style": "error",
-        "text": (
-            "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
-            "<br><br><i>If you would like to appeal this ban, please send an "
-            "email to: moderation@faforever.com</i>"
-        )
-    }
+    assert msg["command"] == "banned"
+    assert msg["reason"] == "Test permanent ban"
+    assert datetime.fromisoformat(msg["expires_at"]).astimezone(timezone.utc).year >= 2500
 
 
 @pytest.mark.parametrize("user", [
@@ -73,15 +68,9 @@ async def test_server_ban_token(lobby_server, user, jwk_priv_key, jwk_kid):
         "unique_id": "some_id"
     })
     msg = await proto.read_message()
-    assert msg == {
-        "command": "notice",
-        "style": "error",
-        "text": (
-            "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
-            "<br><br><i>If you would like to appeal this ban, please send an "
-            "email to: moderation@faforever.com</i>"
-        )
-    }
+    assert msg["command"] == "banned"
+    assert msg["reason"] == "Test permanent ban"
+    assert datetime.fromisoformat(msg["expires_at"]).astimezone(timezone.utc).year >= 2500
 
 
 @pytest.mark.parametrize("user", ["ban_revoked", "ban_expired"])

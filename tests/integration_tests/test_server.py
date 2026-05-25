@@ -721,7 +721,7 @@ async def test_game_host_name_non_ascii(lobby_server):
         "command": "game_host",
         "mod": "",
         "visibility": "public",
-        "title": "ÇÒÖL GÃMÊ"
+        "title": "ÇÖL GÂMÊ"
     })
 
     msg = await read_until_command(proto, "notice", timeout=10)
@@ -845,15 +845,9 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
     await proto.send_message({"command": command})
 
     msg = await proto.read_message()
-    assert msg == {
-        "command": "notice",
-        "style": "error",
-        "text": (
-            "You are banned from FAF forever. <br>Reason: <br>Test live ban<br>"
-            "<br><i>If you would like to appeal this ban, please send an email "
-            "to: moderation@faforever.com</i>"
-        )
-    }
+    assert msg["command"] == "banned"
+    assert msg["reason"] == "Test live ban"
+    assert msg["expires_at"].endswith("+00:00")
 
 
 @fast_forward(5)
