@@ -71,13 +71,7 @@ class QDataStreamProtocol(Protocol):
         return struct.pack("!i", len(encoded)) + encoded
 
     @staticmethod
-    def pack_block(block: bytes | bytearray) -> bytes:
-        """
-        Pack a bytes-like payload while preserving bytearray inputs.
-
-        pack_message builds a mutable buffer and passes it through unchanged to
-        avoid qstream behavior regressions seen when forcing bytes conversion.
-        """
+    def pack_block(block: bytes) -> bytes:
         return struct.pack("!I", len(block)) + block
 
     @staticmethod
@@ -98,7 +92,7 @@ class QDataStreamProtocol(Protocol):
                 raise NotImplementedError("Only string serialization is supported")
 
             msg += QDataStreamProtocol.pack_qstring(arg)
-        return QDataStreamProtocol.pack_block(msg)
+        return QDataStreamProtocol.pack_block(bytes(msg))
 
     @staticmethod
     def encode_message(message: dict) -> bytes:
