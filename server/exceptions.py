@@ -2,10 +2,6 @@
 Common exception definitions
 """
 
-import humanize
-
-from server.timing import datetime_now
-
 
 class ClientError(Exception):
     """
@@ -33,21 +29,15 @@ class BanError(Exception):
 
     def message(self):
         return (
-            f"You are banned from FAF {self._ban_duration_text()}. <br>"
-            f"Reason: <br>{self.ban_reason}<br><br>"
-            "<i>If you would like to appeal this ban, please send an email to: "
-            "moderation@faforever.com</i>"
+            "User is banned until "
+            f"{self.ban_expiry.isoformat()} for reason: {self.ban_reason}"
         )
 
-    def _ban_duration_text(self):
-        ban_duration = self.ban_expiry - datetime_now()
-        if ban_duration.days > 365 * 100:
-            return "forever"
-        humanized_ban_duration = humanize.precisedelta(
-            ban_duration,
-            minimum_unit="hours"
-        )
-        return f"for {humanized_ban_duration}"
+    def response(self):
+        return {
+            "command": "banned",
+            "expires_at": self.ban_expiry.isoformat(),
+        }
 
 
 class AuthenticationError(Exception):
