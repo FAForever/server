@@ -2,6 +2,7 @@
 Common exception definitions
 """
 
+
 class ClientError(Exception):
     """
     Represents a protocol violation by the client.
@@ -35,7 +36,7 @@ class BanError(Exception):
     def response(self):
         return {
             "command": "banned",
-            "expires_at": self.ban_expiry.isoformat()
+            "expires_at": self.ban_expiry.isoformat(),
         }
 
 
