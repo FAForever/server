@@ -25,7 +25,7 @@ proxy-protocol = "*"
 pyjwt = {version = ">=2.4.0", extras = ["crypto"]}
 pyyaml = "*"
 sortedcontainers = "*"
-sqlalchemy = ">=2.0.0"
+sqlalchemy = {version = ">=2.0.0", extras = ["asyncio"]}
 trueskill = "*"
 uvloop = {version = "*", markers = "sys_platform != 'win32'"}
 
