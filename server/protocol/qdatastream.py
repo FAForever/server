@@ -71,8 +71,8 @@ class QDataStreamProtocol(Protocol):
         return struct.pack("!i", len(encoded)) + encoded
 
     @staticmethod
-    def pack_block(block: bytes) -> bytes:
-        return struct.pack("!I", len(block)) + block
+    def pack_block(block: bytes | bytearray) -> bytes:
+        return struct.pack("!I", len(block)) + bytes(block)
 
     @staticmethod
     def read_block(data):
