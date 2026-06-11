@@ -12,6 +12,16 @@ from server.protocol import DisconnectedError, QDataStreamProtocol
 from tests.utils import exhaust_callbacks, fast_forward
 
 
+async def wait_for_connection_registered(ctx, max_iters=1000):
+    for _ in range(max_iters):
+        if ctx.connections:
+            return
+        await asyncio.sleep(0)
+    raise AssertionError(
+        "Server did not register the connection within the allotted iterations"
+    )
+
+
 class MockConnection:
     def __init__(self):
         self.protocol = None
@@ -91,8 +101,7 @@ async def test_connection_broken_external(context):
     """
     srv, ctx = context
     _, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())
-    while not ctx.connections:
-        await asyncio.sleep(0)
+    await wait_for_connection_registered(ctx)
     writer.close()
     # Need this sleep for test to work, otherwise closed protocol isn't detected
     await asyncio.sleep(0)
@@ -147,8 +156,7 @@ async def test_unexpected_exception_in_connection_lost(context, caplog):
 async def test_drain_connections(context):
     srv, ctx = context
     _, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())
-    while not ctx.connections:
-        await asyncio.sleep(0)
+    await wait_for_connection_registered(ctx)
 
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(
