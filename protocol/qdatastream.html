@@ -110,8 +110,8 @@ class QDataStreamProtocol(Protocol):
         return struct.pack(&#34;!i&#34;, len(encoded)) + encoded
 
     @staticmethod
-    def pack_block(block: bytes) -&gt; bytes:
-        return struct.pack(&#34;!I&#34;, len(block)) + block
+    def pack_block(block: bytes | bytearray) -&gt; bytes:
+        return struct.pack(&#34;!I&#34;, len(block)) + bytes(block)
 
     @staticmethod
     def read_block(data):
@@ -216,7 +216,7 @@ def encode_message(message: dict) -&gt; bytes:
 <div class="desc"><p>Encodes a python object as a block of QStrings</p></div>
 </dd>
 <dt id="server.protocol.qdatastream.QDataStreamProtocol.pack_block"><code class="name flex">
-<span>def <span class="ident">pack_block</span></span>(<span>block: bytes) ‑> bytes</span>
+<span>def <span class="ident">pack_block</span></span>(<span>block: bytes | bytearray) ‑> bytes</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -224,8 +224,8 @@ def encode_message(message: dict) -&gt; bytes:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@staticmethod
-def pack_block(block: bytes) -&gt; bytes:
-    return struct.pack(&#34;!I&#34;, len(block)) + block</code></pre>
+def pack_block(block: bytes | bytearray) -&gt; bytes:
+    return struct.pack(&#34;!I&#34;, len(block)) + bytes(block)</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
