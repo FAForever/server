@@ -79,7 +79,15 @@ async def test_info_message(lobby_server):
         "mod": "tmm2v2"
     })
 
-    msg = await read_until_command(proto, "matchmaker_info")
+    def tmm2v2_populated(msg):
+        if msg["command"] != "matchmaker_info":
+            return False
+        return any(
+            q["queue_name"] == "tmm2v2" and q["boundary_80s"]
+            for q in msg.get("queues", [])
+        )
+
+    msg = await read_until(proto, tmm2v2_populated)
 
     assert msg["queues"]
     for queue in msg["queues"]:
