@@ -91,6 +91,8 @@ async def test_connection_broken_external(context):
     """
     srv, ctx = context
     _, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())
+    while not ctx.connections:
+        await asyncio.sleep(0)
     writer.close()
     # Need this sleep for test to work, otherwise closed protocol isn't detected
     await asyncio.sleep(0)
@@ -119,6 +121,7 @@ async def test_unexpected_exception(context, caplog, mocker):
 
     with caplog.at_level("TRACE"):
         _, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())
+        await exhaust_callbacks()
 
     with closing(writer):
         assert "Exception in protocol" in caplog.text
@@ -144,6 +147,8 @@ async def test_unexpected_exception_in_connection_lost(context, caplog):
 async def test_drain_connections(context):
     srv, ctx = context
     _, writer = await asyncio.open_connection(*srv.sockets[0].getsockname())
+    while not ctx.connections:
+        await asyncio.sleep(0)
 
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(
