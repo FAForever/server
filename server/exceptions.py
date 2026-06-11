@@ -40,6 +40,9 @@ class BanError(Exception):
         )
 
     def to_notice(self):
+        """
+        Return a localized notice payload with a legacy text fallback.
+        """
         return {
             "command": "notice",
             "style": "error",
