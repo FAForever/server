@@ -1,5 +1,4 @@
-"""
-A WebSocket-native wire protocol.
+"""A WebSocket-native wire protocol.
 
 Each message is sent as exactly one WebSocket text frame containing a single
 JSON object. No newline framing — frame boundaries delimit messages.
