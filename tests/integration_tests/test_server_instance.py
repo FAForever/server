@@ -34,9 +34,10 @@ async def test_multiple_contexts(
     oauth_service,
     veto_service,
 ):
-    """
+    """Verify multiple ServerContexts share state on one ServerInstance.
+
     A single ServerInstance can host more than one ServerContext listening on
-    different ports. Verify both accept connections and share state.
+    different ports; both must accept connections and broadcast shared state.
     """
     config.USE_POLICY_SERVER = False
 

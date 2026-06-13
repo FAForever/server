@@ -1,4 +1,5 @@
-"""A WebSocket-native wire protocol.
+"""
+A WebSocket-native wire protocol.
 
 Each message is sent as exactly one WebSocket text frame containing a single
 JSON object. No newline framing — frame boundaries delimit messages.
@@ -17,6 +18,7 @@ from .protocol import DisconnectedError, Protocol, json_encoder
 
 class WebSocketProtocol(Protocol):
     def __init__(self, ws, owned_session=None):
+        """Wrap an aiohttp WebSocket; optionally own a ClientSession to close."""
         # Intentionally bypass Protocol.__init__: it expects a StreamReader /
         # StreamWriter pair, which we do not have here.
         self.ws = ws
