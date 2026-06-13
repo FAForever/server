@@ -12,9 +12,7 @@ from typing import Any, Callable, Optional
 from unittest import mock
 
 import aio_pika
-import proxyprotocol.dnsbl
-import proxyprotocol.server
-import proxyprotocol.server.protocol
+import aiohttp
 import pytest
 from aio_pika.abc import (
     AbstractChannel,
@@ -37,7 +35,7 @@ from server.config import config
 from server.control import ControlServer
 from server.db.models import login
 from server.health import HealthServer
-from server.protocol import Protocol, QDataStreamProtocol, SimpleJsonProtocol
+from server.protocol import Protocol, WebSocketProtocol
 from server.servercontext import ServerContext
 from tests.utils import exhaust_callbacks
 
@@ -199,8 +197,6 @@ async def lobby_server_factory(
         contexts = {
             name: await instance.listen(
                 (cfg["ADDRESS"], cfg["PORT"]),
-                protocol_class=cfg["PROTOCOL"],
-                proxy=cfg.get("PROXY", False)
             )
             for name, cfg in config.items()
         }
@@ -224,34 +220,10 @@ async def lobby_server_factory(
 @pytest.fixture
 async def lobby_setup(lobby_server_factory):
     return await lobby_server_factory({
-        "qstream": {
+        "ws": {
             "ADDRESS": "127.0.0.1",
             "PORT": None,
-            "PROTOCOL": QDataStreamProtocol
         },
-        "json": {
-            "ADDRESS": "127.0.0.1",
-            "PORT": None,
-            "PROTOCOL": SimpleJsonProtocol
-        }
-    })
-
-
-@pytest.fixture
-async def lobby_setup_proxy(lobby_server_factory):
-    return await lobby_server_factory({
-        "qstream": {
-            "ADDRESS": "127.0.0.1",
-            "PORT": None,
-            "PROTOCOL": QDataStreamProtocol,
-            "PROXY": True
-        },
-        "json": {
-            "ADDRESS": "127.0.0.1",
-            "PORT": None,
-            "PROTOCOL": SimpleJsonProtocol,
-            "PROXY": True
-        }
     })
 
 
@@ -264,12 +236,6 @@ def lobby_instance(lobby_setup):
 @pytest.fixture
 def lobby_contexts(lobby_setup):
     _, contexts = lobby_setup
-    return contexts
-
-
-@pytest.fixture
-def lobby_contexts_proxy(lobby_setup_proxy):
-    _, contexts = lobby_setup_proxy
     return contexts
 
 
@@ -306,14 +272,9 @@ def fixed_time(monkeypatch):
 
 # TODO: This fixture is poorly named since it returns a ServerContext, however,
 # it is used in almost every tests, so renaming it is a large task.
-@pytest.fixture(params=("qstream", "json"))
-def lobby_server(request, lobby_contexts) -> ServerContext:
-    yield lobby_contexts[request.param]
-
-
-@pytest.fixture(params=("qstream", "json"))
-def lobby_server_proxy(request, lobby_contexts_proxy):
-    yield lobby_contexts_proxy[request.param]
+@pytest.fixture
+def lobby_server(lobby_contexts) -> ServerContext:
+    yield lobby_contexts["ws"]
 
 
 @pytest.fixture
@@ -427,35 +388,6 @@ async def jwks_server(jwk_kid):
 
 
 @pytest.fixture
-async def proxy_server(lobby_server_proxy):
-    buf_len = 262144
-    dnsbl = proxyprotocol.dnsbl.NoopDnsbl()
-
-    host, port = lobby_server_proxy.sockets[0].getsockname()
-    dest = proxyprotocol.server.Address(f"{host}:{port}")
-
-    loop = asyncio.get_running_loop()
-    server = await loop.create_server(
-        lambda: proxyprotocol.server.protocol.DownstreamProtocol(
-            proxyprotocol.server.protocol.UpstreamProtocol,
-            loop,
-            buf_len,
-            dnsbl,
-            dest
-        ),
-        "127.0.0.1",
-        None,
-    )
-    await server.start_serving()
-
-    yield server
-
-    server.close()
-    server.close_clients()
-    await server.wait_closed()
-
-
-@pytest.fixture
 def tmp_user(database):
     user_ids = defaultdict(lambda: 1)
     password_plain = "foo"
@@ -480,11 +412,11 @@ async def connect_client(
     server: ServerContext,
     address: Optional[tuple[str, int]] = None
 ) -> Protocol:
-    address = address or server.sockets[0].getsockname()
-    proto = server.protocol_class(
-        *(await asyncio.open_connection(*address))
-    )
-    return proto
+    host, port = address or (server.host, server.port)
+    url = f"http://{host}:{port}{server.path}"
+    session = aiohttp.ClientSession()
+    ws = await session.ws_connect(url)
+    return WebSocketProtocol(ws, owned_session=session)
 
 
 async def perform_login(

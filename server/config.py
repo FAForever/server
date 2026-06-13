@@ -44,22 +44,9 @@ class ConfigurationStore:
         Change default values here.
         """
         self.CONFIGURATION_REFRESH_TIME = 300
-        self.LISTEN = [
-            {
-                "ADDRESS": "",
-                "PORT": 8001,
-                "NAME": None,
-                "PROTOCOL": "QDataStreamProtocol",
-                "PROXY": False,
-            },
-            {
-                "ADDRESS": "",
-                "PORT": 8002,
-                "NAME": None,
-                "PROTOCOL": "SimpleJsonProtocol",
-                "PROXY": False
-            }
-        ]
+        self.WS_HOST = ""
+        self.WS_PORT = 8003
+        self.WS_PATH = "/ws"
         self.LOG_LEVEL = "DEBUG"
         # Whether or not to use uvloop as a drop-in replacement for asyncio's
         # default event loop

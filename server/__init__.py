@@ -133,7 +133,6 @@ from .message_queue_service import MessageQueueService
 from .oauth_service import OAuthService
 from .party_service import PartyService
 from .player_service import PlayerService
-from .protocol import Protocol, QDataStreamProtocol
 from .rating_service.rating_service import RatingService
 from .servercontext import ServerContext
 from .stats.game_stats_service import GameStatsService
@@ -258,30 +257,25 @@ class ServerInstance(object):
         self,
         address: tuple[str, int],
         name: Optional[str] = None,
-        protocol_class: type[Protocol] = QDataStreamProtocol,
-        proxy: bool = False,
+        path: str = "/ws",
     ) -> ServerContext:
         """
-        Start listening on a new address.
+        Start listening for WebSocket connections on a new address.
 
         # Params
         - `address`: Tuple indicating the host, port to listen on.
-        - `name`: String used to identify this context in log messages. The
-            default is to use the `protocol_class` name.
-        - `protocol_class`: The protocol class implementation to use.
-        - `proxy`: Boolean indicating whether or not to use the PROXY protocol.
-            See: https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+        - `name`: String used to identify this context in log messages.
+        - `path`: HTTP path on which to expose the WebSocket endpoint.
         """
         if not self.started:
             await self.start_services()
 
         ctx = ServerContext(
-            f"{self.name}[{name or protocol_class.__name__}]",
+            f"{self.name}[{name or 'WebSocket'}]",
             self.connection_factory,
             list(self.services.values()),
-            protocol_class
         )
-        await ctx.listen(*address, proxy=proxy)
+        await ctx.listen(*address, path=path)
 
         self.contexts.add(ctx)
 

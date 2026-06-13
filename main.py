@@ -28,7 +28,6 @@ from server.game_service import GameService
 from server.health import HealthServer
 from server.player_service import PlayerService
 from server.profiler import Profiler
-from server.protocol import QDataStreamProtocol, SimpleJsonProtocol
 from server.timing import datetime_now
 
 
@@ -115,34 +114,16 @@ async def main():
 
     await instance.start_services()
 
-    PROTO_CLASSES = {
-        QDataStreamProtocol.__name__: QDataStreamProtocol,
-        SimpleJsonProtocol.__name__: SimpleJsonProtocol
-    }
-    for cfg in config.LISTEN:
-        try:
-            host = cfg["ADDRESS"]
-            port = cfg["PORT"]
-            proto_class_name = cfg["PROTOCOL"]
-            name = cfg.get("NAME")
-            proxy = cfg.get("PROXY", False)
-
-            proto_class = PROTO_CLASSES[proto_class_name]
-
-            await instance.listen(
-                address=(host, port),
-                name=name,
-                protocol_class=proto_class,
-                proxy=proxy
-            )
-        except Exception as e:
-            raise RuntimeError(f"Error with server instance config: {cfg}") from e
-
-    if not instance.contexts:
-        raise RuntimeError(
-            "The server was not configured to listen on any ports! Check the "
-            "config file and try again."
+    try:
+        await instance.listen(
+            address=(config.WS_HOST, config.WS_PORT),
+            path=config.WS_PATH,
         )
+    except Exception as e:
+        raise RuntimeError(
+            f"Error starting WebSocket listener on "
+            f"{config.WS_HOST}:{config.WS_PORT}{config.WS_PATH}"
+        ) from e
 
     server.metrics.info.info({
         "version": info.VERSION,

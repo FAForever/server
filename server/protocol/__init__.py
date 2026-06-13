@@ -13,6 +13,7 @@ from .gpgnet import GpgNetClientProtocol, GpgNetServerProtocol
 from .protocol import DisconnectedError, Protocol
 from .qdatastream import QDataStreamProtocol
 from .simple_json import SimpleJsonProtocol
+from .websocket import WebSocketProtocol
 
 __all__ = (
     "DisconnectedError",
@@ -20,5 +21,6 @@ __all__ = (
     "GpgNetServerProtocol",
     "Protocol",
     "QDataStreamProtocol",
-    "SimpleJsonProtocol"
+    "SimpleJsonProtocol",
+    "WebSocketProtocol",
 )

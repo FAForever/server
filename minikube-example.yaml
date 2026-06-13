@@ -9,10 +9,8 @@ spec:
   selector:
     app: faf-lobby
   ports:
-  - port: 8001
-    name: qstream
-  - port: 8002
-    name: simplejson
+  - port: 8003
+    name: websocket
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -44,10 +42,8 @@ spec:
           name: control
         - containerPort: 2000
           name: health
-        - containerPort: 8001
-          name: qstream
-        - containerPort: 8002
-          name: simplejson
+        - containerPort: 8003
+          name: websocket
         env:
           - name: CONFIGURATION_FILE
             value: /config/config.yaml

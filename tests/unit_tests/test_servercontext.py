@@ -24,7 +24,7 @@ async def test_unstarted(context):
     await context.shutdown(None)
     await context.drain_connections()
 
-    assert context.sockets == []
+    assert context.port is None
 
 
 def test_write_broadcast_raw_error(context, caplog):
