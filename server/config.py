@@ -48,11 +48,11 @@ class ConfigurationStore:
         self.WS_PORT = 8003
         self.WS_PATH = "/ws"
         # Name of an HTTP header set by a trusted reverse proxy that contains
-        # the real client IP (e.g. "CF-Connecting-IP", "X-Forwarded-For").
-        # Leave empty to always use the direct TCP peer address — required when
-        # the server is exposed to untrusted clients, since these headers are
-        # otherwise easily spoofed.
-        self.WS_FORWARDED_IP_HEADER = ""
+        # the real client IP. Default "X-Real-IP" matches what Cloudflare /
+        # Traefik set. Set to "" to always use the direct TCP peer address
+        # when the server is exposed to untrusted clients (these headers are
+        # easily spoofed otherwise).
+        self.WS_FORWARDED_IP_HEADER = "X-Real-IP"
         self.LOG_LEVEL = "DEBUG"
         # Whether or not to use uvloop as a drop-in replacement for asyncio's
         # default event loop
