@@ -13,7 +13,6 @@ from .conftest import (
     connect_and_sign_in,
     connect_client,
     connect_mq_consumer,
-    get_session,
     perform_login,
     read_until,
     read_until_command

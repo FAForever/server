@@ -12,6 +12,7 @@ from aiohttp import web
 
 import server.metrics as metrics
 
+from .config import config
 from .core import Service
 from .decorators import with_logger
 from .lobbyconnection import LobbyConnection
@@ -154,12 +155,17 @@ class ServerContext:
         ws = web.WebSocketResponse()
         await ws.prepare(request)
 
-        peer_host = (
-            request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-            or request.headers.get("X-Real-IP")
-            or request.remote
-            or "unknown"
-        )
+        # Only honor a forwarded-IP header when explicitly configured —
+        # otherwise clients connecting directly could spoof their peername.
+        peer_host = None
+        header_name = config.WS_FORWARDED_IP_HEADER
+        if header_name:
+            forwarded = request.headers.get(header_name, "")
+            peer_host = forwarded.split(",")[0].strip() or None
+
+        if not peer_host:
+            peer_host = request.remote or "unknown"
+
         peername = Address(peer_host, 0)
 
         self._logger.info(

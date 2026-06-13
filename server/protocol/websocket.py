@@ -8,7 +8,7 @@ import asyncio
 import contextlib
 import json
 
-from aiohttp import WSMsgType, web
+from aiohttp import WSMsgType
 
 import server.metrics as metrics
 
@@ -58,7 +58,6 @@ class WebSocketProtocol(Protocol):
         self.write_raw(self.encode_message(message))
 
     def write_messages(self, messages: list[dict]) -> None:
-        metrics.sent_messages.labels(self.__class__.__name__).inc()
         if not self.is_connected():
             raise DisconnectedError("Protocol is not connected!")
         for message in messages:
