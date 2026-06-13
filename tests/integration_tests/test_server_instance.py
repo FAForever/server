@@ -34,12 +34,7 @@ async def test_multiple_contexts(
     oauth_service,
     veto_service,
 ):
-    """
-    Verify multiple ServerContexts share state on one ServerInstance.
-
-    A single ServerInstance can host more than one ServerContext listening on
-    different ports; both must accept connections and broadcast shared state.
-    """
+    """Verify multiple ServerContexts on one ServerInstance share state."""
     config.USE_POLICY_SERVER = False
 
     loop = asyncio.get_running_loop()

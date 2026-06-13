@@ -1,8 +1,4 @@
-"""A WebSocket-native wire protocol.
-
-Each message is sent as exactly one WebSocket text frame containing a single
-JSON object. No newline framing — frame boundaries delimit messages.
-"""
+"""WebSocket wire protocol: one JSON message per text frame, no extra framing."""
 
 import asyncio
 import contextlib
