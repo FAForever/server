@@ -124,8 +124,8 @@ class ClientMessageQueueService(Service):
 
         player = self.player_service[player_id]
         if player is None:
-            self._logger.info(
-                "client-notify for user %s ignored: not connected here",
+            self._logger.warning(
+                "Dropping client-notify message: user %s not connected here",
                 player_id,
             )
             return
