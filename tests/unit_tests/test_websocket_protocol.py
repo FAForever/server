@@ -166,7 +166,7 @@ async def test_abort_cancels_pending_and_closes_ws():
     await asyncio.sleep(0)
     await asyncio.sleep(0)
 
-    ws.close.assert_called()
+    ws.close.assert_awaited()
 
 
 async def test_abort_skips_ws_close_when_already_closed():
