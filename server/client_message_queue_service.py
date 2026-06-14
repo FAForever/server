@@ -3,7 +3,7 @@ Forward RabbitMQ messages from trusted microservices to connected clients.
 
 # Wire contract
 Publishers post to the `MQ_EXCHANGE_NAME` topic exchange with routing key
-`client.push`. Addressing lives in AMQP message headers:
+`request.client.notify`. Addressing lives in AMQP message headers:
 
 - `user-id` (int, optional): forward the body to the player with this id, if
   connected to this lobby instance. If not connected, the message is logged
@@ -34,12 +34,12 @@ if TYPE_CHECKING:
     from server import ServerInstance
 
 
-CLIENT_PUSH_ROUTING_KEY = "client.push"
+CLIENT_NOTIFY_ROUTING_KEY = "request.client.notify"
 
 
 @with_logger
 class ClientMessageQueueService(Service):
-    """Consume `client.push` messages and forward them to local clients."""
+    """Consume `request.client.notify` messages and forward to local clients."""
 
     _logger: ClassVar[logging.Logger]
 
@@ -59,7 +59,7 @@ class ClientMessageQueueService(Service):
     async def initialize(self) -> None:
         result = await self.message_queue_service.declare_queue_and_consume(
             exchange_name=config.MQ_EXCHANGE_NAME,
-            routing_key=CLIENT_PUSH_ROUTING_KEY,
+            routing_key=CLIENT_NOTIFY_ROUTING_KEY,
             callback=self._on_message,
         )
         if result is not None:
@@ -77,13 +77,13 @@ class ClientMessageQueueService(Service):
                 payload = json.loads(message.body)
             except (ValueError, UnicodeDecodeError):
                 self._logger.warning(
-                    "Dropping client-push message with non-JSON body"
+                    "Dropping client-notify message with non-JSON body"
                 )
                 return
 
             if not isinstance(payload, dict):
                 self._logger.warning(
-                    "Dropping client-push message: payload is not a JSON object"
+                    "Dropping client-notify message: payload is not a JSON object"
                 )
                 return
 
@@ -95,7 +95,7 @@ class ClientMessageQueueService(Service):
                 self._dispatch_to_user(user_id, payload)
             elif channel is not None:
                 self._logger.info(
-                    "client-push channel %r received but channel routing is "
+                    "client-notify channel %r received but channel routing is "
                     "not yet implemented; dropping",
                     channel,
                 )
@@ -107,14 +107,14 @@ class ClientMessageQueueService(Service):
             player_id = int(user_id)
         except (TypeError, ValueError):
             self._logger.warning(
-                "Dropping client-push message: invalid user-id %r", user_id
+                "Dropping client-notify message: invalid user-id %r", user_id
             )
             return
 
         player = self.player_service[player_id]
         if player is None:
             self._logger.info(
-                "client-push for user %s ignored: not connected here",
+                "client-notify for user %s ignored: not connected here",
                 player_id,
             )
             return
