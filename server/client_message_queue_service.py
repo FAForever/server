@@ -1,6 +1,4 @@
-"""
-Consumes messages published by trusted microservices and forwards them to
-connected clients.
+"""Forward RabbitMQ messages from trusted microservices to connected clients.
 
 # Wire contract
 Publishers post to the `MQ_EXCHANGE_NAME` topic exchange with routing key
@@ -40,10 +38,8 @@ CLIENT_PUSH_ROUTING_KEY = "client.push"
 
 @with_logger
 class ClientMessageQueueService(Service):
-    """
-    Consumes `client.push` messages from RabbitMQ and forwards them to
-    connected clients on this lobby instance.
-    """
+
+    """Consume `client.push` messages and forward them to local clients."""
 
     _logger: ClassVar[logging.Logger]
 
@@ -53,6 +49,7 @@ class ClientMessageQueueService(Service):
         message_queue_service: MessageQueueService,
         player_service: PlayerService,
     ):
+        """Wire dependencies; consumer is started in `initialize`."""
         self.server = server
         self.message_queue_service = message_queue_service
         self.player_service = player_service

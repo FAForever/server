@@ -12,10 +12,7 @@ from server.config import config
 
 
 def make_incoming_message(body: bytes, headers: dict | None = None):
-    """
-    Build a stand-in for aio_pika's IncomingMessage with the bits the service
-    actually touches.
-    """
+    """Build a stand-in for aio_pika's IncomingMessage."""
     message = mock.Mock()
     message.body = body
     message.headers = headers
@@ -34,9 +31,7 @@ def server_instance():
 
 @pytest.fixture
 def fake_player_service():
-    """
-    Minimal stand-in for PlayerService supporting __getitem__/__setitem__.
-    """
+    """Stand in for PlayerService supporting __getitem__/__setitem__."""
     class _FakePlayerService:
         def __init__(self):
             self._players = {}
