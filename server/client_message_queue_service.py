@@ -58,10 +58,15 @@ class ClientMessageQueueService(Service):
         self._consumer_tag: Optional[str] = None
 
     async def initialize(self) -> None:
-        # On k8s `socket.gethostname()` returns the pod name (e.g.
-        # `faf-lobby-server-6d9c4588ff-lzdcr`); locally it's the dev's
-        # hostname. Either way it identifies the consumer in the broker UI.
-        queue_name = f"faf-lobby.client-notify.{socket.gethostname()}"
+        # Queue naming follows `<exchange>.<service>.<routing-key>` plus a
+        # per-instance suffix because each lobby pod has its own queue (vs.
+        # the API's shared queues like `faf-lobby.api.event.update`). On k8s
+        # `socket.gethostname()` resolves to the pod name (e.g.
+        # `faf-lobby-server-6d9c4588ff-lzdcr`); locally it's the dev's host.
+        queue_name = (
+            f"{config.MQ_EXCHANGE_NAME}.lobby.client.notify"
+            f".{socket.gethostname()}"
+        )
         result = await self.message_queue_service.declare_queue_and_consume(
             exchange_name=config.MQ_EXCHANGE_NAME,
             routing_key=CLIENT_NOTIFY_ROUTING_KEY,
