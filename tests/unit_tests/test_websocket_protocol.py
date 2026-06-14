@@ -71,15 +71,15 @@ async def test_write_raw_when_disconnected_raises():
         proto.write_raw(b'{"command":"ping"}')
 
 
-async def test_send_message_routes_through_send_str():
+async def test_send_message_routes_through_send_bytes():
     ws = mock.MagicMock()
     ws.closed = False
-    ws.send_str = mock.AsyncMock()
+    ws.send_bytes = mock.AsyncMock()
 
     proto = WebSocketProtocol(ws)
     await proto.send_message({"command": "ping"})
 
-    ws.send_str.assert_awaited_once_with('{"command":"ping"}\n')
+    ws.send_bytes.assert_awaited_once_with(b'{"command":"ping"}\n')
 
 
 async def test_write_message_when_disconnected_raises():
@@ -91,28 +91,28 @@ async def test_write_message_when_disconnected_raises():
         proto.write_message({"command": "ping"})
 
 
-async def test_write_message_routes_through_send_str():
+async def test_write_message_routes_through_send_bytes():
     ws = mock.MagicMock()
     ws.closed = False
-    ws.send_str = mock.AsyncMock()
+    ws.send_bytes = mock.AsyncMock()
 
     proto = WebSocketProtocol(ws)
     proto.write_message({"command": "ping"})
     await proto.drain()
 
-    ws.send_str.assert_awaited_once_with('{"command":"ping"}\n')
+    ws.send_bytes.assert_awaited_once_with(b'{"command":"ping"}\n')
 
 
 async def test_write_messages_sends_each():
     ws = mock.MagicMock()
     ws.closed = False
-    ws.send_str = mock.AsyncMock()
+    ws.send_bytes = mock.AsyncMock()
 
     proto = WebSocketProtocol(ws)
     proto.write_messages([{"command": "ping"}, {"command": "pong"}])
     await proto.drain()
 
-    assert ws.send_str.await_count == 2
+    assert ws.send_bytes.await_count == 2
 
 
 async def test_write_messages_when_disconnected_raises():
@@ -135,7 +135,7 @@ async def test_drain_no_pending_returns_immediately():
 async def test_drain_propagates_failure_as_disconnected():
     ws = mock.MagicMock()
     ws.closed = False
-    ws.send_str = mock.AsyncMock(side_effect=RuntimeError("boom"))
+    ws.send_bytes = mock.AsyncMock(side_effect=RuntimeError("boom"))
     ws.close = mock.AsyncMock()
 
     proto = WebSocketProtocol(ws)
@@ -153,7 +153,7 @@ async def test_abort_cancels_pending_and_closes_ws():
     async def slow_send(*_args, **_kwargs):
         await asyncio.sleep(10)
 
-    ws.send_str = mock.AsyncMock(side_effect=slow_send)
+    ws.send_bytes = mock.AsyncMock(side_effect=slow_send)
     ws.close = mock.AsyncMock()
 
     proto = WebSocketProtocol(ws)
@@ -219,9 +219,9 @@ async def test_end_to_end_roundtrip_against_aiohttp_server(aiohttp_unused_port):
         import aiohttp
         async with aiohttp.ClientSession() as session:
             async with session.ws_connect(f"http://127.0.0.1:{port}/ws") as ws:
-                await ws.send_str('{"command":"ping"}')
+                await ws.send_bytes(b'{"command":"ping"}\n')
                 reply = await ws.receive()
-                assert reply.type == WSMsgType.TEXT
+                assert reply.type == WSMsgType.BINARY
                 assert json.loads(reply.data) == {"command": "pong"}
     finally:
         await runner.cleanup()

@@ -93,7 +93,7 @@ async def test_serverside_abort(
     ctx = mock_context
     async with aiohttp.ClientSession() as session:
         async with session.ws_connect(ws_url(ctx)) as ws:
-            await ws.send_str('{"some_junk": true}')
+            await ws.send_bytes(b'{"some_junk": true}\n')
             await exhaust_callbacks()
 
     # Allow server-side disconnect handler to run.

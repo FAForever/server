@@ -1,4 +1,4 @@
-"""WebSocket wire protocol: one JSON message per text frame, no extra framing."""
+"""WebSocket wire protocol: newline-terminated JSON inside binary WS frames."""
 
 import asyncio
 import contextlib
@@ -48,8 +48,13 @@ class WebSocketProtocol(Protocol):
         if not self.is_connected():
             raise DisconnectedError("Protocol is not connected!")
 
-        text = data.decode() if isinstance(data, (bytes, bytearray)) else data
-        task = asyncio.create_task(self.ws.send_str(text))
+        # Send as a binary frame: the legacy Python desktop client (PyQt6
+        # QWebSocket) only listens on binaryMessageReceived, and the Kotlin
+        # client reads the raw byte stream as UTF-8 regardless of frame type,
+        # so binary is the lowest common denominator.
+        if isinstance(data, str):
+            data = data.encode()
+        task = asyncio.create_task(self.ws.send_bytes(data))
         self._pending.add(task)
         task.add_done_callback(self._pending.discard)
 
