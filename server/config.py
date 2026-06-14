@@ -46,7 +46,7 @@ class ConfigurationStore:
         self.CONFIGURATION_REFRESH_TIME = 300
         self.WS_HOST = ""
         self.WS_PORT = 8003
-        self.WS_PATH = "/ws"
+        self.WS_PATH = "/"
         # Name of an HTTP header set by a trusted reverse proxy that contains
         # the real client IP. Default "X-Real-IP" matches what Cloudflare /
         # Traefik set. Set to "" to always use the direct TCP peer address

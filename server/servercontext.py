@@ -46,7 +46,7 @@ class ServerContext:
         self.site: Optional[web.TCPSite] = None
         self.host: Optional[str] = None
         self.port: Optional[int] = None
-        self.path: str = "/ws"
+        self.path: str = "/"
 
     def __repr__(self):
         return f"ServerContext({self.name})"
@@ -55,7 +55,7 @@ class ServerContext:
         self,
         host: str,
         port: Optional[int],
-        path: str = "/ws",
+        path: str = "/",
     ):
         self._logger.debug(
             "%s: listen(%r, %r, path=%r)",

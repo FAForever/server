@@ -257,7 +257,7 @@ class ServerInstance(object):
         self,
         address: tuple[str, int],
         name: Optional[str] = None,
-        path: str = "/ws",
+        path: str = "/",
     ) -> ServerContext:
         """
         Start listening for WebSocket connections on a new address.
