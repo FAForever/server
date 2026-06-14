@@ -1,4 +1,5 @@
-"""Forward RabbitMQ messages from trusted microservices to connected clients.
+"""
+Forward RabbitMQ messages from trusted microservices to connected clients.
 
 # Wire contract
 Publishers post to the `MQ_EXCHANGE_NAME` topic exchange with routing key
@@ -38,8 +39,9 @@ CLIENT_PUSH_ROUTING_KEY = "client.push"
 
 @with_logger
 class ClientMessageQueueService(Service):
-
-    """Consume `client.push` messages and forward them to local clients."""
+    """
+    Consume `client.push` messages and forward them to local clients.
+    """
 
     _logger: ClassVar[logging.Logger]
 
