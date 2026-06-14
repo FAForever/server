@@ -1,29 +1,23 @@
 """
-Manages a group of connections using the same protocol over the same port
+Manages a group of connections using WebSocket as the transport.
 """
 
 import asyncio
 import logging
-import socket
-from asyncio import StreamReader, StreamWriter
 from contextlib import contextmanager
 from typing import Callable, ClassVar, Iterable, Optional
 
 import humanize
-from proxyprotocol.detect import ProxyProtocolDetect
-from proxyprotocol.reader import ProxyProtocolReader
-from proxyprotocol.sock import SocketInfo
+from aiohttp import web
 
 import server.metrics as metrics
 
+from .config import config
 from .core import Service
 from .decorators import with_logger
 from .lobbyconnection import LobbyConnection
-from .protocol import DisconnectedError, Protocol, QDataStreamProtocol
+from .protocol import DisconnectedError, WebSocketProtocol
 from .types import Address
-
-MiB = 2 ** 20
-LIMIT = 10 * MiB
 
 
 @with_logger
@@ -39,16 +33,20 @@ class ServerContext:
         name: str,
         connection_factory: Callable[[], LobbyConnection],
         services: Iterable[Service],
-        protocol_class: type[Protocol] = QDataStreamProtocol,
     ):
         super().__init__()
         self.name = name
-        self._server: Optional[asyncio.Server] = None
         self._drain_event: Optional[asyncio.Event] = None
         self._connection_factory = connection_factory
         self._services = services
-        self.connections: dict[LobbyConnection, Protocol] = {}
-        self.protocol_class = protocol_class
+        self.connections: dict[LobbyConnection, WebSocketProtocol] = {}
+
+        self.app = web.Application()
+        self.runner = web.AppRunner(self.app, access_log=None)
+        self.site: Optional[web.TCPSite] = None
+        self.host: Optional[str] = None
+        self.port: Optional[int] = None
+        self.path: str = "/"
 
     def __repr__(self):
         return f"ServerContext({self.name})"
@@ -57,41 +55,36 @@ class ServerContext:
         self,
         host: str,
         port: Optional[int],
-        proxy: bool = False
+        path: str = "/",
     ):
         self._logger.debug(
-            "%s: listen(%r, %r, proxy=%r)",
+            "%s: listen(%r, %r, path=%r)",
             self.name,
             host,
             port,
-            proxy
+            path,
         )
 
-        callback = self.client_connected_callback
-        if proxy:
-            pp_detect = ProxyProtocolDetect()
-            pp_reader = ProxyProtocolReader(pp_detect)
-            callback = pp_reader.get_callback(callback)  # type: ignore
+        self.host = host
+        self.port = port
+        self.path = path
 
-        self._server = await asyncio.start_server(
-            callback,
-            host=host,
-            port=port,
-            limit=LIMIT,
+        self.app.router.add_get(path, self._ws_handler)
+
+        await self.runner.setup()
+        self.site = web.TCPSite(self.runner, host, port)
+        await self.site.start()
+
+        bound = self.runner.addresses[0]
+        self.host, self.port = bound[0], bound[1]
+
+        self._logger.info(
+            "%s: listening on ws://%s:%s%s",
+            self.name,
+            self.host,
+            self.port,
+            path,
         )
-
-        for sock in self.sockets:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            host, port, *_ = sock.getsockname()
-            self._logger.info("%s: listening on %s:%s", self.name, host, port)
-
-        return self._server
-
-    @property
-    def sockets(self):
-        if not self._server:
-            return []
-        return self._server.sockets
 
     async def shutdown(self, timeout: Optional[float] = 5):
         async def close_or_abort(conn, proto):
@@ -118,8 +111,6 @@ class ServerContext:
             )
 
         self._logger.debug("%s: stop serving", self.name)
-        if self._server:
-            self._server.close()
 
         for fut in asyncio.as_completed([
             close_or_abort(conn, proto)
@@ -128,8 +119,7 @@ class ServerContext:
             await fut
         self._logger.debug("%s: All connections closed", self.name)
 
-        if self._server:
-            await self._server.wait_closed()
+        await self.runner.cleanup()
 
     async def drain_connections(self):
         """
@@ -145,7 +135,7 @@ class ServerContext:
 
     def write_broadcast(self, message, validate_fn=lambda _: True):
         self.write_broadcast_raw(
-            self.protocol_class.encode_message(message),
+            WebSocketProtocol.encode_message(message),
             validate_fn
         )
 
@@ -161,56 +151,38 @@ class ServerContext:
                     conn
                 )
 
-    async def client_connected_callback(
-        self,
-        reader: StreamReader,
-        writer: StreamWriter,
-        proxy_info: Optional[SocketInfo] = None,
-    ):
-        if proxy_info:
-            peername_writer = Address(*writer.get_extra_info("peername"))
+    async def _ws_handler(self, request: web.Request) -> web.WebSocketResponse:
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
 
-            if not proxy_info.peername:
-                # See security considerations:
-                # https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
-                self._logger.warning(
-                    "%s: Client connected from %s:%s to a context in proxy "
-                    "mode! The connection will be ignored, however this may "
-                    "indicate a misconfiguration in your firewall.",
-                    self.name,
-                    peername_writer.host,
-                    peername_writer.port
-                )
-                writer.close()
-                return
+        # Only honor a forwarded-IP header when explicitly configured —
+        # otherwise clients connecting directly could spoof their peername.
+        peer_host = None
+        header_name = config.WS_FORWARDED_IP_HEADER
+        if header_name:
+            forwarded = request.headers.get(header_name, "")
+            peer_host = forwarded.split(",")[0].strip() or None
 
-            peername = Address(*proxy_info.peername)
-            self._logger.info(
-                "%s: Client connected from %s:%s via proxy %s:%s",
-                self.name,
-                peername.host,
-                peername.port,
-                peername_writer.host,
-                peername_writer.port
-            )
-        else:
-            peername = Address(*writer.get_extra_info("peername"))
-            self._logger.info(
-                "%s: Client connected from %s:%s",
-                self.name,
-                peername.host,
-                peername.port
-            )
+        if not peer_host:
+            peer_host = request.remote or "unknown"
 
-        await self.handle_client_connected(reader, writer, peername)
+        peername = Address(peer_host, 0)
+
+        self._logger.info(
+            "%s: Client connected from %s",
+            self.name,
+            peer_host,
+        )
+
+        await self.handle_client_connected(ws, peername)
+        return ws
 
     async def handle_client_connected(
         self,
-        reader: StreamReader,
-        writer: StreamWriter,
+        ws: web.WebSocketResponse,
         peername: Address,
     ):
-        protocol = self.protocol_class(reader, writer)
+        protocol = WebSocketProtocol(ws)
         connection = self._connection_factory()
         self.connections[connection] = protocol
 

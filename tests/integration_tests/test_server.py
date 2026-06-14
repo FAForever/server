@@ -1,6 +1,5 @@
 import asyncio
 import contextlib
-import re
 
 import pytest
 from sqlalchemy import and_, select
@@ -14,7 +13,6 @@ from .conftest import (
     connect_and_sign_in,
     connect_client,
     connect_mq_consumer,
-    get_session,
     perform_login,
     read_until,
     read_until_command
@@ -26,36 +24,6 @@ from .test_game import (
     send_player_options,
     setup_game_1v1
 )
-
-
-@fast_forward(10)
-async def test_server_proxy_mode(lobby_server_proxy, proxy_server, caplog):
-    with caplog.at_level("TRACE"):
-        _, _, proto = await connect_and_sign_in(
-            ("test", "test_password"),
-            lobby_server_proxy,
-            address=proxy_server.sockets[0].getsockname()
-        )
-        await read_until_command(proto, "game_info", timeout=5)
-
-    matches = [
-        re.search(
-            r"Client connected from \d+\.\d+\.\d+\.\d+:\d+ via proxy \d+\.\d+\.\d+\.\d+:\d+",
-            message
-        )
-        for message in caplog.messages
-        if "Client connected from" in message
-    ]
-    assert matches and matches[0]
-
-
-async def test_server_proxy_mode_direct(lobby_server_proxy, caplog):
-    with caplog.at_level("TRACE"):
-        proto = await connect_client(lobby_server_proxy)
-        with pytest.raises(DisconnectedError):
-            await get_session(proto)
-
-    assert "this may indicate a misconfiguration" in caplog.text
 
 
 @fast_forward(10)

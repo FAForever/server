@@ -191,6 +191,27 @@ async def test_QDataStreamProtocol_encode_ping_pong():
         b"\x00\x00\x00\x0c\x00\x00\x00\x08\x00P\x00O\x00N\x00G"
 
 
+async def test_SimpleJsonProtocol_decode_message():
+    assert SimpleJsonProtocol.decode_message(b'{"command":"ping"}\n') == {
+        "command": "ping"
+    }
+
+
+async def test_SimpleJsonProtocol_read_message(reader, writer):
+    proto = SimpleJsonProtocol(reader, writer)
+    reader.feed_data(b'{"command":"ping"}\n')
+    assert await proto.read_message() == {"command": "ping"}
+
+
+async def test_SimpleJsonProtocol_read_message_disconnects_on_empty(
+    reader, writer
+):
+    proto = SimpleJsonProtocol(reader, writer)
+    reader.feed_eof()
+    with pytest.raises(DisconnectedError):
+        await proto.read_message()
+
+
 async def test_send_message_simultaneous_writes(unix_protocol):
     msg = {
         "command": "test",
