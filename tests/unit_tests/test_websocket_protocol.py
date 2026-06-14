@@ -30,6 +30,16 @@ async def test_read_message_text_frame():
     assert await proto.read_message() == {"command": "ping"}
 
 
+async def test_read_message_binary_frame():
+    ws = mock.MagicMock()
+    ws.closed = False
+    msg = mock.Mock(type=WSMsgType.BINARY, data=b'{"command":"ping"}')
+    ws.receive = mock.AsyncMock(return_value=msg)
+
+    proto = WebSocketProtocol(ws)
+    assert await proto.read_message() == {"command": "ping"}
+
+
 async def test_read_message_close_frame_raises():
     ws = mock.MagicMock()
     ws.closed = False
@@ -68,6 +78,103 @@ async def test_send_message_routes_through_send_str():
     await proto.send_message({"command": "ping"})
 
     ws.send_str.assert_awaited_once_with('{"command":"ping"}')
+
+
+async def test_write_message_when_disconnected_raises():
+    ws = mock.MagicMock()
+    ws.closed = True
+
+    proto = WebSocketProtocol(ws)
+    with pytest.raises(DisconnectedError):
+        proto.write_message({"command": "ping"})
+
+
+async def test_write_message_routes_through_send_str():
+    ws = mock.MagicMock()
+    ws.closed = False
+    ws.send_str = mock.AsyncMock()
+
+    proto = WebSocketProtocol(ws)
+    proto.write_message({"command": "ping"})
+    await proto.drain()
+
+    ws.send_str.assert_awaited_once_with('{"command":"ping"}')
+
+
+async def test_write_messages_sends_each():
+    ws = mock.MagicMock()
+    ws.closed = False
+    ws.send_str = mock.AsyncMock()
+
+    proto = WebSocketProtocol(ws)
+    proto.write_messages([{"command": "ping"}, {"command": "pong"}])
+    await proto.drain()
+
+    assert ws.send_str.await_count == 2
+
+
+async def test_write_messages_when_disconnected_raises():
+    ws = mock.MagicMock()
+    ws.closed = True
+
+    proto = WebSocketProtocol(ws)
+    with pytest.raises(DisconnectedError):
+        proto.write_messages([{"command": "ping"}])
+
+
+async def test_drain_no_pending_returns_immediately():
+    ws = mock.MagicMock()
+    ws.closed = False
+
+    proto = WebSocketProtocol(ws)
+    await proto.drain()  # no pending tasks — should not raise or hang
+
+
+async def test_drain_propagates_failure_as_disconnected():
+    ws = mock.MagicMock()
+    ws.closed = False
+    ws.send_str = mock.AsyncMock(side_effect=RuntimeError("boom"))
+    ws.close = mock.AsyncMock()
+
+    proto = WebSocketProtocol(ws)
+    proto.write_raw(b'{"command":"ping"}')
+
+    with pytest.raises(DisconnectedError):
+        await proto.drain()
+    ws.close.assert_awaited()
+
+
+async def test_abort_cancels_pending_and_closes_ws():
+    ws = mock.MagicMock()
+    ws.closed = False
+
+    async def slow_send(*_args, **_kwargs):
+        await asyncio.sleep(10)
+
+    ws.send_str = mock.AsyncMock(side_effect=slow_send)
+    ws.close = mock.AsyncMock()
+
+    proto = WebSocketProtocol(ws)
+    proto.write_raw(b'{"command":"ping"}')
+    # Yield once so the task starts.
+    await asyncio.sleep(0)
+
+    proto.abort()
+    # Let cancellations and the close task run.
+    await asyncio.sleep(0)
+    await asyncio.sleep(0)
+
+    ws.close.assert_called()
+
+
+async def test_abort_skips_ws_close_when_already_closed():
+    ws = mock.MagicMock()
+    ws.closed = True
+    ws.close = mock.AsyncMock()
+
+    proto = WebSocketProtocol(ws)
+    proto.abort()
+    ws.close.assert_not_called()
 
 
 async def test_close_closes_owned_session():
