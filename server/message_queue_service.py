@@ -202,11 +202,11 @@ class MessageQueueService(Service):
         exclusive: bool = True,
         auto_delete: bool = True,
         durable: bool = False,
-    ) -> Optional[AbstractQueue]:
+    ) -> Optional[tuple[AbstractQueue, str]]:
         """
         Declare a queue, bind it to an exchange with the given routing key, and
-        start consuming. Returns the queue so the caller can cancel on
-        shutdown. Returns None if the broker connection is not ready.
+        start consuming. Returns `(queue, consumer_tag)` so the caller can
+        cancel on shutdown. Returns None if the broker connection is not ready.
         """
         await self.initialize()
         if not self._is_ready:
@@ -228,13 +228,13 @@ class MessageQueueService(Service):
             durable=durable,
         )
         await queue.bind(exchange, routing_key=routing_key)
-        await queue.consume(callback)
+        consumer_tag = await queue.consume(callback)
 
         self._logger.debug(
             "Consuming from queue %r bound to %s/%s",
             queue.name, exchange_name, routing_key,
         )
-        return queue
+        return queue, consumer_tag
 
     @synchronizedmethod("initialization_lock")
     async def reconnect(self) -> None:

@@ -21,7 +21,7 @@ trusted because the broker is reachable only from internal services.
 
 import json
 import logging
-from typing import TYPE_CHECKING, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from aio_pika.abc import AbstractIncomingMessage, AbstractQueue
 
@@ -57,23 +57,22 @@ class ClientMessageQueueService(Service):
         self.message_queue_service = message_queue_service
         self.player_service = player_service
         self._queue: Optional[AbstractQueue] = None
+        self._consumer_tag: Optional[str] = None
 
     async def initialize(self) -> None:
-        self._queue = await self.message_queue_service.declare_queue_and_consume(
+        result = await self.message_queue_service.declare_queue_and_consume(
             exchange_name=config.MQ_EXCHANGE_NAME,
             routing_key=CLIENT_PUSH_ROUTING_KEY,
             callback=self._on_message,
         )
+        if result is not None:
+            self._queue, self._consumer_tag = result
 
     async def shutdown(self) -> None:
-        if self._queue is not None:
-            try:
-                await self._queue.cancel(self._queue.name)
-            except Exception:
-                self._logger.debug(
-                    "Error cancelling client-push consumer", exc_info=True
-                )
-            self._queue = None
+        if self._queue is not None and self._consumer_tag is not None:
+            await self._queue.cancel(self._consumer_tag)
+        self._queue = None
+        self._consumer_tag = None
 
     async def _on_message(self, message: AbstractIncomingMessage) -> None:
         async with message.process(requeue=False):
@@ -106,7 +105,7 @@ class ClientMessageQueueService(Service):
             else:
                 self.server.write_broadcast(payload)
 
-    def _dispatch_to_user(self, user_id, payload: dict) -> None:
+    def _dispatch_to_user(self, user_id: Any, payload: dict) -> None:
         try:
             player_id = int(user_id)
         except (TypeError, ValueError):

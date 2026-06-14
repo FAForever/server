@@ -52,6 +52,47 @@ def fake_player_service():
 
 @pytest.fixture
 async def client_message_queue_service(server_instance, fake_player_service):
+    queue = mock.Mock()
+    queue.cancel = mock.AsyncMock()
+    mq_service = mock.Mock()
+    mq_service.declare_queue_and_consume = mock.AsyncMock(
+        return_value=(queue, "consumer-tag-123")
+    )
+    service = ClientMessageQueueService(
+        server=server_instance,
+        message_queue_service=mq_service,
+        player_service=fake_player_service,
+    )
+    await service.initialize()
+    yield service
+    await service.shutdown()
+
+
+async def test_shutdown_cancels_consumer(
+    server_instance, fake_player_service
+):
+    queue = mock.Mock()
+    queue.cancel = mock.AsyncMock()
+    mq_service = mock.Mock()
+    mq_service.declare_queue_and_consume = mock.AsyncMock(
+        return_value=(queue, "consumer-tag-xyz")
+    )
+    service = ClientMessageQueueService(
+        server=server_instance,
+        message_queue_service=mq_service,
+        player_service=fake_player_service,
+    )
+    await service.initialize()
+    await service.shutdown()
+
+    queue.cancel.assert_awaited_once_with("consumer-tag-xyz")
+    assert service._queue is None
+    assert service._consumer_tag is None
+
+
+async def test_shutdown_noop_when_broker_unavailable(
+    server_instance, fake_player_service
+):
     mq_service = mock.Mock()
     mq_service.declare_queue_and_consume = mock.AsyncMock(return_value=None)
     service = ClientMessageQueueService(
@@ -60,7 +101,7 @@ async def client_message_queue_service(server_instance, fake_player_service):
         player_service=fake_player_service,
     )
     await service.initialize()
-    yield service
+    # Should not raise even though no queue was ever created.
     await service.shutdown()
 
 
