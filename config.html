@@ -81,22 +81,15 @@ class ConfigurationStore:
         Change default values here.
         &#34;&#34;&#34;
         self.CONFIGURATION_REFRESH_TIME = 300
-        self.LISTEN = [
-            {
-                &#34;ADDRESS&#34;: &#34;&#34;,
-                &#34;PORT&#34;: 8001,
-                &#34;NAME&#34;: None,
-                &#34;PROTOCOL&#34;: &#34;QDataStreamProtocol&#34;,
-                &#34;PROXY&#34;: False,
-            },
-            {
-                &#34;ADDRESS&#34;: &#34;&#34;,
-                &#34;PORT&#34;: 8002,
-                &#34;NAME&#34;: None,
-                &#34;PROTOCOL&#34;: &#34;SimpleJsonProtocol&#34;,
-                &#34;PROXY&#34;: False
-            }
-        ]
+        self.WS_HOST = &#34;&#34;
+        self.WS_PORT = 8003
+        self.WS_PATH = &#34;/&#34;
+        # Name of an HTTP header set by a trusted reverse proxy that contains
+        # the real client IP. Default &#34;X-Real-IP&#34; matches what Cloudflare /
+        # Traefik set. Set to &#34;&#34; to always use the direct TCP peer address
+        # when the server is exposed to untrusted clients (these headers are
+        # easily spoofed otherwise).
+        self.WS_FORWARDED_IP_HEADER = &#34;X-Real-IP&#34;
         self.LOG_LEVEL = &#34;DEBUG&#34;
         # Whether or not to use uvloop as a drop-in replacement for asyncio&#39;s
         # default event loop
