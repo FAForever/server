@@ -22,7 +22,11 @@ class WebSocketProtocol(Protocol):
 
     @staticmethod
     def encode_message(message: dict) -> bytes:
-        return json_encoder.encode(message).encode()
+        # Trailing newline kept for client compatibility: the Kotlin lobby
+        # client (faf-commons-lobby) splits incoming WS payload bytes on '\n'
+        # and only emits a message once it sees the delimiter, regardless of
+        # WebSocket frame boundaries.
+        return (json_encoder.encode(message) + "\n").encode()
 
     @staticmethod
     def decode_message(data: bytes) -> dict:

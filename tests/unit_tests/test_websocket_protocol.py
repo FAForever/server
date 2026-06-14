@@ -15,9 +15,11 @@ def test_encode_decode_roundtrip():
     assert WebSocketProtocol.decode_message(encoded) == payload
 
 
-def test_encode_no_newline_framing():
+def test_encode_appends_newline_for_client_framing():
+    # The Kotlin lobby client splits incoming WS bytes on '\n', so the
+    # server has to keep terminating messages with a newline.
     encoded = WebSocketProtocol.encode_message({"command": "ping"})
-    assert encoded == b'{"command":"ping"}'
+    assert encoded == b'{"command":"ping"}\n'
 
 
 async def test_read_message_text_frame():
@@ -77,7 +79,7 @@ async def test_send_message_routes_through_send_str():
     proto = WebSocketProtocol(ws)
     await proto.send_message({"command": "ping"})
 
-    ws.send_str.assert_awaited_once_with('{"command":"ping"}')
+    ws.send_str.assert_awaited_once_with('{"command":"ping"}\n')
 
 
 async def test_write_message_when_disconnected_raises():
@@ -98,7 +100,7 @@ async def test_write_message_routes_through_send_str():
     proto.write_message({"command": "ping"})
     await proto.drain()
 
-    ws.send_str.assert_awaited_once_with('{"command":"ping"}')
+    ws.send_str.assert_awaited_once_with('{"command":"ping"}\n')
 
 
 async def test_write_messages_sends_each():
