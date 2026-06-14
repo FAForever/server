@@ -20,6 +20,7 @@ trusted because the broker is reachable only from internal services.
 
 import json
 import logging
+import socket
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from aio_pika.abc import AbstractIncomingMessage, AbstractQueue
@@ -57,10 +58,15 @@ class ClientMessageQueueService(Service):
         self._consumer_tag: Optional[str] = None
 
     async def initialize(self) -> None:
+        # On k8s `socket.gethostname()` returns the pod name (e.g.
+        # `faf-lobby-server-6d9c4588ff-lzdcr`); locally it's the dev's
+        # hostname. Either way it identifies the consumer in the broker UI.
+        queue_name = f"faf-lobby.client-notify.{socket.gethostname()}"
         result = await self.message_queue_service.declare_queue_and_consume(
             exchange_name=config.MQ_EXCHANGE_NAME,
             routing_key=CLIENT_NOTIFY_ROUTING_KEY,
             callback=self._on_message,
+            queue_name=queue_name,
         )
         if result is not None:
             self._queue, self._consumer_tag = result
