@@ -184,7 +184,8 @@ login = Table(
     Column("create_time",   TIMESTAMP,  nullable=False),
     Column("update_time",   TIMESTAMP,  nullable=False),
     Column("user_agent",    String),
-    Column("last_login",    TIMESTAMP)
+    Column("last_login",    TIMESTAMP),
+    Column("avatar_id",     Integer,    ForeignKey("avatars_list.id")),
 )
 
 leaderboard = Table(

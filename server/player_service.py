@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, ClassVar, Optional, ValuesView
 
 import aiocron
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 
 import server.metrics as metrics
 from server.config import config
@@ -90,6 +90,9 @@ class PlayerService(Service):
             )
             player.user_groups = {row.technical_name for row in result}
 
+            # Avatar lookup: `login.avatar_id` is the new authoritative FK,
+            # but for backwards compatibility we still fall back to the
+            # legacy `avatars.selected = 1` row if `avatar_id` is null.
             sql = select(
                 avatars_list.c.url,
                 avatars_list.c.tooltip,
@@ -105,7 +108,12 @@ class PlayerService(Service):
                         avatars.c.selected == 1
                     )
                 )
-                .outerjoin(avatars_list)
+                .outerjoin(
+                    avatars_list,
+                    onclause=avatars_list.c.id == func.coalesce(
+                        login.c.avatar_id, avatars.c.idAvatar
+                    )
+                )
             ).where(login.c.id == player.id)  # yapf: disable
 
             result = await conn.execute(sql)

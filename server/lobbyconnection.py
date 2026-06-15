@@ -957,6 +957,7 @@ class LobbyConnection:
                 )
                 self.player.avatar = None
 
+                new_avatar_id = row.id if avatar_url is not None else None
                 if avatar_url is not None:
                     await conn.execute(
                         avatars.update().where(
@@ -972,6 +973,15 @@ class LobbyConnection:
                         "url": avatar_url,
                         "tooltip": row.tooltip
                     }
+                # Mirror the selection to login.avatar_id so reads via the new
+                # authoritative column stay consistent with the legacy flag.
+                await conn.execute(
+                    t_login.update().where(
+                        t_login.c.id == self.player.id
+                    ).values(
+                        avatar_id=new_avatar_id
+                    )
+                )
                 self.player_service.mark_dirty(self.player)
         else:
             raise KeyError("invalid action")
