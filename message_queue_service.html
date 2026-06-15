@@ -241,6 +241,49 @@ class MessageQueueService(Service):
                     routing
                 )
 
+    async def declare_queue_and_consume(
+        self,
+        exchange_name: str,
+        routing_key: str,
+        callback: Callable[[AbstractIncomingMessage], Awaitable[None]],
+        queue_name: str = &#34;&#34;,
+        exclusive: bool = True,
+        auto_delete: bool = True,
+        durable: bool = False,
+    ) -&gt; Optional[tuple[AbstractQueue, str]]:
+        &#34;&#34;&#34;
+        Declare a queue, bind it to an exchange with the given routing key, and
+        start consuming. Returns `(queue, consumer_tag)` so the caller can
+        cancel on shutdown. Returns None if the broker connection is not ready.
+        &#34;&#34;&#34;
+        await self.initialize()
+        if not self._is_ready:
+            self._logger.warning(
+                &#34;Not connected to RabbitMQ, unable to declare consumer queue.&#34;
+            )
+            return None
+
+        assert self._channel is not None
+
+        exchange = self._exchanges.get(exchange_name)
+        if exchange is None:
+            raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
+
+        queue = await self._channel.declare_queue(
+            queue_name,
+            exclusive=exclusive,
+            auto_delete=auto_delete,
+            durable=durable,
+        )
+        await queue.bind(exchange, routing_key=routing_key)
+        consumer_tag = await queue.consume(callback)
+
+        self._logger.debug(
+            &#34;Consuming from queue %r bound to %s/%s&#34;,
+            queue.name, exchange_name, routing_key,
+        )
+        return queue, consumer_tag
+
     @synchronizedmethod(&#34;initialization_lock&#34;)
     async def reconnect(self) -&gt; None:
         self._is_ready = False
@@ -286,6 +329,61 @@ and providing an interface to publish messages.</p></div>
     await self._declare_exchange(exchange_name, exchange_type, durable)</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="server.message_queue_service.MessageQueueService.declare_queue_and_consume"><code class="name flex">
+<span>async def <span class="ident">declare_queue_and_consume</span></span>(<span>self,<br>exchange_name: str,<br>routing_key: str,<br>callback: Callable[[aio_pika.abc.AbstractIncomingMessage], Awaitable[None]],<br>queue_name: str = '',<br>exclusive: bool = True,<br>auto_delete: bool = True,<br>durable: bool = False) ‑> tuple[aio_pika.abc.AbstractQueue, str] | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def declare_queue_and_consume(
+    self,
+    exchange_name: str,
+    routing_key: str,
+    callback: Callable[[AbstractIncomingMessage], Awaitable[None]],
+    queue_name: str = &#34;&#34;,
+    exclusive: bool = True,
+    auto_delete: bool = True,
+    durable: bool = False,
+) -&gt; Optional[tuple[AbstractQueue, str]]:
+    &#34;&#34;&#34;
+    Declare a queue, bind it to an exchange with the given routing key, and
+    start consuming. Returns `(queue, consumer_tag)` so the caller can
+    cancel on shutdown. Returns None if the broker connection is not ready.
+    &#34;&#34;&#34;
+    await self.initialize()
+    if not self._is_ready:
+        self._logger.warning(
+            &#34;Not connected to RabbitMQ, unable to declare consumer queue.&#34;
+        )
+        return None
+
+    assert self._channel is not None
+
+    exchange = self._exchanges.get(exchange_name)
+    if exchange is None:
+        raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
+
+    queue = await self._channel.declare_queue(
+        queue_name,
+        exclusive=exclusive,
+        auto_delete=auto_delete,
+        durable=durable,
+    )
+    await queue.bind(exchange, routing_key=routing_key)
+    consumer_tag = await queue.consume(callback)
+
+    self._logger.debug(
+        &#34;Consuming from queue %r bound to %s/%s&#34;,
+        queue.name, exchange_name, routing_key,
+    )
+    return queue, consumer_tag</code></pre>
+</details>
+<div class="desc"><p>Declare a queue, bind it to an exchange with the given routing key, and
+start consuming. Returns <code>(queue, consumer_tag)</code> so the caller can
+cancel on shutdown. Returns None if the broker connection is not ready.</p></div>
 </dd>
 <dt id="server.message_queue_service.MessageQueueService.publish"><code class="name flex">
 <span>async def <span class="ident">publish</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payload: dict,<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = 2) ‑> None</span>
@@ -423,6 +521,7 @@ async def reconnect(self) -&gt; None:
 <h4><code><a title="server.message_queue_service.MessageQueueService" href="#server.message_queue_service.MessageQueueService">MessageQueueService</a></code></h4>
 <ul class="">
 <li><code><a title="server.message_queue_service.MessageQueueService.declare_exchange" href="#server.message_queue_service.MessageQueueService.declare_exchange">declare_exchange</a></code></li>
+<li><code><a title="server.message_queue_service.MessageQueueService.declare_queue_and_consume" href="#server.message_queue_service.MessageQueueService.declare_queue_and_consume">declare_queue_and_consume</a></code></li>
 <li><code><a title="server.message_queue_service.MessageQueueService.publish" href="#server.message_queue_service.MessageQueueService.publish">publish</a></code></li>
 <li><code><a title="server.message_queue_service.MessageQueueService.publish_many" href="#server.message_queue_service.MessageQueueService.publish_many">publish_many</a></code></li>
 <li><code><a title="server.message_queue_service.MessageQueueService.reconnect" href="#server.message_queue_service.MessageQueueService.reconnect">reconnect</a></code></li>

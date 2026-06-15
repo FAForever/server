@@ -147,6 +147,10 @@ the application logic of each command handler.</li>
 <dd>
 <div class="desc"></div>
 </dd>
+<dt><code class="name"><a title="server.client_message_queue_service" href="client_message_queue_service.html">server.client_message_queue_service</a></code></dt>
+<dd>
+<div class="desc"><p>Forward RabbitMQ messages from trusted microservices to connected clients …</p></div>
+</dd>
 <dt><code class="name"><a title="server.config" href="config.html">server.config</a></code></dt>
 <dd>
 <div class="desc"><p>Server config variables</p></div>
@@ -585,6 +589,127 @@ interval.</p></div>
 <div class="desc"><p>Wait for the current report_dirties task to complete.</p></div>
 </dd>
 </dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
+<ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
+<li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
+<li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
+<li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="server.ClientMessageQueueService"><code class="flex name class">
+<span>class <span class="ident">ClientMessageQueueService</span></span>
+<span>(</span><span>server: <a title="server.ServerInstance" href="#server.ServerInstance">ServerInstance</a>,<br>message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>,<br>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@with_logger
+class ClientMessageQueueService(Service):
+    &#34;&#34;&#34;Consume `request.client.notify` messages and forward to local clients.&#34;&#34;&#34;
+
+    _logger: ClassVar[logging.Logger]
+
+    def __init__(
+        self,
+        server: &#34;ServerInstance&#34;,
+        message_queue_service: MessageQueueService,
+        player_service: PlayerService,
+    ):
+        &#34;&#34;&#34;Wire dependencies; consumer is started in `initialize`.&#34;&#34;&#34;
+        self.server = server
+        self.message_queue_service = message_queue_service
+        self.player_service = player_service
+        self._queue: Optional[AbstractQueue] = None
+        self._consumer_tag: Optional[str] = None
+
+    async def initialize(self) -&gt; None:
+        # Queue naming follows `&lt;exchange&gt;.&lt;service&gt;.&lt;routing-key&gt;` plus a
+        # per-instance suffix because each lobby pod has its own queue (vs.
+        # the API&#39;s shared queues like `faf-lobby.api.event.update`). On k8s
+        # `socket.gethostname()` resolves to the pod name (e.g.
+        # `faf-lobby-server-6d9c4588ff-lzdcr`); locally it&#39;s the dev&#39;s host.
+        queue_name = (
+            f&#34;{config.MQ_EXCHANGE_NAME}.lobby.client.notify&#34;
+            f&#34;.{socket.gethostname()}&#34;
+        )
+        result = await self.message_queue_service.declare_queue_and_consume(
+            exchange_name=config.MQ_EXCHANGE_NAME,
+            routing_key=CLIENT_NOTIFY_ROUTING_KEY,
+            callback=self._on_message,
+            queue_name=queue_name,
+        )
+        if result is not None:
+            self._queue, self._consumer_tag = result
+
+    async def shutdown(self) -&gt; None:
+        if self._queue is not None and self._consumer_tag is not None:
+            await self._queue.cancel(self._consumer_tag)
+        self._queue = None
+        self._consumer_tag = None
+
+    async def _on_message(self, message: AbstractIncomingMessage) -&gt; None:
+        async with message.process(requeue=False):
+            try:
+                payload = json.loads(message.body)
+            except (ValueError, UnicodeDecodeError):
+                self._logger.warning(
+                    &#34;Dropping client-notify message with non-JSON body&#34;
+                )
+                return
+
+            if not isinstance(payload, dict):
+                self._logger.warning(
+                    &#34;Dropping client-notify message: payload is not a JSON object&#34;
+                )
+                return
+
+            headers = message.headers or {}
+            user_id = headers.get(&#34;user-id&#34;)
+            channel = headers.get(&#34;channel&#34;)
+
+            if user_id is not None:
+                self._dispatch_to_user(user_id, payload)
+            elif channel is not None:
+                self._logger.info(
+                    &#34;client-notify channel %r received but channel routing is &#34;
+                    &#34;not yet implemented; dropping&#34;,
+                    channel,
+                )
+            else:
+                self.server.write_broadcast(payload)
+
+    def _dispatch_to_user(self, user_id: Any, payload: dict) -&gt; None:
+        try:
+            player_id = int(user_id)
+        except (TypeError, ValueError):
+            self._logger.warning(
+                &#34;Dropping client-notify message: invalid user-id %r&#34;, user_id
+            )
+            return
+
+        player = self.player_service[player_id]
+        if player is None:
+            self._logger.warning(
+                &#34;Dropping client-notify message: user %s not connected here&#34;,
+                player_id,
+            )
+            return
+
+        player.write_message(payload)</code></pre>
+</details>
+<div class="desc"><p>Consume <code>request.client.notify</code> messages and forward to local clients.</p>
+<p>Wire dependencies; consumer is started in <code>initialize</code>.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
+</ul>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
@@ -5273,6 +5398,49 @@ class MessageQueueService(Service):
                     routing
                 )
 
+    async def declare_queue_and_consume(
+        self,
+        exchange_name: str,
+        routing_key: str,
+        callback: Callable[[AbstractIncomingMessage], Awaitable[None]],
+        queue_name: str = &#34;&#34;,
+        exclusive: bool = True,
+        auto_delete: bool = True,
+        durable: bool = False,
+    ) -&gt; Optional[tuple[AbstractQueue, str]]:
+        &#34;&#34;&#34;
+        Declare a queue, bind it to an exchange with the given routing key, and
+        start consuming. Returns `(queue, consumer_tag)` so the caller can
+        cancel on shutdown. Returns None if the broker connection is not ready.
+        &#34;&#34;&#34;
+        await self.initialize()
+        if not self._is_ready:
+            self._logger.warning(
+                &#34;Not connected to RabbitMQ, unable to declare consumer queue.&#34;
+            )
+            return None
+
+        assert self._channel is not None
+
+        exchange = self._exchanges.get(exchange_name)
+        if exchange is None:
+            raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
+
+        queue = await self._channel.declare_queue(
+            queue_name,
+            exclusive=exclusive,
+            auto_delete=auto_delete,
+            durable=durable,
+        )
+        await queue.bind(exchange, routing_key=routing_key)
+        consumer_tag = await queue.consume(callback)
+
+        self._logger.debug(
+            &#34;Consuming from queue %r bound to %s/%s&#34;,
+            queue.name, exchange_name, routing_key,
+        )
+        return queue, consumer_tag
+
     @synchronizedmethod(&#34;initialization_lock&#34;)
     async def reconnect(self) -&gt; None:
         self._is_ready = False
@@ -5318,6 +5486,61 @@ and providing an interface to publish messages.</p></div>
     await self._declare_exchange(exchange_name, exchange_type, durable)</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="server.MessageQueueService.declare_queue_and_consume"><code class="name flex">
+<span>async def <span class="ident">declare_queue_and_consume</span></span>(<span>self,<br>exchange_name: str,<br>routing_key: str,<br>callback: Callable[[aio_pika.abc.AbstractIncomingMessage], Awaitable[None]],<br>queue_name: str = '',<br>exclusive: bool = True,<br>auto_delete: bool = True,<br>durable: bool = False) ‑> tuple[aio_pika.abc.AbstractQueue, str] | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def declare_queue_and_consume(
+    self,
+    exchange_name: str,
+    routing_key: str,
+    callback: Callable[[AbstractIncomingMessage], Awaitable[None]],
+    queue_name: str = &#34;&#34;,
+    exclusive: bool = True,
+    auto_delete: bool = True,
+    durable: bool = False,
+) -&gt; Optional[tuple[AbstractQueue, str]]:
+    &#34;&#34;&#34;
+    Declare a queue, bind it to an exchange with the given routing key, and
+    start consuming. Returns `(queue, consumer_tag)` so the caller can
+    cancel on shutdown. Returns None if the broker connection is not ready.
+    &#34;&#34;&#34;
+    await self.initialize()
+    if not self._is_ready:
+        self._logger.warning(
+            &#34;Not connected to RabbitMQ, unable to declare consumer queue.&#34;
+        )
+        return None
+
+    assert self._channel is not None
+
+    exchange = self._exchanges.get(exchange_name)
+    if exchange is None:
+        raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
+
+    queue = await self._channel.declare_queue(
+        queue_name,
+        exclusive=exclusive,
+        auto_delete=auto_delete,
+        durable=durable,
+    )
+    await queue.bind(exchange, routing_key=routing_key)
+    consumer_tag = await queue.consume(callback)
+
+    self._logger.debug(
+        &#34;Consuming from queue %r bound to %s/%s&#34;,
+        queue.name, exchange_name, routing_key,
+    )
+    return queue, consumer_tag</code></pre>
+</details>
+<div class="desc"><p>Declare a queue, bind it to an exchange with the given routing key, and
+start consuming. Returns <code>(queue, consumer_tag)</code> so the caller can
+cancel on shutdown. Returns None if the broker connection is not ready.</p></div>
 </dd>
 <dt id="server.MessageQueueService.publish"><code class="name flex">
 <span>async def <span class="ident">publish</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payload: dict,<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = 2) ‑> None</span>
@@ -8391,6 +8614,7 @@ to connect to a game.</p></div>
 <ul>
 <li><code><a title="server.asyncio_extensions" href="asyncio_extensions.html">server.asyncio_extensions</a></code></li>
 <li><code><a title="server.broadcast_service" href="broadcast_service.html">server.broadcast_service</a></code></li>
+<li><code><a title="server.client_message_queue_service" href="client_message_queue_service.html">server.client_message_queue_service</a></code></li>
 <li><code><a title="server.config" href="config.html">server.config</a></code></li>
 <li><code><a title="server.configuration_service" href="configuration_service.html">server.configuration_service</a></code></li>
 <li><code><a title="server.control" href="control.html">server.control</a></code></li>
@@ -8435,6 +8659,9 @@ to connect to a game.</p></div>
 <li><code><a title="server.BroadcastService.report_dirties" href="#server.BroadcastService.report_dirties">report_dirties</a></code></li>
 <li><code><a title="server.BroadcastService.wait_report_dirtes" href="#server.BroadcastService.wait_report_dirtes">wait_report_dirtes</a></code></li>
 </ul>
+</li>
+<li>
+<h4><code><a title="server.ClientMessageQueueService" href="#server.ClientMessageQueueService">ClientMessageQueueService</a></code></h4>
 </li>
 <li>
 <h4><code><a title="server.ConfigurationService" href="#server.ConfigurationService">ConfigurationService</a></code></h4>
@@ -8536,6 +8763,7 @@ to connect to a game.</p></div>
 <h4><code><a title="server.MessageQueueService" href="#server.MessageQueueService">MessageQueueService</a></code></h4>
 <ul class="">
 <li><code><a title="server.MessageQueueService.declare_exchange" href="#server.MessageQueueService.declare_exchange">declare_exchange</a></code></li>
+<li><code><a title="server.MessageQueueService.declare_queue_and_consume" href="#server.MessageQueueService.declare_queue_and_consume">declare_queue_and_consume</a></code></li>
 <li><code><a title="server.MessageQueueService.publish" href="#server.MessageQueueService.publish">publish</a></code></li>
 <li><code><a title="server.MessageQueueService.publish_many" href="#server.MessageQueueService.publish_many">publish_many</a></code></li>
 <li><code><a title="server.MessageQueueService.reconnect" href="#server.MessageQueueService.reconnect">reconnect</a></code></li>
