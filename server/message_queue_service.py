@@ -5,11 +5,17 @@ Interfaces with RabbitMQ
 import asyncio
 import json
 import logging
-from typing import ClassVar, Iterable, Optional
+from typing import Awaitable, Callable, ClassVar, Iterable, Optional
 
 import aio_pika
 from aio_pika import DeliveryMode, ExchangeType
-from aio_pika.abc import AbstractChannel, AbstractConnection, AbstractExchange
+from aio_pika.abc import (
+    AbstractChannel,
+    AbstractConnection,
+    AbstractExchange,
+    AbstractIncomingMessage,
+    AbstractQueue
+)
 from aio_pika.exceptions import ProbableAuthenticationError
 
 from .asyncio_extensions import synchronizedmethod
@@ -186,6 +192,49 @@ class MessageQueueService(Service):
                     exchange_name,
                     routing
                 )
+
+    async def declare_queue_and_consume(
+        self,
+        exchange_name: str,
+        routing_key: str,
+        callback: Callable[[AbstractIncomingMessage], Awaitable[None]],
+        queue_name: str = "",
+        exclusive: bool = True,
+        auto_delete: bool = True,
+        durable: bool = False,
+    ) -> Optional[tuple[AbstractQueue, str]]:
+        """
+        Declare a queue, bind it to an exchange with the given routing key, and
+        start consuming. Returns `(queue, consumer_tag)` so the caller can
+        cancel on shutdown. Returns None if the broker connection is not ready.
+        """
+        await self.initialize()
+        if not self._is_ready:
+            self._logger.warning(
+                "Not connected to RabbitMQ, unable to declare consumer queue."
+            )
+            return None
+
+        assert self._channel is not None
+
+        exchange = self._exchanges.get(exchange_name)
+        if exchange is None:
+            raise KeyError(f"Unknown exchange {exchange_name}.")
+
+        queue = await self._channel.declare_queue(
+            queue_name,
+            exclusive=exclusive,
+            auto_delete=auto_delete,
+            durable=durable,
+        )
+        await queue.bind(exchange, routing_key=routing_key)
+        consumer_tag = await queue.consume(callback)
+
+        self._logger.debug(
+            "Consuming from queue %r bound to %s/%s",
+            queue.name, exchange_name, routing_key,
+        )
+        return queue, consumer_tag
 
     @synchronizedmethod("initialization_lock")
     async def reconnect(self) -> None:
