@@ -700,9 +700,38 @@ async def test_command_avatar_select(database, lobbyconnection: LobbyConnection)
     })
 
     async with database.acquire() as conn:
-        result = await conn.execute("SELECT selected from avatars where idUser=2")
+        result = await conn.execute(
+            "SELECT idAvatar, selected FROM avatars WHERE idUser=2 AND selected=1"
+        )
         row = result.fetchone()
+        assert row is not None
+        selected_avatar_id = row.idAvatar
         assert row.selected == 1
+
+        result = await conn.execute("SELECT avatar_id FROM login WHERE id=2")
+        row = result.fetchone()
+        assert row.avatar_id == selected_avatar_id
+
+
+async def test_command_avatar_select_clear(
+    database, lobbyconnection: LobbyConnection
+):
+    lobbyconnection.player.id = 2  # Dostya test user
+
+    await lobbyconnection.on_message_received({
+        "command": "avatar",
+        "action": "select",
+        "avatar": None,
+    })
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            "SELECT COUNT(*) AS n FROM avatars WHERE idUser=2 AND selected=1"
+        )
+        assert result.fetchone().n == 0
+
+        result = await conn.execute("SELECT avatar_id FROM login WHERE id=2")
+        assert result.fetchone().avatar_id is None
 
 
 async def get_friends(player_id, database):

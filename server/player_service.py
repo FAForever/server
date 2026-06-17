@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, ClassVar, Optional, ValuesView
 
 import aiocron
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, or_, select
 
 import server.metrics as metrics
 from server.config import config
@@ -91,8 +91,11 @@ class PlayerService(Service):
             player.user_groups = {row.technical_name for row in result}
 
             # Avatar lookup: `login.avatar_id` is the new authoritative FK,
-            # but for backwards compatibility we still fall back to the
-            # legacy `avatars.selected = 1` row if `avatar_id` is null.
+            # with a fallback to the legacy `avatars.selected = 1` row when
+            # `avatar_id` is null. In both cases we route through the
+            # `avatars` grant table so ownership is enforced — a stale
+            # `login.avatar_id` pointing at a no-longer-granted avatar
+            # yields no row here.
             sql = select(
                 avatars_list.c.url,
                 avatars_list.c.tooltip,
@@ -105,15 +108,16 @@ class PlayerService(Service):
                     avatars,
                     onclause=and_(
                         avatars.c.idUser == login.c.id,
-                        avatars.c.selected == 1
+                        or_(
+                            avatars.c.idAvatar == login.c.avatar_id,
+                            and_(
+                                login.c.avatar_id.is_(None),
+                                avatars.c.selected == 1
+                            )
+                        )
                     )
                 )
-                .outerjoin(
-                    avatars_list,
-                    onclause=avatars_list.c.id == func.coalesce(
-                        login.c.avatar_id, avatars.c.idAvatar
-                    )
-                )
+                .outerjoin(avatars_list)
             ).where(login.c.id == player.id)  # yapf: disable
 
             result = await conn.execute(sql)
