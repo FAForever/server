@@ -21,7 +21,7 @@ and marks them dirty so the existing `BroadcastService` emits a
 import json
 import logging
 import socket
-from typing import ClassVar, Optional
+from typing import Any, ClassVar, Optional
 
 from aio_pika.abc import AbstractIncomingMessage, AbstractQueue
 
@@ -30,7 +30,6 @@ from .core import Service
 from .decorators import with_logger
 from .message_queue_service import MessageQueueService
 from .player_service import PlayerService
-
 
 PLAYER_AVATAR_UPDATE_ROUTING_KEY = "success.player_avatar.update"
 
@@ -91,7 +90,15 @@ class AvatarChangeQueueService(Service):
                 )
                 return
 
-            raw_player_id = payload.get("player_id")
+            raw_player_id: Any = payload.get("player_id")
+            # Reject bool explicitly: int(True) == 1 would otherwise sneak
+            # through and refresh player 1 on every truthy payload.
+            if isinstance(raw_player_id, bool):
+                self._logger.warning(
+                    "Dropping avatar-update message: invalid player_id %r",
+                    raw_player_id,
+                )
+                return
             try:
                 player_id = int(raw_player_id)
             except (TypeError, ValueError):

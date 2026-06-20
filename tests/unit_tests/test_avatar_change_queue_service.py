@@ -5,7 +5,7 @@ import pytest
 
 from server.avatar_change_queue_service import (
     PLAYER_AVATAR_UPDATE_ROUTING_KEY,
-    AvatarChangeQueueService,
+    AvatarChangeQueueService
 )
 from server.config import config
 
@@ -175,6 +175,21 @@ async def test_non_int_player_id_is_dropped(
 ):
     msg = make_incoming_message(
         json.dumps({"player_id": "not-an-int", "avatar_id": 5}).encode()
+    )
+
+    await avatar_queue_service._on_message(msg)
+
+    fake_player_service.refresh_player_avatar.assert_not_awaited()
+    assert any("invalid player_id" in m for m in caplog.messages)
+
+
+async def test_bool_player_id_is_dropped(
+    avatar_queue_service, fake_player_service, caplog
+):
+    # int(True) == 1, so without an explicit bool check this would refresh
+    # player 1. Guard against that surprise.
+    msg = make_incoming_message(
+        json.dumps({"player_id": True, "avatar_id": 5}).encode()
     )
 
     await avatar_queue_service._on_message(msg)

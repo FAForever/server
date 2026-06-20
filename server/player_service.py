@@ -81,6 +81,25 @@ class PlayerService(Service):
 
         return dirty_players
 
+    @staticmethod
+    def _avatar_grant_join_onclause():
+        # ON clause for joining `avatars` against `login` to pick a
+        # player's currently worn avatar with ownership enforced.
+        # Prefer the new authoritative `login.avatar_id` column; fall
+        # back to the legacy `avatars.selected = 1` row only when
+        # `avatar_id` is null. Either way the row must be a real grant
+        # in `avatars`, so revoked grants resolve to no avatar.
+        return and_(
+            avatars.c.idUser == login.c.id,
+            or_(
+                avatars.c.idAvatar == login.c.avatar_id,
+                and_(
+                    login.c.avatar_id.is_(None),
+                    avatars.c.selected == 1
+                )
+            )
+        )
+
     async def fetch_player_data(self, player: Player) -> None:
         async with self._db.acquire() as conn:
             result = await conn.execute(
@@ -90,12 +109,6 @@ class PlayerService(Service):
             )
             player.user_groups = {row.technical_name for row in result}
 
-            # Avatar lookup: `login.avatar_id` is the new authoritative FK,
-            # with a fallback to the legacy `avatars.selected = 1` row when
-            # `avatar_id` is null. In both cases we route through the
-            # `avatars` grant table so ownership is enforced — a stale
-            # `login.avatar_id` pointing at a no-longer-granted avatar
-            # yields no row here.
             sql = select(
                 avatars_list.c.url,
                 avatars_list.c.tooltip,
@@ -106,16 +119,7 @@ class PlayerService(Service):
                 .outerjoin(clan)
                 .outerjoin(
                     avatars,
-                    onclause=and_(
-                        avatars.c.idUser == login.c.id,
-                        or_(
-                            avatars.c.idAvatar == login.c.avatar_id,
-                            and_(
-                                login.c.avatar_id.is_(None),
-                                avatars.c.selected == 1
-                            )
-                        )
-                    )
+                    onclause=self._avatar_grant_join_onclause()
                 )
                 .outerjoin(avatars_list)
             ).where(login.c.id == player.id)  # yapf: disable
@@ -142,9 +146,6 @@ class PlayerService(Service):
             await self._fetch_player_ratings(player, conn)
 
     async def _fetch_player_avatar(self, player: Player, conn) -> None:
-        # Same ownership-checked join as `fetch_player_data`'s avatar block:
-        # trust `login.avatar_id` only when a matching grant row exists in
-        # `avatars`, with a fallback to the legacy `selected = 1` flag.
         sql = select(
             avatars_list.c.url,
             avatars_list.c.tooltip,
@@ -152,16 +153,7 @@ class PlayerService(Service):
             login
             .outerjoin(
                 avatars,
-                onclause=and_(
-                    avatars.c.idUser == login.c.id,
-                    or_(
-                        avatars.c.idAvatar == login.c.avatar_id,
-                        and_(
-                            login.c.avatar_id.is_(None),
-                            avatars.c.selected == 1
-                        )
-                    )
-                )
+                onclause=self._avatar_grant_join_onclause()
             )
             .outerjoin(avatars_list)
         ).where(login.c.id == player.id)
