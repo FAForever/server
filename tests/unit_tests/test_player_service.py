@@ -64,6 +64,30 @@ async def test_fetch_player_data_non_existent(player_factory, player_service):
     await player_service.fetch_player_data(player)
 
 
+async def test_refresh_player_avatar_connected(
+    player_factory, player_service
+):
+    player = player_factory(player_id=50)
+    player.avatar = None  # simulate stale (e.g. just connected)
+    player_service[50] = player
+
+    refreshed = await player_service.refresh_player_avatar(50)
+
+    assert refreshed is True
+    assert player.avatar == {
+        "url": "https://content.faforever.com/faf/avatars/UEF.png",
+        "tooltip": "UEF",
+    }
+    assert player in player_service._dirty_players
+
+
+async def test_refresh_player_avatar_not_connected(player_service):
+    refreshed = await player_service.refresh_player_avatar(999)
+
+    assert refreshed is False
+    assert not player_service._dirty_players
+
+
 async def test_magic_methods(player_factory, player_service):
     player = player_factory(player_id=0)
     player_service[0] = player

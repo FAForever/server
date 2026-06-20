@@ -141,6 +141,57 @@ class PlayerService(Service):
 
             await self._fetch_player_ratings(player, conn)
 
+    async def _fetch_player_avatar(self, player: Player, conn) -> None:
+        # Same ownership-checked join as `fetch_player_data`'s avatar block:
+        # trust `login.avatar_id` only when a matching grant row exists in
+        # `avatars`, with a fallback to the legacy `selected = 1` flag.
+        sql = select(
+            avatars_list.c.url,
+            avatars_list.c.tooltip,
+        ).select_from(
+            login
+            .outerjoin(
+                avatars,
+                onclause=and_(
+                    avatars.c.idUser == login.c.id,
+                    or_(
+                        avatars.c.idAvatar == login.c.avatar_id,
+                        and_(
+                            login.c.avatar_id.is_(None),
+                            avatars.c.selected == 1
+                        )
+                    )
+                )
+            )
+            .outerjoin(avatars_list)
+        ).where(login.c.id == player.id)
+
+        result = await conn.execute(sql)
+        row = result.fetchone()
+        if row is None:
+            player.avatar = None
+            return
+
+        row_mapping = row._mapping
+        url = row_mapping.get(avatars_list.c.url)
+        tooltip = row_mapping.get(avatars_list.c.tooltip)
+        player.avatar = (
+            {"url": url, "tooltip": tooltip} if url and tooltip else None
+        )
+
+    async def refresh_player_avatar(self, player_id: int) -> bool:
+        """Re-read avatar from DB for one player and mark them dirty so
+        BroadcastService emits a `player_info` on the next tick. Returns
+        True if the player is connected to this instance, False otherwise.
+        """
+        player = self._players.get(player_id)
+        if player is None:
+            return False
+        async with self._db.acquire() as conn:
+            await self._fetch_player_avatar(player, conn)
+        self.mark_dirty(player)
+        return True
+
     async def _fetch_player_ratings(self, player: Player, conn):
         sql = select(
             leaderboard_rating.c.mean,
