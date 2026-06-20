@@ -172,8 +172,10 @@ class PlayerService(Service):
         )
 
     async def refresh_player_avatar(self, player_id: int) -> bool:
-        """Re-read avatar from DB for one player and mark them dirty so
-        BroadcastService emits a `player_info` on the next tick. Returns
+        """
+        Re-read avatar for one player and mark them dirty.
+
+        `BroadcastService` emits a `player_info` on the next tick. Returns
         True if the player is connected to this instance, False otherwise.
         """
         player = self._players.get(player_id)

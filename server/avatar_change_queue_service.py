@@ -1,22 +1,4 @@
-"""
-Consume "player avatar changed" events from trusted microservices.
-
-# Wire contract
-Publishers post to the `MQ_EXCHANGE_NAME` topic exchange with routing key
-`success.player_avatar.update`. The body is a UTF-8 JSON object:
-
-- `player_id` (int, required): the player whose selected avatar changed.
-- `avatar_id` (int or null, optional): the newly selected avatar id, or
-  null if the player cleared their avatar. The lobby itself ignores
-  this field — it always re-reads the DB so it gets the matching
-  `url`/`tooltip` and applies the ownership check. The field is
-  shipped for the benefit of *other* subscribers that may want to act
-  on the change without an extra DB roundtrip.
-
-On receipt the lobby re-reads the affected player's avatar from the DB
-and marks them dirty so the existing `BroadcastService` emits a
-`player_info` to every connected client on its next tick.
-"""
+"""RabbitMQ consumer that refreshes player avatars from DB on update events."""
 
 import json
 import logging
@@ -36,7 +18,27 @@ PLAYER_AVATAR_UPDATE_ROUTING_KEY = "success.player_avatar.update"
 
 @with_logger
 class AvatarChangeQueueService(Service):
-    """Consume `success.player_avatar.update` messages and refresh players."""
+
+    """
+    Consume `success.player_avatar.update` messages and refresh players.
+
+    Wire contract
+    -------------
+    Publishers post to the `MQ_EXCHANGE_NAME` topic exchange with routing
+    key `success.player_avatar.update`. The body is a UTF-8 JSON object:
+
+    - `player_id` (int, required): the player whose selected avatar changed.
+    - `avatar_id` (int or null, optional): the newly selected avatar id, or
+      null if the player cleared their avatar. The lobby itself ignores this
+      field — it always re-reads the DB so it gets the matching url/tooltip
+      and applies the ownership check. The field is shipped for the benefit
+      of other subscribers that may want to act on the change without an
+      extra DB roundtrip.
+
+    On receipt the lobby re-reads the affected player's avatar from the DB
+    and marks them dirty so the existing `BroadcastService` emits a
+    `player_info` to every connected client on its next tick.
+    """
 
     _logger: ClassVar[logging.Logger]
 
@@ -45,6 +47,7 @@ class AvatarChangeQueueService(Service):
         message_queue_service: MessageQueueService,
         player_service: PlayerService,
     ):
+        """Wire dependencies; consumer is started in `initialize`."""
         self.message_queue_service = message_queue_service
         self.player_service = player_service
         self._queue: Optional[AbstractQueue] = None
