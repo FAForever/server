@@ -982,6 +982,14 @@ class LobbyConnection:
                         avatar_id=new_avatar_id
                     )
                 )
+                avatar_tooltip = (
+                    self.player.avatar["tooltip"] if self.player.avatar else None
+                )
+                self._logger.info(
+                    "Player %s changed avatar via client connection: "
+                    "avatar_id=%s tooltip=%s",
+                    self.player.id, new_avatar_id, avatar_tooltip
+                )
                 self.player_service.mark_dirty(self.player)
         else:
             raise KeyError("invalid action")

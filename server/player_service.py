@@ -145,8 +145,12 @@ class PlayerService(Service):
 
             await self._fetch_player_ratings(player, conn)
 
-    async def _fetch_player_avatar(self, player: Player, conn) -> None:
+    async def _fetch_player_avatar(
+        self, player: Player, conn
+    ) -> Optional[int]:
+        """Refresh `player.avatar` from DB; return the avatar id, if any."""
         sql = select(
+            avatars_list.c.id,
             avatars_list.c.url,
             avatars_list.c.tooltip,
         ).select_from(
@@ -162,14 +166,17 @@ class PlayerService(Service):
         row = result.fetchone()
         if row is None:
             player.avatar = None
-            return
+            return None
 
         row_mapping = row._mapping
+        avatar_id = row_mapping.get(avatars_list.c.id)
         url = row_mapping.get(avatars_list.c.url)
         tooltip = row_mapping.get(avatars_list.c.tooltip)
-        player.avatar = (
-            {"url": url, "tooltip": tooltip} if url and tooltip else None
-        )
+        if url and tooltip:
+            player.avatar = {"url": url, "tooltip": tooltip}
+            return avatar_id
+        player.avatar = None
+        return None
 
     async def refresh_player_avatar(self, player_id: int) -> bool:
         """
@@ -182,7 +189,13 @@ class PlayerService(Service):
         if player is None:
             return False
         async with self._db.acquire() as conn:
-            await self._fetch_player_avatar(player, conn)
+            avatar_id = await self._fetch_player_avatar(player, conn)
+        avatar_tooltip = player.avatar["tooltip"] if player.avatar else None
+        self._logger.info(
+            "Player %s avatar refreshed from RabbitMQ event: "
+            "avatar_id=%s tooltip=%s",
+            player_id, avatar_id, avatar_tooltip
+        )
         self.mark_dirty(player)
         return True
 
