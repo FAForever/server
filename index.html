@@ -143,6 +143,10 @@ the application logic of each command handler.</li>
 <dd>
 <div class="desc"><p>Some helper functions for common async tasks</p></div>
 </dd>
+<dt><code class="name"><a title="server.avatar_change_queue_service" href="avatar_change_queue_service.html">server.avatar_change_queue_service</a></code></dt>
+<dd>
+<div class="desc"><p>RabbitMQ consumer that refreshes player avatars from DB on update events.</p></div>
+</dd>
 <dt><code class="name"><a title="server.broadcast_service" href="broadcast_service.html">server.broadcast_service</a></code></dt>
 <dd>
 <div class="desc"></div>
@@ -292,6 +296,150 @@ the application logic of each command handler.</li>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="server.AvatarChangeQueueService"><code class="flex name class">
+<span>class <span class="ident">AvatarChangeQueueService</span></span>
+<span>(</span><span>message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>,<br>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@with_logger
+class AvatarChangeQueueService(Service):
+
+    &#34;&#34;&#34;
+    Consume `success.player_avatar.update` messages and refresh players.
+
+    Wire contract
+    -------------
+    Publishers post to the `MQ_EXCHANGE_NAME` topic exchange with routing
+    key `success.player_avatar.update`. The body is a UTF-8 JSON object:
+
+    - `player_id` (int, required): the player whose selected avatar changed.
+    - `avatar_id` (int or null, optional): the newly selected avatar id, or
+      null if the player cleared their avatar. The lobby itself ignores this
+      field — it always re-reads the DB so it gets the matching url/tooltip
+      and applies the ownership check. The field is shipped for the benefit
+      of other subscribers that may want to act on the change without an
+      extra DB roundtrip.
+
+    On receipt the lobby re-reads the affected player&#39;s avatar from the DB
+    and marks them dirty so the existing `BroadcastService` emits a
+    `player_info` to every connected client on its next tick.
+    &#34;&#34;&#34;
+
+    _logger: ClassVar[logging.Logger]
+
+    def __init__(
+        self,
+        message_queue_service: MessageQueueService,
+        player_service: PlayerService,
+    ):
+        &#34;&#34;&#34;Wire dependencies; consumer is started in `initialize`.&#34;&#34;&#34;
+        self.message_queue_service = message_queue_service
+        self.player_service = player_service
+        self._queue: Optional[AbstractQueue] = None
+        self._consumer_tag: Optional[str] = None
+
+    async def initialize(self) -&gt; None:
+        # Per-instance queue: every lobby pod must process every event so
+        # whichever pod is hosting the player can refresh its in-memory
+        # state. Naming follows `&lt;exchange&gt;.&lt;service&gt;.&lt;routing-key&gt;.&lt;host&gt;`,
+        # matching `ClientMessageQueueService`.
+        queue_name = (
+            f&#34;{config.MQ_EXCHANGE_NAME}.lobby.player_avatar.update&#34;
+            f&#34;.{socket.gethostname()}&#34;
+        )
+        result = await self.message_queue_service.declare_queue_and_consume(
+            exchange_name=config.MQ_EXCHANGE_NAME,
+            routing_key=PLAYER_AVATAR_UPDATE_ROUTING_KEY,
+            callback=self._on_message,
+            queue_name=queue_name,
+        )
+        if result is not None:
+            self._queue, self._consumer_tag = result
+
+    async def shutdown(self) -&gt; None:
+        if self._queue is not None and self._consumer_tag is not None:
+            await self._queue.cancel(self._consumer_tag)
+        self._queue = None
+        self._consumer_tag = None
+
+    async def _on_message(self, message: AbstractIncomingMessage) -&gt; None:
+        async with message.process(requeue=False):
+            try:
+                payload = json.loads(message.body)
+            except (ValueError, UnicodeDecodeError):
+                self._logger.warning(
+                    &#34;Dropping avatar-update message with non-JSON body&#34;
+                )
+                return
+
+            if not isinstance(payload, dict):
+                self._logger.warning(
+                    &#34;Dropping avatar-update message: payload is not a JSON object&#34;
+                )
+                return
+
+            raw_player_id: Any = payload.get(&#34;player_id&#34;)
+            # Reject bool explicitly: int(True) == 1 would otherwise sneak
+            # through and refresh player 1 on every truthy payload.
+            if isinstance(raw_player_id, bool):
+                self._logger.warning(
+                    &#34;Dropping avatar-update message: invalid player_id %r&#34;,
+                    raw_player_id,
+                )
+                return
+            try:
+                player_id = int(raw_player_id)
+            except (TypeError, ValueError):
+                self._logger.warning(
+                    &#34;Dropping avatar-update message: invalid player_id %r&#34;,
+                    raw_player_id,
+                )
+                return
+
+            refreshed = await self.player_service.refresh_player_avatar(player_id)
+            if not refreshed:
+                self._logger.debug(
+                    &#34;avatar-update for player %s ignored: not connected here&#34;,
+                    player_id,
+                )</code></pre>
+</details>
+<div class="desc"><p>Consume <code>success.player_avatar.update</code> messages and refresh players.</p>
+<h2 id="wire-contract">Wire Contract</h2>
+<p>Publishers post to the <code>MQ_EXCHANGE_NAME</code> topic exchange with routing
+key <code>success.player_avatar.update</code>. The body is a UTF-8 JSON object:</p>
+<ul>
+<li><code>player_id</code> (int, required): the player whose selected avatar changed.</li>
+<li><code>avatar_id</code> (int or null, optional): the newly selected avatar id, or
+null if the player cleared their avatar. The lobby itself ignores this
+field — it always re-reads the DB so it gets the matching url/tooltip
+and applies the ownership check. The field is shipped for the benefit
+of other subscribers that may want to act on the change without an
+extra DB roundtrip.</li>
+</ul>
+<p>On receipt the lobby re-reads the affected player's avatar from the DB
+and marks them dirty so the existing <code><a title="server.BroadcastService" href="#server.BroadcastService">BroadcastService</a></code> emits a
+<code>player_info</code> to every connected client on its next tick.</p>
+<p>Wire dependencies; consumer is started in <code>initialize</code>.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a></b></code>:
+<ul class="hlist">
+<li><code><a title="server.core.service.Service.graceful_shutdown" href="core/service.html#server.core.service.Service.graceful_shutdown">graceful_shutdown</a></code></li>
+<li><code><a title="server.core.service.Service.initialize" href="core/service.html#server.core.service.Service.initialize">initialize</a></code></li>
+<li><code><a title="server.core.service.Service.on_connection_lost" href="core/service.html#server.core.service.Service.on_connection_lost">on_connection_lost</a></code></li>
+<li><code><a title="server.core.service.Service.shutdown" href="core/service.html#server.core.service.Service.shutdown">shutdown</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
 <dt id="server.BroadcastService"><code class="flex name class">
 <span>class <span class="ident">BroadcastService</span></span>
 <span>(</span><span>server: <a title="server.ServerInstance" href="#server.ServerInstance">ServerInstance</a>,<br>message_queue_service: <a title="server.message_queue_service.MessageQueueService" href="message_queue_service.html#server.message_queue_service.MessageQueueService">MessageQueueService</a>,<br>game_service: <a title="server.game_service.GameService" href="game_service.html#server.game_service.GameService">GameService</a>,<br>player_service: <a title="server.player_service.PlayerService" href="player_service.html#server.player_service.PlayerService">PlayerService</a>)</span>
@@ -6372,6 +6520,25 @@ class PlayerService(Service):
 
         return dirty_players
 
+    @staticmethod
+    def _avatar_grant_join_onclause():
+        # ON clause for joining `avatars` against `login` to pick a
+        # player&#39;s currently worn avatar with ownership enforced.
+        # Prefer the new authoritative `login.avatar_id` column; fall
+        # back to the legacy `avatars.selected = 1` row only when
+        # `avatar_id` is null. Either way the row must be a real grant
+        # in `avatars`, so revoked grants resolve to no avatar.
+        return and_(
+            avatars.c.idUser == login.c.id,
+            or_(
+                avatars.c.idAvatar == login.c.avatar_id,
+                and_(
+                    login.c.avatar_id.is_(None),
+                    avatars.c.selected == 1
+                )
+            )
+        )
+
     async def fetch_player_data(self, player: Player) -&gt; None:
         async with self._db.acquire() as conn:
             result = await conn.execute(
@@ -6391,10 +6558,7 @@ class PlayerService(Service):
                 .outerjoin(clan)
                 .outerjoin(
                     avatars,
-                    onclause=and_(
-                        avatars.c.idUser == login.c.id,
-                        avatars.c.selected == 1
-                    )
+                    onclause=self._avatar_grant_join_onclause()
                 )
                 .outerjoin(avatars_list)
             ).where(login.c.id == player.id)  # yapf: disable
@@ -6419,6 +6583,60 @@ class PlayerService(Service):
                 player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
 
             await self._fetch_player_ratings(player, conn)
+
+    async def _fetch_player_avatar(
+        self, player: Player, conn
+    ) -&gt; Optional[int]:
+        &#34;&#34;&#34;Refresh `player.avatar` from DB; return the avatar id, if any.&#34;&#34;&#34;
+        sql = select(
+            avatars_list.c.id,
+            avatars_list.c.url,
+            avatars_list.c.tooltip,
+        ).select_from(
+            login
+            .outerjoin(
+                avatars,
+                onclause=self._avatar_grant_join_onclause()
+            )
+            .outerjoin(avatars_list)
+        ).where(login.c.id == player.id)
+
+        result = await conn.execute(sql)
+        row = result.fetchone()
+        if row is None:
+            player.avatar = None
+            return None
+
+        row_mapping = row._mapping
+        avatar_id = row_mapping.get(avatars_list.c.id)
+        url = row_mapping.get(avatars_list.c.url)
+        tooltip = row_mapping.get(avatars_list.c.tooltip)
+        if url and tooltip:
+            player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
+            return avatar_id
+        player.avatar = None
+        return None
+
+    async def refresh_player_avatar(self, player_id: int) -&gt; bool:
+        &#34;&#34;&#34;
+        Re-read avatar for one player and mark them dirty.
+
+        `BroadcastService` emits a `player_info` on the next tick. Returns
+        True if the player is connected to this instance, False otherwise.
+        &#34;&#34;&#34;
+        player = self._players.get(player_id)
+        if player is None:
+            return False
+        async with self._db.acquire() as conn:
+            avatar_id = await self._fetch_player_avatar(player, conn)
+        avatar_tooltip = player.avatar[&#34;tooltip&#34;] if player.avatar else None
+        self._logger.info(
+            &#34;Player %s avatar refreshed from RabbitMQ event: &#34;
+            &#34;avatar_id=%s tooltip=%s&#34;,
+            player_id, avatar_id, avatar_tooltip
+        )
+        self.mark_dirty(player)
+        return True
 
     async def _fetch_player_ratings(self, player: Player, conn):
         sql = select(
@@ -6592,10 +6810,7 @@ def all_players(self) -&gt; ValuesView[Player]:
             .outerjoin(clan)
             .outerjoin(
                 avatars,
-                onclause=and_(
-                    avatars.c.idUser == login.c.id,
-                    avatars.c.selected == 1
-                )
+                onclause=self._avatar_grant_join_onclause()
             )
             .outerjoin(avatars_list)
         ).where(login.c.id == player.id)  # yapf: disable
@@ -6734,6 +6949,39 @@ def all_players(self) -&gt; ValuesView[Player]:
     return dirty_players</code></pre>
 </details>
 <div class="desc"></div>
+</dd>
+<dt id="server.PlayerService.refresh_player_avatar"><code class="name flex">
+<span>async def <span class="ident">refresh_player_avatar</span></span>(<span>self, player_id: int) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def refresh_player_avatar(self, player_id: int) -&gt; bool:
+    &#34;&#34;&#34;
+    Re-read avatar for one player and mark them dirty.
+
+    `BroadcastService` emits a `player_info` on the next tick. Returns
+    True if the player is connected to this instance, False otherwise.
+    &#34;&#34;&#34;
+    player = self._players.get(player_id)
+    if player is None:
+        return False
+    async with self._db.acquire() as conn:
+        avatar_id = await self._fetch_player_avatar(player, conn)
+    avatar_tooltip = player.avatar[&#34;tooltip&#34;] if player.avatar else None
+    self._logger.info(
+        &#34;Player %s avatar refreshed from RabbitMQ event: &#34;
+        &#34;avatar_id=%s tooltip=%s&#34;,
+        player_id, avatar_id, avatar_tooltip
+    )
+    self.mark_dirty(player)
+    return True</code></pre>
+</details>
+<div class="desc"><p>Re-read avatar for one player and mark them dirty.</p>
+<p><code><a title="server.BroadcastService" href="#server.BroadcastService">BroadcastService</a></code> emits a <code>player_info</code> on the next tick. Returns
+True if the player is connected to this instance, False otherwise.</p></div>
 </dd>
 <dt id="server.PlayerService.remove_player"><code class="name flex">
 <span>def <span class="ident">remove_player</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>) ‑> None</span>
@@ -8613,6 +8861,7 @@ to connect to a game.</p></div>
 <li><h3><a href="#header-submodules">Sub-modules</a></h3>
 <ul>
 <li><code><a title="server.asyncio_extensions" href="asyncio_extensions.html">server.asyncio_extensions</a></code></li>
+<li><code><a title="server.avatar_change_queue_service" href="avatar_change_queue_service.html">server.avatar_change_queue_service</a></code></li>
 <li><code><a title="server.broadcast_service" href="broadcast_service.html">server.broadcast_service</a></code></li>
 <li><code><a title="server.client_message_queue_service" href="client_message_queue_service.html">server.client_message_queue_service</a></code></li>
 <li><code><a title="server.config" href="config.html">server.config</a></code></li>
@@ -8652,6 +8901,9 @@ to connect to a game.</p></div>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
+<li>
+<h4><code><a title="server.AvatarChangeQueueService" href="#server.AvatarChangeQueueService">AvatarChangeQueueService</a></code></h4>
+</li>
 <li>
 <h4><code><a title="server.BroadcastService" href="#server.BroadcastService">BroadcastService</a></code></h4>
 <ul class="">
@@ -8803,6 +9055,7 @@ to connect to a game.</p></div>
 <li><code><a title="server.PlayerService.kick_idle_players" href="#server.PlayerService.kick_idle_players">kick_idle_players</a></code></li>
 <li><code><a title="server.PlayerService.mark_dirty" href="#server.PlayerService.mark_dirty">mark_dirty</a></code></li>
 <li><code><a title="server.PlayerService.pop_dirty_players" href="#server.PlayerService.pop_dirty_players">pop_dirty_players</a></code></li>
+<li><code><a title="server.PlayerService.refresh_player_avatar" href="#server.PlayerService.refresh_player_avatar">refresh_player_avatar</a></code></li>
 <li><code><a title="server.PlayerService.remove_player" href="#server.PlayerService.remove_player">remove_player</a></code></li>
 <li><code><a title="server.PlayerService.signal_player_rating_change" href="#server.PlayerService.signal_player_rating_change">signal_player_rating_change</a></code></li>
 <li><code><a title="server.PlayerService.update_data" href="#server.PlayerService.update_data">update_data</a></code></li>

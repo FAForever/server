@@ -100,6 +100,25 @@ class PlayerService(Service):
 
         return dirty_players
 
+    @staticmethod
+    def _avatar_grant_join_onclause():
+        # ON clause for joining `avatars` against `login` to pick a
+        # player&#39;s currently worn avatar with ownership enforced.
+        # Prefer the new authoritative `login.avatar_id` column; fall
+        # back to the legacy `avatars.selected = 1` row only when
+        # `avatar_id` is null. Either way the row must be a real grant
+        # in `avatars`, so revoked grants resolve to no avatar.
+        return and_(
+            avatars.c.idUser == login.c.id,
+            or_(
+                avatars.c.idAvatar == login.c.avatar_id,
+                and_(
+                    login.c.avatar_id.is_(None),
+                    avatars.c.selected == 1
+                )
+            )
+        )
+
     async def fetch_player_data(self, player: Player) -&gt; None:
         async with self._db.acquire() as conn:
             result = await conn.execute(
@@ -119,10 +138,7 @@ class PlayerService(Service):
                 .outerjoin(clan)
                 .outerjoin(
                     avatars,
-                    onclause=and_(
-                        avatars.c.idUser == login.c.id,
-                        avatars.c.selected == 1
-                    )
+                    onclause=self._avatar_grant_join_onclause()
                 )
                 .outerjoin(avatars_list)
             ).where(login.c.id == player.id)  # yapf: disable
@@ -147,6 +163,60 @@ class PlayerService(Service):
                 player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
 
             await self._fetch_player_ratings(player, conn)
+
+    async def _fetch_player_avatar(
+        self, player: Player, conn
+    ) -&gt; Optional[int]:
+        &#34;&#34;&#34;Refresh `player.avatar` from DB; return the avatar id, if any.&#34;&#34;&#34;
+        sql = select(
+            avatars_list.c.id,
+            avatars_list.c.url,
+            avatars_list.c.tooltip,
+        ).select_from(
+            login
+            .outerjoin(
+                avatars,
+                onclause=self._avatar_grant_join_onclause()
+            )
+            .outerjoin(avatars_list)
+        ).where(login.c.id == player.id)
+
+        result = await conn.execute(sql)
+        row = result.fetchone()
+        if row is None:
+            player.avatar = None
+            return None
+
+        row_mapping = row._mapping
+        avatar_id = row_mapping.get(avatars_list.c.id)
+        url = row_mapping.get(avatars_list.c.url)
+        tooltip = row_mapping.get(avatars_list.c.tooltip)
+        if url and tooltip:
+            player.avatar = {&#34;url&#34;: url, &#34;tooltip&#34;: tooltip}
+            return avatar_id
+        player.avatar = None
+        return None
+
+    async def refresh_player_avatar(self, player_id: int) -&gt; bool:
+        &#34;&#34;&#34;
+        Re-read avatar for one player and mark them dirty.
+
+        `BroadcastService` emits a `player_info` on the next tick. Returns
+        True if the player is connected to this instance, False otherwise.
+        &#34;&#34;&#34;
+        player = self._players.get(player_id)
+        if player is None:
+            return False
+        async with self._db.acquire() as conn:
+            avatar_id = await self._fetch_player_avatar(player, conn)
+        avatar_tooltip = player.avatar[&#34;tooltip&#34;] if player.avatar else None
+        self._logger.info(
+            &#34;Player %s avatar refreshed from RabbitMQ event: &#34;
+            &#34;avatar_id=%s tooltip=%s&#34;,
+            player_id, avatar_id, avatar_tooltip
+        )
+        self.mark_dirty(player)
+        return True
 
     async def _fetch_player_ratings(self, player: Player, conn):
         sql = select(
@@ -320,10 +390,7 @@ def all_players(self) -&gt; ValuesView[Player]:
             .outerjoin(clan)
             .outerjoin(
                 avatars,
-                onclause=and_(
-                    avatars.c.idUser == login.c.id,
-                    avatars.c.selected == 1
-                )
+                onclause=self._avatar_grant_join_onclause()
             )
             .outerjoin(avatars_list)
         ).where(login.c.id == player.id)  # yapf: disable
@@ -463,6 +530,39 @@ def all_players(self) -&gt; ValuesView[Player]:
 </details>
 <div class="desc"></div>
 </dd>
+<dt id="server.player_service.PlayerService.refresh_player_avatar"><code class="name flex">
+<span>async def <span class="ident">refresh_player_avatar</span></span>(<span>self, player_id: int) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def refresh_player_avatar(self, player_id: int) -&gt; bool:
+    &#34;&#34;&#34;
+    Re-read avatar for one player and mark them dirty.
+
+    `BroadcastService` emits a `player_info` on the next tick. Returns
+    True if the player is connected to this instance, False otherwise.
+    &#34;&#34;&#34;
+    player = self._players.get(player_id)
+    if player is None:
+        return False
+    async with self._db.acquire() as conn:
+        avatar_id = await self._fetch_player_avatar(player, conn)
+    avatar_tooltip = player.avatar[&#34;tooltip&#34;] if player.avatar else None
+    self._logger.info(
+        &#34;Player %s avatar refreshed from RabbitMQ event: &#34;
+        &#34;avatar_id=%s tooltip=%s&#34;,
+        player_id, avatar_id, avatar_tooltip
+    )
+    self.mark_dirty(player)
+    return True</code></pre>
+</details>
+<div class="desc"><p>Re-read avatar for one player and mark them dirty.</p>
+<p><code>BroadcastService</code> emits a <code>player_info</code> on the next tick. Returns
+True if the player is connected to this instance, False otherwise.</p></div>
+</dd>
 <dt id="server.player_service.PlayerService.remove_player"><code class="name flex">
 <span>def <span class="ident">remove_player</span></span>(<span>self,<br>player: <a title="server.players.Player" href="players.html#server.players.Player">Player</a>) ‑> None</span>
 </code></dt>
@@ -571,6 +671,7 @@ uniqueid check.</p></div>
 <li><code><a title="server.player_service.PlayerService.kick_idle_players" href="#server.player_service.PlayerService.kick_idle_players">kick_idle_players</a></code></li>
 <li><code><a title="server.player_service.PlayerService.mark_dirty" href="#server.player_service.PlayerService.mark_dirty">mark_dirty</a></code></li>
 <li><code><a title="server.player_service.PlayerService.pop_dirty_players" href="#server.player_service.PlayerService.pop_dirty_players">pop_dirty_players</a></code></li>
+<li><code><a title="server.player_service.PlayerService.refresh_player_avatar" href="#server.player_service.PlayerService.refresh_player_avatar">refresh_player_avatar</a></code></li>
 <li><code><a title="server.player_service.PlayerService.remove_player" href="#server.player_service.PlayerService.remove_player">remove_player</a></code></li>
 <li><code><a title="server.player_service.PlayerService.signal_player_rating_change" href="#server.player_service.PlayerService.signal_player_rating_change">signal_player_rating_change</a></code></li>
 <li><code><a title="server.player_service.PlayerService.update_data" href="#server.player_service.PlayerService.update_data">update_data</a></code></li>
