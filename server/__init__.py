@@ -117,6 +117,7 @@ from typing import Optional, cast
 import server.metrics as metrics
 
 from .asyncio_extensions import map_suppress, synchronizedmethod
+from .avatar_change_queue_service import AvatarChangeQueueService
 from .broadcast_service import BroadcastService
 from .client_message_queue_service import ClientMessageQueueService
 from .config import TRACE, config
@@ -144,6 +145,7 @@ __license__ = "GPLv3"
 __copyright__ = "Copyright (c) 2011-2015 " + __author__
 
 __all__ = (
+    "AvatarChangeQueueService",
     "BroadcastService",
     "ClientMessageQueueService",
     "ConfigurationService",

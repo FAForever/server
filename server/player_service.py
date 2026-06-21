@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, ClassVar, Optional, ValuesView
 
 import aiocron
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 
 import server.metrics as metrics
 from server.config import config
@@ -81,6 +81,25 @@ class PlayerService(Service):
 
         return dirty_players
 
+    @staticmethod
+    def _avatar_grant_join_onclause():
+        # ON clause for joining `avatars` against `login` to pick a
+        # player's currently worn avatar with ownership enforced.
+        # Prefer the new authoritative `login.avatar_id` column; fall
+        # back to the legacy `avatars.selected = 1` row only when
+        # `avatar_id` is null. Either way the row must be a real grant
+        # in `avatars`, so revoked grants resolve to no avatar.
+        return and_(
+            avatars.c.idUser == login.c.id,
+            or_(
+                avatars.c.idAvatar == login.c.avatar_id,
+                and_(
+                    login.c.avatar_id.is_(None),
+                    avatars.c.selected == 1
+                )
+            )
+        )
+
     async def fetch_player_data(self, player: Player) -> None:
         async with self._db.acquire() as conn:
             result = await conn.execute(
@@ -100,10 +119,7 @@ class PlayerService(Service):
                 .outerjoin(clan)
                 .outerjoin(
                     avatars,
-                    onclause=and_(
-                        avatars.c.idUser == login.c.id,
-                        avatars.c.selected == 1
-                    )
+                    onclause=self._avatar_grant_join_onclause()
                 )
                 .outerjoin(avatars_list)
             ).where(login.c.id == player.id)  # yapf: disable
@@ -128,6 +144,60 @@ class PlayerService(Service):
                 player.avatar = {"url": url, "tooltip": tooltip}
 
             await self._fetch_player_ratings(player, conn)
+
+    async def _fetch_player_avatar(
+        self, player: Player, conn
+    ) -> Optional[int]:
+        """Refresh `player.avatar` from DB; return the avatar id, if any."""
+        sql = select(
+            avatars_list.c.id,
+            avatars_list.c.url,
+            avatars_list.c.tooltip,
+        ).select_from(
+            login
+            .outerjoin(
+                avatars,
+                onclause=self._avatar_grant_join_onclause()
+            )
+            .outerjoin(avatars_list)
+        ).where(login.c.id == player.id)
+
+        result = await conn.execute(sql)
+        row = result.fetchone()
+        if row is None:
+            player.avatar = None
+            return None
+
+        row_mapping = row._mapping
+        avatar_id = row_mapping.get(avatars_list.c.id)
+        url = row_mapping.get(avatars_list.c.url)
+        tooltip = row_mapping.get(avatars_list.c.tooltip)
+        if url and tooltip:
+            player.avatar = {"url": url, "tooltip": tooltip}
+            return avatar_id
+        player.avatar = None
+        return None
+
+    async def refresh_player_avatar(self, player_id: int) -> bool:
+        """
+        Re-read avatar for one player and mark them dirty.
+
+        `BroadcastService` emits a `player_info` on the next tick. Returns
+        True if the player is connected to this instance, False otherwise.
+        """
+        player = self._players.get(player_id)
+        if player is None:
+            return False
+        async with self._db.acquire() as conn:
+            avatar_id = await self._fetch_player_avatar(player, conn)
+        avatar_tooltip = player.avatar["tooltip"] if player.avatar else None
+        self._logger.info(
+            "Player %s avatar refreshed from RabbitMQ event: "
+            "avatar_id=%s tooltip=%s",
+            player_id, avatar_id, avatar_tooltip
+        )
+        self.mark_dirty(player)
+        return True
 
     async def _fetch_player_ratings(self, player: Player, conn):
         sql = select(
