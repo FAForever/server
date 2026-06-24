@@ -267,7 +267,6 @@ map_version = Table(
     Column("height",        Integer,        nullable=False),
     Column("version",       Integer,        nullable=False),
     Column("folder_name",   String(200),    nullable=False),
-    Column("filename",      String(200),    nullable=False),
     Column("ranked",        Boolean,        nullable=False),
     Column("hidden",        Boolean,        nullable=False),
     Column("map_id",        ForeignKey("map.id"), nullable=False),
