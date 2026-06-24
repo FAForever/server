@@ -135,9 +135,8 @@ class GameService(Service):
 
     async def get_map(self, folder_name: str) -> Map:
         folder_name = folder_name.lower()
-        filename = f"maps/{folder_name}.zip"
 
-        map = self.map_info_cache.get(filename)
+        map = self.map_info_cache.get(folder_name)
         if map is not None:
             return map
 
@@ -145,11 +144,10 @@ class GameService(Service):
             result = await conn.execute(
                 select(
                     map_version.c.id,
-                    map_version.c.filename,
                     map_version.c.ranked,
                 )
                 .where(
-                    func.lower(map_version.c.filename) == filename
+                    func.lower(map_version.c.folder_name) == folder_name
                 )
             )
             row = result.fetchone()
@@ -168,7 +166,7 @@ class GameService(Service):
                 folder_name=folder_name,
                 ranked=row.ranked
             )
-            self.map_info_cache[filename] = map
+            self.map_info_cache[folder_name] = map
             return map
 
     def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
