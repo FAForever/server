@@ -2546,9 +2546,8 @@ class GameService(Service):
 
     async def get_map(self, folder_name: str) -&gt; Map:
         folder_name = folder_name.lower()
-        filename = f&#34;maps/{folder_name}.zip&#34;
 
-        map = self.map_info_cache.get(filename)
+        map = self.map_info_cache.get(folder_name)
         if map is not None:
             return map
 
@@ -2556,11 +2555,10 @@ class GameService(Service):
             result = await conn.execute(
                 select(
                     map_version.c.id,
-                    map_version.c.filename,
                     map_version.c.ranked,
                 )
                 .where(
-                    func.lower(map_version.c.filename) == filename
+                    func.lower(map_version.c.folder_name) == folder_name
                 )
             )
             row = result.fetchone()
@@ -2579,7 +2577,7 @@ class GameService(Service):
                 folder_name=folder_name,
                 ranked=row.ranked
             )
-            self.map_info_cache[filename] = map
+            self.map_info_cache[folder_name] = map
             return map
 
     def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
@@ -2985,9 +2983,8 @@ def pending_games(self) -&gt; list[Game]:
 </summary>
 <pre><code class="python">async def get_map(self, folder_name: str) -&gt; Map:
     folder_name = folder_name.lower()
-    filename = f&#34;maps/{folder_name}.zip&#34;
 
-    map = self.map_info_cache.get(filename)
+    map = self.map_info_cache.get(folder_name)
     if map is not None:
         return map
 
@@ -2995,11 +2992,10 @@ def pending_games(self) -&gt; list[Game]:
         result = await conn.execute(
             select(
                 map_version.c.id,
-                map_version.c.filename,
                 map_version.c.ranked,
             )
             .where(
-                func.lower(map_version.c.filename) == filename
+                func.lower(map_version.c.folder_name) == folder_name
             )
         )
         row = result.fetchone()
@@ -3018,7 +3014,7 @@ def pending_games(self) -&gt; list[Game]:
             folder_name=folder_name,
             ranked=row.ranked
         )
-        self.map_info_cache[filename] = map
+        self.map_info_cache[folder_name] = map
         return map</code></pre>
 </details>
 <div class="desc"></div>
@@ -4129,7 +4125,7 @@ class LadderService(Service):
                 map_pool_map_version.c.weight,
                 map_pool_map_version.c.map_params,
                 map_version.c.id.label(&#34;map_id&#34;),
-                map_version.c.filename,
+                map_version.c.folder_name,
                 map_version.c.ranked,
             ).select_from(
                 map_pool.outerjoin(map_pool_map_version)
@@ -4144,18 +4140,11 @@ class LadderService(Service):
                 map_pool_maps[id_] = (name, list())
             _, map_list = map_pool_maps[id_]
             if row.map_id is not None:
-                # Database filenames contain the maps/ prefix and .zip suffix.
-                # This comes from the content server which hosts the files at
-                # https://content.faforever.com/maps/name.zip
-                m = re.match(r&#34;maps/(.+)\.zip&#34;, row.filename)
-                if m is None:
-                    raise RuntimeError(f&#34;malformed map filename {row.filename}&#34;)
-                folder_name = m.group(1)
                 map_list.append(
                     Map(
                         id=row.map_id,
                         map_pool_map_version_id=row.map_pool_map_version_id,
-                        folder_name=folder_name,
+                        folder_name=row.folder_name,
                         ranked=row.ranked,
                         weight=row.weight,
                     )
@@ -4809,7 +4798,7 @@ statistics, and launches the games.</p></div>
             map_pool_map_version.c.weight,
             map_pool_map_version.c.map_params,
             map_version.c.id.label(&#34;map_id&#34;),
-            map_version.c.filename,
+            map_version.c.folder_name,
             map_version.c.ranked,
         ).select_from(
             map_pool.outerjoin(map_pool_map_version)
@@ -4824,18 +4813,11 @@ statistics, and launches the games.</p></div>
             map_pool_maps[id_] = (name, list())
         _, map_list = map_pool_maps[id_]
         if row.map_id is not None:
-            # Database filenames contain the maps/ prefix and .zip suffix.
-            # This comes from the content server which hosts the files at
-            # https://content.faforever.com/maps/name.zip
-            m = re.match(r&#34;maps/(.+)\.zip&#34;, row.filename)
-            if m is None:
-                raise RuntimeError(f&#34;malformed map filename {row.filename}&#34;)
-            folder_name = m.group(1)
             map_list.append(
                 Map(
                     id=row.map_id,
                     map_pool_map_version_id=row.map_pool_map_version_id,
-                    folder_name=folder_name,
+                    folder_name=row.folder_name,
                     ranked=row.ranked,
                     weight=row.weight,
                 )

@@ -155,9 +155,8 @@ class GameService(Service):
 
     async def get_map(self, folder_name: str) -&gt; Map:
         folder_name = folder_name.lower()
-        filename = f&#34;maps/{folder_name}.zip&#34;
 
-        map = self.map_info_cache.get(filename)
+        map = self.map_info_cache.get(folder_name)
         if map is not None:
             return map
 
@@ -165,11 +164,10 @@ class GameService(Service):
             result = await conn.execute(
                 select(
                     map_version.c.id,
-                    map_version.c.filename,
                     map_version.c.ranked,
                 )
                 .where(
-                    func.lower(map_version.c.filename) == filename
+                    func.lower(map_version.c.folder_name) == folder_name
                 )
             )
             row = result.fetchone()
@@ -188,7 +186,7 @@ class GameService(Service):
                 folder_name=folder_name,
                 ranked=row.ranked
             )
-            self.map_info_cache[filename] = map
+            self.map_info_cache[folder_name] = map
             return map
 
     def mark_dirty(self, obj: Union[Game, MatchmakerQueue]):
@@ -594,9 +592,8 @@ def pending_games(self) -&gt; list[Game]:
 </summary>
 <pre><code class="python">async def get_map(self, folder_name: str) -&gt; Map:
     folder_name = folder_name.lower()
-    filename = f&#34;maps/{folder_name}.zip&#34;
 
-    map = self.map_info_cache.get(filename)
+    map = self.map_info_cache.get(folder_name)
     if map is not None:
         return map
 
@@ -604,11 +601,10 @@ def pending_games(self) -&gt; list[Game]:
         result = await conn.execute(
             select(
                 map_version.c.id,
-                map_version.c.filename,
                 map_version.c.ranked,
             )
             .where(
-                func.lower(map_version.c.filename) == filename
+                func.lower(map_version.c.folder_name) == folder_name
             )
         )
         row = result.fetchone()
@@ -627,7 +623,7 @@ def pending_games(self) -&gt; list[Game]:
             folder_name=folder_name,
             ranked=row.ranked
         )
-        self.map_info_cache[filename] = map
+        self.map_info_cache[folder_name] = map
         return map</code></pre>
 </details>
 <div class="desc"></div>
