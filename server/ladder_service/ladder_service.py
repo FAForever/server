@@ -5,7 +5,6 @@ import asyncio
 import json
 import logging
 import random
-import re
 import statistics
 from collections import defaultdict
 from typing import (
@@ -162,7 +161,7 @@ class LadderService(Service):
                 map_pool_map_version.c.weight,
                 map_pool_map_version.c.map_params,
                 map_version.c.id.label("map_id"),
-                map_version.c.filename,
+                map_version.c.folder_name,
                 map_version.c.ranked,
             ).select_from(
                 map_pool.outerjoin(map_pool_map_version)
@@ -177,18 +176,11 @@ class LadderService(Service):
                 map_pool_maps[id_] = (name, list())
             _, map_list = map_pool_maps[id_]
             if row.map_id is not None:
-                # Database filenames contain the maps/ prefix and .zip suffix.
-                # This comes from the content server which hosts the files at
-                # https://content.faforever.com/maps/name.zip
-                m = re.match(r"maps/(.+)\.zip", row.filename)
-                if m is None:
-                    raise RuntimeError(f"malformed map filename {row.filename}")
-                folder_name = m.group(1)
                 map_list.append(
                     Map(
                         id=row.map_id,
                         map_pool_map_version_id=row.map_pool_map_version_id,
-                        folder_name=folder_name,
+                        folder_name=row.folder_name,
                         ranked=row.ranked,
                         weight=row.weight,
                     )

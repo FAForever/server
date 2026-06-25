@@ -16,7 +16,7 @@ services:
       - "3306:3306"
 
   faf-db-migrations:
-    image: faforever/faf-db-migrations:v143
+    image: faforever/faf-db-migrations:v144
     command: migrate
     environment:
       FLYWAY_URL: jdbc:mysql://faf-db/faf?useSSL=false
