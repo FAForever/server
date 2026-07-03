@@ -112,7 +112,9 @@ async def test_refresh_player_avatar_clears_legacy_fallback(
         result = await conn.execute(
             select(avatars.c.selected).where(avatars.c.idUser == 50)
         )
-        assert all(not row.selected for row in result)
+        selected = [bool(row.selected) for row in result]
+    assert selected
+    assert all(not is_selected for is_selected in selected)
 
 
 async def test_refresh_player_avatar_not_connected(player_service):
