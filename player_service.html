@@ -197,6 +197,28 @@ class PlayerService(Service):
         player.avatar = None
         return None
 
+    async def _sync_legacy_avatar_selection(self, player_id: int, conn) -&gt; None:
+        &#34;&#34;&#34;
+        Reconcile the deprecated `avatars.selected` flag with the authoritative
+        `login.avatar_id`: mark only the granted row matching `avatar_id` as
+        selected (all of them deselected when `avatar_id` is null). This keeps the
+        legacy fallback consistent so an explicit clear is not resurrected.
+        &#34;&#34;&#34;
+        authoritative_avatar_id = (
+            select(login.c.avatar_id)
+            .where(login.c.id == player_id)
+            .scalar_subquery()
+        )
+        await conn.execute(
+            avatars.update()
+            .where(avatars.c.idUser == player_id)
+            .values(
+                selected=func.coalesce(
+                    avatars.c.idAvatar == authoritative_avatar_id, False
+                )
+            )
+        )
+
     async def refresh_player_avatar(self, player_id: int) -&gt; bool:
         &#34;&#34;&#34;
         Re-read avatar for one player and mark them dirty.
@@ -208,6 +230,12 @@ class PlayerService(Service):
         if player is None:
             return False
         async with self._db.acquire() as conn:
+            # An avatar-update event means the API (the authoritative writer of
+            # `login.avatar_id`) changed this player&#39;s selection, so reconcile the
+            # deprecated `avatars.selected` flag before reading. Otherwise a cleared
+            # avatar (`avatar_id` set to null) would be undone by the legacy
+            # fallback in `_avatar_grant_join_onclause`.
+            await self._sync_legacy_avatar_selection(player_id, conn)
             avatar_id = await self._fetch_player_avatar(player, conn)
         avatar_tooltip = player.avatar[&#34;tooltip&#34;] if player.avatar else None
         self._logger.info(
@@ -549,6 +577,12 @@ def all_players(self) -&gt; ValuesView[Player]:
     if player is None:
         return False
     async with self._db.acquire() as conn:
+        # An avatar-update event means the API (the authoritative writer of
+        # `login.avatar_id`) changed this player&#39;s selection, so reconcile the
+        # deprecated `avatars.selected` flag before reading. Otherwise a cleared
+        # avatar (`avatar_id` set to null) would be undone by the legacy
+        # fallback in `_avatar_grant_join_onclause`.
+        await self._sync_legacy_avatar_selection(player_id, conn)
         avatar_id = await self._fetch_player_avatar(player, conn)
     avatar_tooltip = player.avatar[&#34;tooltip&#34;] if player.avatar else None
     self._logger.info(
