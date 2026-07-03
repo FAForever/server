@@ -1,5 +1,8 @@
 from unittest import mock
 
+from sqlalchemy import select
+
+from server.db.models import avatars, login
 from server.rating import RatingType
 
 
@@ -67,18 +70,51 @@ async def test_fetch_player_data_non_existent(player_factory, player_service):
 async def test_refresh_player_avatar_connected(
     player_factory, player_service
 ):
-    player = player_factory(player_id=50)
+    # Player 51 owns avatars 1 (QAI) and 2 (UEF); make 1 the authoritative
+    # selection via login.avatar_id while the legacy flag still points at 2.
+    player = player_factory(player_id=51)
     player.avatar = None  # simulate stale (e.g. just connected)
+    player_service[51] = player
+    async with player_service._db.acquire() as conn:
+        await conn.execute(login.update().where(login.c.id == 51).values(avatar_id=1))
+
+    refreshed = await player_service.refresh_player_avatar(51)
+
+    assert refreshed is True
+    assert player.avatar == {
+        "url": "https://content.faforever.com/faf/avatars/qai2.png",
+        "tooltip": "QAI",
+    }
+    assert player in player_service._dirty_players
+    # the legacy `selected` flag is reconciled to the authoritative avatar
+    async with player_service._db.acquire() as conn:
+        result = await conn.execute(
+            select(avatars.c.idAvatar, avatars.c.selected).where(avatars.c.idUser == 51)
+        )
+        selected = {row.idAvatar: bool(row.selected) for row in result}
+    assert selected == {1: True, 2: False}
+
+
+async def test_refresh_player_avatar_clears_legacy_fallback(
+    player_factory, player_service
+):
+    # Player 50 has a legacy selected avatar but no authoritative login.avatar_id,
+    # which represents an explicit clear via the API. The refresh must not let the
+    # legacy fallback resurrect it, and must clean the flag up.
+    player = player_factory(player_id=50)
     player_service[50] = player
 
     refreshed = await player_service.refresh_player_avatar(50)
 
     assert refreshed is True
-    assert player.avatar == {
-        "url": "https://content.faforever.com/faf/avatars/UEF.png",
-        "tooltip": "UEF",
-    }
-    assert player in player_service._dirty_players
+    assert player.avatar is None
+    async with player_service._db.acquire() as conn:
+        result = await conn.execute(
+            select(avatars.c.selected).where(avatars.c.idUser == 50)
+        )
+        selected = [bool(row.selected) for row in result]
+    assert selected
+    assert all(not is_selected for is_selected in selected)
 
 
 async def test_refresh_player_avatar_not_connected(player_service):
