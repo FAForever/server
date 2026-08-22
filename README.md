@@ -69,9 +69,11 @@ required by the unit tests and development server.
 ```sh
 git clone https://github.com/FAForever/gitops-stack.git
 cd gitops-stack
-tilt up
+tilt up -- --local faf-lobby-server
 ```
-Keep Tilt running while developing.
+The `local` argument proxies lobby traffic to the development server you run
+locally instead of starting the stack's lobby-server container. Keep Tilt
+running while developing.
 
 2.  In a separate terminal, install the project dependencies from the server
 repository with pipenv.

@@ -49,10 +49,12 @@ The recommended way to run it locally is with the
 ```sh
 git clone https://github.com/FAForever/gitops-stack.git
 cd gitops-stack
-tilt up
+tilt up -- --local faf-lobby-server
 ```
 
-Tilt starts the database and runs its migrations. You can monitor the stack at
+Tilt starts the supporting services, including the database and its migrations,
+and proxies lobby traffic to the server you run locally instead of starting the
+stack's lobby-server container. You can monitor the stack at
 <http://localhost:10350/>. To load data for manual development, trigger the
 `populate-db` resource from the Tilt interface. Keep Tilt running while
 developing.
