@@ -222,11 +222,7 @@ class LobbyConnection:
                 "text": e.message
             })
         except BanError as e:
-            await self.send({
-                "command": "notice",
-                "style": "error",
-                "text": e.message()
-            })
+            await self.send(e.to_dict())
             await self.abort(e.message())
         except ClientError as e:
             self._logger.warning(
