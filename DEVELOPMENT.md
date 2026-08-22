@@ -8,7 +8,9 @@ project to build on Windows using the WSL.*
 ## System dependencies
 You will need the following software installed on your system:
 -   [Docker](https://docs.docker.com/engine/)
--   [Docker Compose](https://github.com/docker/compose)
+-   [Kubernetes](https://kubernetes.io/)
+-   [Tilt](https://docs.tilt.dev/install.html)
+-   [Helm](https://helm.sh/docs/intro/install/)
 -   [Python 3.13](https://www.python.org/downloads/)
 -   [Pipenv](https://github.com/pypa/pipenv/)
 
@@ -41,28 +43,22 @@ export PIPENV_VENV_IN_PROJECT=1
 ```
 
 ## Application Dependencies
-The lobby server needs the FAF MySQL database for storing persistent state.
-Follow the instructions on the [faf-db repo](https://github.com/FAForever/db)
-to setup an instance of the database.
-
-If the database version defined in
-[`.github/workflows/test.yml`](.github/workflows/test.yml) does not match
-the one defined in your `docker-compose.yml`, you will need to update the
-compose file and then re-run the migrations.
-
-Find the section in `docker-compose.yml` that looks like this and change the
-version number to the required version in
-[`.github/workflows/test.yml`](.github/workflows/test.yml).
-```
-faf-db-migrations:
-  container_name: faf-db-migrations
-  image: faforever/faf-db-migrations:<version tag>
+The lobby server needs the FAF MariaDB database for storing persistent state.
+The recommended way to run it locally is with the
+[gitops-stack](https://github.com/FAForever/gitops-stack):
+```sh
+git clone https://github.com/FAForever/gitops-stack.git
+cd gitops-stack
+tilt up
 ```
 
-Then run the migrations with the following command.
-```
-$ docker-compose run faf-db-migrations migrate
-```
+Tilt starts the database and runs its migrations. You can monitor the stack at
+<http://localhost:10350/>. To load data for manual development, trigger the
+`populate-db` resource from the Tilt interface. Keep Tilt running while
+developing.
+
+The Tilt stack names the database `faf_lobby`. The checked-in development
+configuration uses this name; pass it explicitly to the test commands below.
 
 Install the pinned versions of the dependencies (and dev dependencies) to a
 virtual environment using pipenv by running:
@@ -88,21 +84,22 @@ ConnectionError: [Errno 111] Connect call failed ('127.0.0.1', 5672)
 WARNING  Not connected to RabbitMQ, unable to declare exchange.
 ```
 
-**Note:** *The pipenv scripts are NOT meant for production deployment. For
-deployment use [faf-stack](https://github.com/FAForever/faf-stack).*
+**Note:** *The pipenv scripts are NOT meant for production deployment.
+Production deployment is managed through
+[gitops-stack](https://github.com/FAForever/gitops-stack).*
 
 ## Running the tests
 
 The unit tests are written using [pytest](https://docs.pytest.org/en/latest) and
 can be run through the pipenv shortcut:
-```
-$ pipenv run tests
+```sh
+pipenv run tests --mysql_database=faf_lobby
 ```
 Any arguments passed to the shortcut will be forwarded to pytest, so the usual
 pytest options can be used for test selection. For instance, to run all unit
 tests containing the keyword "ladder":
-```
-$ pipenv run tests tests/unit_tests -k ladder
+```sh
+pipenv run tests --mysql_database=faf_lobby tests/unit_tests -k ladder
 ```
 
 If you are running `pytest` by some other means (e.g. with PyCharm) you may need
@@ -158,9 +155,9 @@ to start.
 
 ## Building with Docker
 
-The recommended way to deploy the server is with
-[faf-stack](https://github.com/FAForever/faf-stack). However, you can also
-build the docker image manually.
+The recommended way to deploy the server is through
+[gitops-stack](https://github.com/FAForever/gitops-stack). However, you can
+also build the docker image manually.
 
 Follow the steps to get [faf-db](https://github.com/FAForever/db) setup, the
 following assumes the db container is called `faf-db` and the database is called

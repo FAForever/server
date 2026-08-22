@@ -64,23 +64,25 @@ For detailed instructions see the [development guide](DEVELOPMENT.md).
 *This section assumes you have the necessary system dependencies installed. For
 a list of what those are see the [development guide](DEVELOPMENT.md).*
 
-1.  Start up an instance of the FAF database. This is required to run the unit tests
-and development server.
+1.  Start the local FAF infrastructure with Tilt. This provides the database
+required by the unit tests and development server.
+```sh
+git clone https://github.com/FAForever/gitops-stack.git
+cd gitops-stack
+tilt up
 ```
-$ git clone https://github.com/FAForever/faf-stack.git
-$ cd faf-stack
-$ ./scripts/init-db.sh
-```
+Keep Tilt running while developing.
 
-2.  Install the project dependencies with pipenv
-```
-$ pipenv sync --dev
+2.  In a separate terminal, install the project dependencies from the server
+repository with pipenv.
+```sh
+pipenv sync --dev
 ```
 
 3.  Run the unit tests or development server
-```
-$ pipenv run tests
-$ pipenv run devserver
+```sh
+pipenv run tests --mysql_database=faf_lobby
+pipenv run devserver
 ```
 
 # For Client Developers
