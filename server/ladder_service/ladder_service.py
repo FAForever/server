@@ -725,10 +725,13 @@ class LadderService(Service):
             await game.wait_launched(60 + 10 * len(guests))
         except asyncio.TimeoutError:
             connected_players = game.get_connected_players()
+            # The host is included here, because he might be responsible for
+            # a guest being unable to connect, e.g. because they didn't
+            # receive his connect message.
             raise NotConnectedError([
                 player for player in guests
                 if player not in connected_players
-            ])
+            ] + [host])
 
     async def get_game_history(
         self,
