@@ -114,6 +114,13 @@ class GameConnection(GpgNetServerProtocol):
         """
         assert self.game
 
+        if self.state is not GameConnectionState.INITIALIZING:
+            self._logger.warning(
+                "Ignoring unexpected 'Idle' state when state was %s",
+                self.state,
+            )
+            return
+
         if self.player == self.game.host:
             self.game.state = GameState.LOBBY
             self._state = GameConnectionState.CONNECTED_TO_HOST
@@ -132,6 +139,13 @@ class GameConnection(GpgNetServerProtocol):
         """
         player_state = self.player.state
         if player_state == PlayerState.HOSTING:
+            if self.game.hosted_at is not None:
+                self._logger.warning(
+                    "Ignoring unexpected 'Lobby' state sent when the game was "
+                    "already hosted.",
+                )
+                return
+
             await self.send_HostGame(self.game.map.folder_name)
             self.game.set_hosted()
         # If the player is joining, we connect him to host
