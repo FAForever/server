@@ -325,17 +325,17 @@ class TeamMatchMaker(Matchmaker):
         minority_bonus = min(minority_bonus, config.MINORITY_BONUS)
         rating_disparity = abs(match[0].cumulative_rating - match[1].cumulative_rating)
         unfairness = rating_disparity / config.MAXIMUM_RATING_IMBALANCE
-        deviation = statistics.pstdev(ratings)
-        rating_variety = deviation / config.MAXIMUM_RATING_DEVIATION
+        max_team_deviation = max(map(statistics.pstdev, [match[0].displayed_ratings, match[1].displayed_ratings]))
+        max_rating_variety = max_team_deviation / config.MAXIMUM_RATING_DEVIATION
 
         # Visually this creates a cone in the unfairness-rating_variety plane
         # that slowly raises with the time bonuses.
-        quality = 1 - sqrt(unfairness ** 2 + rating_variety ** 2) + time_bonus + minority_bonus
+        quality = 1 - sqrt(unfairness ** 2 + max_rating_variety ** 2) + time_bonus + minority_bonus
         if not any(team.has_high_rated_player() for team in match):
             quality += newbie_bonus
         self._logger.debug(
             "bonuses: %s rating disparity: %s -> unfairness: %f deviation: %f -> variety: %f -> game quality: %f",
-            newbie_bonus + time_bonus + minority_bonus, rating_disparity, unfairness, deviation, rating_variety, quality
+            newbie_bonus + time_bonus + minority_bonus, rating_disparity, unfairness, max_team_deviation, max_rating_variety, quality
         )
         return GameCandidate(match, quality)
 

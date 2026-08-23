@@ -80,10 +80,10 @@ def test_team_matchmaker_algorithm(player_factory):
 
     matches, unmatched = matchmaker.find(s, 4, 1000)
 
-    assert set(matches[1][0].get_original_searches()) == {c1, s[2], s[5]}
-    assert set(matches[1][1].get_original_searches()) == {c3, s[1], s[6]}
-    assert set(matches[0][0].get_original_searches()) == {c4, s[4]}
-    assert set(matches[0][1].get_original_searches()) == {c2, s[0], s[3]}
+    assert set(matches[0][0].get_original_searches()) == {c1, s[2], s[5]}
+    assert set(matches[0][1].get_original_searches()) == {c3, s[1], s[6]}
+    assert set(matches[1][0].get_original_searches()) == {c4, s[4]}
+    assert set(matches[1][1].get_original_searches()) == {c2, s[0], s[3]}
     assert set(unmatched) == {s[7]}
     for match in matches:
         assert matchmaker.assign_game_quality(match, 4, 1000).quality > config.MINIMUM_GAME_QUALITY
