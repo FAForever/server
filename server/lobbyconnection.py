@@ -9,10 +9,9 @@ import logging
 import random
 import urllib.parse
 import urllib.request
+from datetime import timezone
 from functools import wraps
 from typing import ClassVar, Optional
-
-import aiohttp
 from sqlalchemy import and_, func, select
 from sqlalchemy.exc import DBAPIError, OperationalError
 
@@ -1503,10 +1502,16 @@ class LobbyConnection:
                 return
 
             ban_expiry = row.expires_at
-            ban_reason = row.reason
-            if now < ban_expiry:
-                self._logger.debug(
-                    "Aborting connection of banned user: %s, %s, %s",
-                    self.player.id, self.player.login, self.session
-                )
-                raise BanError(ban_expiry, ban_reason)
+        ban_reason = row.reason
+        if now < ban_expiry:
+            self._logger.debug('Aborting connection of banned user: %s, %s, %s',
+                               self.player.id, self.player.login, self.session)
+            self.send_ban_message_and_abort(ban_expiry, ban_reason)
+
+    def send_ban_message_and_abort(self, ban_expiry, reason):
+        error_payload = {
+            "command": "banned",
+            "expires_at": ban_expiry.astimezone(timezone.utc).isoformat()
+        }
+        raise ClientError(error_payload, recoverable=False)
+
