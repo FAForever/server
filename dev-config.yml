@@ -1,4 +1,5 @@
 LOG_LEVEL: "TRACE"
-USE_API: false
+USE_UVLOOP: false
 USE_POLICY_SERVER: false
+DB_NAME: "faf_lobby"
 QUEUE_POP_TIME_MAX: 30

@@ -1,52 +1,121 @@
+import logging
 import random
 from collections import Counter
-from typing import Iterable
+from typing import ClassVar, Iterable, NamedTuple, Optional
+
+from server.config import config
 
 from ..decorators import with_logger
-from ..types import Map
+from ..types import Map, MapPoolMap
 
 
 @with_logger
 class MapPool(object):
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         map_pool_id: int,
         name: str,
-        maps: Iterable[Map] = ()
+        maps: Iterable[MapPoolMap] = ()
     ):
         self.id = map_pool_id
         self.name = name
-        self.maps = None
         self.set_maps(maps)
 
-    def set_maps(self, maps: Iterable[Map]) -> None:
+    def set_maps(self, maps: Iterable[MapPoolMap]) -> None:
         self.maps = {map_.id: map_ for map_ in maps}
 
-    def choose_map(self, played_map_ids: Iterable[int] = ()) -> Map:
+    def apply_antirepetition_adjustment(self, initial_weights: dict[int, float], played_map_ids: Iterable[int], base_thresholds: list[float], repeat_factor: float) -> dict[int, float]:
         """
-        Select a random map who's id does not appear in `played_map_ids`. If
-        all map ids appear in the list, then pick one that appears the least
-        amount of times.
+            Transfers weights from played maps to not-played (if possible) or less-played (otherwise) maps,
+            base_thresholds and repeat_factor adjusts the level of respect to the veto system:
+            base_thresholds used to determine, which not-played maps are available as transfer targets
+            the bigger the repeat_factor, the stronger algo tries to get rid of maps with playcount >= 2
+        """
+        notzero_weights = {map_id: weight for map_id, weight in initial_weights.items() if weight > 0}
+        repetition_counts = Counter(map_id for map_id in played_map_ids if map_id in notzero_weights)
+        adjusted_weights = notzero_weights.copy()
+
+        def get_notrepeated_weight_transfer_targets(current_weight, rep_count):
+            thresholds = list(base_thresholds)
+            factor = repeat_factor ** (rep_count - 1)
+            if factor < 1:
+                thresholds.extend(t * factor for t in base_thresholds if t * factor < base_thresholds[-1])
+
+            for threshold in thresholds:
+                targets = [
+                    target_id for target_id in notzero_weights
+                    if repetition_counts.get(target_id, 0) == 0 and
+                    notzero_weights[target_id] >= threshold * current_weight
+                ]
+                if targets:
+                    return targets
+            return []
+
+        def get_repeated_weight_transfer_targets(current_weight, rep_count):
+            return [
+                target_id for target_id in notzero_weights
+                if 0 < (target_rep := repetition_counts.get(target_id, 0)) < rep_count and
+                notzero_weights[target_id] >= repeat_factor ** (rep_count - target_rep) * current_weight
+            ]
+
+        def transfer_weight_proportionally(from_id, to_ids):
+            v = adjusted_weights[from_id]
+            adjusted_weights[from_id] = 0
+            weight_sum = sum(notzero_weights[c] for c in to_ids)
+            for c in to_ids:
+                adjusted_weights[c] += (notzero_weights[c] / weight_sum) * v
+
+        for map_id, rep_count in repetition_counts.most_common():
+            current_weight = notzero_weights[map_id]
+            notrepeated_targets = get_notrepeated_weight_transfer_targets(current_weight, rep_count)
+            repeated_targets = get_repeated_weight_transfer_targets(current_weight, rep_count)
+            weight_transfer_targets = notrepeated_targets or repeated_targets
+            if weight_transfer_targets:
+                transfer_weight_proportionally(map_id, weight_transfer_targets)
+
+        return adjusted_weights
+
+    def choose_map(self, played_map_ids: Iterable[int] = (), initial_weights: Optional[dict[int, float]] = None) -> Map:
+        """
+            Selects a random map using veto system weights with an anti-repetition adjustment.
         """
         if not self.maps:
-            self._logger.critical(
-                "Trying to choose a map from an empty map pool: %s", self.name
-            )
+            self._logger.critical("Trying to choose a map from an empty map pool: %s", self.name)
             raise RuntimeError(f"Map pool {self.name} not set!")
 
-        # Make sure the counter has every available map
-        counter = Counter(self.maps.keys())
-        counter.update(id_ for id_ in played_map_ids if id_ in self.maps)
+        self._logger.debug("initial_played_map_ids: %s", list(played_map_ids))
+        played_map_pool_map_version_ids = [
+            self.maps[id].map_pool_map_version_id
+            for id in played_map_ids
+            if id in self.maps
+        ]
+        self._logger.debug("played_map_pool_map_version_ids: %s", played_map_pool_map_version_ids)
 
-        least_common = counter.most_common()[::-1]
-        least_count = least_common[0][1]
-        # Trim off the maps with higher play counts
-        for i, (_, count) in enumerate(least_common):
-            if count != least_count:
-                least_common = least_common[:i]
-                break
+        map_list = [(m.map_pool_map_version_id, m) for m in self.maps.values()]
 
-        return self.maps[random.choice(least_common)[0]]
+        if initial_weights is None:
+            initial_weights = {mp_mv_id: 1.0 for mp_mv_id, _ in map_list}
 
-    def __repr__(self):
+        adjusted_weights = self.apply_antirepetition_adjustment(
+            initial_weights, played_map_pool_map_version_ids, config.LADDER_ANTI_REPETITION_WEIGHT_BASE_THRESHOLDS, config.LADDER_ANTI_REPETITION_REPEAT_COUNTS_FACTOR
+        )
+        self._logger.debug("adjusted_weights: %s", adjusted_weights)
+        self._logger.debug("map_list: %s", map_list)
+        final_weights = [adjusted_weights.get(mp_mv_id, 0) * m.weight for mp_mv_id, m in map_list]
+        self._logger.debug("final_weights: %s", final_weights)
+        return random.choices([map for _, map in map_list], weights=final_weights, k=1)[0].get_map()  # nosec B311
+
+    def __repr__(self) -> str:
         return f"MapPool({self.id}, {self.name}, {list(self.maps.values())})"
+
+
+class MatchmakerQueueMapPool(NamedTuple):
+    id: int
+    map_pool: MapPool
+    min_rating: Optional[int]
+    max_rating: Optional[int]
+    veto_tokens_per_player: int = 0
+    max_tokens_per_map: float = 0
+    minimum_maps_after_veto: float = 1

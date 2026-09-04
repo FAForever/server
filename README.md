@@ -1,11 +1,56 @@
 # FA Forever - Server
-![python](https://img.shields.io/badge/python-3.7-blue)
-[![Build Status](https://travis-ci.org/FAForever/server.svg?branch=develop)](https://travis-ci.org/FAForever/server)
-[![Coveralls Status](https://img.shields.io/coveralls/FAForever/server/develop.svg)](https://coveralls.io/github/FAForever/server)
-[![semver](https://img.shields.io/badge/license-GPLv3-blue)](license.txt)
+![Build Status](https://github.com/FAForever/server/actions/workflows/test.yml/badge.svg?branch=develop)
+[![codecov](https://codecov.io/gh/FAForever/server/branch/develop/graph/badge.svg?token=55ndgNQdUv)](https://codecov.io/gh/FAForever/server)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/ada42f6e09a341a88f3dae262a43e86e)](https://www.codacy.com/gh/FAForever/server/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=FAForever/server&amp;utm_campaign=Badge_Grade)
+[![docs](https://img.shields.io/badge/docs-latest-purple)](https://faforever.github.io/server/)
+[![license](https://img.shields.io/badge/license-GPLv3-blue)](license.txt)
+![python](https://img.shields.io/badge/python-3.10-3776AB)
 
 This is the source code for the
 [Forged Alliance Forever](https://www.faforever.com/) lobby server.
+Click here to go to the
+[Server Python API Documentation](https://faforever.github.io/server/).
+
+-   For the Lua game mod see
+[faforever/fa](https://github.com/FAForever/fa).
+-   For the official FAF client see
+[faforever/downlords-faf-client](https://github.com/FAForever/downlords-faf-client)
+
+## Overview
+The lobby server is the piece of software sitting at the very core of FAF,
+enabling players to discover and play games with each other. It is a stateful
+TCP server written in `asyncio` and implements a custom TCP protocol for
+communicating with [clients](https://github.com/FAForever/downlords-faf-client).
+The main responsibilities of the lobby server are:
+-   To manage the lifecycle of joining games
+
+    *(Note that Forged Alliance uses a distributed peer-to-peer networking model,
+    so the simulation happens entirely on the player's machines, and **NOT** on
+    any server)*
+
+-   To facilitate initial connection establishment when players join a game
+
+-   To maintain a list of online players
+
+-   To perform rating calculations and updates
+
+In production, the lobby server is deployed behind a websocket bridge
+[faforever/ws_bridge_rs](https://github.com/FAForever/ws_bridge_rs).
+
+## Support development
+
+Post a bounty on Issue Hunt. You can reward and financially help developers who
+work on your issue.
+
+[![Issue hunt](https://github.com/BoostIO/issuehunt-materials/raw/master/v1/issuehunt-button-v1.svg?sanitize=true)](https://issuehunt.io/r/FAForever/server)
+
+## Major Software Dependencies
+
+The lobby server integrates with a few external services and has been tested
+with the following versions:
+
+-   MariaDB 10.6
+-   (optional) RabbitMQ 3.9
 
 # Contributing
 
@@ -13,178 +58,109 @@ Before opening a pull request, please take a moment to look over the
 [contributing guidelines](CONTRIBUTING.md).
 
 ## Setting up for development
+For detailed instructions see the [development guide](DEVELOPMENT.md).
 
-First, follow the instructions on the [faf-db repo](https://github.com/FAForever/db)
-to setup an instance of the database. Then install the pinned versions of the
-dependencies (and dev dependencies) to a virtual environment using pipenv by
-running:
+### Quickstart
+*This section assumes you have the necessary system dependencies installed. For
+a list of what those are see the [development guide](DEVELOPMENT.md).*
 
-    $ pipenv sync --dev
+1.  Start the local FAF infrastructure with Tilt. This provides the database
+required by the unit tests and development server.
+```sh
+git clone https://github.com/FAForever/gitops-stack.git
+cd gitops-stack
+tilt up -- --local faf-lobby-server
+```
+The `local` argument proxies lobby traffic to the development server you run
+locally instead of starting the stack's lobby-server container. Keep Tilt
+running while developing.
 
-You can then start the server in development mode with:
+2.  In a separate terminal, install the project dependencies from the server
+repository with pipenv.
+```sh
+pipenv sync --dev
+```
 
-    $ pipenv run devserver
+3.  Run the unit tests or development server
+```sh
+pipenv run tests --mysql_database=faf_lobby
+pipenv run devserver
+```
 
-You will probably see a number of errors and warnings show up in the log which
-is completely normal for a development setup. If you see any of the following,
-they can be safely ignored:
+# For Client Developers
+The official FAF client code is available at
+[faforever/downlords-faf-client](https://github.com/FAForever/downlords-faf-client).
+This can be used as a reference when implementing your own custom client.
 
-    WARNING  Twilio is not set up. You must set TWILIO_ACCOUNT_SID and TWILIO_TOKEN to use the Twilio ICE servers.
-    WARNING  GEO_IP_LICENSE_KEY not set! Unable to download GeoIP database!
-    WARNING  Unable to connect to RabbitMQ. Is it running?
-    ConnectionError: [Errno 111] Connect call failed ('127.0.0.1', 5672)
-    WARNING  Not connected to RabbitMQ, unable to declare exchange.
-    ERROR    Failure updating NickServ password for test
+## Important Notes
+In order to avoid having your client break unexpectedly with a new server
+release, your server <-> client communication code must adhere to the following
+rules:
+-   Unrecognized server messages are ignored.
+-   Unrecognized fields in messages are ignored.
 
-**Note:** *The pipenv scripts are NOT meant for production deployment. For
-deployment use `faf-stack`.*
+This ensures that your client continues to function when new features are
+implemented on the server side. A new feature might mean that the server will
+include a new field in an existing message, or start sending an entirely new
+message all together. Such changes are considered to be backwards compatible
+additions to the server protocol.
 
-### Administrator/root privileges
+You can read more about the protocol API versioning
+[here](CONTRIBUTING.md#version-numbers).
 
-On Linux, root privileges are generally not needed. If you find that a command
-will not work unless run as root, it probably means that you have a file
-permission issue that you should fix. For instance if you ran the server as a
-docker container, it may have created certain files (like the GeoIP database) as
-root, and you should `chown` them or delete them before running the unit tests
-or the devserver.
+## Server Protocol
+There are two layers to the server protocol:
+1. **The wire format.**
+This is how messages are serialized to bytes and sent over the network stream.
 
-On Windows you may also find that some issues go away when running as
-administrator. This may be because you have set up your tools to install for the
-whole system instead of just the current user. For example if you have issues
-with pipenv you can try installing it with the `--user` option:
+  *NOTE: in production, the client connects to the server via the websocket
+  bridge [faforever/ws_bridge_rs](https://github.com/FAForever/ws_bridge_rs)
+  rather than connecting directly to the TCP port.*
 
-    $ pip install --user pipenv
+2. **Application level messages.**
+Also sometimes called 'commands', messages are used to exchange state between
+the client and server. The client will need to implement appropriate logic for
+interpreting each message and reacting to it by sometimes updating UI elements,
+internal state, or launching or terminating external processes.
 
-## Running the tests
+### Wire Format
+Each message is serialized to a [JSON](https://www.json.org/) object followed
+by an ASCII newline byte (`b"\n"` or `b"\x0a"`). For additional information see
+the server API documentation:
+[SimpleJsonProtocol](https://faforever.github.io/server/protocol/simple_json.html)
 
-The unit tests are written using [pytest](https://docs.pytest.org/en/latest) and
-can be run through the pipenv shortcut:
+### Application messages
+1. **Request / response type commands.**
+  Most messages that are sent from the client to the server will be acknowledged
+  with a response message. The naming for these messages varies by command. For
+  instance the `ask_session` command will respond with a `session` command
+  containing the session id.
+2. **Asynchronous commands.**
+  Many messages are generated by activity of other users, or asynchronous
+  processes running on the server. These can generate 'broadcast' messages sent
+  out to many connected clients, or direct messages to a specific client without
+  being triggered by a request. Generally 'broadcast' messages are name `*_info`
+  and are used to synchronize the internal states of the server and client, and
+  often signal the need to update some UI elements. For instance the `game_info`
+  message sends updated information about a game that can either be in the lobby
+  state, be actively playing, or have ended.
 
-    $ pipenv run tests
 
-Any arguments passed to the shortcut will be forwarded to pytest, so the usual
-pytest options can be used for test selection. For instance, to run all unit
-tests containing the keyword "ladder":
+Work is ongoing to document these messages in a comprehensive way. For now, all
+commands that can be sent from the client -> server can be found via the server
+API documentation:
+[LobbyConnection](https://faforever.github.io/server/lobbyconnection.html)
+under the `command_*` methods. Check the source code for what fields the message
+is expected to have and any possible responses.
 
-    $ pipenv run tests tests/unit_tests -k ladder
+It may also be useful to look at the definitions in the
+[faf-java-commons](https://github.com/FAForever/faf-java-commons/tree/develop/lobby/src/main/kotlin/com/faforever/commons/lobby)
+to see how the official client is deserializing messages from the server.
 
-If you are running `pytest` by some other means (e.g. with PyCharm) you may need
-to provide the database configuration as command line arguments:
-
-    --mysql_host=MYSQL_HOST
-                          mysql host to use for test database
-    --mysql_username=MYSQL_USERNAME
-                          mysql username to use for test database
-    --mysql_password=MYSQL_PASSWORD
-                          mysql password to use for test database
-    --mysql_database=MYSQL_DATABASE
-                          mysql database to use for tests
-    --mysql_port=MYSQL_PORT
-                          mysql port to use for tests
-
-For further information on available command line arguments run `pytest --help`
-or see the official
-[pytest documentation](https://docs.pytest.org/en/latest/usage.html).
-
-There are also some integration tests which simulate real traffic to the test
-server.
-
-    $ pipenv run integration
-
-Some of them may fail depending on the configuration deployed on the test
-server.
-
-## Other tools
-
-You can check for possible unused code with `vulture` by running:
-
-    $ pipenv run vulture
-
-It tends to produce a lot of false positives, but it can provide a good place
-to start.
-
-## Building with Docker
-
-The recommended way to deploy the server is with
-[faf-stack](https://github.com/FAForever/faf-stack). However, you can also
-build the docker image manually.
-
-Follow the steps to get [faf-db](https://github.com/FAForever/db) setup, the
-following assumes the db container is called `faf-db` and the database is called
-`faf` and the root password is `banana`.
-
-Then use Docker to build and run the server as follows
-
-    $ docker build -t faf-server .
-    $ docker run --link faf-db:db -p 8001:8001 -d faf-server
-
-Check if the container is running with
-
-    $ docker ps
-
-If you cannot find `faf-server` in the list, run `docker run` without `-d` to
-see what happens.
-
-### Configuration
-
-If you have for example a different root password or database name than the default
-`DB_PASSWORD` and `DB_NAME` entries in
-[config.py](https://github.com/FAForever/server/blob/develop/server/config.py),
-you should provide a custom configuration file.
-This file will be used for all variables that it defines
-while the default values of `config.py` still apply for those it doesn't.
-To use your custom configuration file, pass its location as an environment
-variable to docker:
-
-    $ docker run --link faf-db:db -p 8001:8001 -e CONFIGURATION_FILE=<path> faf-server
-
-You can find an example configuration file under
-[tests/data/test_conf.yaml](https://github.com/FAForever/server/blob/develop/tests/data/test_conf.yaml).
-
-# Network Protocol
-
-The protocol is mainly JSON-encoded maps, containing at minimum a `command` key,
-representing the command to dispatch.
-
-The wire format uses [QDataStream](http://doc.qt.io/qt-5/qdatastream.html) (UTF-16, BigEndian).
-
-For the lobbyconnection, each message is of the form:
-
-    ACTION: QString
-
-With most carrying a footer containing:
-
-    LOGIN: QString
-    SESSION: QString
-
-## Incoming Packages
-
-##### Mod Vault
-
-* `{command: modvault, type: start}`: show the last 100 mods
-* `{command: modvault, type: like, uid: <uid>}`: check if user liked the mod, otherwise increase the like counter
-* `{command: modvault, type: download, uid: <uid>}`: notify server about a download (for download counter), does not start the download
-
-##### Social
-* `{command: social_add, friend|foe: <player_id>}`: Add a friend or foe
-* `{command: social_remove, friend|foe: <player_id>}`: Remove a friend or foe
-
-##### Avatar
-* `{command: avatar, action: list_avatar}`: Send a list of available avatars
-* `{command: avatar, action: select, avatar: <avatar_url>}`: Select a valid avatar for the player
-
-##### ICE Servers
-
-* `{command: ice_servers}`: Send ICE TURN/STUN servers - Returns: `{command: ice_servers, : <ice servers>, date_created: <date token was created in ISO 8601 format>, ttl: <ttl in seconds>}`
-
-##### Misc
-
-* [deprecated] `{command: ask_session}`: response with a welcome command and a valid session (can be delayed)
-* `{command: hello, version: <...>, login: <...>, password: <...>, unique_id: <...>, (session: <...>)}`: Log in to the server
-
-##  Stream (Deprecated)
-
-The stream API is deprecated, but currently the following message types are supported:
-
-* `PING`: response with a `PONG`
-* `PONG`: internal state changed to ponged
+### Deprecations
+Some fields or entire message classes may become deprecated and marked for
+removal over time. Actual removal is very rare as it can cause potential
+breakages of outdated clients. Currently, deprecated fields and messages will
+be marked with a `# DEPRECATED` comment in the server code and an explanation of
+how to migrate to the new functionality that is replacing the deprecated field
+or message.

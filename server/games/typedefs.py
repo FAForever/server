@@ -1,7 +1,8 @@
 from enum import Enum, unique
-from typing import Dict, List, NamedTuple, Optional, Set
+from typing import Any, NamedTuple, Optional
 
-from server.games.game_results import GameOutcome
+from server.db.typedefs import Victory
+from server.games.game_results import ArmyResult, GameOutcome
 from server.players import Player
 
 
@@ -14,35 +15,30 @@ class GameState(Enum):
 
 
 @unique
-class Victory(Enum):
-    DEMORALIZATION = 0
-    DOMINATION = 1
-    ERADICATION = 2
-    SANDBOX = 3
+class GameConnectionState(Enum):
+    INITIALIZING = 0
+    INITIALIZED = 1
+    CONNECTED_TO_HOST = 2
+    ENDED = 3
+
+
+@unique
+class InitMode(Enum):
+    NORMAL_LOBBY = 0
+    AUTO_LOBBY = 1
+
+
+@unique
+class GameType(Enum):
+    COOP = "coop"
+    CUSTOM = "custom"
+    MATCHMAKER = "matchmaker"
 
 
 @unique
 class VisibilityState(Enum):
-    PUBLIC = 0
-    FRIENDS = 1
-
-    @staticmethod
-    def from_string(value: str) -> Optional["VisibilityState"]:
-        """
-        :param value: The string to convert from
-
-        :return: VisibilityState or None if the string is not valid
-        """
-        return {
-            "public": VisibilityState.PUBLIC,
-            "friends": VisibilityState.FRIENDS,
-        }.get(value)
-
-    def to_string(self) -> Optional[str]:
-        return {
-            VisibilityState.PUBLIC: "public",
-            VisibilityState.FRIENDS: "friends",
-        }.get(self)
+    PUBLIC = "public"
+    FRIENDS = "friends"
 
 
 # Identifiers must be kept in sync with the contents of the invalid_game_reasons table.
@@ -75,6 +71,7 @@ class ValidityState(Enum):
     EXPANSION_DISABLED = 22
     SPAWN_NOT_FIXED = 23
     OTHER_UNRANK = 24
+    HOST_SET_UNRANKED = 25
 
 
 class FeaturedModType():
@@ -83,7 +80,6 @@ class FeaturedModType():
     """
 
     COOP = "coop"
-    EQUILIBRIUM = "equilibrium"
     FAF = "faf"
     FAFBETA = "fafbeta"
     LADDER_1V1 = "ladder1v1"
@@ -101,15 +97,16 @@ class BasicGameInfo(NamedTuple):
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: List[int]
-    teams: List[Set[Player]]
+    mods: list[str]
+    teams: list[set[Player]]
 
 
 class TeamRatingSummary(NamedTuple):
     outcome: GameOutcome
-    player_ids: Set[int]
+    player_ids: set[int]
+    army_results: list[ArmyResult]
 
 
 class EndedGameInfo(NamedTuple):
@@ -127,20 +124,21 @@ class EndedGameInfo(NamedTuple):
 
     game_id: int
     rating_type: Optional[str]
-    map_id: int
+    map_id: Optional[int]
     game_mode: str
-    mods: List[int]
-    commander_kills: Dict[str, int]
+    mods: list[str]
+    commander_kills: dict[str, int]
     validity: ValidityState
-    team_summaries: List[TeamRatingSummary]
+    team_summaries: list[TeamRatingSummary]
 
     @classmethod
     def from_basic(
         cls,
         basic_info: BasicGameInfo,
         validity: ValidityState,
-        team_outcomes: List[GameOutcome],
-        commander_kills: Dict[str, int],
+        team_outcomes: list[GameOutcome],
+        commander_kills: dict[str, int],
+        team_army_results: list[list[ArmyResult]],
     ) -> "EndedGameInfo":
         if len(basic_info.teams) != len(team_outcomes):
             raise ValueError(
@@ -157,8 +155,9 @@ class EndedGameInfo(NamedTuple):
             commander_kills,
             validity,
             [
-                TeamRatingSummary(outcome, set(player.id for player in team))
-                for outcome, team in zip(team_outcomes, basic_info.teams)
+                TeamRatingSummary(outcome, set(player.id for player in team), army_results)
+                for outcome, team, army_results
+                in zip(team_outcomes, basic_info.teams, team_army_results)
             ],
         )
 
@@ -177,7 +176,57 @@ class EndedGameInfo(NamedTuple):
                 {
                     "outcome": team_summary.outcome.name,
                     "player_ids": list(team_summary.player_ids),
+                    "army_results": [
+                        result._asdict()
+                        for result in sorted(
+                            team_summary.army_results,
+                            key=lambda x: x.player_id
+                        )
+                    ],
                 }
                 for team_summary in self.team_summaries
             ],
         }
+
+
+class _FAEnabled(object):
+    __slots__ = ()
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, str):
+            other = other.lower()
+
+        return other in (True, "true", "on", "yes", 1)
+
+
+class _FADisabled(object):
+    __slots__ = ()
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, str):
+            other = other.lower()
+
+        return other in (False, "false", "off", "no", 0)
+
+
+class FA(object):
+    __slots__ = ()
+
+    ENABLED = _FAEnabled()
+    DISABLED = _FADisabled()
+
+
+__all__ = (
+    "BasicGameInfo",
+    "EndedGameInfo",
+    "FA",
+    "FeaturedModType",
+    "GameConnectionState",
+    "GameState",
+    "GameType",
+    "InitMode",
+    "TeamRatingSummary",
+    "ValidityState",
+    "Victory",
+    "VisibilityState",
+)

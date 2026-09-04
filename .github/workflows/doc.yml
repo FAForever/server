@@ -1,0 +1,32 @@
+# Build the documentation and push to github pages
+name: Doc
+
+on:
+  push:
+    branches: develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies with pipenv
+        run: |
+          pip install pipenv==2023.4.20
+          pipenv sync
+          pipenv run pip install pdoc3
+
+      - name: Build
+        run: pipenv run doc
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./html/server

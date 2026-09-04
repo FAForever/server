@@ -1,0 +1,152 @@
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import ClassVar, Optional
+
+import humanize
+
+from server.config import config
+from server.core import Service
+from server.decorators import with_logger
+from server.players import Player
+from server.timing import at_interval, datetime_now
+
+
+@dataclass
+class Violation:
+    count: int
+    time: datetime
+
+    def __init__(self, count: int = 1, time: Optional[datetime] = None):
+        self.count = count
+        self.time = time or datetime_now()
+
+    def register(self):
+        self.count += 1
+        self.time = datetime_now()
+
+    def get_ban_expiration(self) -> datetime:
+        if self.count < config.LADDER_VIOLATIONS_BAN_THRESHOLD:
+            # No ban, expires as soon as it's registered
+            return self.time
+        elif self.count == config.LADDER_VIOLATIONS_BAN_THRESHOLD:
+            return self.time + timedelta(
+                seconds=config.LADDER_VIOLATIONS_FIRST_BAN_DURATION,
+            )
+        else:
+            return self.time + timedelta(
+                seconds=config.LADDER_VIOLATIONS_BAN_DURATION,
+            )
+
+    def get_remaining(self, now: Optional[datetime] = None) -> timedelta:
+        return self.get_ban_expiration() - (now or datetime_now())
+
+    def is_expired(self, now: Optional[datetime] = None) -> bool:
+        """
+        Whether the violation history should be reset. This is different from
+        the ban expiration time which should be checked by calling
+        `get_ban_expiration`.
+        """
+        now = now or datetime_now()
+        exp = self.time + timedelta(seconds=config.LADDER_VIOLATIONS_RESET_TIME)
+        return exp <= now
+
+    def to_dict(self) -> dict:
+        return {
+            "count": self.count,
+            "time": self.time.isoformat()
+        }
+
+
+@with_logger
+class ViolationService(Service):
+    """
+    Track who is banned from searching and for how long. Apply progressive
+    discipline for repeated violations.
+
+    A violation could be anything, but it is usually any time a player fails
+    to connect to a game.
+    """
+
+    _logger: ClassVar[logging.Logger]
+
+    def __init__(self):
+        # We store a reference to the original `Player` object for logging only
+        self._violations: dict[int, tuple[Player, Violation]] = {}
+
+    async def initialize(self):
+        self._cleanup_task = at_interval(5, func=self.clear_expired)
+
+    def clear_expired(self):
+        now = datetime_now()
+        for player, violation in list(self._violations.values()):
+            if violation.is_expired(now):
+                self._clear_violation(player)
+
+    def register_violations(self, players: list[Player]):
+        if not config.LADDER_VIOLATIONS_ENABLED:
+            return
+
+        now = datetime_now()
+        for player in players:
+            violation = self.get_violation(player)
+            if violation is None or violation.is_expired(now):
+                violation = Violation(time=now)
+                self.set_violation(player, violation)
+            else:
+                violation.register()
+
+            player.write_message({
+                "command": "search_violation",
+                **violation.to_dict()
+            })
+            extra_text = ""
+            if violation.count > 1:
+                delta_text = humanize.precisedelta(
+                    violation.get_ban_expiration() - now
+                )
+                extra_text = f" You can queue again in {delta_text}"
+            # DEPRECATED: Use `search_violation` instead
+            player.write_message({
+                "command": "notice",
+                "style": "info",
+                "text": (
+                    f"You have caused a matchmaking connection failure {violation.count} time(s). "
+                    "Multiple failures result in temporary time-outs from matchmaker. "
+                    "Please seek support on the forums or discord for persistent issues." +
+                    extra_text
+                )
+            })
+
+    def get_violations(self, players: list[Player]) -> dict[Player, Violation]:
+        if not config.LADDER_VIOLATIONS_ENABLED:
+            return {}
+
+        now = datetime_now()
+        result = {}
+        for player in players:
+            violation = self.get_violation(player)
+            if not violation:
+                continue
+            elif violation.get_ban_expiration() > now:
+                result[player] = violation
+            elif violation.is_expired(now):
+                self._clear_violation(player)
+
+        return result
+
+    def get_violation(self, player: Player) -> Optional[Violation]:
+        _, violation = self._violations.get(player.id, (None, None))
+        return violation
+
+    def set_violation(self, player: Player, violation: Violation):
+        self._violations[player.id] = (player, violation)
+
+    def _clear_violation(self, player: Player):
+        violation = self.get_violation(player)
+        self._logger.debug(
+            "Cleared violation for player %s: %s",
+            player.login,
+            violation
+        )
+        del self._violations[player.id]

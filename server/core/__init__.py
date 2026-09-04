@@ -1,3 +1,10 @@
+"""
+Server framework
+
+This module is completely self contained and could be extracted to its own
+project.
+"""
+
 from .dependency_injector import DependencyInjector
 from .service import Service, create_services
 

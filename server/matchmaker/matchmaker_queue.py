@@ -1,17 +1,25 @@
 import asyncio
+import logging
 import time
-from collections import OrderedDict, deque
+from collections import OrderedDict
 from concurrent.futures import CancelledError
 from datetime import datetime, timezone
-from typing import Deque, Dict, Iterable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Iterable, Optional
 
 import server.metrics as metrics
 
+from ..asyncio_extensions import SpinLock, synchronized
 from ..decorators import with_logger
-from .algorithm import make_matches, make_teams, make_teams_from_single
-from .map_pool import MapPool
+from ..players import PlayerState
+from .algorithm.team_matchmaker import TeamMatchMaker
+from .map_pool import MapPool, MatchmakerQueueMapPool
 from .pop_timer import PopTimer
 from .search import Match, Search
+
+if TYPE_CHECKING:
+    from server.game_service import GameService
+
+MatchFoundCallback = Callable[[Search, Search, "MatchmakerQueue"], Any]
 
 
 class MatchmakerSearchTimer:
@@ -30,64 +38,73 @@ class MatchmakerSearchTimer:
         else:
             status = "errored"
 
-        metric = metrics.matchmaker_searches.labels(self.queue_name, status)
+        metric = metrics.matchmaker_search_duration.labels(self.queue_name, status)
         metric.observe(total_time)
 
 
 @with_logger
 class MatchmakerQueue:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
         game_service: "GameService",
+        on_match_found: MatchFoundCallback,
         name: str,
+        queue_id: int,
         featured_mod: str,
         rating_type: str,
         team_size: int = 1,
-        map_pools: Iterable[Tuple[MapPool, Optional[int], Optional[int]]] = ()
+        params: Optional[dict[str, Any]] = None,
+        map_pools: Iterable[MatchmakerQueueMapPool] = (),
     ):
         self.game_service = game_service
         self.name = name
+        self.id = queue_id
         self.featured_mod = featured_mod
         self.rating_type = rating_type
         self.team_size = team_size
-        self.map_pools = {info[0].id: info for info in map_pools}
+        self.rating_peak = 1000.0
+        self.params = params or {}
+        self.map_pools = {info.map_pool.id: info for info in map_pools}
 
-        self.queue: Dict[Search, Search] = OrderedDict()
-        self._matches: Deque[Match] = deque()
+        self._queue: dict[Search, None] = OrderedDict()
+        self.on_match_found = on_match_found
         self._is_running = True
 
-        self.timer = PopTimer(self.name)
+        self.timer = PopTimer(self)
+
+        self.matchmaker = TeamMatchMaker()
+
+    @property
+    def is_running(self) -> bool:
+        return self._is_running
 
     def add_map_pool(
         self,
-        map_pool: MapPool,
-        min_rating: Optional[int],
-        max_rating: Optional[int]
+        matchmaker_queue_map_pool: MatchmakerQueueMapPool
     ) -> None:
-        self.map_pools[map_pool.id] = (map_pool, min_rating, max_rating)
+        self.map_pools[matchmaker_queue_map_pool.map_pool.id] = matchmaker_queue_map_pool
 
-    def get_map_pool_for_rating(self, rating: int) -> Optional[MapPool]:
-        for map_pool, min_rating, max_rating in self.map_pools.values():
+    def get_map_pool_for_rating(self, rating: float) -> Optional[MapPool]:
+        for _, map_pool, min_rating, max_rating, *_, in self.map_pools.values():
             if min_rating is not None and rating < min_rating:
                 continue
             if max_rating is not None and rating > max_rating:
                 continue
             return map_pool
 
+        return None
+
+    def get_game_options(self) -> Optional[dict[str, Any]]:
+        return self.params.get("GameOptions") or None
+
     def initialize(self):
         asyncio.create_task(self.queue_pop_timer())
 
-    async def iter_matches(self):
-        """ Asynchronously yields matches as they become available """
-
-        while self._is_running:
-            if not self._matches:
-                # There are no matches so there is nothing to do
-                await asyncio.sleep(1)
-                continue
-
-            # Yield the next available match to the caller
-            yield self._matches.popleft()
+    @property
+    def num_players(self) -> int:
+        return sum(len(search.players) for search in self._queue.keys())
 
     async def queue_pop_timer(self) -> None:
         """ Periodically tries to match all Searches in the queue. The amount
@@ -95,36 +112,36 @@ class MatchmakerQueue:
         in the queue.
         """
         self._logger.debug("MatchmakerQueue initialized for %s", self.name)
-        while self._is_running:
-            await self.timer.next_pop(lambda: len(self.queue))
+        while self.is_running:
+            try:
+                await self.timer.next_pop()
 
-            await self.find_matches()
+                await self.find_matches()
 
-            number_of_matches = len(self._matches)
-            metrics.matches.labels(self.name).set(number_of_matches)
-
-            # TODO: Move this into algorithm, then don't need to recalculate quality_with?
-            # Probably not a major bottleneck though.
-            for search1, search2 in self._matches:
-                metrics.match_quality.labels(self.name).observe(
-                    search1.quality_with(search2)
+                number_of_unmatched_searches = len(self._queue)
+                metrics.unmatched_searches.labels(self.name).set(
+                    number_of_unmatched_searches
                 )
 
-            number_of_unmatched_searches = len(self.queue)
-            metrics.unmatched_searches.labels(self.name).set(number_of_unmatched_searches)
+                # Any searches in the queue at this point were unable to find a
+                # match this round and will have higher priority next round.
 
-            # Any searches in the queue at this point were unable to find a
-            # match this round and will have higher priority next round.
-
-            self.game_service.mark_dirty(self)
+                self.game_service.mark_dirty(self)
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                self._logger.exception(
+                    "Unexpected error during queue pop timer loop!"
+                )
+                # To avoid potential busy loops
+                await asyncio.sleep(1)
+        self._logger.info("%s queue stopped", self.name)
 
     async def search(self, search: Search) -> None:
         """
         Search for a match.
 
-        Puts a search object into the Queue and awaits completion.
-
-        :param player: Player to search for a matchup for
+        Puts a search object into the queue and awaits completion.
         """
         assert search is not None
 
@@ -139,69 +156,129 @@ class MatchmakerQueue:
             # If the queue was cancelled, or some other error occurred,
             # make sure to clean up.
             self.game_service.mark_dirty(self)
-            if search in self.queue:
-                del self.queue[search]
+            if search in self._queue:
+                del self._queue[search]
 
+    @synchronized(SpinLock(sleep_duration=1))
     async def find_matches(self) -> None:
+        """
+        Perform the matchmaking algorithm.
+
+        Note that this function is synchronized such that only one instance of
+        MatchmakerQueue can call this function at any given time. This is
+        needed in order to safely enable multiqueuing.
+        """
         self._logger.info("Searching for matches: %s", self.name)
 
-        if len(self.queue) < 2 * self.team_size:
-            return
+        searches = list(self._queue.keys())
 
-        searches = self.find_teams()
+        if self.num_players < 2 * self.team_size:
+            self._register_unmatched_searches(searches)
+            return
 
         # Call self.match on all matches and filter out the ones that were cancelled
         loop = asyncio.get_running_loop()
-        new_matches = filter(
-            lambda m: self.match(m[0], m[1]),
-            await loop.run_in_executor(None, make_matches, searches)
+        proposed_matches, unmatched_searches = await loop.run_in_executor(
+            None,
+            self.matchmaker.find,
+            searches,
+            self.team_size,
+            self.rating_peak,
         )
-        self._matches.extend(new_matches)
 
-    def find_teams(self) -> List[Search]:
-        searches = []
-        unmatched = list(self.queue.values())
-        need_team = []
-        for search in unmatched:
-            if len(search.players) == self.team_size:
-                searches.append(search)
+        # filter out matches that were cancelled
+        matches: list[Match] = []
+        for match in proposed_matches:
+            if self.match(match[0], match[1]):
+                matches.append(match)
             else:
-                need_team.append(search)
+                unmatched_searches.extend(match)
 
-        if all(len(s.players) == 1 for s in need_team):
-            teams, unmatched = make_teams_from_single(need_team, self.team_size)
-        else:
-            teams, unmatched = make_teams(need_team, self.team_size)
-        searches.extend(teams)
+        self._register_unmatched_searches(unmatched_searches)
 
-        return searches
+        for search1, search2 in matches:
+            self._report_party_sizes(search1)
+            self._report_party_sizes(search2)
+
+            rating_imbalance = abs(search1.cumulative_rating - search2.cumulative_rating)
+            metrics.match_rating_imbalance.labels(self.name).observe(rating_imbalance)
+
+            ratings = search1.displayed_ratings + search2.displayed_ratings
+            rating_variety = max(ratings) - min(ratings)
+            metrics.match_rating_variety.labels(self.name).observe(rating_variety)
+
+            metrics.match_quality.labels(self.name).observe(
+                search1.quality_with(search2)
+            )
+            try:
+                self.on_match_found(search1, search2, self)
+            except Exception:
+                self._logger.exception("Match callback raised an exception!")
+
+    def _report_party_sizes(self, team):
+        for search in team.get_original_searches():
+            metrics.matched_matchmaker_searches.labels(
+                self.name, len(search.players)
+            ).inc()
+
+    def _register_unmatched_searches(
+        self,
+        unmatched_searches: list[Search],
+    ):
+        """
+        Tells all unmatched searches that they went through a failed matching
+        attempt.
+        """
+        for search in unmatched_searches:
+            search.register_failed_matching_attempt()
+            self._logger.debug(
+                "Search %s remained unmatched at threshold %f in attempt number %s",
+                search, search.match_threshold, search.failed_matching_attempts
+            )
 
     def push(self, search: Search):
         """ Push the given search object onto the queue """
 
-        self.queue[search] = search
+        self._queue[search] = None
         self.game_service.mark_dirty(self)
 
     def match(self, s1: Search, s2: Search) -> bool:
         """
         Mark the given two searches as matched
-        :param s1:
-        :param s2:
-        :return:
+
+        # Returns
+        `True` if matching succeeded or `False` if matching failed.
         """
-        if (s1.is_matched or s2.is_matched) or (s1.is_cancelled or s2.is_cancelled):
+        if s1.is_matched or s2.is_matched:
             return False
+        if s1.is_cancelled or s2.is_cancelled:
+            return False
+        # Additional failsafe. Ideally this check will never fail.
+        if any(
+            player.state != PlayerState.SEARCHING_LADDER
+            for player in s1.players + s2.players
+        ):
+            self._logger.warning(
+                "Tried to match searches %s and %s while some players had "
+                "invalid states: team1: %s team2: %s",
+                s1, s2,
+                list(p.state for p in s1.players),
+                list(p.state for p in s2.players)
+            )
+            return False
+
         s1.match(s2)
         s2.match(s1)
-        if s1 in self.queue:
-            del self.queue[s1]
-        if s2 in self.queue:
-            del self.queue[s2]
+        if s1 in self._queue:
+            del self._queue[s1]
+        if s2 in self._queue:
+            del self._queue[s2]
 
         return True
 
     def shutdown(self):
         self._is_running = False
+        self.timer.cancel()
 
     def to_dict(self):
         """
@@ -212,12 +289,16 @@ class MatchmakerQueue:
             "queue_pop_time": datetime.fromtimestamp(
                 self.timer.next_queue_pop, timezone.utc
             ).isoformat(),
-            "num_players": sum(len(search.players) for search in self.queue.values()),
-            "boundary_80s": [search.boundary_80 for search in self.queue.values()],
-            "boundary_75s": [search.boundary_75 for search in self.queue.values()],
+            "queue_pop_time_delta": round(
+                self.timer.next_queue_pop - time.time(),
+                ndigits=2
+            ),
+            "num_players": self.num_players,
+            "boundary_80s": [search.boundary_80 for search in self._queue.keys()],
+            "boundary_75s": [search.boundary_75 for search in self._queue.keys()],
             # TODO: Remove, the client should query the API for this
             "team_size": self.team_size,
         }
 
     def __repr__(self):
-        return repr(self.queue)
+        return repr(self._queue)

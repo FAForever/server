@@ -3,11 +3,13 @@ faf-db*
 
 # Hidden files
 .*
+!.git
 
 # Development files
-*tests
-scripts
-dev-config.yml
 __pycache__
-*.mmdb
 *.bak
+*.mmdb
+*tests
+dev-config.yml
+Dockerfile
+scripts

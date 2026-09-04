@@ -1,29 +1,44 @@
-FROM python:3.7-slim
+###############
+# Build image #
+###############
+FROM python:3.13-slim as builder
 
 # Need git for installing aiomysql
 RUN apt-get update
-RUN apt-get install -y --no-install-recommends \
-        git && \
-    apt-get clean
-RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get install -y --no-install-recommends git
+
+RUN pip install pipenv==2025.0.4
 
 WORKDIR /code/
-COPY Pipfile.lock Pipfile.lock
-COPY Pipfile Pipfile
 
-RUN python3 -m pip install pipenv
-RUN pipenv install --ignore-pipfile --system --deploy
+# Copy dependency files first so we only reinstall when these are changed
+COPY Pipfile Pipfile.lock /code/
 
-ADD . /code/
+RUN PIPENV_VENV_IN_PROJECT=1 pipenv sync
 
-ARG TRAVIS_TAG
-ENV VERSION=$TRAVIS_TAG
-RUN python3 -m pip install -e .
+COPY . /code/
+RUN PIPENV_VENV_IN_PROJECT=1 pipenv run pip install .
+
+#################
+# Runtime image #
+#################
+FROM python:3.13-slim
+
+ARG GITHUB_REF
+ENV VERSION=$GITHUB_REF
+
+RUN useradd --no-create-home faf
+
+COPY --from=builder /code/.venv/lib/ /usr/local/lib/
+COPY --from=builder --chown=faf:faf /code/main.py /code/
+
+WORKDIR /code/
+USER faf
 
 # Main entrypoint and the default command that will be run
-CMD ["/usr/local/bin/python3", "server.py"]
+CMD ["/usr/local/bin/python3", "main.py"]
 
-# Game server runs on 8000/tcp, lobby server runs on 8001/tcp, nat echo server runs on 30351/udp
-EXPOSE 8000 8001 30351
+# lobby server runs on 8001/tcp (QDataStream) and 8002/tcp (JSON)
+EXPOSE 8001 8002
 
 RUN python3 -V

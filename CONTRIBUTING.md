@@ -71,3 +71,42 @@ some_long.function_name_with_dict_arg({
 
 3.  Keep lines shorter than 80 characters. This rule is somewhat lenient.
 4.  More to come...
+
+## Other
+-   Mark things as deprecated using a comment like this `# DEPRECATED: <reason>`.
+This makes it easy to remove all deprecations by grepping through the project.
+
+# Maintaining
+
+Here are a few notes about how I (Askaholic) have been maintaining this project
+written mainly for the benefit of future maintainers.
+
+## Version Numbers
+
+Release version numbers follow [Semantic Versioning](https://semver.org/) with
+respect to the commands present in the network protocol as well as the keys
+present in those commands. However, the *absence* of a command or key does not
+define the protocol API. This means that the addition of new commands or new
+parameters to commands is considered a backwards compatible change but their
+removal is not. Some commands are also part of a larger "command flow", or
+sequence of commands, and the order of that sequence is considered part of the
+API. This means that changing the behavior of the server in some way that is not
+a simple addition to the protocol is considered a breaking change, with the
+exception of changes that are considered bugfixes.
+
+The purpose of this is to create a stable server protocol that will not
+spuriously break older client implementations on new releases. Possible
+breakages will always happen on a major version update (or possibly if a client
+relies on buggy behavior). Still, we should strive to make the transition as
+easy as possible by implementing new functionality in a backwards compatible
+way and marking the old commands or parameters as deprecated. Ideally, we never
+need to release a new client version on the same day as a server update in order
+for things to continue functioning.
+
+## Pull Requests
+
+In this repository we squash PR's on merge. The only reason for this is because
+the previous maintainer did it when I took over. It doesn't seem to cause too
+terrible of a headache because contribution is relatively infrequent, and it
+does make the commit history a nice straight line. However, I feel like this
+would be more of a hindrance if the rate of PR creation were higher.

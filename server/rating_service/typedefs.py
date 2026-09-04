@@ -1,20 +1,11 @@
-from typing import Dict, List, NamedTuple
-
-from trueskill import Rating
+from typing import Any, NamedTuple
 
 from server.games.game_results import GameOutcome
 from server.games.typedefs import TeamRatingSummary
-from server.rating import RatingType
+from server.rating import Rating
 
 PlayerID = int
-
-
-class TeamRatingData(NamedTuple):
-    outcome: GameOutcome
-    ratings: Dict[int, Rating]
-
-
-GameRatingData = List[TeamRatingData]
+RatingDict = dict[PlayerID, Rating]
 
 
 class GameRatingSummary(NamedTuple):
@@ -28,10 +19,10 @@ class GameRatingSummary(NamedTuple):
 
     game_id: int
     rating_type: str
-    teams: List[TeamRatingSummary]
+    teams: list[TeamRatingSummary]
 
     @classmethod
-    def from_game_info_dict(cls, game_info: Dict) -> "GameRatingSummary":
+    def from_game_info_dict(cls, game_info: dict[str, Any]) -> "GameRatingSummary":
         if len(game_info["teams"]) != 2:
             raise ValueError("Detected other than two teams.")
 
@@ -40,11 +31,21 @@ class GameRatingSummary(NamedTuple):
             game_info["rating_type"],
             [
                 TeamRatingSummary(
-                    getattr(GameOutcome, summary["outcome"]), set(summary["player_ids"])
+                    GameOutcome(summary["outcome"]),
+                    set(summary["player_ids"]),
+                    summary["army_results"],
                 )
                 for summary in game_info["teams"]
             ],
         )
+
+
+class GameRatingResult(NamedTuple):
+    game_id: int
+    rating_type: str
+    old_ratings: RatingDict
+    new_ratings: RatingDict
+    outcome_map: dict[PlayerID, GameOutcome]
 
 
 class RatingServiceError(Exception):

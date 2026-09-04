@@ -1,0 +1,83 @@
+# Run static analysis
+name: Lint
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+
+
+jobs:
+  isort:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: pip install isort
+
+      - run: isort . --check --diff
+
+  flake8:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: TrueBrain/actions-flake8@v2
+        with:
+          flake8_version: 7.3.0
+          plugins: flake8-quotes~=3.4
+
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create requirements file
+        run: |
+          pip install pipenv==2025.0.4
+          pipenv requirements --dev > requirements.txt
+
+      # Mypy-check runs inside its own docker image
+      - uses: jpetrucciani/mypy-check@master
+        with:
+          python_version: '3.13'
+          requirements: |
+            types-PyYAML
+            types-PyMySQL
+            types-cachetools
+          requirements_file: requirements.txt
+          mypy_flags: |
+            --disable-error-code=annotation-unchecked
+            --follow-untyped-imports
+            --strict-equality
+            --warn-redundant-casts
+            --warn-unused-ignores
+          path: server/ main.py
+
+  pipenv-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: pip install pipenv
+
+      - run: pipenv verify

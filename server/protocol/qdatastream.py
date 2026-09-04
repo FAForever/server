@@ -1,13 +1,34 @@
+r"""DEPRECATED: Legacy [QDataStream](http://doc.qt.io/qt-5/qdatastream.html)
+(UTF-16, BigEndian) encoded data format.
+
+For the lobbyconnection, each message is of the form:
+```
+ACTION: QString
+```
+With most carrying a footer containing:
+```
+LOGIN: QString
+SESSION: QString
+```
+
+# Example:
+```python
+>>> QDataStreamProtocol.encode_message({"command": "ping"})
+b'\x00\x00\x00\x0c\x00\x00\x00\x08\x00P\x00I\x00N\x00G'
+
+```
+"""
+
 import base64
 import json
+import logging
 import struct
-from typing import Tuple
+from asyncio import IncompleteReadError
+from typing import ClassVar
 
 from server.decorators import with_logger
 
-from .protocol import Protocol
-
-json_encoder = json.JSONEncoder(separators=(',', ':'))
+from .protocol import DisconnectedError, Protocol, json_encoder
 
 
 @with_logger
@@ -16,37 +37,42 @@ class QDataStreamProtocol(Protocol):
     Implements the legacy QDataStream-based encoding scheme
     """
 
-    @staticmethod
-    def read_qstring(buffer: bytes, pos: int = 0) -> Tuple[int, str]:
-        """
-        Parse a serialized QString from buffer (A bytes like object) at given position
+    _logger: ClassVar[logging.Logger]
 
-        Requires len(buffer[pos:]) >= 4.
+    @staticmethod
+    def read_qstring(buffer: bytes, pos: int = 0) -> tuple[int, str]:
+        """
+        Parse a serialized QString from buffer (A bytes like object) at given
+        position.
+
+        Requires `len(buffer[pos:]) >= 4`.
 
         Pos is added to buffer_pos.
 
-        :type buffer: bytes
-        :return (int, str): (buffer_pos, message)
+        # Returns
+        The new buffer position and the message.
         """
         chunk = buffer[pos:pos + 4]
         rest = buffer[pos + 4:]
         assert len(chunk) == 4
 
-        (size, ) = struct.unpack('!I', chunk)
+        (size, ) = struct.unpack("!I", chunk)
         if len(rest) < size:
             raise ValueError(
-                "Malformed QString: Claims length {} but actually {}. Entire buffer: {}"
-                .format(size, len(rest), base64.b64encode(buffer)))
-        return size + pos + 4, (buffer[pos + 4:pos + 4 + size]).decode('UTF-16BE')
+                f"Malformed QString: Claims length {size} "
+                f"but actually {len(rest)}. "
+                f"Entire buffer: {base64.b64encode(buffer).decode()}",
+            )
+        return size + pos + 4, (buffer[pos + 4:pos + 4 + size]).decode("UTF-16BE")
 
     @staticmethod
     def pack_qstring(message: str) -> bytes:
-        encoded = message.encode('UTF-16BE')
-        return struct.pack('!i', len(encoded)) + encoded
+        encoded = message.encode("UTF-16BE")
+        return struct.pack("!i", len(encoded)) + encoded
 
     @staticmethod
-    def pack_block(block: bytes) -> bytes:
-        return struct.pack('!I', len(block)) + block
+    def pack_block(block: bytes | bytearray) -> bytes:
+        return struct.pack("!I", len(block)) + bytes(block)
 
     @staticmethod
     def read_block(data):
@@ -81,36 +107,44 @@ class QDataStreamProtocol(Protocol):
 
         return QDataStreamProtocol.pack_message(json_encoder.encode(message))
 
+    @staticmethod
+    def decode_message(data: bytes) -> dict:
+        _, action = QDataStreamProtocol.read_qstring(data)
+        if action in ("PING", "PONG"):
+            return {"command": action.lower()}
+
+        message = json.loads(action)
+        try:
+            for part in QDataStreamProtocol.read_block(data):
+                try:
+                    message_part = json.loads(part)
+                    if part != action:
+                        message.update(message_part)
+                except (ValueError, TypeError):
+                    if "legacy" not in message:
+                        message["legacy"] = []
+                    message["legacy"].append(part)
+        except (KeyError, ValueError):
+            pass
+        return message
+
     async def read_message(self):
         """
         Read a message from the stream
 
-        On malformed stream, raises IncompleteReadError
-
-        :return dict: Parsed message
+        # Errors
+        Raises `IncompleteReadError` on malformed stream.
         """
-        (block_length, ) = struct.unpack('!I', (await self.reader.readexactly(4)))
-        block = await self.reader.readexactly(block_length)
-        # FIXME: New protocol will remove the need for this
+        try:
+            length, *_ = struct.unpack("!I", await self.reader.readexactly(4))
+            block = await self.reader.readexactly(length)
+        except IncompleteReadError as e:
+            if self.reader.at_eof() and not e.partial:
+                raise DisconnectedError()
+            # Otherwise reraise
+            raise
 
-        pos, action = self.read_qstring(block)
-        if action in ['PING', 'PONG']:
-            return {'command': action.lower()}
-        else:
-            message = json.loads(action)
-            try:
-                for part in self.read_block(block):
-                    try:
-                        message_part = json.loads(part)
-                        if part != action:
-                            message.update(message_part)
-                    except (ValueError, TypeError):
-                        if 'legacy' not in message:
-                            message['legacy'] = []
-                        message['legacy'].append(part)
-            except (KeyError, ValueError):
-                pass
-            return message
+        return QDataStreamProtocol.decode_message(block)
 
 
 PING_MSG = QDataStreamProtocol.pack_message("PING")

@@ -7,11 +7,21 @@ from trueskill import Rating
 from server.factions import Faction
 from server.players import Player
 from server.protocol import DisconnectedError
-from server.rating import RatingType
+from server.rating import Leaderboard, RatingType
 
 
-def test_ratings():
-    p = Player('Schroedinger')
+@pytest.fixture
+def leaderboards():
+    global_ = Leaderboard(1, "global")
+    return {
+        "global": global_,
+        "ladder_1v1": Leaderboard(2, "ladder_1v1"),
+        "tmm_2v2": Leaderboard(3, "tmm_2v2", global_)
+    }
+
+
+def test_ratings(leaderboards):
+    p = Player("Schroedinger", leaderboards=leaderboards)
     p.ratings[RatingType.GLOBAL] = (1500, 20)
     assert p.ratings[RatingType.GLOBAL] == (1500, 20)
     p.ratings[RatingType.GLOBAL] = Rating(1700, 20)
@@ -27,25 +37,25 @@ def test_ratings():
 def test_faction():
     """
     Yes, this test was motivated by a bug
-    :return:
     """
-    p = Player('Schroedinger2')
-    p.faction = 'aeon'
+    p = Player("Schroedinger2")
+    p.faction = "aeon"
     assert p.faction == Faction.aeon
     p.faction = Faction.aeon
     assert p.faction == Faction.aeon
 
 
-def test_equality_by_id():
-    p = Player('Sheeo', 42)
-    p2 = Player('RandomSheeo', 42)
-    assert p == p2
-    assert p.__hash__() == p2.__hash__()
+def test_object_equality():
+    p1 = Player("Arthur", 42)
+    p2 = Player("Arthur", 42)
+    assert p1 == p1
+    assert p1 != p2
+    assert hash(p1) == hash(p1)
 
 
 def test_weak_references():
-    p = Player(login='Test')
-    weak_properties = ['lobby_connection', 'game']
+    p = Player("Test")
+    weak_properties = ["lobby_connection", "game", "game_connection"]
     referent = mock.Mock()
     for prop in weak_properties:
         setattr(p, prop, referent)
@@ -58,7 +68,7 @@ def test_weak_references():
 
 
 def test_unlink_weakref():
-    p = Player(login='Test')
+    p = Player("Test")
     mock_game = mock.Mock()
     p.game = mock_game
     assert p.game == mock_game
@@ -71,8 +81,8 @@ def test_serialize():
         player_id=42,
         login="Something",
         ratings={
-           RatingType.GLOBAL: (1234, 68),
-           RatingType.LADDER_1V1: (1500, 230),
+            RatingType.GLOBAL: (1234, 68),
+            RatingType.LADDER_1V1: (1500, 230),
         },
         clan="TOAST",
         game_count={RatingType.GLOBAL: 542}
@@ -81,6 +91,7 @@ def test_serialize():
         "id": 42,
         "login": "Something",
         "clan": "TOAST",
+        "state": "offline",
         "ratings": {
             "global": {
                 "rating": (1234, 68),
@@ -97,10 +108,34 @@ def test_serialize():
     }
 
 
-@pytest.mark.asyncio
+def test_serialize_state():
+    conn = mock.Mock()
+    p = Player("TestPlayer", lobby_connection=conn)
+    assert "state" not in p.to_dict()
+
+    del p.lobby_connection
+    assert p.to_dict()["state"] == "offline"
+
+
 async def test_send_message():
-    p = Player(login='Test')
+    p = Player("Test")
 
     assert p.lobby_connection is None
     with pytest.raises(DisconnectedError):
         await p.send_message({})
+
+
+def test_write_message():
+    p = Player("Test")
+
+    assert p.lobby_connection is None
+    # Should not raise
+    p.write_message({})
+
+
+def test_write_message_while_disconnecting(player_factory):
+    p = player_factory("Test", lobby_connection_spec="auto")
+    p.lobby_connection.write.side_effect = DisconnectedError()
+
+    # Should not raise
+    p.write_message({})

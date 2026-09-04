@@ -1,1 +1,5 @@
-__author__ = 'Michel Jung'
+"""
+Achievements and events
+"""
+
+__author__ = "Michel Jung"

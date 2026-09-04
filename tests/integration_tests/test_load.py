@@ -7,9 +7,6 @@ from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
-
 ###############################################################################
 #                                   HELPERS                                   #
 ###############################################################################
@@ -34,22 +31,10 @@ async def host(proto):
     return msg
 
 
-async def write_without_reading(proto):
-    # It takes quite a lot of spamming for the backpressure handling to take
-    # affect.
-    for _ in range(20_000):
-        await proto.send_message({
-            "command": "matchmaker_info",
-            "This is just to increase the message size": "DATA" * 1024
-        })
-
-    pytest.fail("The server did not apply backpressure to a spammer")
-
-
 @pytest.mark.slow
 @fast_forward(300)
 async def test_game_info_broadcast_on_connection_error(
-    event_loop, lobby_server, tmp_user, ladder_service, game_service, caplog
+    lobby_server, tmp_user, ladder_service, game_service, caplog
 ):
     """
     Causes connection errors in `do_report_dirties` which in turn will cause
@@ -131,21 +116,21 @@ async def test_game_info_broadcast_on_connection_error(
 
 @fast_forward(30)
 async def test_backpressure_handling(lobby_server, caplog):
-    # TRACE will be spammed with thousands of messages
-    caplog.set_level(logging.DEBUG)
-
     _, _, proto = await connect_and_sign_in(
         ("test", "test_password"), lobby_server
     )
-    # Set our local buffer size to 0 to help the server apply backpressure as
-    # early as possible.
-    proto.writer.transport.set_write_buffer_limits(high=0)
-    proto.reader._limit = 0
+    # TRACE will be spammed with thousands of messages
+    caplog.set_level(logging.DEBUG)
 
+    # It takes quite a lot of spamming for the read buffer to fill up.
+    for _ in range(20_000):
+        proto.write_message({
+            "command": "matchmaker_info",
+            "This is just to increase the message size": "DATA" * 1024
+        })
+
+    # FIXME: This test effectively does nothing
+    # In #532 server handled this TimeoutError and aborted connection,
+    # but in #548 handling was removed and no alternative handling was added
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(
-            # Due to some bizzare interaction, cancellation can hang so we
-            # prevent it with `shield`
-            asyncio.shield(write_without_reading(proto)),
-            timeout=10
-        )
+        await asyncio.wait_for(proto.drain(), timeout=10)

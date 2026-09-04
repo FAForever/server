@@ -1,27 +1,34 @@
+"""
+Game communication over GpgNet
+"""
+
 import asyncio
 import contextlib
+import json
+import logging
+from typing import Any
 
-from sqlalchemy import or_, select, text
+from sqlalchemy import select
 
 from server.db import FAFDatabase
 
-from .abc.base_game import GameConnectionState
 from .config import TRACE
-from .db.models import (
-    coop_leaderboard,
-    coop_map,
-    login,
-    teamkills
-)
-from .decorators import with_logger
+from .db.models import coop_leaderboard, coop_map, teamkills
 from .game_service import GameService
-from .games.game import Game, GameError, GameState, ValidityState, Victory
+from .games import (
+    CoopGame,
+    Game,
+    GameConnectionState,
+    GameError,
+    GameState,
+    ValidityState
+)
+from .games.typedefs import FA
 from .player_service import PlayerService
 from .players import Player, PlayerState
 from .protocol import DisconnectedError, GpgNetServerProtocol, Protocol
 
 
-@with_logger
 class GameConnection(GpgNetServerProtocol):
     """
     Responsible for connections to the game, using the GPGNet protocol
@@ -35,45 +42,46 @@ class GameConnection(GpgNetServerProtocol):
         protocol: Protocol,
         player_service: PlayerService,
         games: GameService,
-        state: GameConnectionState = GameConnectionState.INITIALIZING
+        state: GameConnectionState = GameConnectionState.INITIALIZING,
+        setup_timeout: int = 60,
     ):
         """
         Construct a new GameConnection
         """
         super().__init__()
+        self._logger = logging.getLogger(
+            f"{self.__class__.__qualname__}.{game.id}"
+        )
         self._db = database
-        self._logger.debug('GameConnection initializing')
 
         self.protocol = protocol
         self._state = state
         self.game_service = games
         self.player_service = player_service
 
-        self._player = player
+        self.player = player
         player.game_connection = self  # Set up weak reference to self
-        self._game = game
+        self.game = game
+
+        self.setup_timeout = setup_timeout
 
         self.finished_sim = False
+
+        self._logger.debug("GameConnection initializing")
+        if self.state is GameConnectionState.INITIALIZING:
+            asyncio.get_event_loop().create_task(
+                self.timeout_game_connection(setup_timeout)
+            )
+
+    async def timeout_game_connection(self, timeout):
+        await asyncio.sleep(timeout)
+        if self.state is GameConnectionState.INITIALIZING:
+            self._logger.debug("GameConection timed out...")
+            await self.abort("Player took too long to start the game")
 
     @property
     def state(self) -> GameConnectionState:
         return self._state
-
-    @property
-    def game(self) -> Game:
-        return self._game
-
-    @game.setter
-    def game(self, val: Game):
-        self._game = val
-
-    @property
-    def player(self) -> Player:
-        return self._player
-
-    @player.setter
-    def player(self, val: Player):
-        self._player = val
 
     def is_host(self) -> bool:
         if not self.game or not self.player:
@@ -88,13 +96,14 @@ class GameConnection(GpgNetServerProtocol):
         """
         Send a game message to the client.
 
-        :raises: DisconnectedError
+        # Errors
+        May raise `DisconnectedError`
 
         NOTE: When calling this on a connection other than `self` make sure to
         handle `DisconnectedError`, otherwise failure to send the message will
         cause the caller to be disconnected as well.
         """
-        message['target'] = "game"
+        message["target"] = "game"
 
         self._logger.log(TRACE, ">> %s: %s", self.player.login, message)
         await self.protocol.send_message(message)
@@ -102,21 +111,17 @@ class GameConnection(GpgNetServerProtocol):
     async def _handle_idle_state(self):
         """
         This message is sent by FA when it doesn't know what to do.
-        :return: None
         """
         assert self.game
-        state = self.player.state
 
-        if state == PlayerState.HOSTING:
+        if self.player == self.game.host:
             self.game.state = GameState.LOBBY
             self._state = GameConnectionState.CONNECTED_TO_HOST
             self.game.add_game_connection(self)
-            self.game.host = self.player
-        elif state == PlayerState.JOINING:
-            return
+            self.player.state = PlayerState.HOSTING
         else:
-            self._logger.error("Unknown PlayerState: %s", state)
-            await self.abort()
+            self._state = GameConnectionState.INITIALIZED
+            self.player.state = PlayerState.JOINING
 
     async def _handle_lobby_state(self):
         """
@@ -127,7 +132,7 @@ class GameConnection(GpgNetServerProtocol):
         """
         player_state = self.player.state
         if player_state == PlayerState.HOSTING:
-            await self.send_HostGame(self.game.map_folder_name)
+            await self.send_HostGame(self.game.map.folder_name)
             self.game.set_hosted()
         # If the player is joining, we connect him to host
         # followed by the rest of the players.
@@ -156,7 +161,6 @@ class GameConnection(GpgNetServerProtocol):
     async def connect_to_host(self, peer: "GameConnection"):
         """
         Connect self to a given peer (host)
-        :return:
         """
         if not peer or peer.player.state != PlayerState.HOSTING:
             await self.abort("The host left the lobby")
@@ -177,7 +181,6 @@ class GameConnection(GpgNetServerProtocol):
     async def connect_to_peer(self, peer: "GameConnection"):
         """
         Connect two peers
-        :return: None
         """
         if peer is not None:
             await self.send_ConnectToPeer(
@@ -194,15 +197,12 @@ class GameConnection(GpgNetServerProtocol):
                     offer=False
                 )
 
-    async def handle_action(self, command, args):
+    async def handle_action(self, command: str, args: list[Any]):
         """
         Handle GpgNetSend messages, wrapped in the JSON protocol
-        :param command: command type
-        :param args: command arguments
-        :return: None
         """
         try:
-            await COMMAND_HANDLERS[command](self, *args)
+            await COMMAND_HANDLERS[command](self, *args)  # type: ignore
         except KeyError:
             self._logger.warning(
                 "Unrecognized command %s: %s from player %s",
@@ -212,39 +212,25 @@ class GameConnection(GpgNetServerProtocol):
             self._logger.exception("Bad command arguments")
         except ConnectionError as e:
             raise e
-        except Exception:  # pragma: no cover
-            self._logger.exception("Something awful happened in a game thread!")
+        except Exception as e:  # pragma: no cover
+            self._logger.exception(
+                "Something awful happened in a game thread! %s",
+                e
+            )
             await self.abort()
 
     async def handle_desync(self, *_args):  # pragma: no cover
         self.game.desyncs += 1
 
-    async def handle_game_option(self, key, value):
+    async def handle_game_option(self, key: str, value: Any):
         if not self.is_host():
             return
 
-        if key == "Victory":
-            self.game.gameOptions["Victory"] = Victory.__members__.get(
-                value.upper(), None
-            )
-        else:
-            self.game.gameOptions[key] = value
-
-        if key == "Slots":
-            self.game.max_players = int(value)
-        elif key == "ScenarioFile":
-            raw = repr(value)
-            self.game.map_scenario_path = \
-                raw.replace("\\", "/").replace("//", "/").replace("'", "")
-            self.game.map_file_path = 'maps/{}.zip'.format(
-                self.game.map_scenario_path.split("/")[2].lower()
-            )
-        elif key == "Title":
-            self.game.name = self.game.sanitize_name(value)
+        await self.game.game_options.set_option(key, value)
 
         self._mark_dirty()
 
-    async def handle_game_mods(self, mode, args):
+    async def handle_game_mods(self, mode: Any, args: Any):
         if not self.is_host():
             return
 
@@ -257,107 +243,168 @@ class GameConnection(GpgNetServerProtocol):
             uids = str(args).split()
             self.game.mods = {uid: "Unknown sim mod" for uid in uids}
             async with self._db.acquire() as conn:
-                result = await conn.execute(
-                    text("SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids"),
-                    ids=tuple(uids))
-                async for row in result:
-                    self.game.mods[row["uid"]] = row["name"]
+                rows = await conn.execute(
+                    "SELECT `uid`, `name` from `table_mod` WHERE `uid` in :ids",
+                    ids=tuple(uids)
+                )
+                for row in rows:
+                    self.game.mods[row.uid] = row.name
         else:
             self._logger.warning("Ignoring game mod: %s, %s", mode, args)
             return
 
         self._mark_dirty()
 
-    async def handle_player_option(self, player_id, command, value):
+    async def handle_player_option(
+        self, player_id: Any, key: Any, value: Any
+    ):
         if not self.is_host():
             return
 
-        self.game.set_player_option(int(player_id), command, value)
+        self.game.set_player_option(int(player_id), key, value)
         self._mark_dirty()
 
-    async def handle_ai_option(self, name, key, value):
+    async def handle_ai_option(self, name: Any, key: Any, value: Any):
         if not self.is_host():
             return
 
         self.game.set_ai_option(str(name), key, value)
         self._mark_dirty()
 
-    async def handle_clear_slot(self, slot):
+    async def handle_clear_slot(self, slot: Any):
         if not self.is_host():
             return
 
         self.game.clear_slot(int(slot))
         self._mark_dirty()
 
-    async def handle_game_result(self, army, result):
+    async def handle_game_result(self, army: Any, result: Any):
         army = int(army)
         result = str(result).lower()
-        try:
-            label, score = result.split(" ")
-            await self.game.add_result(self.player.id, army, label, int(score))
-        except (KeyError, ValueError):  # pragma: no cover
-            self._logger.warning("Invalid result for %s reported: %s", army, result)
 
-    async def handle_operation_complete(self, army, secondary, delta):
-        if not int(army) == 1:
+        try:
+            *metadata, result_type, score = result.split()
+        except ValueError:
+            self._logger.warning("Invalid result for %s reported: %s", army, result)
+        else:
+            await self.game.add_result(
+                self.player.id,
+                army,
+                result_type,
+                int(score),
+                frozenset(metadata),
+            )
+
+    async def handle_operation_complete(
+        self, primary: Any, secondary: Any, delta: str
+    ):
+        """
+        # Params
+        - `primary`: are primary mission objectives complete?
+        - `secondary`: are secondary mission objectives complete?
+        - `delta`: the time it took to complete the mission
+        """
+        primary = FA.ENABLED == primary
+        secondary = FA.ENABLED == secondary
+
+        if not primary:
+            return
+
+        if not isinstance(self.game, CoopGame):
+            self._logger.warning("OperationComplete called for non-coop game")
             return
 
         if self.game.validity != ValidityState.COOP_NOT_RANKED:
             return
 
-        secondary, delta = int(secondary), str(delta)
+        secondary, delta = secondary, str(delta)
         async with self._db.acquire() as conn:
-            # FIXME: Resolve used map earlier than this
             result = await conn.execute(
-                select([coop_map.c.id]).where(
-                    coop_map.c.filename == self.game.map_file_path
+                select(coop_map.c.id).where(
+                    coop_map.c.filename == self.game.map.file_path
                 )
             )
-            row = await result.fetchone()
+            row = result.fetchone()
             if not row:
-                self._logger.debug("can't find coop map: %s", self.game.map_file_path)
-                return
-            mission = row["id"]
-
-            await conn.execute(
-                coop_leaderboard.insert().values(
-                    mission=mission,
-                    gameuid=self.game.id,
-                    secondary=secondary,
-                    time=delta,
-                    player_count=len(self.game.players),
+                self._logger.debug(
+                    "can't find coop map: %s", self.game.map.file_path
                 )
-            )
+                return
+            mission = row.id
 
-    async def handle_json_stats(self, stats):
-        self.game.report_army_stats(stats)
+            # Each player in a co-op game will send the OperationComplete
+            # message but we only need to perform this insert once
+            async with self.game.leaderboard_lock:
+                if not self.game.leaderboard_saved:
+                    self._logger.debug(
+                        "Updating coop leaderboard: mission: %s, secondary: %s, "
+                        "time %s",
+                        mission,
+                        secondary,
+                        delta,
+                    )
+                    await conn.execute(
+                        coop_leaderboard.insert().values(
+                            mission=mission,
+                            gameuid=self.game.id,
+                            secondary=secondary,
+                            time=delta,
+                            player_count=len(self.game.players),
+                        )
+                    )
+                    self.game.leaderboard_saved = True
+
+    async def handle_json_stats(self, stats: str):
+        try:
+            self.game.report_army_stats(stats)
+        except json.JSONDecodeError as e:
+            self._logger.warning(
+                "Malformed game stats reported by %s: '...%s...'",
+                self.player.login,
+                stats[e.pos-20:e.pos+20]
+            )
 
     async def handle_enforce_rating(self):
         self.game.enforce_rating = True
 
-    async def handle_teamkill_report(self, gametime, reporter_id, reporter_name, teamkiller_id, teamkiller_name):
+    async def handle_teamkill_report(
+        self,
+        gametime: Any,
+        reporter_id: Any,
+        reporter_name: str,
+        teamkiller_id: Any,
+        teamkiller_name: str,
+    ):
         """
-            Sent when a player is teamkilled and clicks the 'Report' button.
+        Sent when a player is teamkilled and clicks the 'Report' button.
 
-            :param gametime: seconds of gametime when kill happened
-            :param reporter_id: reporter id
-            :param reporter_name: reporter nickname (for debug purpose only)
-            :param teamkiller_id: teamkiller id
-            :param teamkiller_name: teamkiller nickname (for debug purpose only)
+        # Params
+        - `gametime`: seconds of gametime when kill happened
+        - `reporter_id`: reporter id
+        - `reporter_name`: reporter nickname (for debug purpose only)
+        - `teamkiller_id`: teamkiller id
+        - `teamkiller_name`: teamkiller nickname (for debug purpose only)
         """
-
         pass
 
-    async def handle_teamkill_happened(self, gametime, victim_id, victim_name, teamkiller_id, teamkiller_name):
+    async def handle_teamkill_happened(
+        self,
+        gametime: Any,
+        victim_id: Any,
+        victim_name: str,
+        teamkiller_id: Any,
+        teamkiller_name: str,
+    ):
         """
-            Send automatically by the game whenever a teamkill happens. Takes
-            the same parameters as TeamkillReport.
+        Send automatically by the game whenever a teamkill happens. Takes
+        the same parameters as TeamkillReport.
 
-            :param gametime: seconds of gametime when kill happened
-            :param victim_id: victim id
-            :param victim_name: victim nickname (for debug purpose only)
-            :param teamkiller_id: teamkiller id
-            :param teamkiller_name: teamkiller nickname (for debug purpose only)
+        # Params
+        - `gametime`: seconds of gametime when kill happened
+        - `victim_id`: victim id
+        - `victim_name`: victim nickname (for debug purpose only)
+        - `teamkiller_id`: teamkiller id
+        - `teamkiller_name`: teamkiller nickname (for debug purpose only)
         """
         victim_id = int(victim_id)
         teamkiller_id = int(teamkiller_id)
@@ -376,7 +423,7 @@ class GameConnection(GpgNetServerProtocol):
                 )
             )
 
-    async def handle_ice_message(self, receiver_id, ice_msg):
+    async def handle_ice_message(self, receiver_id: Any, ice_msg: str):
         receiver_id = int(receiver_id)
         peer = self.player_service.get_player(receiver_id)
         if not peer:
@@ -403,87 +450,104 @@ class GameConnection(GpgNetServerProtocol):
                 receiver_id
             )
 
-    async def handle_game_state(self, state):
+    async def handle_game_state(self, state: str):
         """
         Changes in game state
-        :param state: new state
-        :return: None
         """
 
-        if state == 'Idle':
+        if state == "Idle":
             await self._handle_idle_state()
             # Don't mark as dirty
             return
 
-        elif state == 'Lobby':
+        elif state == "Lobby":
             # TODO: Do we still need to schedule with `ensure_future`?
             #
             # We do not yield from the task, since we
             # need to keep processing other commands while it runs
             await self._handle_lobby_state()
 
-        elif state == 'Launching':
+        elif state == "Launching":
             if self.player.state != PlayerState.HOSTING:
                 return
 
-            self._logger.info(
-                "Launching game %s in state %s",
-                self.game,
-                self.game.state
-            )
+            if self.game.state is not GameState.LOBBY:
+                self._logger.warning(
+                    "Trying to launch game %s in invalid state %s",
+                    self.game,
+                    self.game.state
+                )
+                return
+
+            self._logger.info("Launching game %s", self.game)
 
             await self.game.launch()
 
             if len(self.game.mods.keys()) > 0:
                 async with self._db.acquire() as conn:
                     uids = list(self.game.mods.keys())
-                    await conn.execute(text(
-                        """ UPDATE mod_stats s JOIN mod_version v ON v.mod_id = s.mod_id
-                            SET s.times_played = s.times_played + 1 WHERE v.uid in :ids"""),
+                    await conn.execute(
+                        "UPDATE mod_stats s JOIN mod_version v ON "
+                        "v.mod_id = s.mod_id "
+                        "SET s.times_played = s.times_played + 1 "
+                        "WHERE v.uid in :ids",
                         ids=tuple(uids)
                     )
-        elif state == 'Ended':
-            await self.on_connection_lost()
+        # Signals that the FA executable has been closed
+        elif state == "Ended":
+            await self.on_connection_closed()
         self._mark_dirty()
 
-    async def handle_game_ended(self, *args):
+    async def handle_game_ended(self, *args: list[Any]):
         """
         Signals that the simulation has ended.
         """
         self.finished_sim = True
-        await self.game.check_sim_end()
+        await self.game.check_game_finish(self.player)
 
-        # FIXME Move this into check_sim_end
-        if self.game.ended:
-            await self.game.on_game_end()
-
-    async def handle_rehost(self, *args):
+    async def handle_rehost(self, *args: Any):
         """
         Signals that the user has rehosted the game. This is currently unused but
         included for documentation purposes.
         """
         pass
 
-    async def handle_bottleneck(self, *args):
+    async def handle_launch_status(self, status: str):
         """
-        Not sure what this command means. This is currently unused but
-        included for documentation purposes.
-        """
-        pass
-
-    async def handle_bottleneck_cleared(self, *args):
-        """
-        Not sure what this command means. This is currently unused but
-        included for documentation purposes.
+        Currently is sent with status `Rejected` if a matchmaker game failed
+        to start due to players using differing game settings.
         """
         pass
 
-    async def handle_disconnected(self, *args):
+    async def handle_bottleneck(self, code: str, *args: str):
+        """
+        Not entirely sure what this command means. Seems to be sent when a
+        player is getting behind on data, slowing down the game.
+
+        Example:
+        ```python
+        {
+            "command": "Bottleneck",
+            "target": "game",
+            "args": ["data", "19508", "517268,516974,344419", "5980.1"],
+        }
+        ```
+        """
+        self._logger.debug("Bottleneck: %s", list((code, *args)))
+
+    async def handle_bottleneck_cleared(self):
+        """
+        Not entirely sure what this command means. Probably sent when the game
+        is no longer being slowed down due to players being behind on data.
+        """
+        self._logger.debug("BottleneckCleared")
+
+    async def handle_disconnected(self, *args: Any):
         """
         Not sure what this command means. This is currently unused but
         included for documentation purposes.
         """
-        pass
+        self._logger.debug("Disconnected: %s", list(args))
 
     async def handle_chat(self, message: str):
         """
@@ -501,7 +565,7 @@ class GameConnection(GpgNetServerProtocol):
         if self.game:
             self.game_service.mark_dirty(self.game)
 
-    async def abort(self, log_message: str = ''):
+    async def abort(self, log_message: str = ""):
         """
         Abort the connection
 
@@ -546,7 +610,21 @@ class GameConnection(GpgNetServerProtocol):
                     exc_info=True
                 )
 
+    async def on_connection_closed(self):
+        """
+        The connection is closed by the player.
+        """
+        try:
+            await self.game.disconnect_player(self.player)
+        except Exception as e:  # pragma: no cover
+            self._logger.exception(e)
+        finally:
+            await self.abort()
+
     async def on_connection_lost(self):
+        """
+        The connection is lost due to a disconnect from the lobby server.
+        """
         try:
             await self.game.remove_game_connection(self)
         except Exception as e:  # pragma: no cover
@@ -555,29 +633,30 @@ class GameConnection(GpgNetServerProtocol):
             await self.abort()
 
     def __str__(self):
-        return "GameConnection({}, {})".format(self.player, self.game)
+        return f"GameConnection({self.player}, {self.game})"
 
 
 COMMAND_HANDLERS = {
-    "Desync":               GameConnection.handle_desync,
-    "GameState":            GameConnection.handle_game_state,
-    "GameOption":           GameConnection.handle_game_option,
-    "GameMods":             GameConnection.handle_game_mods,
-    "PlayerOption":         GameConnection.handle_player_option,
     "AIOption":             GameConnection.handle_ai_option,
-    "ClearSlot":            GameConnection.handle_clear_slot,
-    "GameResult":           GameConnection.handle_game_result,
-    "OperationComplete":    GameConnection.handle_operation_complete,
-    "JsonStats":            GameConnection.handle_json_stats,
-    "EnforceRating":        GameConnection.handle_enforce_rating,
-    "TeamkillReport":       GameConnection.handle_teamkill_report,
-    "TeamkillHappened":     GameConnection.handle_teamkill_happened,
-    "GameEnded":            GameConnection.handle_game_ended,
-    "Rehost":               GameConnection.handle_rehost,
     "Bottleneck":           GameConnection.handle_bottleneck,
     "BottleneckCleared":    GameConnection.handle_bottleneck_cleared,
-    "Disconnected":         GameConnection.handle_disconnected,
-    "IceMsg":               GameConnection.handle_ice_message,
     "Chat":                 GameConnection.handle_chat,
-    "GameFull":             GameConnection.handle_game_full
+    "ClearSlot":            GameConnection.handle_clear_slot,
+    "Desync":               GameConnection.handle_desync,
+    "Disconnected":         GameConnection.handle_disconnected,
+    "EnforceRating":        GameConnection.handle_enforce_rating,
+    "GameEnded":            GameConnection.handle_game_ended,
+    "GameFull":             GameConnection.handle_game_full,
+    "GameMods":             GameConnection.handle_game_mods,
+    "GameOption":           GameConnection.handle_game_option,
+    "GameResult":           GameConnection.handle_game_result,
+    "GameState":            GameConnection.handle_game_state,
+    "IceMsg":               GameConnection.handle_ice_message,
+    "JsonStats":            GameConnection.handle_json_stats,
+    "LaunchStatus":         GameConnection.handle_launch_status,
+    "OperationComplete":    GameConnection.handle_operation_complete,
+    "PlayerOption":         GameConnection.handle_player_option,
+    "Rehost":               GameConnection.handle_rehost,
+    "TeamkillHappened":     GameConnection.handle_teamkill_happened,
+    "TeamkillReport":       GameConnection.handle_teamkill_report,
 }

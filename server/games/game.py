@@ -1,37 +1,58 @@
 import asyncio
+import contextlib
 import json
 import logging
-import re
+import pathlib
 import time
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple
+from datetime import datetime
+from functools import cached_property
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Iterable, Optional
 
-import pymysql
 from sqlalchemy import and_, bindparam
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.sql.functions import now as sql_now
 
 from server.config import FFA_TEAM
-from server.db.models import game_player_stats, game_stats
+from server.db import FAFDatabase
+from server.db.models import (
+    game_player_stats,
+    game_stats,
+    matchmaker_queue_game
+)
 from server.games.game_results import (
+    ArmyOutcome,
+    ArmyReportedOutcome,
+    ArmyResult,
     GameOutcome,
     GameResolutionError,
     GameResultReport,
     GameResultReports,
     resolve_game
 )
-from server.rating import RatingType
+from server.rating import InclusiveRange, RatingType
+from server.timing import datetime_now
+from server.types import MAP_DEFAULT, Map
 
-from ..abc.base_game import GameConnectionState, InitMode
 from ..players import Player, PlayerState
 from .typedefs import (
+    FA,
     BasicGameInfo,
     EndedGameInfo,
     FeaturedModType,
+    GameConnectionState,
     GameState,
+    GameType,
+    InitMode,
     ValidityState,
     Victory,
     VisibilityState
 )
+
+if TYPE_CHECKING:
+    from server.game_service import GameService
+    from server.gameconnection import GameConnection
+    from server.stats.game_stats_service import GameStatsService
 
 
 class GameError(Exception):
@@ -42,126 +63,189 @@ class Game:
     """
     Object that lasts for the lifetime of a game on FAF.
     """
-    """
-    The initialization mode to use for the Game.
-    """
     init_mode = InitMode.NORMAL_LOBBY
+    game_type = GameType.CUSTOM
 
     def __init__(
         self,
-        id_: int,
-        database: "FAFDatabase",
+        id: int,
+        database: FAFDatabase,
         game_service: "GameService",
         game_stats_service: "GameStatsService",
         host: Optional[Player] = None,
-        name: str = 'None',
-        map_: str = 'SCMP_007',
+        name: str = "New Game",
+        map: Map = MAP_DEFAULT,
         game_mode: str = FeaturedModType.FAF,
+        matchmaker_queue_id: Optional[int] = None,
         rating_type: Optional[str] = None,
-        max_players: int = 12
+        displayed_rating_range: Optional[InclusiveRange] = None,
+        enforce_rating_range: bool = False,
+        max_players: int = 12,
+        setup_timeout: int = 60,
     ):
+        self.id = id
         self._db = database
-        self._results = GameResultReports(id_)
-        self._army_stats_list = []
-        self._players_with_unsent_army_stats = []
+        self._results = GameResultReports(id)
+        self._army_stats_list: list[Any] = []
+        self._players_with_unsent_army_stats: list[Player] = []
         self._game_stats_service = game_stats_service
         self.game_service = game_service
-        self._player_options: Dict[int, Dict[str, Any]] = defaultdict(dict)
-        self.launched_at = None
-        self.ended = False
+        self._player_options: dict[int, dict[str, Any]] = defaultdict(dict)
+        self.hosted_at: Optional[datetime] = None
+        self.launched_at: Optional[float] = None
+        self.finished = False
         self._logger = logging.getLogger(
-            "{}.{}".format(self.__class__.__qualname__, id_)
+            f"{self.__class__.__qualname__}.{id}"
         )
-        self.id = id_
         self.visibility = VisibilityState.PUBLIC
-        self.max_players = max_players
         self.host = host
-        self.name = self.sanitize_name(name)
-        self.map_id = None
-        self.map_file_path = f'maps/{map_}.zip'
-        self.map_scenario_path = None
-        self.password = None
-        self._players = []
-        self.AIs = {}
+        self.name = name
+        self.map = map
+        self.password: Optional[str] = None
+        self._players_at_launch: list[Player] = []
+        self.AIs: dict[str, dict[str, Any]] = {}
         self.desyncs = 0
         self.validity = ValidityState.VALID
         self.game_mode = game_mode
         self.rating_type = rating_type or RatingType.GLOBAL
+        self.displayed_rating_range = displayed_rating_range or InclusiveRange()
+        self.enforce_rating_range = enforce_rating_range
+        self.matchmaker_queue_id = matchmaker_queue_id
+        self.setup_timeout = setup_timeout
         self.state = GameState.INITIALIZING
-        self._connections = {}
+        self._connections: dict[Player, "GameConnection"] = {}
+        self._configured_player_ids: set[int] = set()
         self.enforce_rating = False
-        self.gameOptions = {
-            'FogOfWar': 'explored',
-            'GameSpeed': 'normal',
-            'Victory': Victory.DEMORALIZATION,
-            'CheatsEnabled': 'false',
-            'PrebuiltUnits': 'Off',
-            'NoRushOption': 'Off',
-            'TeamLock': 'locked',
-            'AIReplacement': 'Off',
-            'RestrictedCategories': 0
-        }
-        self.mods = {}
-        self._is_hosted = asyncio.Future()
+        self.game_options = GameOptions(
+            id,
+            {
+                "AIReplacement": "Off",
+                "CheatsEnabled": "false",
+                "FogOfWar": "explored",
+                "GameSpeed": "normal",
+                "NoRushOption": "Off",
+                "PrebuiltUnits": "Off",
+                "RestrictedCategories": 0,
+                "ScenarioFile": (pathlib.PurePath(map.scenario_file)),
+                "Slots": max_players,
+                "TeamLock": "locked",
+                "Unranked": "No",
+                "Victory": Victory.DEMORALIZATION,
+            }
+        )
+        self.game_options.add_async_callback(
+            "ScenarioFile",
+            self.on_scenario_file_changed,
+        )
+        self.game_options.add_callback("Title", self.on_title_changed)
+
+        self.mods: dict[str, str] = {}
+        self._finish_lock = asyncio.Lock()
 
         self._logger.debug("%s created", self)
-        asyncio.get_event_loop().create_task(self.timeout_game())
+        asyncio.get_event_loop().create_task(self.timeout_game(setup_timeout))
 
-    async def timeout_game(self):
-        # coop takes longer to set up
-        tm = 30 if self.game_mode != FeaturedModType.COOP else 60
-        await asyncio.sleep(tm)
+    @cached_property
+    def _hosted_future(self) -> asyncio.Future:
+        return asyncio.get_running_loop().create_future()
+
+    async def timeout_game(self, timeout: int = 60):
+        await asyncio.sleep(timeout)
         if self.state is GameState.INITIALIZING:
-            self._is_hosted.set_exception(TimeoutError("Game setup timed out"))
-            self._logger.debug("Game setup timed out.. Cancelling game")
-            await self.on_game_end()
+            self._logger.debug("Game setup timed out, cancelling game")
+            await self.on_game_finish()
+
+    async def on_scenario_file_changed(self, scenario_path: pathlib.PurePath):
+        try:
+            map_folder_name = scenario_path.parts[2].lower()
+        except IndexError:
+            return
+
+        self.map = await self.game_service.get_map(map_folder_name)
+
+    def on_title_changed(self, title: str):
+        with contextlib.suppress(ValueError):
+            self.name = title
 
     @property
-    def armies(self):
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        """
+        Verifies that names only contain ascii characters.
+        """
+        value = value.strip()
+
+        if not value.isascii():
+            raise ValueError("Game title must be ascii!")
+
+        if not value:
+            raise ValueError("Game title must not be empty!")
+
+        self.set_name_unchecked(value)
+
+    def set_name_unchecked(self, value: str):
+        """
+        Sets the game name without doing any validity checks.
+
+        Truncates the game name to avoid crashing mysql INSERT statements.
+        """
+        # mypy sees the column type as a generic base class so it doesn't
+        # know about the `length` field
+        max_len = game_stats.c.gameName.type.length  # type: ignore
+        self._name = value[:max_len]
+
+    @property
+    def max_players(self) -> int:
+        return self.game_options["Slots"]
+
+    @property
+    def armies(self) -> frozenset[Optional[int]]:
         return frozenset(
-            self.get_player_option(player.id, 'Army')
+            self.get_player_option(player.id, "Army")
             for player in self.players
         )
 
     @property
-    def is_mutually_agreed_draw(self) -> bool:
-        return self._results.is_mutually_agreed_draw(self.armies)
-
-    @property
-    def players(self):
+    def players(self) -> list[Player]:
         """
         Players in the game
 
         Depending on the state, it is either:
           - (LOBBY) The currently connected players
           - (LIVE) Players who participated in the game
-          - Empty list
-        :return: frozenset
         """
         if self.state is GameState.LOBBY:
-            return frozenset(
-                player for player in self._connections.keys()
-                if player.id in self._player_options
-            )
+            return self.get_connected_players()
         else:
-            return frozenset(
-                player
-                for player in self._players
-                if self.get_player_option(player.id, 'Army') is not None
-                and self.get_player_option(player.id, 'Army') >= 0
-            )
+            return self._players_at_launch
+
+    def get_connected_players(self) -> list[Player]:
+        """
+        Get a collection of all players currently connected to the game.
+        """
+        return [
+            player for player in self._connections.keys()
+            if player.id in self._configured_player_ids
+        ]
+
+    def _is_observer(self, player: Player) -> bool:
+        army = self.get_player_option(player.id, "Army")
+        return army is None or army < 0
 
     @property
-    def connections(self):
+    def connections(self) -> Iterable["GameConnection"]:
         return self._connections.values()
 
     @property
-    def teams(self):
+    def teams(self) -> frozenset[Optional[int]]:
         """
         A set of all teams of this game's players.
         """
         return frozenset(
-            self.get_player_option(player.id, 'Team')
+            self.get_player_option(player.id, "Team")
             for player in self.players
         )
 
@@ -183,10 +267,16 @@ class Game:
     @property
     def is_even(self) -> bool:
         """
-        Returns True iff all teams have the same player count, taking into account that players on the FFA team are in individual teams.
+        If teams are balanced taking into account that players on the FFA team
+        are on individual teams.
+
+        # Returns
+        `True` iff all teams have the same player count.
+
         Special cases:
-         - Returns True if there are zero teams.
-         - Returns False if there is a single team.
+
+        - `True` if there are zero teams.
+        - `False` if there is a single team.
         """
         teams = self.get_team_sets()
         if len(teams) == 0:
@@ -197,7 +287,7 @@ class Game:
         team_sizes = set(len(team) for team in teams)
         return len(team_sizes) == 1
 
-    def get_team_sets(self) -> List[Set[Player]]:
+    def get_team_sets(self) -> list[set[Player]]:
         """
         Returns a list of teams represented as sets of players.
         Note that FFA players will be separated into individual teams.
@@ -205,14 +295,14 @@ class Game:
         if None in self.teams:
             raise GameError(
                 "Missing team for at least one player. (player, team): {}"
-                .format([(player, self.get_player_option(player.id, 'Team'))
+                .format([(player, self.get_player_option(player.id, "Team"))
                         for player in self.players])
             )
 
         teams = defaultdict(set)
         ffa_players = []
         for player in self.players:
-            team_id = self.get_player_option(player.id, 'Team')
+            team_id = self.get_player_option(player.id, "Team")
             if team_id == FFA_TEAM:
                 ffa_players.append({player})
             else:
@@ -220,23 +310,28 @@ class Game:
 
         return list(teams.values()) + ffa_players
 
-    async def await_hosted(self):
-        return await asyncio.wait_for(self._is_hosted, None)
-
-    def set_hosted(self, value: bool = True):
-        if not self._is_hosted.done():
-            self._is_hosted.set_result(value)
+    def set_hosted(self):
+        self._hosted_future.set_result(None)
+        self.hosted_at = datetime_now()
 
     async def add_result(
-        self, reporter: int, army: int, result_type: str, score: int
+        self,
+        reporter: int,
+        army: int,
+        result_type: str,
+        score: int,
+        result_metadata: frozenset[str] = frozenset(),
     ):
         """
         As computed by the game.
-        :param reporter: player ID
-        :param army: the army number being reported for
-        :param result_type: a string representing the result
-        :param score: an arbitrary number assigned with the result
-        :return:
+
+        # Params
+        - `reporter`: player ID
+        - `army`: the army number being reported for
+        - `result_type`: a string representing the result
+        - `score`: an arbitrary number assigned with the result
+        - `result_metadata`: everything preceding the `result_type` in the
+            result message from the game, one or more words, optional
         """
         if army not in self.armies:
             self._logger.debug(
@@ -246,11 +341,15 @@ class Game:
             return
 
         try:
-            outcome = GameOutcome(result_type.upper())
+            outcome = ArmyReportedOutcome(result_type.upper())
         except ValueError:
-            outcome = GameOutcome.UNKNOWN
+            self._logger.debug(
+                "Ignoring result reported by %s for army %s: %s %s",
+                reporter, army, result_type, score
+            )
+            return
 
-        result = GameResultReport(reporter, army, outcome, score)
+        result = GameResultReport(reporter, army, outcome, score, result_metadata)
         self._results.add(result)
         self._logger.info(
             "%s reported result for army %s: %s %s", reporter, army,
@@ -259,28 +358,23 @@ class Game:
 
         self._process_pending_army_stats()
 
-    def _process_pending_army_stats(self):
+    def _process_pending_army_stats(self) -> None:
         for player in self._players_with_unsent_army_stats:
-            army = self.get_player_option(player.id, 'Army')
+            army = self.get_player_option(player.id, "Army")
             if army not in self._results:
                 continue
 
-            for result in self._results[army]:
-                if result.outcome is not GameOutcome.UNKNOWN:
-                    self._process_army_stats_for_player(player)
-                    break
+            self._process_army_stats_for_player(player)
 
     def _process_army_stats_for_player(self, player):
         try:
             if (
                 len(self._army_stats_list) == 0
-                or self.gameOptions["CheatsEnabled"] != "false"
+                or self.game_options["CheatsEnabled"] != "false"
             ):
                 return
 
             self._players_with_unsent_army_stats.remove(player)
-            # Stat processing contacts the API and can take quite a while so
-            # we don't want to await it
             asyncio.create_task(
                 self._game_stats_service.process_game_stats(
                     player, self, self._army_stats_list
@@ -295,9 +389,7 @@ class Game:
 
     def add_game_connection(self, game_connection):
         """
-        Add a game connection to this game
-        :param game_connection:
-        :return:
+        Add a game connection to this game.
         """
         if game_connection.state != GameConnectionState.CONNECTED_TO_HOST:
             raise GameError(
@@ -309,14 +401,23 @@ class Game:
         self._logger.info("Added game connection %s", game_connection)
         self._connections[game_connection.player] = game_connection
 
+    async def disconnect_player(self, player: Player):
+        if player.game_connection not in self._connections.values():
+            return
+
+        self._configured_player_ids.discard(player.id)
+
+        if self.state is GameState.LOBBY and player.id in self._player_options:
+            del self._player_options[player.id]
+
+        await self.remove_game_connection(player.game_connection)
+
     async def remove_game_connection(self, game_connection):
         """
-        Remove a game connection from this game
+        Remove a game connection from this game.
 
-        Will trigger on_game_end if there are no more active connections to the game
-        :param peer:
-        :param
-        :return: None
+        Will trigger `on_game_finish` if there are no more active connections to the
+        game.
         """
         if game_connection not in self._connections.values():
             return
@@ -325,34 +426,35 @@ class Game:
         del self._connections[player]
         del player.game
 
-        if self.state is GameState.LOBBY and player.id in self._player_options:
-            del self._player_options[player.id]
-
-        await self.check_sim_end()
-
         self._logger.info("Removed game connection %s", game_connection)
 
-        host_left_lobby = (
-            player == self.host and self.state is not GameState.LIVE
-        )
+        await self.check_game_finish(player)
 
-        if self.state is not GameState.ENDED and (
-            self.ended or
-            len(self._connections) == 0 or
-            host_left_lobby
-        ):
-            await self.on_game_end()
-        else:
-            self._process_pending_army_stats()
+    async def check_game_finish(self, player):
+        await self.check_sim_end()
+
+        async with self._finish_lock:
+            host_left_lobby = (
+                player == self.host and self.state is not GameState.LIVE
+            )
+
+            if self.state is not GameState.ENDED and (
+                self.finished or
+                len(self._connections) == 0 or
+                host_left_lobby
+            ):
+                await self.on_game_finish()
+            else:
+                self._process_pending_army_stats()
 
     async def check_sim_end(self):
-        if self.ended:
+        if self.finished:
             return
         if self.state is not GameState.LIVE:
             return
         if [conn for conn in self.connections if not conn.finished_sim]:
             return
-        self.ended = True
+        self.finished = True
         async with self._db.acquire() as conn:
             await conn.execute(
                 game_stats.update().where(
@@ -362,7 +464,7 @@ class Game:
                 )
             )
 
-    async def on_game_end(self):
+    async def on_game_finish(self):
         try:
             if self.state is GameState.LOBBY:
                 self._logger.info("Game cancelled pre launch")
@@ -375,32 +477,28 @@ class Game:
                     await self.mark_invalid(ValidityState.TOO_MANY_DESYNCS)
                     return
 
-                if time.time() - self.launched_at > 4 * 60 and self.is_mutually_agreed_draw:
-                    self._logger.info("Game is a mutual draw")
-                    await self.mark_invalid(ValidityState.MUTUAL_DRAW)
-                    return
-
-                if not self._results:
-                    await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
-                    return
-
-                await self.persist_results()
-
-                game_results = await self.resolve_game_results()
-                await self.game_service.publish_game_results(game_results)
+                await self.process_game_results()
 
                 self._process_pending_army_stats()
         except Exception:    # pragma: no cover
             self._logger.exception("Error during game end")
         finally:
-            self.set_hosted(value=False)
-
             self.state = GameState.ENDED
 
             self.game_service.mark_dirty(self)
 
     async def _run_pre_rate_validity_checks(self):
         pass
+
+    async def process_game_results(self):
+        if not self._results:
+            await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
+            return
+
+        await self.persist_results()
+
+        game_results = await self.resolve_game_results()
+        await self.game_service.publish_game_results(game_results)
 
     async def resolve_game_results(self) -> EndedGameInfo:
         if self.state not in (GameState.LIVE, GameState.ENDED):
@@ -409,16 +507,27 @@ class Game:
         await self._run_pre_rate_validity_checks()
 
         basic_info = self.get_basic_info()
-        team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
 
-        if self.validity is ValidityState.VALID:
-            try:
-                team_player_partial_outcomes = [
-                    {self.get_player_outcome(player) for player in team}
-                    for team in basic_info.teams
-                ]
-                team_outcomes = resolve_game(team_player_partial_outcomes)
-            except GameResolutionError:
+        team_army_results = [
+            [self.get_army_results(player) for player in team]
+            for team in basic_info.teams
+        ]
+
+        team_outcomes = [GameOutcome.UNKNOWN for _ in basic_info.teams]
+        team_player_partial_outcomes = [
+            {self.get_player_outcome(player) for player in team}
+            for team in basic_info.teams
+        ]
+
+        try:
+            # TODO: Remove override once game result messages are reliable
+            team_outcomes = (
+                self._outcome_override_hook()
+                or resolve_game(team_player_partial_outcomes)
+            )
+        except GameResolutionError as e:
+            self._logger.warning("Game resolution failed: %s", e)
+            if self.validity is ValidityState.VALID:
                 await self.mark_invalid(ValidityState.UNKNOWN_RESULT)
 
         try:
@@ -430,13 +539,19 @@ class Game:
             commander_kills = {}
 
         return EndedGameInfo.from_basic(
-            basic_info, self.validity, team_outcomes, commander_kills
+            basic_info,
+            self.validity,
+            team_outcomes,
+            commander_kills,
+            team_army_results,
         )
+
+    def _outcome_override_hook(self) -> Optional[list[GameOutcome]]:
+        return None
 
     async def load_results(self):
         """
         Load results from the database
-        :return:
         """
         self._results = await GameResultReports.from_db(self._db, self.id)
 
@@ -444,19 +559,19 @@ class Game:
         """
         Persist game results into the database
 
-        Requires the game to have been launched and the appropriate rows to exist in the database.
-        :return:
+        Requires the game to have been launched and the appropriate rows to
+        exist in the database.
         """
 
         self._logger.debug("Saving scores from game %s", self.id)
         scores = {}
         for player in self.players:
-            army = self.get_player_option(player.id, 'Army')
+            army = self.get_player_option(player.id, "Army")
             outcome = self.get_player_outcome(player)
             score = self.get_army_score(army)
             scores[player] = (score, outcome)
             self._logger.info(
-                'Result for army %s, player: %s: score %s, outcome %s',
+                "Result for army %s, player: %s: score %s, outcome %s",
                 army, player, score, outcome
             )
 
@@ -477,22 +592,22 @@ class Game:
                 )
 
             update_statement = game_player_stats.update().where(
-                    and_(
-                        game_player_stats.c.gameId == bindparam("game_id"),
-                        game_player_stats.c.playerId == bindparam("player_id"),
-                    )
-                ).values(
-                    score=bindparam("score"),
-                    scoreTime=sql_now(),
-                    result=bindparam("result"),
+                and_(
+                    game_player_stats.c.gameId == bindparam("game_id"),
+                    game_player_stats.c.playerId == bindparam("player_id"),
                 )
-            await conn.execute(update_statement, rows)
+            ).values(
+                score=bindparam("score"),
+                scoreTime=sql_now(),
+                result=bindparam("result"),
+            )
+            await conn.deadlock_retry_execute(update_statement, rows)
 
     def get_basic_info(self) -> BasicGameInfo:
         return BasicGameInfo(
             self.id,
             self.rating_type,
-            self.map_id,
+            self.map.id,
             self.game_mode,
             list(self.mods.keys()),
             self.get_team_sets(),
@@ -501,28 +616,19 @@ class Game:
     def set_player_option(self, player_id: int, key: str, value: Any):
         """
         Set game-associative options for given player, by id
-
-        :param player_id: The given player's id
-        :param key: option key string
-        :param value: option value
         """
+        self._configured_player_ids.add(player_id)
         self._player_options[player_id][key] = value
 
     def get_player_option(self, player_id: int, key: str) -> Optional[Any]:
         """
         Retrieve game-associative options for given player, by their uid
-        :param player_id: The id of the player
-        :param key: The name of the option
         """
         return self._player_options[player_id].get(key)
 
     def set_ai_option(self, name, key, value):
         """
-        This is a noop for now
-        :param name: Name of the AI
-        :param key: option key string
-        :param value: option value
-        :return:
+        Set game-associative options for given AI, by name
         """
         if name not in self.AIs:
             self.AIs[name] = {}
@@ -530,22 +636,21 @@ class Game:
 
     def clear_slot(self, slot_index):
         """
-        A somewhat awkward message while we're still half-slot-associated with a bunch of data.
+        A somewhat awkward message while we're still half-slot-associated with
+        a bunch of data.
 
-        Just makes sure that any players associated with this
-        slot aren't assigned an army or team, and deletes any AI's.
-        :param slot_index:
-        :return:
+        Just makes sure that any players associated with this slot aren't
+        assigned an army or team, and deletes any AI's.
         """
         for player in self.players:
-            if self.get_player_option(player.id, 'StartSpot') == slot_index:
-                self.set_player_option(player.id, 'Team', -1)
-                self.set_player_option(player.id, 'Army', -1)
-                self.set_player_option(player.id, 'StartSpot', -1)
+            if self.get_player_option(player.id, "StartSpot") == slot_index:
+                self.set_player_option(player.id, "Team", -1)
+                self.set_player_option(player.id, "Army", -1)
+                self.set_player_option(player.id, "StartSpot", -1)
 
         to_remove = []
         for ai in self.AIs:
-            if self.AIs[ai]['StartSpot'] == slot_index:
+            if self.AIs[ai]["StartSpot"] == slot_index:
                 to_remove.append(ai)
         for item in to_remove:
             del self.AIs[item]
@@ -567,85 +672,78 @@ class Game:
         if self.is_multi_team:
             await self.mark_invalid(ValidityState.MULTI_TEAM)
             return
-        if self.is_ffa:
-            await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
-            return
         valid_options = {
-            "AIReplacement": ("Off", ValidityState.HAS_AI_PLAYERS),
+            "AIReplacement": (FA.DISABLED, ValidityState.HAS_AI_PLAYERS),
             "FogOfWar": ("explored", ValidityState.NO_FOG_OF_WAR),
-            "CheatsEnabled": ("false", ValidityState.CHEATS_ENABLED),
-            "PrebuiltUnits": ("Off", ValidityState.PREBUILT_ENABLED),
-            "NoRushOption": ("Off", ValidityState.NORUSH_ENABLED),
+            "CheatsEnabled": (FA.DISABLED, ValidityState.CHEATS_ENABLED),
+            "PrebuiltUnits": (FA.DISABLED, ValidityState.PREBUILT_ENABLED),
+            "NoRushOption": (FA.DISABLED, ValidityState.NORUSH_ENABLED),
             "RestrictedCategories": (0, ValidityState.BAD_UNIT_RESTRICTIONS),
-            "TeamLock": ("locked", ValidityState.UNLOCKED_TEAMS)
+            "TeamLock": ("locked", ValidityState.UNLOCKED_TEAMS),
+            "Unranked": (FA.DISABLED, ValidityState.HOST_SET_UNRANKED)
         }
         if await self._validate_game_options(valid_options) is False:
             return
 
-        if self.game_mode in (FeaturedModType.FAF, FeaturedModType.LADDER_1V1):
-            await self._validate_faf_game_settings()
-        elif self.game_mode == FeaturedModType.COOP:
-            await self._validate_coop_game_settings()
+        await self.validate_game_mode_settings()
 
-    async def _validate_game_options(
-        self, valid_options: Dict[str, Tuple[Any, ValidityState]]
-    ) -> bool:
-        for key, value in self.gameOptions.items():
-            if key in valid_options:
-                (valid_value, validity_state) = valid_options[key]
-                if self.gameOptions[key] != valid_value:
-                    await self.mark_invalid(validity_state)
-                    return False
-        return True
-
-    async def _validate_coop_game_settings(self):
+    async def validate_game_mode_settings(self):
         """
-        Checks which only apply to the coop mode
+        A subset of checks that need to be overridden in coop games.
         """
-
-        valid_options = {
-            "Victory": (Victory.SANDBOX, ValidityState.WRONG_VICTORY_CONDITION),
-            "TeamSpawn": ("fixed", ValidityState.SPAWN_NOT_FIXED),
-            "RevealedCivilians": ("No", ValidityState.CIVILIANS_REVEALED),
-            "Difficulty": (3, ValidityState.WRONG_DIFFICULTY),
-            "Expansion": (1, ValidityState.EXPANSION_DISABLED),
-        }
-        await self._validate_game_options(valid_options)
-
-    async def _validate_faf_game_settings(self):
-        """
-        Checks which only apply to the faf or ladder1v1 mode
-        """
-        if None in self.teams or not self.is_even:
-            await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
+        if self.is_ffa:
+            await self.mark_invalid(ValidityState.FFA_NOT_RANKED)
             return
 
         if len(self.players) < 2:
             await self.mark_invalid(ValidityState.SINGLE_PLAYER)
             return
 
-        valid_options = {
-            "Victory": (Victory.DEMORALIZATION, ValidityState.WRONG_VICTORY_CONDITION)
-        }
-        await self._validate_game_options(valid_options)
+        if None in self.teams or not self.is_even:
+            await self.mark_invalid(ValidityState.UNEVEN_TEAMS_NOT_RANKED)
+            return
+
+        if self.game_options.get("Victory") not in (
+            Victory.DEMORALIZATION,
+            Victory.DECAPITATION,
+        ):
+            await self.mark_invalid(ValidityState.WRONG_VICTORY_CONDITION)
+            return
+
+    async def _validate_game_options(
+        self,
+        valid_options: dict[str, tuple[Any, ValidityState]]
+    ) -> bool:
+        for key, value in self.game_options.items():
+            if key in valid_options:
+                valid_value, validity_state = valid_options[key]
+                if value != valid_value:
+                    await self.mark_invalid(validity_state)
+                    return False
+        return True
 
     async def launch(self):
         """
         Mark the game as live.
 
         Freezes the set of active players so they are remembered if they drop.
-        :return: None
         """
         assert self.state is GameState.LOBBY
         self.launched_at = time.time()
-        self._players = self.players
-        self._players_with_unsent_army_stats = list(self._players)
+        # Freeze currently connected players since we need them for rating when
+        # the game ends.
+        self._players_at_launch = [
+            player for player in self.get_connected_players()
+            if not self._is_observer(player)
+        ]
+        self._players_with_unsent_army_stats = list(self._players_at_launch)
 
         self.state = GameState.LIVE
-        self._logger.info("Game launched")
 
         await self.on_game_launched()
         await self.validate_game_settings()
+
+        self._logger.info("Game launched")
 
     async def on_game_launched(self):
         for player in self.players:
@@ -660,33 +758,19 @@ class Game:
         """
         assert self.host is not None
 
-        async with self._db.acquire() as conn:
-            # Determine if the map is blacklisted, and invalidate the game for ranking purposes if
-            # so, and grab the map id at the same time.
-            result = await conn.execute(
-                "SELECT id, ranked FROM map_version "
-                "WHERE lower(filename) = lower(%s)", (self.map_file_path, )
-            )
-            row = await result.fetchone()
+        # Ensure map data is up to date
+        self.map = await self.game_service.get_map(self.map.folder_name)
 
-        is_generated = (self.map_file_path and "neroxis_map_generator" in self.map_file_path)
-
-        if row:
-            self.map_id = row['id']
-
-        if (
-            self.validity is ValidityState.VALID
-            and ((row and not row.ranked) or (not row and not is_generated))
-        ):
+        if self.validity is ValidityState.VALID and not self.map.ranked:
             await self.mark_invalid(ValidityState.BAD_MAP)
 
         modId = self.game_service.featured_mods[self.game_mode].id
 
         # Write out the game_stats record.
-        # In some cases, games can be invalidated while running: we check for those cases when
-        # the game ends and update this record as appropriate.
+        # In some cases, games can be invalidated while running: we check for
+        # those cases when the game ends and update this record as appropriate.
 
-        game_type = str(self.gameOptions.get("Victory").value)
+        game_type = self.game_options.get("Victory")
 
         async with self._db.acquire() as conn:
             await conn.execute(
@@ -695,11 +779,19 @@ class Game:
                     gameType=game_type,
                     gameMod=modId,
                     host=self.host.id,
-                    mapId=self.map_id,
+                    mapId=self.map.id,
                     gameName=self.name,
                     validity=self.validity.value,
                 )
             )
+
+            if self.matchmaker_queue_id is not None:
+                await conn.execute(
+                    matchmaker_queue_game.insert().values(
+                        matchmaker_queue_id=self.matchmaker_queue_id,
+                        game_stats_id=self.id,
+                    )
+                )
 
     async def update_game_player_stats(self):
         query_args = []
@@ -743,19 +835,11 @@ class Game:
         try:
             async with self._db.acquire() as conn:
                 await conn.execute(game_player_stats.insert().values(query_args))
-        except pymysql.MySQLError:
+        except DBAPIError:
             self._logger.exception(
                 "Failed to update game_player_stats. Query args %s:", query_args
             )
             raise
-
-    def sanitize_name(self, name: str) -> str:
-        """
-        Replaces sequences of non-latin characters with an underscore and truncates the string to 128 characters
-        Avoids the game name to crash the mysql INSERT query by being longer than the column's max size or by
-        containing non-latin1 characters
-        """
-        return re.sub('[^\x20-\xFF]+', '_', name)[:128]
 
     async def mark_invalid(self, new_validity_state: ValidityState):
         self._logger.info(
@@ -782,61 +866,102 @@ class Game:
     def get_army_score(self, army):
         return self._results.score(army)
 
-    def get_player_outcome(self, player):
-        army = self.get_player_option(player.id, 'Army')
+    def get_player_outcome(self, player: Player) -> ArmyOutcome:
+        army = self.get_player_option(player.id, "Army")
         if army is None:
-            return GameOutcome.UNKNOWN
+            return ArmyOutcome.UNKNOWN
 
         return self._results.outcome(army)
+
+    def get_army_results(self, player: Player) -> ArmyResult:
+        army = self.get_player_option(player.id, "Army")
+        assert army is not None
+        assert isinstance(army, int)
+
+        return ArmyResult(
+            player.id,
+            army,
+            self.get_player_outcome(player).name,
+            self._results.metadata(army),
+        )
 
     def report_army_stats(self, stats_json):
         self._army_stats_list = json.loads(stats_json)["stats"]
         self._process_pending_army_stats()
 
+    def is_visible_to_player(self, player: Player) -> bool:
+        """
+        Determine if a player should see this game in their games list.
+
+        Note: This is a *hot* function, it can have significant impacts on
+        performance.
+        """
+        if self.host is None:
+            return False
+
+        if player == self.host or player in self._connections:
+            return True
+
+        if (
+            self.enforce_rating_range
+            and player.ratings[self.rating_type].displayed()
+            not in self.displayed_rating_range
+        ):
+            return False
+
+        if self.visibility is VisibilityState.FRIENDS:
+            return player.id in self.host.friends
+        else:
+            return player.id not in self.host.foes
+
     def to_dict(self):
         client_state = {
-            GameState.LOBBY: 'open',
-            GameState.LIVE: 'playing',
-            GameState.ENDED: 'closed',
-            GameState.INITIALIZING: 'closed',
-        }.get(self.state, 'closed')
+            GameState.LOBBY: "open",
+            GameState.LIVE: "playing",
+            GameState.ENDED: "closed",
+            GameState.INITIALIZING: "closed",
+        }.get(self.state, "closed")
+        connected_players = self.get_connected_players()
         return {
             "command": "game_info",
-            "visibility": VisibilityState.to_string(self.visibility),
+            "visibility": self.visibility.value,
             "password_protected": self.password is not None,
             "uid": self.id,
             "title": self.name,
             "state": client_state,
+            "game_type": self.game_type.value,
             "featured_mod": self.game_mode,
             "sim_mods": self.mods,
-            "mapname": self.map_folder_name,
-            "map_file_path": self.map_file_path,
-            "host": self.host.login if self.host else '',
-            "num_players": len(self.players),
+            "mapname": self.map.folder_name,
+            # DEPRECATED: Use `mapname` instead
+            "map_file_path": self.map.file_path,
+            "host": self.host.login if self.host else "",
+            "num_players": len(connected_players),
             "max_players": self.max_players,
+            "hosted_at": self.hosted_at.isoformat() if self.hosted_at else None,
             "launched_at": self.launched_at,
+            "rating_type": self.rating_type,
+            "rating_min": self.displayed_rating_range.lo,
+            "rating_max": self.displayed_rating_range.hi,
+            "enforce_rating_range": self.enforce_rating_range,
+            "teams_ids": [
+                {
+                    "team_id": team,
+                    "player_ids": [
+                        player.id for player in connected_players
+                        if self.get_player_option(player.id, "Team") == team
+                    ]
+                }
+                for team in self.teams if team is not None
+            ],
             "teams": {
                 team: [
-                    player.login for player in self.players
-                    if self.get_player_option(player.id, 'Team') == team
+                    player.login for player in connected_players
+                    if self.get_player_option(player.id, "Team") == team
                 ]
-                for team in self.teams
+                for team in self.teams if team is not None
             }
         }
-
-    @property
-    def map_folder_name(self):
-        """
-        Map folder name
-        :return:
-        """
-        try:
-            return str(self.map_scenario_path.split('/')[2]).lower()
-        except (IndexError, AttributeError):
-            if self.map_file_path:
-                return self.map_file_path[5:-4].lower()
-            else:
-                return 'scmp_009'
 
     def __eq__(self, other):
         if not isinstance(other, Game):
@@ -847,8 +972,103 @@ class Game:
     def __hash__(self):
         return self.id.__hash__()
 
-    def __str__(self):
-        return "Game({},{},{},{})".format(
-            self.id, self.host.login if self.host else '', self.map_file_path,
-            len(self.players)
+    def __str__(self) -> str:
+        return (
+            f"Game({self.id}, {self.host.login if self.host else ''}, "
+            f"{self.map.file_path})"
         )
+
+
+class GameOptions(dict):
+    def __init__(self, id: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._logger = logging.getLogger(
+            f"{self.__class__.__qualname__}.{id}"
+        )
+        self.callbacks: dict[str, list[Callable[[Any], Any]]] = defaultdict(list)
+        self.async_callbacks: dict[str, list[Callable[[Any], Awaitable[Any]]]] = defaultdict(list)
+
+    def add_callback(self, key: str, callback: Callable[[Any], Any]):
+        self.callbacks[key].append(callback)
+
+    def add_async_callback(
+        self,
+        key: str,
+        callback: Callable[[Any], Awaitable[Any]],
+    ):
+        self.async_callbacks[key].append(callback)
+
+    async def set_option(self, k: str, v: Any) -> None:
+        v = self._set_option(k, v)
+        self._run_sync_callbacks(k, v)
+
+        await asyncio.gather(*(
+            self._log_async_exception(
+                async_callback(v),
+                k,
+                v,
+            )
+            for async_callback in self.async_callbacks.get(k, ())
+        ))
+
+    def __setitem__(self, k: str, v: Any) -> None:
+        v = self._set_option(k, v)
+        self._run_sync_callbacks(k, v)
+
+        for async_callback in self.async_callbacks.get(k, ()):
+            asyncio.create_task(
+                self._log_async_exception(
+                    async_callback(v),
+                    k,
+                    v,
+                )
+            )
+
+    def _set_option(self, k: str, v: Any) -> Any:
+        """
+        Set the new value potentially transforming it first. Returns the value
+        that was set.
+        """
+        if k == "Victory" and not isinstance(v, Victory):
+            victory = Victory.__members__.get(v.upper())
+            if victory is None:
+                victory = self.get("Victory")
+                self._logger.warning(
+                    "Invalid victory type '%s'! Using '%s' instead.",
+                    v,
+                    victory.name if victory else None,
+                )
+                return
+            v = victory
+        elif k == "Slots":
+            v = int(v)
+        elif k == "ScenarioFile":
+            # Convert to a posix path. Since posix paths are also interpreted
+            # the same way as windows paths (but not the other way around!) we
+            # can do this by parsing as a PureWindowsPath first
+            v = pathlib.PurePath(pathlib.PureWindowsPath(v).as_posix())
+
+        super().__setitem__(k, v)
+
+        return v
+
+    def _run_sync_callbacks(self, k: str, v: Any):
+        for callback in self.callbacks.get(k, ()):
+            try:
+                callback(v)
+            except Exception:
+                self._logger.exception(
+                    "Error running callback for '%s' (value %r)",
+                    k,
+                    v,
+                )
+
+    async def _log_async_exception(self, coro: Awaitable[Any], k: str, v: Any):
+        try:
+            return await coro
+        except Exception:
+            self._logger.exception(
+                "Error running async callback for '%s' (value %r)",
+                k,
+                v,
+            )

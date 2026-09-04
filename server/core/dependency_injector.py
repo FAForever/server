@@ -1,11 +1,11 @@
 import inspect
 from collections import ChainMap, defaultdict
-from typing import Dict, List
+from typing import Any
 
-DependencyGraph = Dict[str, List[str]]
+DependencyGraph = dict[str, list[str]]
 
 
-class DependencyInjector(object):
+class DependencyInjector():
     """
     Does dependency injection.
 
@@ -23,36 +23,36 @@ class DependencyInjector(object):
     instance of the object called `hello` (whether that is an injectable, or
     another class in the class list).
 
-    # Example
-    ```
-    class SomeClass(object):
-        def __init__(self, external):
-            self.external = external
+    # Examples
+    Create a class that depends on some external injectable.
+    >>> class SomeClass(object):
+    ...     def __init__(self, external):
+    ...         self.external = external
 
-    class SomeOtherClass(object):
-        def __init__(self, some_class):
-            self.some_class = some_class
+    Create a class that depends on the first class.
+    >>> class SomeOtherClass(object):
+    ...     def __init__(self, some_class):
+    ...         self.some_class = some_class
 
-    injector = DependencyInjector()
-    injector.add_injectables(external=object())
-    classes = injector.build_classes({
-        "some_class": SomeClass,
-        "other": SomeOtherClass
-    })
+    Do the dependency injection.
+    >>> injector = DependencyInjector()
+    >>> injector.add_injectables(external=object())
+    >>> classes = injector.build_classes({
+    ...     "some_class": SomeClass,
+    ...     "other": SomeOtherClass
+    ... })
 
-    assert isinstance(classes["some_class"], SomeClass)
-    assert isinstance(classes["other"], SomeOtherClass)
-    assert classes["other"].some_class is classes["some_class"]
-    ```
-
+    >>> assert isinstance(classes["some_class"], SomeClass)
+    >>> assert isinstance(classes["other"], SomeOtherClass)
+    >>> assert classes["other"].some_class is classes["some_class"]
     """
 
     def __init__(self) -> None:
         # Objects which are available to the constructors of injected objects
-        self.injectables: Dict[str, object] = {}
+        self.injectables: dict[str, Any] = {}
 
     def add_injectables(
-        self, injectables: Dict[str, object] = {}, **kwargs: object
+        self, injectables: dict[str, Any] = {}, **kwargs: Any
     ) -> None:
         """
         Register additional objects that can be requested by injected classes.
@@ -61,8 +61,8 @@ class DependencyInjector(object):
         self.injectables.update(kwargs)
 
     def build_classes(
-        self, classes: Dict[str, type] = {}, **kwargs: type
-    ) -> Dict[str, object]:
+        self, classes: dict[str, type] = {}, **kwargs: type
+    ) -> dict[str, Any]:
         """
         Resolve dependencies by name and instantiate each class.
         """
@@ -81,7 +81,7 @@ class DependencyInjector(object):
         self.add_injectables(**instances)
         return instances
 
-    def _make_dependency_graph(self, classes: Dict[str, type]) -> DependencyGraph:
+    def _make_dependency_graph(self, classes: dict[str, type]) -> DependencyGraph:
         """
         Build dependency graph
         """
@@ -90,24 +90,25 @@ class DependencyInjector(object):
             graph[name] = []
 
         for obj_name, klass in classes.items():
-            signature = inspect.signature(klass.__init__)
-            # Strip off the `self` parameter
-            params = list(signature.parameters.values())[1:]
-            graph[obj_name] = [param.name for param in params]
+            signature = inspect.signature(klass)
+            graph[obj_name] = [
+                param.name
+                for param in signature.parameters.values()
+            ]
 
         return graph
 
     def _build_classes_from_dependencies(
         self,
         dep: DependencyGraph,
-        classes: Dict[str, type],
-        param_map: Dict[str, List[str]]
-    ) -> Dict[str, object]:
+        classes: dict[str, type],
+        param_map: dict[str, list[str]]
+    ) -> dict[str, Any]:
         """
         Tries to build all classes in the dependency graph. Raises RuntimeError
         if some dependencies are not available or there was a cyclic dependency.
         """
-        instances: Dict[str, object] = {}
+        instances: dict[str, object] = {}
         resolved = ChainMap(instances, self.injectables)
 
         while True:

@@ -7,6 +7,7 @@ https://github.com/gawel/aiocron/blob/e82a53c3f9a7950209cee7b3e493204c1dfc8b12/a
 
 import asyncio
 import functools
+import inspect
 
 
 async def null_callback(*args):
@@ -15,8 +16,15 @@ async def null_callback(*args):
 
 def wrap_func(func):
     """wrap in a coroutine"""
-    if not asyncio.iscoroutinefunction(func):
-        return asyncio.coroutine(func)
+    if isinstance(func, functools.partial):
+        _func = func.func
+    else:
+        _func = func
+    if not inspect.iscoroutinefunction(_func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
     return func
 
 
@@ -62,7 +70,7 @@ class Timer(object):
         """Called. Take care of exceptions using gather"""
         asyncio.gather(
             self.cron(*args, **kwargs),
-            loop=self.loop, return_exceptions=True
+            return_exceptions=True
         ).add_done_callback(self.set_result)
 
     def set_result(self, result):
@@ -87,10 +95,34 @@ class Timer(object):
         return self
 
     def __str__(self):
-        return f"{self.interval} {self.func}"
+        return f"{self.get_delay()} {self.func}"
 
     def __repr__(self):
         return f"<Timer {str(self)}>"
+
+
+class LazyIntervalTimer(Timer):
+    """A timer that calls a function to get the next interval"""
+
+    def __init__(
+        self,
+        interval_func,
+        func=None,
+        args=(),
+        start=False,
+        loop=None
+    ):
+        super().__init__(
+            interval=None,
+            func=func,
+            args=args,
+            start=start,
+            loop=loop
+        )
+        self.interval_func = interval_func
+
+    def get_delay(self):
+        return self.interval_func()
 
 
 def at_interval(interval, func=None, args=(), start=True, loop=None):

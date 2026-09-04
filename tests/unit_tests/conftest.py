@@ -1,42 +1,125 @@
-from contextlib import AbstractContextManager
+import asyncio
+from contextlib import AbstractContextManager, asynccontextmanager
 from time import perf_counter
 from unittest import mock
 
-import asynctest
 import pytest
-from asynctest import CoroutineMock
 
 from server import GameStatsService
 from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
 from server.ladder_service import LadderService
+from server.ladder_service.veto_system import VetoService
+from server.ladder_service.violation_service import ViolationService
+from server.player_service import PlayerService
 from server.protocol import QDataStreamProtocol
 
 
+@pytest.fixture(scope="session")
+def ladder_and_game_service_context(
+    request,
+    database_context,
+):
+    @asynccontextmanager
+    async def make_ladder_and_game_service():
+        async with database_context(request) as database:
+            with mock.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1):
+                player_service = PlayerService(database)
+                game_service = GameService(
+                    database,
+                    player_service=player_service,
+                    game_stats_service=mock.Mock(),
+                    rating_service=mock.Mock(),
+                    message_queue_service=mock.Mock(
+                        declare_exchange=mock.AsyncMock()
+                    )
+                )
+                violation_service = ViolationService()
+                veto_service = VetoService(player_service)
+                ladder_service = LadderService(
+                    database,
+                    game_service,
+                    violation_service,
+                    veto_service,
+                )
+
+                await player_service.initialize()
+                await game_service.initialize()
+                await violation_service.initialize()
+                await veto_service.initialize()
+                await ladder_service.initialize()
+
+                yield ladder_service, game_service
+
+                await player_service.shutdown()
+                await game_service.shutdown()
+                await violation_service.shutdown()
+                await veto_service.shutdown()
+                await ladder_service.shutdown()
+
+    return make_ladder_and_game_service
+
+
 @pytest.fixture
-def game_connection(
+async def ladder_service(
+    mocker,
+    database,
+    game_service,
+    violation_service,
+    veto_service,
+):
+    mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
+    ladder_service = LadderService(
+        database,
+        game_service,
+        violation_service,
+        veto_service,
+    )
+    await ladder_service.initialize()
+    yield ladder_service
+    await ladder_service.shutdown()
+
+
+@pytest.fixture
+async def violation_service():
+    service = ViolationService()
+    await service.initialize()
+    yield service
+    await service.shutdown()
+
+
+@pytest.fixture
+async def veto_service(player_service):
+    service = VetoService(player_service)
+    await service.initialize()
+    yield service
+    await service.shutdown()
+
+
+@pytest.fixture
+async def game_connection(
     request,
     database,
     game,
     players,
     game_service,
     player_service,
-    event_loop
 ):
     conn = GameConnection(
         database=database,
         game=game,
         player=players.hosting,
-        protocol=asynctest.create_autospec(QDataStreamProtocol),
+        protocol=mock.create_autospec(QDataStreamProtocol),
         player_service=player_service,
         games=game_service
     )
 
     conn.finished_sim = False
+    loop = asyncio.get_running_loop()
 
     def fin():
-        event_loop.run_until_complete(conn.abort())
+        loop.run_until_complete(conn.abort())
 
     request.addfinalizer(fin)
     return conn
@@ -51,44 +134,33 @@ def make_mock_game_connection(
     state=GameConnectionState.INITIALIZING,
     player=mock.Mock()
 ):
-    gc = asynctest.create_autospec(GameConnection)
+    gc = mock.create_autospec(GameConnection)
     gc.state = state
     gc.player = player
     gc.finished_sim = False
+    player.game_connection = gc
     return gc
 
 
 @pytest.fixture
 def game_stats_service():
     service = mock.Mock(spec=GameStatsService)
-    service.process_game_stats = CoroutineMock()
+    service.process_game_stats = mock.AsyncMock()
     service.reset_mock()
     return service
 
 
-@pytest.fixture
-async def ladder_service(
-    mocker,
-    database,
-    game_service: GameService,
-):
-    mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
-    ladder_service = LadderService(database, game_service)
-    await ladder_service.initialize()
-
-    yield ladder_service
-
-    await ladder_service.shutdown()
-
-
 def add_connected_player(game: Game, player):
     game.game_service.player_service[player.id] = player
-    gc = make_mock_game_connection(state=GameConnectionState.CONNECTED_TO_HOST, player=player)
-    game.set_player_option(player.id, 'Army', 0)
-    game.set_player_option(player.id, 'StartSpot', 0)
-    game.set_player_option(player.id, 'Team', 0)
-    game.set_player_option(player.id, 'Faction', 0)
-    game.set_player_option(player.id, 'Color', 0)
+    gc = make_mock_game_connection(
+        state=GameConnectionState.CONNECTED_TO_HOST,
+        player=player
+    )
+    game.set_player_option(player.id, "Army", 0)
+    game.set_player_option(player.id, "StartSpot", 0)
+    game.set_player_option(player.id, "Team", 0)
+    game.set_player_option(player.id, "Faction", 0)
+    game.set_player_option(player.id, "Color", 0)
     game.add_game_connection(gc)
     return gc
 
@@ -97,13 +169,13 @@ def add_connected_players(game: Game, players):
     """
     Utility to add players with army and StartSpot indexed by a list
     """
-    for army, player in enumerate(players):
+    for army, player in enumerate(players, start=len(game.players)):
         add_connected_player(game, player)
-        game.set_player_option(player.id, 'Army', army)
-        game.set_player_option(player.id, 'StartSpot', army)
-        game.set_player_option(player.id, 'Team', army)
-        game.set_player_option(player.id, 'Faction', 0)
-        game.set_player_option(player.id, 'Color', 0)
+        game.set_player_option(player.id, "Army", army)
+        game.set_player_option(player.id, "StartSpot", army)
+        game.set_player_option(player.id, "Team", army)
+        game.set_player_option(player.id, "Faction", 0)
+        game.set_player_option(player.id, "Color", 0)
     game.host = players[0]
 
 
@@ -116,9 +188,9 @@ def game_add_players(player_factory):
         for i in range(current, current+n):
             p = player_factory(
                 player_id=i+1,
-                login=f'Player {i + 1}',
+                login=f"Player {i + 1}",
                 global_rating=(1500, 500),
-                with_lobby_connection=False
+                lobby_connection_spec=None
             )
             players.append(p)
 
@@ -126,7 +198,7 @@ def game_add_players(player_factory):
 
         if team is not None:
             for p in players:
-                game.set_player_option(p.id, 'Team', team)
+                game.set_player_option(p.id, "Team", team)
 
         return players
 

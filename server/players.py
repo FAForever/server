@@ -1,23 +1,39 @@
-import weakref
+"""
+Player type definitions
+"""
+
+import logging
+from collections import defaultdict
+from contextlib import suppress
 from enum import Enum, unique
+from typing import TYPE_CHECKING, ClassVar, Optional, Union
 
-from server.config import config
-from server.rating import PlayerRatings, RatingType, RatingTypeMap
-
+from .decorators import with_logger
 from .factions import Faction
 from .protocol import DisconnectedError
+from .rating import Leaderboard, PlayerRatings, RatingType
+from .weakattr import WeakAttribute
+
+if TYPE_CHECKING:
+    from server.gameconnection import GameConnection
+    from server.games import Game
+    from server.lobbyconnection import LobbyConnection
 
 
 @unique
 class PlayerState(Enum):
-    IDLE = 1,
-    PLAYING = 2,
-    HOSTING = 3,
-    JOINING = 4,
-    SEARCHING_LADDER = 5,
+    IDLE = 1
+    PLAYING = 2
+    HOSTING = 3
+    JOINING = 4
+    SEARCHING_LADDER = 5
+    STARTING_AUTOMATCH = 6
+    STARTING_GAME = 7
 
 
+@with_logger
 class Player:
+    _logger: ClassVar[logging.Logger]
     """
     Standard player object used for representing signed-in players.
 
@@ -25,114 +41,66 @@ class Player:
     information about players.
     """
 
+    lobby_connection: WeakAttribute["LobbyConnection"] = WeakAttribute()
+    game: WeakAttribute["Game"] = WeakAttribute()
+    game_connection: WeakAttribute["GameConnection"] = WeakAttribute()
+
     def __init__(
         self,
-        login: str = None,
+        login: str,
         session: int = 0,
         player_id: int = 0,
-        ratings=None,
-        clan=None,
-        game_count=None,
-        lobby_connection: "LobbyConnection" = None
-    ):
-        self._faction = 0
+        leaderboards: dict[str, Leaderboard] = {},
+        ratings: Optional[PlayerRatings] = None,
+        clan: Optional[str] = None,
+        game_count: Optional[dict[str, int]] = None,
+        lobby_connection: Optional["LobbyConnection"] = None
+    ) -> None:
+        from server.ladder_service.veto_system import PlayerVetoes
+        self._faction = Faction.uef
+        self.vetoes = PlayerVetoes()
 
+        # The player_id of the user in the `login` table of the database.
         self.id = player_id
         self.login = login
 
-        # The player_id of the user in the `login` table of the database.
         self.session = session
 
-        self.ratings = PlayerRatings(
-            lambda: (config.START_RATING_MEAN, config.START_RATING_DEV)
-        )
+        self.ratings = PlayerRatings(leaderboards)
         if ratings is not None:
-            self.ratings.update(ratings)
+            self.ratings.update_with_transient(ratings)
 
-        self.game_count = RatingTypeMap(int)
+        self.game_count: dict[str, int] = defaultdict(int)
         if game_count is not None:
             self.game_count.update(game_count)
 
         # social
-        self.avatar = None
+        self.avatar: Optional[dict[str, str]] = None
         self.clan = clan
-        self.country = None
+        self.country: Optional[str] = None
 
-        self.friends = set()
-        self.foes = set()
+        self.friends: set[int] = set()
+        self.foes: set[int] = set()
 
-        self.user_groups = set()
+        self.user_groups: set[str] = set()
 
         self.state = PlayerState.IDLE
 
-        self.faction = 1
-
-        self._lobby_connection = lambda: None
         if lobby_connection is not None:
             self.lobby_connection = lobby_connection
 
-        self._game = lambda: None
-        self._game_connection = lambda: None
-
     @property
-    def faction(self):
+    def faction(self) -> Faction:
         return self._faction
 
     @faction.setter
-    def faction(self, value):
-        if isinstance(value, str):
-            self._faction = Faction.from_string(value)
-        elif isinstance(value, int):
-            self._faction = Faction(value)
-        elif isinstance(value, Faction):
+    def faction(self, value: Union[str, int, Faction]) -> None:
+        if isinstance(value, Faction):
             self._faction = value
         else:
-            raise TypeError(f"Unsupported faction type {type(value)}!")
+            self._faction = Faction.from_value(value)
 
-    @property
-    def lobby_connection(self) -> "LobbyConnection":
-        """
-        Weak reference to the LobbyConnection of this player
-        """
-        return self._lobby_connection()
-
-    @lobby_connection.setter
-    def lobby_connection(self, value: "LobbyConnection"):
-        self._lobby_connection = weakref.ref(value)
-
-    @property
-    def game(self):
-        """
-        Weak reference to the Game object that this player wants to join or is
-        currently in
-        """
-        return self._game()
-
-    @game.setter
-    def game(self, value):
-        self._game = weakref.ref(value)
-
-    @game.deleter
-    def game(self):
-        self._game = lambda: None
-
-    @property
-    def game_connection(self):
-        """
-        Weak reference to the GameConnection object for this player
-        :return:
-        """
-        return self._game_connection()
-
-    @game_connection.setter
-    def game_connection(self, value):
-        self._game_connection = weakref.ref(value)
-
-    @game_connection.deleter
-    def game_connection(self):
-        self._game_connection = lambda: None
-
-    def power(self):
+    def power(self) -> int:
         """An artifact of the old permission system. The client still uses this
         number to determine if a player gets a special category in the user list
         such as "Moderator"
@@ -150,73 +118,68 @@ class Player:
     def is_moderator(self) -> bool:
         return "faf_moderators_global" in self.user_groups
 
-    async def send_message(self, message):
+    async def send_message(self, message: dict) -> None:
         """
         Try to send a message to this player.
 
-        :raises: DisconnectedError if the player has disconnected
+        # Errors
+        Raises `DisconnectedError` if the player has disconnected.
         """
         if self.lobby_connection is None:
             raise DisconnectedError("Player has disconnected!")
 
         await self.lobby_connection.send(message)
 
-    def write_message(self, message):
+    def write_message(self, message: dict) -> None:
         """
-        Try to queue a message to be sent this player. Only call this from
-        broadcasting functions. Does nothing if the player has disconnected.
+        Try to queue a message to be sent to this player.
+
+        Does nothing if the player has disconnected.
         """
         if self.lobby_connection is None:
             return
 
-        self.lobby_connection.write(message)
+        with suppress(DisconnectedError):
+            self.lobby_connection.write(message)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """
         Return a dictionary representing this player object
-        :return:
         """
+        assert self.state is not None and self.state.value is not None
 
-        def filter_none(t):
-            _, v = t
-            return v is not None
+        cmd = {
+            "id": self.id,
+            "login": self.login,
+            "avatar": self.avatar,
+            "country": self.country,
+            "clan": self.clan,
+            # NOTE: We are only sending an 'offline' state for now to signal to
+            # the client when a player disconnects. However, this could be
+            # expanded in the future to expose more of the internal state
+            # tracking to the client to make the UI for showing players in game
+            # more correct.
+            "state": None if self.lobby_connection else "offline",
+            "ratings": {
+                rating_type: {
+                    "rating": self.ratings[rating_type],
+                    "number_of_games": self.game_count[rating_type]
+                }
+                for rating_type in self.ratings
+            },
+            # DEPRECATED: Use ratings instead
+            "global_rating": self.ratings[RatingType.GLOBAL],
+            "ladder_rating": self.ratings[RatingType.LADDER_1V1],
+            "number_of_games": self.game_count[RatingType.GLOBAL],
+        }
+        return {k: v for k, v in cmd.items() if v is not None}
 
-        return dict(
-            filter(
-                filter_none, (
-                    ('id', self.id),
-                    ('login', self.login),
-                    ('avatar', self.avatar),
-                    ('country', self.country),
-                    ('clan', self.clan),
-                    ('ratings', {
-                        rating_type: {
-                            "rating": self.ratings[rating_type],
-                            "number_of_games": self.game_count[rating_type]
-                        }
-                        for rating_type in self.ratings
-                    }),
-                    # Deprecated
-                    ('global_rating', self.ratings[RatingType.GLOBAL]),
-                    ('ladder_rating', self.ratings[RatingType.LADDER_1V1]),
-                    ('number_of_games', self.game_count[RatingType.GLOBAL]),
-                )
-            )
-        )
-
-    def __str__(self):
+    def __str__(self) -> str:
         return (f"Player({self.login}, {self.id}, "
                 f"{self.ratings[RatingType.GLOBAL]}, "
                 f"{self.ratings[RatingType.LADDER_1V1]})")
 
-    def __repr__(self):
-        return self.__str__()
-
-    def __hash__(self):
-        return self.id
-
-    def __eq__(self, other):
-        if not isinstance(other, Player):
-            return False
-        else:
-            return self.id == other.id
+    def __repr__(self) -> str:
+        return (f"Player(login={self.login}, session={self.session}, "
+                f"id={self.id}, ratings={dict(self.ratings)}, "
+                f"clan={self.clan}, game_count={dict(self.game_count)})")

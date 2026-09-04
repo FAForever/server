@@ -1,0 +1,119 @@
+# Run unit tests
+name: Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+  schedule:
+    - cron: '0 0 * * *'
+
+env:
+  FAF_DB_VERSION: v144
+  FLYWAY_VERSION: 7.5.4
+
+jobs:
+  # Tests
+  unit-test:
+    runs-on: ubuntu-latest
+    services:
+      faf-db:
+        image: mariadb:10.6
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          MYSQL_ROOT_PASSWORD: banana
+          MYSQL_DATABASE: faf
+          MYSQL_USER: faf-python-server
+          MYSQL_PASSWORD: banana
+
+      faf-rabbitmq:
+        image: rabbitmq:3.9-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --name faf-rabbitmq
+          --health-cmd "rabbitmq-diagnostics check_running --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          RABBITMQ_PID_FILE: /var/lib/rabbitmq/pid
+          RABBITMQ_DEFAULT_USER: admin
+          RABBITMQ_DEFAULT_PASS: banana
+          RABBITMQ_DEFAULT_VHOST: /
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache hypothesis examples
+        uses: actions/cache@v4
+        with:
+          path: .hypothesis
+          key: .hypothesis
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run flyway db migrations
+        env:
+          FLYWAY_URL: jdbc:mysql://localhost/faf?useSSL=false
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: banana
+          FLYWAY_LOCATIONS: filesystem:db/migrations
+        run: |
+          git clone --depth 1 --branch ${FAF_DB_VERSION} https://github.com/FAForever/db
+          wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/${FLYWAY_VERSION}/flyway-commandline-${FLYWAY_VERSION}-linux-x64.tar.gz | tar xz
+          flyway-${FLYWAY_VERSION}/flyway migrate
+
+      - name: Setup RabbitMQ
+        run: ./.github/workflows/scripts/init-rabbitmq.sh
+
+
+      - name: Install dependencies with pipenv
+        run: |
+          pip install pipenv==2025.0.4
+          pipenv sync --dev
+          pipenv run pip install pytest-github-actions-annotate-failures
+
+      - name: Run tests
+        if: ${{ github.event_name != 'schedule' }}
+        run: pipenv run tests --cov-report=xml --color=yes -m ""
+
+      - name: Run hypothesis tests with many examples
+        if: ${{ github.event_name == 'schedule' }}
+        run: pipenv run tests -m "hypothesis" --hypothesis-profile nightly
+
+      - name: Report coverage
+        if: ${{ github.event_name != 'schedule' }}
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          fail_ci_if_error: true
+
+      - name: Check documentation
+        run: PYTHONWARNINGS='error::UserWarning' pipenv run pdoc3 server >/dev/null
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build docker image
+        run: docker build --build-arg GITHUB_REF -t test_image .
+
+      - name: Test image
+        run: |
+          docker run --rm -d -p 8001:8001 test_image
+          nc -z localhost 8001

@@ -1,10 +1,15 @@
-import asyncio
+"""Protocol base class"""
+
 import contextlib
+import json
 from abc import ABCMeta, abstractmethod
 from asyncio import StreamReader, StreamWriter
-from typing import List
 
 import server.metrics as metrics
+
+from ..asyncio_extensions import synchronizedmethod
+
+json_encoder = json.JSONEncoder(separators=(",", ":"))
 
 
 class DisconnectedError(ConnectionError):
@@ -18,15 +23,19 @@ class Protocol(metaclass=ABCMeta):
         # Force calls to drain() to only return once the data has been sent
         self.writer.transport.set_write_buffer_limits(high=0)
 
-        # drain() cannot be called concurrently by multiple coroutines:
-        # http://bugs.python.org/issue29930.
-        self._drain_lock = asyncio.Lock()
-
     @staticmethod
     @abstractmethod
     def encode_message(message: dict) -> bytes:
         """
         Encode a message as raw bytes. Can be used along with `*_raw` methods.
+        """
+        pass  # pragma: no cover
+
+    @staticmethod
+    @abstractmethod
+    def decode_message(data: bytes) -> dict:
+        """
+        Decode a message from raw bytes.
         """
         pass  # pragma: no cover
 
@@ -41,8 +50,11 @@ class Protocol(metaclass=ABCMeta):
         """
         Asynchronously read a message from the stream
 
-        :raises: IncompleteReadError
-        :return dict: Parsed message
+        # Returns
+        The parsed message
+
+        # Errors
+        May raise `IncompleteReadError`.
         """
         pass  # pragma: no cover
 
@@ -50,19 +62,19 @@ class Protocol(metaclass=ABCMeta):
         """
         Send a single message in the form of a dictionary
 
-        :param message: Message to send
-        :raises: DisconnectedError
+        # Errors
+        May raise `DisconnectedError`.
         """
         await self.send_raw(self.encode_message(message))
 
-    async def send_messages(self, messages: List[dict]) -> None:
+    async def send_messages(self, messages: list[dict]) -> None:
         """
         Send multiple messages in the form of a list of dictionaries.
 
         May be more optimal than sending a single message.
 
-        :param messages:
-        :raises: DisconnectedError
+        # Errors
+        May raise `DisconnectedError`.
         """
         self.write_messages(messages)
         await self.drain()
@@ -71,8 +83,8 @@ class Protocol(metaclass=ABCMeta):
         """
         Send raw bytes. Should generally not be used.
 
-        :param data: bytes to send
-        :raises: DisconnectedError
+        # Errors
+        May raise `DisconnectedError`.
         """
         self.write_raw(data)
         await self.drain()
@@ -83,18 +95,20 @@ class Protocol(metaclass=ABCMeta):
         sending broadcasts or when sending messages that are triggered by
         incoming messages from other players.
 
-        :param message: Message to send
+        # Errors
+        May raise `DisconnectedError`.
         """
         if not self.is_connected():
             raise DisconnectedError("Protocol is not connected!")
 
         self.write_raw(self.encode_message(message))
 
-    def write_messages(self, messages: List[dict]) -> None:
+    def write_messages(self, messages: list[dict]) -> None:
         """
         Write multiple message into the message buffer.
 
-        :param messages: List of messages to write
+        # Errors
+        May raise `DisconnectedError`.
         """
         metrics.sent_messages.labels(self.__class__.__name__).inc()
         if not self.is_connected():
@@ -106,7 +120,8 @@ class Protocol(metaclass=ABCMeta):
         """
         Write raw bytes into the message buffer. Should generally not be used.
 
-        :param data: bytes to send
+        # Errors
+        May raise `DisconnectedError`.
         """
         metrics.sent_messages.labels(self.__class__.__name__).inc()
         if not self.is_connected():
@@ -114,26 +129,37 @@ class Protocol(metaclass=ABCMeta):
 
         self.writer.write(data)
 
+    def abort(self) -> None:
+        # SelectorTransport only
+        self.writer.transport.abort()
+
     async def close(self) -> None:
         """
         Close the underlying writer as soon as the buffer has emptied.
-        :return:
+
+        # Errors
+        Never raises. Any exceptions that occur while waiting to close are
+        ignored.
         """
         self.writer.close()
         with contextlib.suppress(Exception):
             await self.writer.wait_closed()
 
+    @synchronizedmethod
     async def drain(self) -> None:
         """
         Await the write buffer to empty.
         See StreamWriter.drain()
 
-        :raises: DisconnectedError if the client disconnects while waiting for
+        # Errors
+        Raises `DisconnectedError` if the client disconnects while waiting for
         the write buffer to empty.
         """
-        async with self._drain_lock:
-            try:
-                await self.writer.drain()
-            except Exception as e:
-                await self.close()
-                raise DisconnectedError("Protocol connection lost!") from e
+        # Method needs to be synchronized as drain() cannot be called
+        # concurrently by multiple coroutines:
+        # http://bugs.python.org/issue29930.
+        try:
+            await self.writer.drain()
+        except Exception as e:
+            await self.close()
+            raise DisconnectedError("Protocol connection lost!") from e

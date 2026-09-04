@@ -8,24 +8,20 @@ DELETE FROM moderation_report;
 DELETE FROM teamkills;
 DELETE FROM unique_id_users;
 DELETE FROM uniqueid;
-DELETE FROM global_rating;
-DELETE FROM ladder1v1_rating;
 DELETE FROM uniqueid_exempt;
-DELETE FROM version_lobby;
 DELETE FROM friends_and_foes;
-DELETE FROM ladder_map;
 DELETE FROM tutorial;
 DELETE FROM map_version_review;
 DELETE FROM map_version_reviews_summary;
 DELETE FROM map_version;
 DELETE FROM `map`;
 DELETE FROM coop_map;
+DELETE FROM coop_leaderboard;
 DELETE FROM mod_version_review;
 DELETE FROM mod_version_reviews_summary;
 DELETE FROM mod_version;
 DELETE FROM `mod`;
 DELETE FROM mod_stats;
-DELETE FROM oauth_clients;
 DELETE FROM updates_faf;
 DELETE FROM updates_faf_files;
 DELETE FROM avatars;
@@ -38,9 +34,6 @@ DELETE FROM game_review;
 DELETE FROM game_reviews_summary;
 DELETE FROM game_stats;
 DELETE FROM game_featuredMods;
-DELETE FROM ladder_division_score;
-DELETE FROM ladder_division;
-DELETE FROM lobby_admin;
 DELETE FROM name_history;
 DELETE FROM user_group_assignment;
 DELETE FROM login;
@@ -49,58 +42,77 @@ DELETE FROM leaderboard_rating_journal;
 DELETE FROM leaderboard_rating;
 DELETE FROM leaderboard;
 DELETE FROM matchmaker_queue;
+DELETE FROM matchmaker_queue_game;
 DELETE FROM matchmaker_queue_map_pool;
 DELETE FROM map_pool;
 DELETE FROM map_pool_map_version;
+DELETE FROM user_group;
+DELETE FROM group_permission_assignment;
 
 SET FOREIGN_KEY_CHECKS=1;
 
 -- Login table
 -- Most accounts get a creation time in the past so that they pass account
 -- age check.
-insert into login (id, login, email, password, steamid, create_time) values
-  (1, 'test', 'test@example.com', SHA2('test_password', 256),    null, '2000-01-01 00:00:00'),
-  (2, 'Dostya', 'dostya@cybran.example.com', SHA2('vodka', 256), null, '2000-01-01 00:00:00'),
-  (3, 'Rhiza', 'rhiza@aeon.example.com', SHA2('puff_the_magic_dragon', 256), null, '2000-01-01 00:00:00'),
-  (4, 'No_UID', 'uid@uef.example.com', SHA2('his_pw', 256), null, '2000-01-01 00:00:00'),
-  (5, 'postman', 'postman@postman.com', SHA2('postman', 256), null, '2000-01-01 00:00:00'),
-  (10,  'friends', 'friends@example.com', SHA2('friends', 256),  null, '2000-01-01 00:00:00'),
-  (20,  'moderator', 'moderator@example.com', SHA2('moderator', 256), null, '2000-01-01 00:00:00'),
-  (50,  'player_service1', 'ps1@example.com', SHA2('player_service1', 256), null, '2000-01-01 00:00:00'),
-  (51,  'player_service2', 'ps2@example.com', SHA2('player_service2', 256), null,  '2000-01-01 00:00:00'),
-  (52,  'player_service3', 'ps3@example.com', SHA2('player_service3', 256), null, '2000-01-01 00:00:00'),
-  (100, 'ladder1', 'ladder1@example.com', SHA2('ladder1', 256), null, '2000-01-01 00:00:00'),
-  (101, 'ladder2', 'ladder2@example.com', SHA2('ladder2', 256), null, '2000-01-01 00:00:00'),
-  (102, 'ladder3', 'ladder3@example.com', SHA2('ladder3', 256), null, '2000-01-01 00:00:00'),
-  (103, 'ladder4', 'ladder4@example.com', SHA2('ladder4', 256), null, '2000-01-01 00:00:00'),
-  (104, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), null, '2000-01-01 00:00:00'),
-  (200, 'banme', 'banme@example.com', SHA2('banme', 256), null, '2000-01-01 00:00:00'),
-  (201, 'ban_revoked', 'ban_revoked@example.com', SHA2('ban_revoked', 256), null, '2000-01-01 00:00:00'),
-  (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), null, '2000-01-01 00:00:00'),
-  (203, 'ban_long_time', 'ban_null_expiration@example.com', SHA2('ban_long_time', 256), null, '2000-01-01 00:00:00'),
-  (300, 'steam_id', 'steam_id@example.com', SHA2('steam_id', 256), 34632, '2000-01-01 00:00:00')
+insert into login (id, login, email, password, create_time) values
+  (1, 'test', 'test@example.com', SHA2('test_password', 256),    '2000-01-01 00:00:00'),
+  (2, 'Dostya', 'dostya@cybran.example.com', SHA2('vodka', 256), '2000-01-01 00:00:00'),
+  (3, 'Rhiza', 'rhiza@aeon.example.com', SHA2('puff_the_magic_dragon', 256), '2000-01-01 00:00:00'),
+  (4, 'No_UID', 'uid@uef.example.com', SHA2('his_pw', 256), '2000-01-01 00:00:00'),
+  (5, 'postman', 'postman@postman.com', SHA2('postman', 256), '2000-01-01 00:00:00'),
+  (7, 'test2', 'test2@example.com', SHA2('test2', 256), '2000-01-01 00:00:00'),
+  (8, 'test3', 'test3@example.com', SHA2('test3', 256), '2000-01-01 00:00:00'),
+  (9, 'test4', 'test4@example.com', SHA2('test3', 256), '2000-01-01 00:00:00'),
+  (10,  'friends', 'friends@example.com', SHA2('friends', 256),  '2000-01-01 00:00:00'),
+  (20,  'moderator', 'moderator@example.com', SHA2('moderator', 256), '2000-01-01 00:00:00'),
+  (50,  'player_service1', 'ps1@example.com', SHA2('player_service1', 256), '2000-01-01 00:00:00'),
+  (51,  'player_service2', 'ps2@example.com', SHA2('player_service2', 256), '2000-01-01 00:00:00'),
+  (52,  'player_service3', 'ps3@example.com', SHA2('player_service3', 256), '2000-01-01 00:00:00'),
+  (100, 'ladder1', 'ladder1@example.com', SHA2('ladder1', 256), '2000-01-01 00:00:00'),
+  (101, 'ladder2', 'ladder2@example.com', SHA2('ladder2', 256), '2000-01-01 00:00:00'),
+  (102, 'ladder3', 'ladder3@example.com', SHA2('ladder3', 256), '2000-01-01 00:00:00'),
+  (103, 'ladder4', 'ladder4@example.com', SHA2('ladder4', 256), '2000-01-01 00:00:00'),
+  (104, 'ladder_ban', 'ladder_ban@example.com', SHA2('ladder_ban', 256), '2000-01-01 00:00:00'),
+  (105, 'tmm1', 'tmm1@example.com', SHA2('tmm1', 256), '2000-01-01 00:00:00'),
+  (106, 'tmm2', 'tmm2@example.com', SHA2('tmm2', 256), '2000-01-01 00:00:00'),
+  (107, 'ladder801', 'ladder801@example.com', SHA2('ladder801', 256), '2000-01-01 00:00:00'),
+  (108, 'ladder802', 'ladder802@example.com', SHA2('ladder802', 256), '2000-01-01 00:00:00'),
+  (109, 'ladder1001', 'ladder1001@example.com', SHA2('ladder1001', 256), '2000-01-01 00:00:00'),
+  (110, 'ladder1002', 'ladder1002@example.com', SHA2('ladder1002', 256), '2000-01-01 00:00:00'),
+  (200, 'banme', 'banme@example.com', SHA2('banme', 256), '2000-01-01 00:00:00'),
+  (201, 'ban_revoked', 'ban_revoked@example.com', SHA2('ban_revoked', 256), '2000-01-01 00:00:00'),
+  (202, 'ban_expired', 'ban_expired@example.com', SHA2('ban_expired', 256), '2000-01-01 00:00:00'),
+  (203, 'ban_long_time', 'ban_null_expiration@example.com', SHA2('ban_long_time', 256), '2000-01-01 00:00:00'),
+  (204, 'ban_46_hour', 'ban_46_hour_expiration@example.com', SHA2('ban_46_hour', 256), '2000-01-01 00:00:00'),
+  (300, 'steam_id', 'steam_id@example.com', SHA2('steam_id', 256), '2000-01-01 00:00:00'),
+  (400, 'foed_by_test', 'foed_by_test@example.com', SHA2('foe', 256), '2000-01-01 00:00:00')
 ;
--- New accounts for testing account age check
 insert into login (id, login, email, password) values (6, 'newbie', 'noob@example.com', SHA2('password', 256));
-insert into login (id, login, email, password, steamid) values (7, 'steambie', 'steambie@example.com', SHA2('password', 256), 111111);
--- Test IPv6
-insert into login (id, login, email, password, ip) values (8, 'ipv6', 'ipv6@example.com', SHA2('ipv6', 256), '0000:0000:0000:0000:0000:0000:127.127.127.127');
 
 -- Name history
 insert into name_history (id, change_time, user_id, previous_name) values
   (1, date_sub(now(), interval 12 month), 1, 'test_maniac'),
   (2, date_sub(now(), interval 1 month), 2, 'YoungDostya');
 
--- Permissions
-insert into lobby_admin (user_id, `group`) values (1,2);
-insert into user_group_assignment(user_id, group_id)  values (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'));
-insert into user_group_assignment(user_id, group_id)  values (2, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
-insert into user_group_assignment(user_id, group_id)  values (20, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
+insert into user_group (id, technical_name, public, name_key) values
+  (1, 'faf_server_administrators', true, 'admins'),
+  (2, 'faf_moderators_global', true, 'mods');
 
-insert into leaderboard (id, technical_name, name_key, description_key) values
-  (1, "global", "leaderboard.global.name", "leaderboard.global.desc"),
-  (2, "ladder_1v1", "leaderboard.ladder_1v1.name", "leaderboard.ladder_1v1.desc"),
-  (3, "tmm_2v2", "leaderboard.tmm_2v2.name", "leaderboard.tmm_2v2.desc");
+-- Permissions
+insert into group_permission_assignment (id, group_id, permission_id) values
+  (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_BROADCAST_MESSAGE')),
+  (2, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER')),
+  (3, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_JOIN_CHANNEL')),
+  (4, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'), (SELECT id from group_permission WHERE technical_name = 'ADMIN_KICK_SERVER'));
+
+insert into user_group_assignment(user_id, group_id) values (1, (SELECT id from user_group WHERE technical_name = 'faf_server_administrators'));
+insert into user_group_assignment(user_id, group_id) values (2, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
+insert into user_group_assignment(user_id, group_id) values (20, (SELECT id from user_group WHERE technical_name = 'faf_moderators_global'));
+
+insert into leaderboard (id, initializer_id, technical_name, name_key, description_key) values
+  (1, NULL, "global", "leaderboard.global.name", "leaderboard.global.desc"),
+  (2, NULL, "ladder_1v1", "leaderboard.ladder_1v1.name", "leaderboard.ladder_1v1.desc"),
+  (3, 1, "tmm_2v2", "leaderboard.tmm_2v2.name", "leaderboard.tmm_2v2.desc");
 
 
 insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderboard_id) values
@@ -117,32 +129,17 @@ insert into leaderboard_rating (login_id, mean, deviation, total_games, leaderbo
   (101, 1500, 500, 0, 1),
   (101, 1500, 500, 0, 2),
   (102, 1500, 500, 0, 1),
-  (102, 1500, 500, 0, 2)
-;
-
--- legacy table for global rating
-insert into global_rating (id, mean, deviation, numGames, is_active) values
-  (1, 2000, 125, 5, 1),
-  (2, 1500, 75, 2, 1),
-  (3, 1650, 62.52, 2, 1),
-  (50,  1201, 250, 42, 1),
-  (51,  1201, 250, 42, 1),
-  (52,  1201, 250, 42, 1),
-  (100, 1501, 500, 0, 1),
-  (101, 1501, 500, 0, 1),
-  (102, 1501, 500, 0, 1)
-;
-
--- legacy ladder rating
-insert into ladder1v1_rating (id, mean, deviation, numGames, is_active) values
-  (1, 2000, 125, 5, 1),
-  (2, 1500, 75, 2, 1),
-  (3, 1650, 62.52, 2, 1),
-  (50,  1301, 400, 12, 1),
-  (51,  1301, 400, 12, 1),
-  (100, 1501, 500, 0, 1),
-  (101, 1501, 500, 0, 1),
-  (102, 1501, 500, 0, 1)
+  (102, 1500, 500, 0, 2),
+  (105, 500, 100, 20, 3),
+  (106, 900, 75, 20, 3),
+  (107, 951, 50, 5, 1),
+  (107, 951, 50, 5, 2),
+  (108, 952, 50, 5, 1),
+  (108, 952, 50, 5, 2),
+  (109, 1151, 50, 5, 1),
+  (109, 1151, 50, 5, 2),
+  (110, 1152, 50, 5, 1),
+  (110, 1152, 50, 5, 2)
 ;
 
 -- UniqueID_exempt
@@ -158,51 +155,44 @@ insert into unique_id_users (user_id, uniqueid_hash) values (1, 'some_id');
 insert into unique_id_users (user_id, uniqueid_hash) values (2, 'another_id');
 insert into unique_id_users (user_id, uniqueid_hash) values (3, 'some_id');
 
--- Lobby version table
-insert into version_lobby (id, `file`, version) values (1, 'some-installer.msi', '0.10.125');
-
 -- Sample maps
-insert into map (id, display_name, map_type, battle_type, author) values
-  (1, 'SCMP_001', 'FFA', 'skirmish', 1),
-  (2, 'SCMP_002', 'FFA', 'skirmish', 1),
-  (3, 'SCMP_003', 'FFA', 'skirmish', 1),
-  (4, 'SCMP_004', 'FFA', 'skirmish', 1),
-  (5, 'SCMP_005', 'FFA', 'skirmish', 1),
-  (6, 'SCMP_006', 'FFA', 'skirmish', 2),
-  (7, 'SCMP_007', 'FFA', 'skirmish', 2),
-  (8, 'SCMP_008', 'FFA', 'skirmish', 2),
-  (9, 'SCMP_009', 'FFA', 'skirmish', 2),
-  (10, 'SCMP_010', 'FFA', 'skirmish', 3),
-  (11, 'SCMP_011', 'FFA', 'skirmish', 3),
-  (12, 'SCMP_012', 'FFA', 'skirmish', 3),
-  (13, 'SCMP_013', 'FFA', 'skirmish', 3),
-  (14, 'SCMP_014', 'FFA', 'skirmish', 3),
-  (15, 'SCMP_015', 'FFA', 'skirmish', 3),
-  (16, 'neroxis_map_generator_sneaky_map', 'FFA', 'skirmish', 1);
+insert into map (id, display_name, map_type, battle_type, author, license) values
+  (1, 'SCMP_001', 'FFA', 'skirmish', 1, 1),
+  (2, 'SCMP_002', 'FFA', 'skirmish', 1, 1),
+  (3, 'SCMP_003', 'FFA', 'skirmish', 1, 1),
+  (4, 'SCMP_004', 'FFA', 'skirmish', 1, 1),
+  (5, 'SCMP_005', 'FFA', 'skirmish', 1, 1),
+  (6, 'SCMP_006', 'FFA', 'skirmish', 2, 1),
+  (7, 'SCMP_007', 'FFA', 'skirmish', 2, 1),
+  (8, 'SCMP_008', 'FFA', 'skirmish', 2, 1),
+  (9, 'SCMP_009', 'FFA', 'skirmish', 2, 1),
+  (10, 'SCMP_010', 'FFA', 'skirmish', 3, 1),
+  (11, 'SCMP_011', 'FFA', 'skirmish', 3, 1),
+  (12, 'SCMP_012', 'FFA', 'skirmish', 3, 1),
+  (13, 'SCMP_013', 'FFA', 'skirmish', 3, 1),
+  (14, 'SCMP_014', 'FFA', 'skirmish', 3, 1),
+  (15, 'SCMP_015', 'FFA', 'skirmish', 3, 1),
+  (16, 'neroxis_map_generator_sneaky_map', 'FFA', 'skirmish', 1, 1);
 
-insert into map_version (id, description, max_players, width, height, version, filename, hidden, ranked, map_id) values
-  (1, 'SCMP 001', 8, 1024, 1024, 1, 'maps/scmp_001.zip', 0, 1, 1),
-  (2, 'SCMP 002', 8, 1024, 1024, 1, 'maps/scmp_002.zip', 0, 1, 2),
-  (3, 'SCMP 003', 8, 1024, 1024, 1, 'maps/scmp_003.zip', 0, 1, 3),
-  (4, 'SCMP 004', 8, 1024, 1024, 1, 'maps/scmp_004.zip', 0, 1, 4),
-  (5, 'SCMP 005', 8, 2048, 2048, 1, 'maps/scmp_005.zip', 0, 1, 5),
-  (6, 'SCMP 006', 8, 1024, 1024, 1, 'maps/scmp_006.zip', 0, 1, 6),
-  (7, 'SCMP 007', 8, 512, 512, 1, 'maps/scmp_007.zip', 0, 1, 7),
-  (8, 'SCMP 008', 8, 1024, 1024, 1, 'maps/scmp_008.zip', 0, 1, 8),
-  (9, 'SCMP 009', 8, 1024, 1024, 1, 'maps/scmp_009.zip', 0, 1, 9),
-  (10, 'SCMP 010', 8, 1024, 1024, 1, 'maps/scmp_010.zip', 0, 1, 10),
-  (11, 'SCMP 011', 8, 2048, 2048, 1, 'maps/scmp_011.zip', 0, 1, 11),
-  (12, 'SCMP 012', 8, 256, 256, 1, 'maps/scmp_012.zip', 0, 1, 12),
-  (13, 'SCMP 013', 8, 256, 256, 1, 'maps/scmp_013.zip', 0, 1, 13),
-  (14, 'SCMP 014', 8, 1024, 1024, 1, 'maps/scmp_014.zip', 0, 1, 14),
-  (15, 'SCMP 015', 8, 512, 512, 1, 'maps/scmp_015.zip', 0, 1, 15),
-  (16, 'SCMP 015', 8, 512, 512, 2, 'maps/scmp_015.v0002.zip', 0, 1, 15),
-  (17, 'SCMP 015', 8, 512, 512, 3, 'maps/scmp_015.v0003.zip', 0, 1, 15),
-  (18, 'Sneaky_Map', 8, 512, 512, 1, "maps/neroxis_map_generator_sneaky_map.zip", 0, 0, 16);
-
-insert into ladder_map (id, idmap) values
-  (1,1),
-  (2,2);
+insert into map_version (id, description, max_players, width, height, version, folder_name, hidden, ranked, map_id) values
+  (1, 'SCMP 001', 8, 1024, 1024, 1, 'scmp_001', 0, 1, 1),
+  (2, 'SCMP 002', 8, 1024, 1024, 1, 'scmp_002', 0, 1, 2),
+  (3, 'SCMP 003', 8, 1024, 1024, 1, 'scmp_003', 0, 1, 3),
+  (4, 'SCMP 004', 8, 1024, 1024, 1, 'scmp_004', 0, 1, 4),
+  (5, 'SCMP 005', 8, 2048, 2048, 1, 'scmp_005', 0, 1, 5),
+  (6, 'SCMP 006', 8, 1024, 1024, 1, 'scmp_006', 0, 1, 6),
+  (7, 'SCMP 007', 8, 512, 512, 1, 'scmp_007', 0, 1, 7),
+  (8, 'SCMP 008', 8, 1024, 1024, 1, 'scmp_008', 0, 1, 8),
+  (9, 'SCMP 009', 8, 1024, 1024, 1, 'scmp_009', 0, 1, 9),
+  (10, 'SCMP 010', 8, 1024, 1024, 1, 'scmp_010', 0, 1, 10),
+  (11, 'SCMP 011', 8, 2048, 2048, 1, 'scmp_011', 0, 1, 11),
+  (12, 'SCMP 012', 8, 256, 256, 1, 'scmp_012', 0, 1, 12),
+  (13, 'SCMP 013', 8, 256, 256, 1, 'scmp_013', 0, 1, 13),
+  (14, 'SCMP 014', 8, 1024, 1024, 1, 'scmp_014', 0, 1, 14),
+  (15, 'SCMP 015', 8, 512, 512, 1, 'scmp_015', 0, 1, 15),
+  (16, 'SCMP 015', 8, 512, 512, 2, 'scmp_015.v0002', 0, 1, 15),
+  (17, 'SCMP 015', 8, 512, 512, 3, 'scmp_015.v0003', 0, 1, 15),
+  (18, 'Sneaky_Map', 8, 512, 512, 1, 'neroxis_map_generator_sneaky_map', 0, 0, 16);
 
 INSERT INTO `coop_map` (`type`, `name`, `description`, `version`, `filename`) VALUES
   (0, 'FA Campaign map', 'A map from the FA campaign', 2, 'maps/scmp_coop_123.v0002.zip'),
@@ -215,24 +205,32 @@ INSERT INTO `coop_map` (`type`, `name`, `description`, `version`, `filename`) VA
 insert into game_featuredMods (id, gamemod, name, description, publish, git_url, git_branch, file_extension, allow_override) values
   (1, 'faf', 'FAF', 'Forged Alliance Forever', 1, 'https://github.com/FAForever/fa.git', 'deploy/faf', 'nx2', FALSE),
   (6, 'ladder1v1', 'FAF', 'Ladder games', 1, 'https://github.com/FAForever/fa.git', 'deploy/faf', 'nx2', TRUE),
+  (24, 'gw', '', 'Galactic War', 0, NULL, NULL, NULL, NULL), -- GW shouldn't show up in the featured mod list in the client
   (25, 'coop', 'Coop', 'Multiplayer campaign games', 1, 'https://github.com/FAForever/fa-coop.git', 'master', 'cop', TRUE);
 
 insert into game_stats (id, startTime, gameName, gameType, gameMod, host, mapId, validity) values
-  (1, NOW(), 'Test game', '0', 6, 1, 1, 0),
-  (41935, NOW(), 'MapRepetition', '0', 6, 1, NULL, 0),
-  (41936, NOW() + interval 1 minute, 'MapRepetition', '0', 6, 1, 1, 0),
-  (41937, NOW() + interval 2 minute, 'MapRepetition', '0', 6, 1, 2, 0),
-  (41938, NOW() + interval 3 minute, 'MapRepetition', '0', 6, 1, 3, 0),
-  (41939, NOW() + interval 4 minute, 'MapRepetition', '0', 6, 1, 4, 0),
-  (41940, NOW() + interval 5 minute, 'MapRepetition', '0', 6, 1, 5, 0),
-  (41941, NOW() + interval 6 minute, 'MapRepetition', '0', 6, 1, 6, 0),
-  (41942, NOW(), 'OldRatingNull',  '0', 6, 1, NULL, 0),
-  (41943, NOW(), 'OldRatingLose', '0', 6, 1, NULL, 0),
-  (41944, NOW(), 'OldRatingWin', '0', 6, 1, NULL, 0),
-  (41945, NOW() + interval 7 minute, 'MapRepetition', '0', 6, 2, 6, 0),
-  (41946, NOW() + interval 8 minute, 'MapRepetition', '0', 6, 2, 5, 0),
-  (41947, NOW() + interval 9 minute, 'MapRepetition', '0', 6, 2, 4, 0),
-  (41948, NOW() + interval 10 minute, 'MapRepetition', '0', 6, 2, 3, 0);
+  (1, NOW(), 'Test game', 'DEMORALIZATION', 6, 1, 1, 0),
+  (41935, NOW(), 'MapRepetition', 'DEMORALIZATION', 6, 1, NULL, 0),
+  (41936, NOW() + interval 1 minute, 'MapRepetition', 'DEMORALIZATION', 6, 1, 1, 0),
+  (41937, NOW() + interval 2 minute, 'MapRepetition', 'DEMORALIZATION', 6, 1, 2, 0),
+  (41938, NOW() + interval 3 minute, 'MapRepetition', 'DEMORALIZATION', 6, 1, 3, 0),
+  (41939, NOW() + interval 4 minute, 'MapRepetition', 'DEMORALIZATION', 6, 1, 4, 0),
+  (41940, NOW() + interval 5 minute, 'MapRepetition', 'DEMORALIZATION', 6, 1, 5, 0),
+  (41941, NOW() + interval 6 minute, 'MapRepetition', 'DEMORALIZATION', 6, 1, 6, 0),
+  (41942, NOW(), 'OldRatingNull',  'DEMORALIZATION', 6, 1, NULL, 0),
+  (41943, NOW(), 'OldRatingLose', 'DEMORALIZATION', 6, 1, NULL, 0),
+  (41944, NOW(), 'OldRatingWin', 'DEMORALIZATION', 6, 1, NULL, 0),
+  (41945, NOW() + interval 7 minute, 'MapRepetition', 'DEMORALIZATION', 6, 2, 6, 0),
+  (41946, NOW() + interval 8 minute, 'MapRepetition', 'DEMORALIZATION', 6, 2, 5, 0),
+  (41947, NOW() + interval 9 minute, 'MapRepetition', 'DEMORALIZATION', 6, 2, 4, 0),
+  (41948, NOW() + interval 10 minute, 'MapRepetition', 'DEMORALIZATION', 6, 2, 3, 0),
+  (41949, NOW() + interval 1 minute, 'MapRepetition', 'DEMORALIZATION', 6, 1, 7, 0),
+  (41950, NOW() + interval 2 minute, 'MapRepetition', 'DEMORALIZATION', 6, 1, 8, 0),
+  (41951, NOW() + interval 3 minute, 'MapRepetition', 'DEMORALIZATION', 6, 1, 9, 0),
+  (41952, NOW() + interval 4 minute, 'MapRepetition', 'DEMORALIZATION', 6, 1, 7, 0),
+  (41953, NOW() + interval 1 minute, 'MapRepetition', 'DEMORALIZATION', 6, 2, 5, 0),
+  (41954, NOW() + interval 2 minute, 'MapRepetition', 'DEMORALIZATION', 6, 2, 6, 0),
+  (41955, NOW() + interval 3 minute, 'MapRepetition', 'DEMORALIZATION', 6, 2, 7, 0);
 
 insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime) values
   (1, 1, 0, 0, 0, 2, 0, 1500, 500, NOW()),
@@ -246,44 +244,95 @@ insert into game_player_stats (gameId, playerId, AI, faction, color, team, place
   (41945, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 7 minute),
   (41946, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 8 minute),
   (41947, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 9 minute),
-  (41948, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 10 minute);
+  (41948, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 10 minute),
+  (41949, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 1 minute),
+  (41950, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 2 minute),
+  (41951, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 3 minute),
+  (41952, 1, 0, 0, 0, 2, 0, 1500, 500, NOW() + interval 4 minute),
+  (41953, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 1 minute),
+  (41954, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 2 minute),
+  (41955, 2, 0, 0, 0, 1, 0, 1500, 500, NOW() + interval 3 minute);
 
-insert into game_player_stats (gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime, after_mean) values
-  (41942, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), NULL),
-  (41943, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1400),
-  (41944, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1600);
+insert into game_player_stats (id, gameId, playerId, AI, faction, color, team, place, mean, deviation, scoreTime, after_mean) values
+  (1, 41942, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), NULL),
+  (2, 41943, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1400),
+  (3, 41944, 51, 0, 0, 0, 2, 0, 1500, 500, NOW(), 1600);
 
-insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_id, name_key, team_size, enabled) values
-  (1, "ladder1v1", 6, 2, "matchmaker.ladder1v1", 1, true),
-  (2, "tmm2v2", 1, 3, "matchmaker.tmm2v2", 2, true),
-  (3, "disabled", 1, 1, "matchmaker.disabled", 4, false);
+insert into leaderboard_rating_journal (game_player_stats_id, leaderboard_id, rating_mean_before, rating_mean_after, rating_deviation_before, rating_deviation_after) values
+  (1, 1, 1200, 1210, 100, 100),
+  (2, 1, 1600, 1500, 500, 400),
+  (3, 3, 1400, 1410, 100, 100);
+
+insert into matchmaker_queue (id, technical_name, featured_mod_id, leaderboard_id, name_key, team_size, params, enabled) values
+  (1, "ladder1v1", 6, 2, "matchmaker.ladder1v1", 1, NULL, true),
+  (2, "tmm2v2", 1, 3, "matchmaker.tmm2v2", 2, NULL, true),
+  (3, "disabled", 1, 1, "matchmaker.disabled", 4, NULL, false),
+  (4, "neroxis1v1", 1, 2, "matchmaker.neroxis", 1, NULL, true),
+  (5, "gameoptions", 1, 1, "matchmaker.gameoptions", 3, '{"GameOptions":{"Share":"ShareUntilDeath","UnitCap":500}}', true),
+  (6, "gameoptions_malformed", 1, 1, "matchmaker.gameoptions_malformed", 3, '{"GameOptions"...', true);
+
+insert into matchmaker_queue_game (matchmaker_queue_id, game_stats_id) values
+  (1, 1),
+  (1, 41935),
+  (1, 41936),
+  (1, 41937),
+  (1, 41938),
+  (1, 41939),
+  (1, 41940),
+  (1, 41941),
+  (1, 41942),
+  (1, 41943),
+  (1, 41944),
+  (1, 41945),
+  (1, 41946),
+  (1, 41947),
+  (1, 41948),
+  (2, 41949),
+  (2, 41950),
+  (2, 41951),
+  (2, 41952),
+  (2, 41953),
+  (2, 41954),
+  (2, 41955);
 
 insert into map_pool (id, name) values
   (1, "Ladder1v1 season 1: 5-10k"),
   (2, "Ladder1v1 season 1: all"),
-  (3, "Large maps");
+  (3, "Large maps"),
+  (4, "Generated Maps with Errors");
 
-insert into map_pool_map_version (map_pool_id, map_version_id) values
-  (1, 15), (1, 16), (1, 17),
-  (2, 11), (2, 14), (2, 15), (2, 16), (2, 17),
-  (3, 1),  (3, 2),  (3, 3);
+insert into map_pool_map_version (id, map_pool_id, map_version_id, weight, map_params) values
+  (1, 1, 15, 1, NULL), (2, 1, 16, 1, NULL), (3, 1, 17, 1, NULL),
+  (4, 2, 11, 1, NULL), (5, 2, 14, 1, NULL), (6, 2, 15, 1, NULL), (7, 2, 16, 1, NULL), (8, 2, 17, 1, NULL),
+  (9,3, 1, 1, NULL), (10, 3, 2, 1, NULL), (11, 3, 3, 1, NULL),
+  (12, 4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 2, "version": "0.0.0"}'),
+  (13, 4, NULL, 1, '{"type": "neroxis", "size": 768, "spawns": 2, "version": "0.0.0"}'),
+  -- Bad Generated Map Parameters should not be included in pool
+  (14, 4, NULL, 1, '{"type": "neroxis"...'),
+  (15, 4, NULL, 1, '{"type": "neroxis", "size": 513, "spawns": 2, "version": "0.0.0"}'),
+  (16, 4, NULL, 1, '{"type": "neroxis", "size": 0, "spawns": 2, "version": "0.0.0"}'),
+  (17, 4, NULL, 1, '{"type": "neroxis", "size": 512, "spawns": 3, "version": "0.0.0"}'),
+  (18, 4, NULL, 1, '{"type": "beroxis", "size": 512, "spawns": 2, "version": "0.0.0"}');
 
-insert into matchmaker_queue_map_pool (matchmaker_queue_id, map_pool_id, min_rating, max_rating) values
-  (1, 1, NULL, 800),
-  (1, 2, 800, NULL),
-  (1, 3, 1000, NULL),
-  (2, 3, NULL, NULL);
+insert into matchmaker_queue_map_pool (id, matchmaker_queue_id, map_pool_id, min_rating, max_rating, veto_tokens_per_player, max_tokens_per_map, minimum_maps_after_veto) values
+  (1, 1, 1, NULL, 800, 1, 1, 1.0),
+  (2, 1, 2, 800, 999, 2, 0, 1.0),
+  (3, 1, 3, 1000, NULL, 2, 2, 1.0),
+  (4, 2, 3, NULL, NULL, 1, 2, 1.0),
+  (5, 4, 4, NULL, NULL, 0, 1, 1.0),
+  (6, 5, 1, NULL, NULL, 0, 1, 1.0),
+  (7, 6, 1, NULL, NULL, 0, 1, 1.0);
 
 insert into friends_and_foes (user_id, subject_id, `status`) values
-  (1, 3, 'FOE'),
+  (1, 400, 'FOE'),
   (2, 1, 'FRIEND'),
   (10, 1, 'FRIEND');
 
-insert into `mod` (id, display_name, author) VALUES
-  (1, 'test-mod', 'baz'),
-  (2, 'test-mod2', 'baz'),
-  (3, 'test-mod3', 'baz'),
-  (100, 'Mod without icon', 'foo');
+insert into `mod` (id, display_name, author, license) VALUES
+  (1, 'test-mod', 'baz', 1),
+  (2, 'test-mod2', 'baz', 1),
+  (3, 'test-mod3', 'baz', 1),
+  (100, 'Mod without icon', 'foo', 1);
 
 insert into mod_version (id, mod_id, uid, version, description, type, filename, icon) VALUES
   (1, 1, 'foo', 1, '', 'UI', 'foobar.zip', 'foobar.png'),
@@ -323,7 +372,8 @@ insert into ban (player_id, author_id, reason, level, expires_at, revoke_reason,
 insert into ban (player_id, author_id, reason, level, expires_at, revoke_time) values
   (201, 201, 'Test revoked ban', 'GLOBAL', NULL, now() - interval 1 day),
   (202, 202, 'Test expired ban', 'GLOBAL', now() - interval 1 day, NULL),
-  (203, 203, 'Test permanent ban', 'GLOBAL', now() + interval 1000 year, NULL)
+  (203, 203, 'Test permanent ban', 'GLOBAL', now() + interval 1000 year, NULL),
+  (204, 204, 'Test ongoing ban with 46 hours left', 'GLOBAL', now() + interval 46 hour, NULL)
 ;
 
 -- sample clans
@@ -337,12 +387,6 @@ insert into clan_membership (clan_id, player_id) values
   (2, 4),
   (3, 1),
   (1, 50);
-
--- sample oauth_client for Postman
-insert into oauth_clients (id, name, client_secret, redirect_uris, default_redirect_uri, default_scope) VALUES
-  ('3bc8282c-7730-11e5-8bcf-feff819cdc9f ', 'Downlord''s FAF Client', '{noop}6035bd78-7730-11e5-8bcf-feff819cdc9f', '', '', 'read_events read_achievements upload_map'),
-  ('faf-website', 'faf-website', '{noop}banana', 'http://localhost:8020', 'http://localhost:8020', 'public_profile write_account_data create_user'),
-  ('postman', 'postman', '{noop}postman', 'http://localhost https://www.getpostman.com/oauth2/callback', 'https://www.getpostman.com/oauth2/callback', 'read_events read_achievements upload_map upload_mod write_account_data');
 
 insert into updates_faf (id, filename, path) values
   (1, 'ForgedAlliance.exe', 'bin'),
@@ -373,22 +417,5 @@ insert into mod_version_review (id, text, user_id, score, mod_version_id) VALUES
   (1, 'Great!', 1, 5, 1),
   (2, 'Like it', 2, 4, 1),
   (3, 'Funny', 3, 4, 1);
-
-INSERT INTO ladder_division VALUES
-  (1, 'League 1 - Division A', 1, 10.0),
-  (2, 'League 1 - Division B', 1, 30.0),
-  (3, 'League 1 - Division C', 1, 50.0),
-  (4, 'League 2 - Division D', 2, 20.0),
-  (5, 'League 2 - Division E', 2, 60.0),
-  (6, 'League 2 - Division F', 2, 100.0),
-  (7, 'League 3 - Division D', 3, 100.0),
-  (8, 'League 3 - Division E', 3, 200.0),
-  (9, 'League 3 - Division F', 3, 9999.0);
-
-INSERT INTO ladder_division_score (season, user_id, league, score, games) VALUES
-  (1, 1, 1, 9.5, 4),
-  (1, 2, 1, 49.5, 70),
-  (1, 3, 2, 0.0, 39),
-  (1, 4, 3, 10.0, 121);
 
 INSERT INTO email_domain_blacklist VALUES ('spam.org');

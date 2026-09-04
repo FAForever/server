@@ -1,8 +1,9 @@
 [scripts]
-devserver = "python server.py --configuration-file dev-config.yml"
-tests = "py.test --cov-report term-missing --cov=server --mysql_database=faf -o testpaths=tests"
-integration = "py.test -o testpaths=integration_tests"
-vulture = "vulture server.py server/ --sort-by-size"
+devserver = "python main.py --configuration-file dev-config.yml"
+tests = "py.test --doctest-modules --doctest-continue-on-failure --no-flaky-report --cov-report=term-missing --cov-branch --cov=server --mysql_database=faf -o testpaths=tests -m 'not rabbitmq'"
+e2e = "py.test -o testpaths=e2e_tests"
+vulture = "vulture main.py server/ --sort-by-size"
+doc = "pdoc3 --html --force server"
 
 [[source]]
 url = "https://pypi.org/simple"
@@ -10,32 +11,33 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-typing = "*"
-aiohttp = "*"
-prometheus_client = "*"
-docopt = "*"
-semver = "*"
-"geoip2" = "*"
-trueskill = "*"
-aiocron = "*"
-oauthlib = "*"
-sqlalchemy = "*"
-twilio = "*"
-humanize = "*"
-aiomysql = {editable = true, git = "https://github.com/aio-libs/aiomysql"}
-pyyaml = "*"
 aio_pika = "*"
+aiocron = "*"
+aiohttp = "*"
+aiomysql = {git = "https://github.com/aio-libs/aiomysql"}
+cachetools = "*"
+docopt = "*"
+humanize = ">=2.6.0"
+maxminddb = "*"
+oauthlib = "*"
+prometheus_client = "*"
+pyjwt = {version = ">=2.4.0", extras = ["crypto"]}
+pyyaml = "*"
+sortedcontainers = "*"
+sqlalchemy = {version = ">=2.0.0", extras = ["asyncio"]}
+trueskill = "*"
+uvloop = {version = "*", markers = "sys_platform != 'win32'"}
 
 [dev-packages]
+flaky = "*"
+hypothesis = "*"  # Versions between 6.47.1 and 6.56.4 added a prerelease dependency. See https://github.com/pypa/pipenv/issues/1760
+pdoc3 = "*"
 pytest = "*"
-pytest-mock = "*"
-pytest-cov = "*"
 pytest-asyncio = "*"
-coveralls = "*"
-mock = "*"
+pytest-cov = "*"
+pytest-mock = "*"
 vulture = "*"
-asynctest = "*"
-hypothesis = "*"
+websockets = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.13"

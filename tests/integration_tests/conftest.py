@@ -1,41 +1,89 @@
+from __future__ import annotations
+
 import asyncio
+import datetime
 import hashlib
+import json
 import logging
+import textwrap
 from collections import defaultdict
-from typing import Any, Callable, Dict, Tuple
+from collections.abc import AsyncGenerator
+from typing import Any, Callable, Optional
 from unittest import mock
 
-import asynctest
+import aio_pika
+import aiohttp
 import pytest
+from aio_pika.abc import (
+    AbstractChannel,
+    AbstractIncomingMessage,
+    AbstractQueue
+)
 from aiohttp import web
-from asynctest import exhaust_callbacks
 
-from server import GameService, run_control_server, run_lobby_server
+from server import (
+    BroadcastService,
+    GameService,
+    LadderService,
+    OAuthService,
+    PartyService,
+    ServerInstance,
+    VetoService,
+    ViolationService
+)
+from server.config import config
+from server.control import ControlServer
 from server.db.models import login
-from server.ladder_service import LadderService
-from server.protocol import Protocol, QDataStreamProtocol
-from server.rating_service.rating_service import RatingService
+from server.health import HealthServer
+from server.protocol import Protocol, WebSocketProtocol
+from server.servercontext import ServerContext
+from tests.utils import exhaust_callbacks
 
 
 @pytest.fixture
 def mock_games():
-    return asynctest.create_autospec(GameService)
+    return mock.create_autospec(GameService)
 
 
 @pytest.fixture
-async def ladder_service(mocker, database, game_service):
-    mocker.patch('server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX', 1)
-    ladder_service = LadderService(database, game_service)
+async def ladder_service(
+    mocker,
+    database,
+    game_service,
+    violation_service,
+    veto_service,
+):
+    mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
+    ladder_service = LadderService(
+        database,
+        game_service,
+        violation_service,
+        veto_service,
+    )
     await ladder_service.initialize()
-
     yield ladder_service
-
     await ladder_service.shutdown()
 
 
 @pytest.fixture
-async def mock_rating(database, mock_players):
-    service = RatingService(database, mock_players)
+async def violation_service():
+    service = ViolationService()
+    await service.initialize()
+    yield service
+    await service.shutdown()
+
+
+@pytest.fixture
+async def veto_service(player_service):
+    service = VetoService(player_service)
+    await service.initialize()
+    yield service
+    await service.shutdown()
+
+
+@pytest.fixture
+async def party_service(game_service):
+    service = PartyService(game_service)
     await service.initialize()
 
     yield service
@@ -44,36 +92,211 @@ async def mock_rating(database, mock_players):
 
 
 @pytest.fixture
-async def lobby_server(
-    event_loop, database, player_service, game_service, geoip_service,
-    ladder_service, rating_service, message_queue_service, policy_server
+async def broadcast_service(
+    message_queue_service,
+    game_service,
+    player_service,
 ):
-    with mock.patch(
-        'server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL',
-        f'http://{policy_server.host}:{policy_server.port}'
-    ):
-        ctx = await run_lobby_server(
-            address=('127.0.0.1', None),
-            database=database,
-            geoip_service=geoip_service,
-            player_service=player_service,
-            game_service=game_service,
-            ladder_service=ladder_service,
-            nts_client=None,
-            loop=event_loop,
-        )
-        player_service.is_uniqueid_exempt = lambda id: True
+    # The reference to the ServerInstance needs to be established later
+    service = BroadcastService(
+        None,
+        message_queue_service,
+        game_service,
+        player_service,
+    )
+    await service.initialize()
 
-        yield ctx
+    yield service
 
-        ctx.close()
-        await ctx.wait_closed()
-        await exhaust_callbacks(event_loop)
+    await service.shutdown()
 
 
 @pytest.fixture
-async def control_server(player_service, game_service):
-    server = await run_control_server(player_service, game_service)
+async def oauth_service(mocker, jwks_server):
+    mocker.patch(
+        "server.oauth_service.config.HYDRA_JWKS_URI",
+        f"http://{jwks_server.host}:{jwks_server.port}/jwks"
+    )
+    service = OAuthService()
+    await service.initialize()
+
+    yield service
+
+    await service.shutdown()
+
+
+@pytest.fixture
+def jwk_priv_key():
+    return textwrap.dedent("""
+    -----BEGIN RSA PRIVATE KEY-----
+    MIIBOgIBAAJBAKia//Uh/0nwtCI2QEaorc4voP5Xx+68M/AHLsvzxe7qLut64+O3
+    vHlYp9B9wClxxp3unphCZDe+JIzRieCz14UCAwEAAQJAWh5G0uox/n5meabPojTE
+    eWFhxrB6j7MOe6wLKj4IvJKWxoxLuMoOWmqWcWLiFw4pXKFtjv6bOGW8uUyDZDQt
+    vQIhANt1HM3WPoFsvdnnqLH6PILfDRzal5Kjv1Ua97b7q2qLAiEAxK4zrououc6a
+    I+uVxvsTnU88DeydN2sTroc36YfC2C8CIQCuZg4i4ZxAnBrvfPKJpXPLCNjR0kDb
+    7rcROeIbjzp06wIgcZfXG5lnwqDTn6lh4QGEC5gGrFgbWTWLsYJBRax2WVsCIFeL
+    KtHOf7sc9jf0k73eooPK8b+g4pssztR4GObEThZh
+    -----END RSA PRIVATE KEY-----
+    """)
+
+
+@pytest.fixture
+def jwk_kid():
+    return "L7wdUtrDssMTb57A_TNAI79DQCdp0T2-KUrSUoDJBhk"
+
+
+@pytest.fixture
+async def lobby_server_factory(
+    database,
+    broadcast_service,
+    player_service,
+    game_service,
+    geoip_service,
+    ladder_service,
+    rating_service,
+    message_queue_service,
+    party_service,
+    oauth_service,
+    violation_service,
+    veto_service,
+    policy_server,
+    jwks_server,
+):
+    all_contexts = []
+
+    async def make_lobby_server(config):
+        instance = ServerInstance(
+            "UnitTestServer",
+            database,
+            loop=asyncio.get_running_loop(),
+            _override_services={
+                "broadcast_service": broadcast_service,
+                "geo_ip_service": geoip_service,
+                "player_service": player_service,
+                "game_service": game_service,
+                "ladder_service": ladder_service,
+                "rating_service": rating_service,
+                "message_queue_service": message_queue_service,
+                "party_service": party_service,
+                "oauth_service": oauth_service,
+                "violation_service": violation_service,
+                "veto_service": veto_service,
+            })
+        # Set up the back reference
+        broadcast_service.server = instance
+
+        # FIXME?: unlike ServerInstance, overriden services have no internal
+        # state to reflect that they are running.
+        # instance.listen(...) tries to start them if instance is not started yet
+        #
+        # overriden servivces were started in their corresponding fixtures
+        # therefore we manually set instance's flag here so it doesn't
+        # trye to start them again
+        instance.started = True
+
+        contexts = {
+            name: await instance.listen(
+                (cfg["ADDRESS"], cfg["PORT"]),
+            )
+            for name, cfg in config.items()
+        }
+        all_contexts.extend(contexts.values())
+        player_service.is_uniqueid_exempt = lambda id: True
+
+        return instance, contexts
+
+    mock_policy = mock.patch(
+        "server.lobbyconnection.config.FAF_POLICY_SERVER_BASE_URL",
+        f"http://{policy_server.host}:{policy_server.port}"
+    )
+    with mock_policy:
+        yield make_lobby_server
+
+    for context in all_contexts:
+        await context.shutdown()
+    await exhaust_callbacks()
+
+
+@pytest.fixture
+async def lobby_setup(lobby_server_factory):
+    return await lobby_server_factory({
+        "ws": {
+            "ADDRESS": "127.0.0.1",
+            "PORT": None,
+        },
+    })
+
+
+@pytest.fixture
+def lobby_instance(lobby_setup):
+    instance, _ = lobby_setup
+    return instance
+
+
+@pytest.fixture
+def lobby_contexts(lobby_setup):
+    _, contexts = lobby_setup
+    return contexts
+
+
+@pytest.fixture
+def fixed_time(monkeypatch):
+    """
+    Fixture to fix server.timing value. By default, fixes all timings at 1970-01-01T00:00:00+00:00. Additionally, returned function can be called unbound times to change timing value, e.g.:
+
+    def test_time(fixed_time):
+        assert server.lobbyconnection.datetime_now().timestamp == 0.
+        fixed_time(1)
+        assert server.lobbyconnection.datetime_now().timestamp == 1.
+    """
+
+    def fix_time(iso_utc_time: str | float | int | datetime.datetime = 0):
+        """
+        Fix server.timing value.
+
+        :param iso_utc_time: UTC time to use. Can be isoformat, timestamp or native object.
+        """
+        if isinstance(iso_utc_time, str):
+            iso_utc_time = datetime.datetime.fromisoformat(iso_utc_time)
+        elif isinstance(iso_utc_time, (float, int)):
+            iso_utc_time = datetime.datetime.fromtimestamp(iso_utc_time, datetime.timezone.utc)
+
+        def mock_datetime_now() -> datetime:
+            return iso_utc_time
+
+        monkeypatch.setattr("server.lobbyconnection.datetime_now", mock_datetime_now)
+
+    fix_time()
+    return fix_time
+
+
+# TODO: This fixture is poorly named since it returns a ServerContext, however,
+# it is used in almost every tests, so renaming it is a large task.
+@pytest.fixture
+def lobby_server(lobby_contexts) -> ServerContext:
+    yield lobby_contexts["ws"]
+
+
+@pytest.fixture
+async def control_server(lobby_instance):
+    server = ControlServer(lobby_instance)
+    await server.start(
+        "127.0.0.1",
+        config.CONTROL_SERVER_PORT
+    )
+
+    yield server
+
+    await server.shutdown()
+
+
+@pytest.fixture
+async def health_server(lobby_instance):
+    server = HealthServer(lobby_instance)
+    await server.start(
+        "127.0.0.1",
+        config.HEALTH_SERVER_PORT
+    )
 
     yield server
 
@@ -82,7 +305,7 @@ async def control_server(player_service, game_service):
 
 @pytest.fixture
 async def policy_server():
-    host = 'localhost'
+    host = "localhost"
     port = 6080
 
     app = web.Application()
@@ -97,13 +320,13 @@ async def policy_server():
 
     handle = Handle()
 
-    @routes.post('/verify')
+    @routes.post("/verify")
     async def token(request):
         # Register that the endpoint was called using a Mock
         handle.verify()
 
         await request.json()
-        return web.json_response({'result': handle.result})
+        return web.json_response({"result": handle.result})
 
     app.add_routes(routes)
 
@@ -119,13 +342,60 @@ async def policy_server():
 
 
 @pytest.fixture
-async def tmp_user(database):
+async def jwks_server(jwk_kid):
+    host = "localhost"
+    port = 4080
+
+    app = web.Application()
+    routes = web.RouteTableDef()
+
+    class Handle(object):
+        def __init__(self):
+            self.host = host
+            self.port = port
+            self.result = {
+                "keys": [{
+                    "kty": "RSA",
+                    "e": "AQAB",
+                    "use": "sig",
+                    "kid": jwk_kid,
+                    "alg": "RS256",
+                    "n": "qJr_9SH_SfC0IjZARqitzi-g_lfH7rwz8Acuy_PF7uou63rj47e8eVin0H3AKXHGne6emEJkN74kjNGJ4LPXhQ"
+                }]
+            }
+            self.verify = mock.Mock()
+
+    handle = Handle()
+
+    @routes.get("/jwks")
+    async def get(request):
+        # Register that the endpoint was called using a Mock
+        handle.verify()
+
+        return web.json_response(handle.result)
+
+    app.add_routes(routes)
+
+    runner = web.AppRunner(app)
+
+    await runner.setup()
+    site = web.TCPSite(runner, host, port)
+    await site.start()
+
+    yield handle
+
+    await runner.cleanup()
+
+
+@pytest.fixture
+def tmp_user(database):
     user_ids = defaultdict(lambda: 1)
     password_plain = "foo"
     password = hashlib.sha256(password_plain.encode()).hexdigest()
 
     async def make_user(name="TempUser"):
         user_id = user_ids[name]
+        user_ids[name] += 1
         login_name = f"{name}{user_id}"
         async with database.acquire() as conn:
             await conn.execute(login.insert().values(
@@ -133,68 +403,164 @@ async def tmp_user(database):
                 email=f"{login_name}@example.com",
                 password=password,
             ))
-        user_ids[name] += 1
         return login_name, password_plain
 
     return make_user
 
 
-async def connect_client(server) -> QDataStreamProtocol:
-    return QDataStreamProtocol(
-        *(await asyncio.open_connection(*server.sockets[0].getsockname()))
-    )
+async def connect_client(
+    server: ServerContext,
+    address: Optional[tuple[str, int]] = None
+) -> Protocol:
+    host, port = address or (server.host, server.port)
+    url = f"http://{host}:{port}{server.path}"
+    session = aiohttp.ClientSession()
+    ws = await session.ws_connect(url)
+    return WebSocketProtocol(ws, owned_session=session)
 
 
 async def perform_login(
-    proto: Protocol, credentials: Tuple[str, str]
+    proto: Protocol, credentials: tuple[str, str]
 ) -> None:
     login, pw = credentials
-    pw_hash = hashlib.sha256(pw.encode('utf-8'))
+    pw_hash = hashlib.sha256(pw.encode("utf-8"))
     await proto.send_message({
-        'command': 'hello',
-        'version': '1.0.0-dev',
-        'user_agent': 'faf-client',
-        'login': login,
-        'password': pw_hash.hexdigest(),
-        'unique_id': 'some_id'
+        "command": "hello",
+        "version": "1.0.0-dev",
+        "user_agent": "faf-client",
+        "login": login,
+        "password": pw_hash.hexdigest(),
+        "unique_id": "some_id"
     })
 
 
-async def read_until(
-    proto: Protocol, pred: Callable[[Dict[str, Any]], bool]
-) -> Dict[str, Any]:
+async def _read_until(
+    proto: Protocol,
+    pred: Callable[[dict[str, Any]], bool]
+) -> dict[str, Any]:
     while True:
         msg = await proto.read_message()
         try:
             if pred(msg):
                 return msg
-        except (KeyError, ValueError):
-            logging.getLogger().info("read_until predicate raised during message: {}".format(msg))
+        except KeyError:
             pass
+        except Exception:
+            logging.getLogger().warning(
+                "read_until predicate raised during message: %s",
+                msg,
+                exc_info=True
+            )
+
+
+async def read_until(
+    proto: Protocol,
+    pred: Callable[[dict[str, Any]], bool],
+    timeout: float = 60
+) -> dict[str, Any]:
+    return await asyncio.wait_for(_read_until(proto, pred), timeout=timeout)
 
 
 async def read_until_command(
     proto: Protocol,
     command: str,
-    timeout: float = 60
-) -> Dict[str, Any]:
+    timeout: float = 60,
+    **kwargs
+) -> dict[str, Any]:
+    kwargs["command"] = command
     return await asyncio.wait_for(
-        read_until(proto, lambda msg: msg.get('command') == command),
+        _read_until(
+            proto,
+            lambda msg: all(msg[k] == v for k, v in kwargs.items())
+        ),
         timeout=timeout
     )
 
 
 async def get_session(proto):
-    await proto.send_message({'command': 'ask_session', 'user_agent': 'faf-client', 'version': '0.11.16'})
-    msg = await read_until_command(proto, 'session')
+    await proto.send_message({
+        "command": "ask_session",
+        "user_agent": "faf-client",
+        "version": "0.11.16"
+    })
+    msg = await read_until_command(proto, "session")
 
-    return msg['session']
+    return msg["session"]
 
 
-async def connect_and_sign_in(credentials, lobby_server):
-    proto = await connect_client(lobby_server)
+async def connect_and_sign_in(
+    credentials,
+    lobby_server: ServerContext,
+    address: Optional[tuple[str, int]] = None
+) -> tuple[int, int, Protocol]:
+    proto = await connect_client(lobby_server, address)
     session = await get_session(proto)
     await perform_login(proto, credentials)
     hello = await read_until_command(proto, "welcome", timeout=120)
-    player_id = hello['id']
+    player_id = hello["id"]
     return player_id, session, proto
+
+
+@pytest.fixture
+async def channel() -> AsyncGenerator[AbstractChannel]:
+    connection = await aio_pika.connect(
+        f"amqp://{config.MQ_USER}:{config.MQ_PASSWORD}@localhost/{config.MQ_VHOST}"
+    )
+    async with connection, connection.channel() as channel:
+        yield channel
+
+
+async def connect_mq_consumer(
+    server: ServerContext,
+    channel: AbstractChannel,
+    routing_key: str | None,
+) -> AioQueueProtocol:
+    """
+    Returns a subclass of Protocol that yields messages read from a rabbitmq
+    exchange.
+    """
+    exchange = await channel.declare_exchange(
+        config.MQ_EXCHANGE_NAME,
+        aio_pika.ExchangeType.TOPIC,
+        durable=True
+    )
+    queue = await channel.declare_queue("", exclusive=True)
+    await queue.bind(exchange, routing_key=routing_key)
+    proto = AioQueueProtocol(queue)
+    await proto.consume()
+
+    return proto
+
+
+class AioQueueProtocol(Protocol):
+    """
+    A wrapper around an asyncio `Queue` that exposes the `Protocol` interface.
+    """
+
+    def __init__(self, queue: AbstractQueue) -> None:
+        self.queue = queue
+        self.consumer_tag = None
+        self.aio_queue = asyncio.Queue()
+
+    async def consume(self) -> None:
+        self.consumer_tag = await self.queue.consume(self._callback)
+
+    async def _callback(self, msg: AbstractIncomingMessage) -> None:
+        self.aio_queue.put_nowait(json.loads(msg.body.decode()))
+
+    @staticmethod
+    def encode_message(message: dict) -> bytes:
+        raise NotImplementedError("AioQueueProtocol is read-only")
+
+    @staticmethod
+    def decode_message(data: bytes) -> dict:
+        raise NotImplementedError("AioQueueProtocol doesn't user bytes")
+
+    async def read_message(self) -> dict:
+        return await self.aio_queue.get()
+
+    async def send_message(self, message):
+        raise NotImplementedError("AioQueueProtocol is read-only")
+
+    async def close(self):
+        await self.queue.cancel(self.consumer_tag)

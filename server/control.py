@@ -1,9 +1,10 @@
 """
-Tiny local-only http server for getting stats and performing various tasks
+Tiny http server for introspecting state
 """
 
+import logging
 import socket
-from json import dumps
+from typing import TYPE_CHECKING, ClassVar, Optional, cast
 
 from aiohttp import web
 
@@ -12,64 +13,65 @@ from .decorators import with_logger
 from .game_service import GameService
 from .player_service import PlayerService
 
+if TYPE_CHECKING:
+    from server import ServerInstance
+
 
 @with_logger
 class ControlServer:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
-        game_service: GameService,
-        player_service: PlayerService,
-        host: str,
-        port: int
+        lobby_server: "ServerInstance",
     ):
-        self.game_service = game_service
-        self.player_service = player_service
-        self.host = host
-        self.port = port
+        self.lobby_server = lobby_server
+        self.game_service = cast(GameService, lobby_server.services["game_service"])
+        self.player_service = cast(PlayerService, lobby_server.services["player_service"])
+        self.host: Optional[str] = None
+        self.port: Optional[int] = None
 
         self.app = web.Application()
         self.runner = web.AppRunner(self.app)
 
         self.app.add_routes([
             web.get("/games", self.games),
-            web.get("/players", self.players)
+            web.get("/players", self.players),
         ])
 
-    async def start(self) -> None:
+    async def run_from_config(self) -> None:
+        """
+        Initialize the http control server
+        """
+        host = socket.gethostbyname(socket.gethostname())
+        port = config.CONTROL_SERVER_PORT
+
+        await self.shutdown()
+        await self.start(host, port)
+
+    async def start(self, host: str, port: int) -> None:
+        self.host = host
+        self.port = port
         await self.runner.setup()
-        self.site = web.TCPSite(self.runner, self.host, self.port)
+        self.site = web.TCPSite(self.runner, host, port)
         await self.site.start()
         self._logger.info(
-            "Control server listening on http://%s:%s", self.host, self.port
+            "Control server listening on http://%s:%s", host, port
         )
 
     async def shutdown(self) -> None:
         await self.runner.cleanup()
+        self.host = None
+        self.port = None
 
-    async def games(self, request):
-        body = dumps(to_dict_list(self.game_service.all_games))
-        return web.Response(body=body.encode(), content_type='application/json')
+    async def games(self, request: web.Request) -> web.Response:
+        return web.json_response([
+            game.to_dict()
+            for game in self.game_service.all_games
+        ])
 
-    async def players(self, request):
-        body = dumps(to_dict_list(self.player_service.all_players))
-        return web.Response(body=body.encode(), content_type='application/json')
-
-
-async def run_control_server(
-    player_service: PlayerService,
-    game_service: GameService
-) -> ControlServer:
-    """
-    Initialize the http control server
-    """
-    host = socket.gethostbyname(socket.gethostname())
-    port = config.CONTROL_SERVER_PORT
-
-    ctrl_server = ControlServer(game_service, player_service, host, port)
-    await ctrl_server.start()
-
-    return ctrl_server
-
-
-def to_dict_list(list_):
-    return list(map(lambda p: p.to_dict(), list_))
+    async def players(self, request: web.Request) -> web.Response:
+        return web.json_response([
+            player.to_dict()
+            for player in self.player_service.all_players
+        ])

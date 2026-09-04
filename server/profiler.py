@@ -1,22 +1,31 @@
+"""
+Analysis of application performance
+"""
+
 import asyncio
 import cProfile
+import logging
 from asyncio import CancelledError
+from typing import ClassVar, Optional
 
 from server.config import config
 from server.decorators import with_logger
+from server.player_service import PlayerService
 
 
 @with_logger
 class Profiler:
+    _logger: ClassVar[logging.Logger]
+
     def __init__(
         self,
-        player_service,
-        interval=config.PROFILING_INTERVAL,
-        duration=config.PROFILING_DURATION,
-        max_count=config.PROFILING_COUNT,
-        outfile="server.profile",
+        player_service: PlayerService,
+        interval: int = config.PROFILING_INTERVAL,
+        duration: int = config.PROFILING_DURATION,
+        max_count: int = config.PROFILING_COUNT,
+        outfile: str = "server.profile",
     ):
-        self.profiler = None
+        self.profiler: Optional[cProfile.Profile] = None
         self.interval = interval
         self.duration = duration
         self.profile_count = 0
@@ -26,15 +35,15 @@ class Profiler:
         self._outfile = outfile
 
         self._running = False
-        self._task = None
+        self._task: Optional[asyncio.Task] = None
 
-    def refresh(self):
+    async def refresh(self) -> None:
         self.interval = config.PROFILING_INTERVAL
         self.duration = config.PROFILING_DURATION
         self.max_count = config.PROFILING_COUNT
         self.profile_count = 0
 
-        self.cancel()
+        await self.cancel()
         if self.interval > 0 and self.duration > 0 and self.max_count > 0:
             self._start()
 
@@ -45,7 +54,7 @@ class Profiler:
         if self._task is None:
             self._task = asyncio.create_task(self._next_run())
 
-    async def _next_run(self):
+    async def _next_run(self) -> None:
         await asyncio.sleep(self.interval)
 
         if self._running:
@@ -55,11 +64,13 @@ class Profiler:
                 pass
 
         if self.profile_count < self.max_count and self._running:
-            self._task = asyncio.create_task(self._next_run())
+            await self._next_run()
         else:
-            self.cancel()
+            await self.cancel()
 
     async def _run(self):
+        assert self.profiler is not None
+
         if len(self._player_service) > 1500:
             self._logger.info(
                 "Refusing to profile under high load %i/%i",
@@ -79,11 +90,17 @@ class Profiler:
         if self._outfile is not None:
             self.profiler.dump_stats(self._outfile)
 
-    def cancel(self):
+    async def cancel(self) -> None:
         self._running = False
         if self._task is not None:
             self._task.cancel()
+            try:
+                await self._task
+            except CancelledError:
+                pass
             self._task = None
 
+        if self.profiler is not None:
+            self.profiler.disable()
         del self.profiler
         self.profiler = None

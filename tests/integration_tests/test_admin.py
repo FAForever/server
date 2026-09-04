@@ -4,9 +4,6 @@ import pytest
 
 from .conftest import connect_and_sign_in, read_until_command
 
-# All test coroutines will be treated as marked.
-pytestmark = pytest.mark.asyncio
-
 
 async def test_closeFA(lobby_server):
     _, _, proto1 = await connect_and_sign_in(

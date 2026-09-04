@@ -1,0 +1,44 @@
+services:
+  # Set up the faf db
+  faf-db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: faf
+      MARIADB_USER: faf-api
+      MARIADB_PASSWORD: banana
+      MARIADB_ROOT_PASSWORD: banana
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "3306:3306"
+
+  faf-db-migrations:
+    image: faforever/faf-db-migrations:v144
+    command: migrate
+    environment:
+      FLYWAY_URL: jdbc:mysql://faf-db/faf?useSSL=false
+      FLYWAY_USER: root
+      FLYWAY_PASSWORD: banana
+      FLYWAY_DATABASE: faf
+    depends_on:
+      faf-db:
+        condition: service_healthy
+
+  faf-db-testdata:
+    image: mariadb:11
+    entrypoint: sh -c "apt-get update && apt-get install -y curl && curl -s https://raw.githubusercontent.com/FAForever/db/refs/heads/develop/test-data.sql | mariadb -h faf-db -uroot -pbanana -D faf"
+    depends_on:
+      faf-db-migrations:
+        condition: service_completed_successfully
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_VHOST: /faf-core
+      RABBITMQ_DEFAULT_USER: faf-python-server
+      RABBITMQ_DEFAULT_PASS: banana
+    ports:
+      - "5672:5672"
