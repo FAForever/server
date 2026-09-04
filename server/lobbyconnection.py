@@ -5,11 +5,10 @@ import json
 import random
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime,timezone
 from typing import Optional
 
 import aiohttp
-import humanize
 import pymysql
 import semver
 from sqlalchemy import and_, func, select
@@ -1086,11 +1085,11 @@ class LobbyConnection:
             if now < ban_expiry:
                 self._logger.debug('Aborting connection of banned user: %s, %s, %s',
                                    self.player.id, self.player.login, self.session)
-                self.send_ban_message_and_abort(ban_expiry - now, data[ban.c.reason])
+                self.send_ban_message_and_abort(ban_expiry, data[ban.c.reason])
 
-    def send_ban_message_and_abort(self, ban_time, reason):
-        ban_time_text = (f"for {humanize.naturaldelta(ban_time)}"
-                         if ban_time.days < 365 * 100 else "forever")
-        raise ClientError((f"You are banned from FAF {ban_time_text}.\n "
-                           f"Reason :\n "
-                           f"{reason}"), recoverable=False)
+     def send_ban_message_and_abort(self, ban_expiry, reason):
+         error_payload = {
+             "command": "banned",
+             "expires_at": ban_expiry.astimezone(timezone.utc).isoformat()
+        }
+         raise ClientError(error_payload, recoverable=False)
