@@ -9,10 +9,6 @@ import logging
 import random
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
-import aiohttp
-import pymysql
-import semver
 from functools import wraps
 from typing import ClassVar, Optional
 from sqlalchemy import and_, func, select
