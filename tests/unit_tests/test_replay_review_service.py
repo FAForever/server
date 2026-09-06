@@ -145,12 +145,9 @@ async def test_submit_publishes_with_server_stamped_identity(
 async def test_submit_ignores_identity_the_client_tried_to_set(
     service, message_queue_service, player_factory, valid_message
 ):
-    """
-    A client that sends its own `player_id` gets the connection's anyway.
-
-    This is the property the whole design rests on, so it is asserted end to
-    end rather than only at the parser.
-    """
+    """A client that sends its own `player_id` gets the connection's anyway."""
+    # The property the whole design rests on, so it is asserted end to end
+    # rather than only at the parser.
     valid_message["player_id"] = 1
     valid_message["login"] = "Brutus5000"
     player = player_factory("Rhiza", player_id=4242)
