@@ -24,6 +24,7 @@ from server.player_service import PlayerService
 from server.players import PlayerState
 from server.protocol import DisconnectedError, QDataStreamProtocol
 from server.rating import InclusiveRange, RatingType
+from server.replay_review_service import ReplayReviewService
 from server.team_matchmaker import PlayerParty
 from server.types import Address
 
@@ -99,6 +100,7 @@ async def lobbyconnection(
         rating_service=rating_service,
         oauth_service=mock.create_autospec(OAuthService),
         veto_service=mock.create_autospec(VetoService),
+        replay_review_service=mock.create_autospec(ReplayReviewService),
     )
 
     lc.player = mock_player
@@ -1346,4 +1348,102 @@ async def test_abort_connection_if_banned(
         r"You are banned from FAF for 1 day and 2[12]\.[0-9]+ hours. <br>"
         "Reason: <br>Test ongoing ban with 46 hours left",
         banned_error.value.message()
+    )
+
+
+async def test_command_request_replay_review(lobbyconnection: LobbyConnection):
+    lobbyconnection.player.id = 4242
+
+    await lobbyconnection.on_message_received({
+        "command": "request_replay_review",
+        "replay_id": 22334455,
+        "map": "Setons Clutch",
+        "goal": "Why does my eco stall at eight minutes?",
+    })
+
+    lobbyconnection.replay_review_service.submit.assert_called_once()
+    player, request = (
+        lobbyconnection.replay_review_service.submit.call_args[0]
+    )
+    assert player is lobbyconnection.player
+    assert request["replay_id"] == 22334455
+    assert request["goal"] == "Why does my eco stall at eight minutes?"
+    assert request["map"] == "Setons Clutch"
+
+
+async def test_command_request_replay_review_ignores_claimed_identity(
+    lobbyconnection: LobbyConnection
+):
+    """The sender is the connection's player, whatever the message says."""
+    lobbyconnection.player.id = 4242
+
+    await lobbyconnection.on_message_received({
+        "command": "request_replay_review",
+        "replay_id": 22334455,
+        "player_id": 1,
+        "login": "SomeoneElse",
+        "goal": "help",
+    })
+
+    _, request = lobbyconnection.replay_review_service.submit.call_args[0]
+    assert "player_id" not in request
+    assert "login" not in request
+
+
+async def test_command_request_replay_review_invalid(
+    lobbyconnection: LobbyConnection
+):
+    """A malformed request is answered, not published."""
+    lobbyconnection.send = mock.AsyncMock()
+
+    await lobbyconnection.on_message_received({
+        "command": "request_replay_review",
+        "goal": "help",
+    })
+
+    lobbyconnection.replay_review_service.submit.assert_not_called()
+    lobbyconnection.send.assert_called_once_with({
+        "command": "notice",
+        "style": "error",
+        "text": "Invalid replay review request: replay_id must be a replay number"
+    })
+
+
+async def test_command_request_replay_review_rate_limited(
+    lobbyconnection: LobbyConnection
+):
+    """A throttled request reaches the player as a notice, not the bus."""
+    lobbyconnection.send = mock.AsyncMock()
+    lobbyconnection.replay_review_service.submit.side_effect = ClientError(
+        "You have already requested a replay review recently."
+    )
+
+    await lobbyconnection.on_message_received({
+        "command": "request_replay_review",
+        "replay_id": 22334455,
+        "goal": "help",
+    })
+
+    lobbyconnection.send.assert_called_once_with({
+        "command": "notice",
+        "style": "error",
+        "text": "You have already requested a replay review recently."
+    })
+
+
+async def test_command_request_replay_review_requires_authentication(
+    lobbyconnection: LobbyConnection
+):
+    lobbyconnection._authenticated = False
+    lobbyconnection.abort = mock.AsyncMock()
+
+    await lobbyconnection.on_message_received({
+        "command": "request_replay_review",
+        "replay_id": 22334455,
+        "goal": "help",
+    })
+
+    lobbyconnection.replay_review_service.submit.assert_not_called()
+    lobbyconnection.abort.assert_called_once_with(
+        "Message invalid for unauthenticated connection: request_replay_review"
     )

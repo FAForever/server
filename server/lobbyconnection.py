@@ -61,6 +61,7 @@ from .players import Player, PlayerState
 from .protocol import DisconnectedError, Protocol
 from .rating import InclusiveRange, RatingType
 from .rating_service import RatingService
+from .replay_review_service import ReplayReviewService, parse_review_request
 from .types import Address, GameLaunchOptions
 
 
@@ -111,6 +112,7 @@ class LobbyConnection:
         rating_service: RatingService,
         oauth_service: OAuthService,
         veto_service: VetoService,
+        replay_review_service: ReplayReviewService,
     ):
         self._db = database
         self.geoip_service = geoip
@@ -121,6 +123,7 @@ class LobbyConnection:
         self.rating_service = rating_service
         self.oauth_service = oauth_service
         self.veto_service = veto_service
+        self.replay_review_service = replay_review_service
         self._authenticated = False
         self.player: Optional[Player] = None
         self.game_connection: Optional[GameConnection] = None
@@ -1422,6 +1425,24 @@ class LobbyConnection:
             vetoes[matchmaker_queue_map_pool][map_pool_map_version_id] = veto_tokens_applied
 
         await self.veto_service.set_player_vetoes(self.player, vetoes)
+
+    async def command_request_replay_review(self, message):
+        """
+        Ask for a replay of yours to be reviewed by someone.
+
+        The lobby does not answer the request and does not know who will. It
+        validates the content, stamps the sender from this connection, and puts
+        the result on the message queue for whichever service is bound to it.
+
+        The identity stamp is the whole reason this goes through the lobby.
+        Anywhere else a client could name any player it liked; here the socket
+        has already been authenticated, so `player_id` and `login` are the
+        server's word rather than the client's.
+        """
+        assert self.player is not None
+
+        request = parse_review_request(message)
+        await self.replay_review_service.submit(self.player, request)
 
     async def send_warning(self, message: str, fatal: bool = False):
         """

@@ -33,6 +33,7 @@ async def test_multiple_contexts(
     rating_service,
     oauth_service,
     veto_service,
+    replay_review_service,
 ):
     """Verify multiple ServerContexts on one ServerInstance share state."""
     config.USE_POLICY_SERVER = False
@@ -52,6 +53,7 @@ async def test_multiple_contexts(
             "party_service": party_service,
             "oauth_service": oauth_service,
             "veto_service": veto_service,
+            "replay_review_service": replay_review_service,
         }
     )
     broadcast_service.server = instance

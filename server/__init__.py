@@ -136,6 +136,7 @@ from .oauth_service import OAuthService
 from .party_service import PartyService
 from .player_service import PlayerService
 from .rating_service.rating_service import RatingService
+from .replay_review_service import ReplayReviewService
 from .servercontext import ServerContext
 from .stats.game_stats_service import GameStatsService
 
@@ -160,6 +161,7 @@ __all__ = (
     "PlayerService",
     "RatingService",
     "RatingService",
+    "ReplayReviewService",
     "ServerInstance",
     "VetoService",
     "ViolationService",
@@ -210,6 +212,7 @@ class ServerInstance(object):
             rating_service=self.services["rating_service"],
             oauth_service=self.services["oauth_service"],
             veto_service=self.services["veto_service"],
+            replay_review_service=self.services["replay_review_service"],
         )
 
     def write_broadcast(

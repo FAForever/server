@@ -27,6 +27,7 @@ from server import (
     LadderService,
     OAuthService,
     PartyService,
+    ReplayReviewService,
     ServerInstance,
     VetoService,
     ViolationService
@@ -76,6 +77,14 @@ async def violation_service():
 @pytest.fixture
 async def veto_service(player_service):
     service = VetoService(player_service)
+    await service.initialize()
+    yield service
+    await service.shutdown()
+
+
+@pytest.fixture
+async def replay_review_service(message_queue_service):
+    service = ReplayReviewService(message_queue_service)
     await service.initialize()
     yield service
     await service.shutdown()
@@ -159,6 +168,7 @@ async def lobby_server_factory(
     oauth_service,
     violation_service,
     veto_service,
+    replay_review_service,
     policy_server,
     jwks_server,
 ):
@@ -181,6 +191,7 @@ async def lobby_server_factory(
                 "oauth_service": oauth_service,
                 "violation_service": violation_service,
                 "veto_service": veto_service,
+                "replay_review_service": replay_review_service,
             })
         # Set up the back reference
         broadcast_service.server = instance

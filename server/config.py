@@ -102,6 +102,11 @@ class ConfigurationStore:
         # How many seconds a connection has to authenticate before being killed
         self.LOGIN_TIMEOUT = 5 * 60
 
+        # How long a player must wait between replay review requests. Kept in
+        # memory per lobby instance, so this is a spam guard rather than a
+        # quota; see `ReplayReviewService`.
+        self.REPLAY_REVIEW_COOLDOWN_SECONDS = 24 * 60 * 60
+
         self.NEWBIE_BASE_MEAN = 500
         self.NEWBIE_MIN_GAMES = 10
         self.START_RATING_MEAN = 1500
