@@ -195,12 +195,22 @@ class ReplayReviewService(Service):
             **request,
         }
 
-        await self.message_queue_service.publish(
-            config.MQ_EXCHANGE_NAME,
-            REPLAY_REVIEW_ROUTING_KEY,
-            payload,
-        )
+        # Claimed before the publish rather than after it. A connection's
+        # messages are dispatched one at a time, so the window only exists
+        # while one player has two connections, but ordering it this way costs
+        # nothing and the rollback is worth having on its own: a request that
+        # never reached the broker should not cost the player their turn.
         self._last_accepted[player.id] = now
+        try:
+            await self.message_queue_service.publish(
+                config.MQ_EXCHANGE_NAME,
+                REPLAY_REVIEW_ROUTING_KEY,
+                payload,
+            )
+        except BaseException:
+            self._last_accepted.pop(player.id, None)
+            raise
+
         self._logger.info(
             "Published replay review request for player %s, replay %s",
             player.id,

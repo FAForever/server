@@ -1,3 +1,4 @@
+import asyncio
 from unittest import mock
 
 import pytest
@@ -233,3 +234,46 @@ async def test_expired_entries_do_not_accumulate(
         now=config.REPLAY_REVIEW_COOLDOWN_SECONDS + 100,
     )
     assert len(service._last_accepted) == 1
+
+
+async def test_a_publish_that_fails_does_not_cost_the_player_their_turn(
+    service, message_queue_service, player_factory, valid_message
+):
+    player = player_factory("Rhiza", player_id=4242)
+    request = parse_review_request(valid_message)
+    message_queue_service.publish.side_effect = ConnectionError("broker down")
+
+    with pytest.raises(ConnectionError):
+        await service.submit(player, request, now=0.0)
+
+    message_queue_service.publish.side_effect = None
+    await service.submit(player, request, now=1.0)
+
+    assert message_queue_service.publish.call_count == 2
+
+
+async def test_two_requests_in_flight_at_once_publish_once(
+    service, message_queue_service, player_factory, valid_message
+):
+    """The cooldown is claimed before publishing, not after it returns."""
+    player = player_factory("Rhiza", player_id=4242)
+    request = parse_review_request(valid_message)
+
+    release = asyncio.Event()
+
+    async def block(*args, **kwargs):
+        await release.wait()
+
+    message_queue_service.publish.side_effect = block
+
+    first = asyncio.create_task(service.submit(player, request, now=0.0))
+    # Let the first request reach the publish and suspend there.
+    await asyncio.sleep(0)
+
+    with pytest.raises(ClientError):
+        await service.submit(player, request, now=1.0)
+
+    release.set()
+    await first
+
+    assert message_queue_service.publish.call_count == 1
