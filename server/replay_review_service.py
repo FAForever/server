@@ -142,6 +142,7 @@ class ReplayReviewService(Service):
     _logger: ClassVar[logging.Logger]
 
     def __init__(self, message_queue_service: MessageQueueService):
+        """Wire the broker; the cooldown table starts empty."""
         self.message_queue_service = message_queue_service
         # player id -> monotonic timestamp of their last accepted request
         self._last_accepted: dict[int, float] = {}
