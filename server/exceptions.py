@@ -32,12 +32,13 @@ class BanError(Exception):
         self.ban_reason = ban_reason
 
     def message(self):
-        return (
-            f"You are banned from FAF {self._ban_duration_text()}. <br>"
-            f"Reason: <br>{self.ban_reason}<br><br>"
-            "<i>If you would like to appeal this ban, please send an email to: "
-            "moderation@faforever.com</i>"
-        )
+        return {
+            "key": "SERVER_ERROR_BANNED_FROM_FAF",
+            "args": {
+                "ban_duration": self._ban_duration_text(),
+                "ban_reason": self.ban_reason
+            }
+        }
 
     def _ban_duration_text(self):
         ban_duration = self.ban_expiry - datetime_now()
