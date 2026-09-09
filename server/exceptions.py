@@ -32,13 +32,15 @@ class BanError(Exception):
         self.ban_reason = ban_reason
 
     def message(self):
+        """Return the structured localizable ban message with an ISO 8601 timestamp."""
         return {
             "key": "SERVER_ERROR_BANNED_FROM_FAF",
             "args": {
-                "ban_duration": self._ban_duration_text(),
+                "expires_at": self.ban_expiry.isoformat() if self.ban_expiry else "forever",
                 "ban_reason": self.ban_reason
             }
         }
+
 
     def _ban_duration_text(self):
         ban_duration = self.ban_expiry - datetime_now()
