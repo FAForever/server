@@ -29,6 +29,7 @@ DELETE FROM avatars_list;
 DELETE FROM ban;
 DELETE FROM clan_membership;
 DELETE FROM clan;
+DELETE FROM game_desync;
 DELETE FROM game_player_stats;
 DELETE FROM game_review;
 DELETE FROM game_reviews_summary;

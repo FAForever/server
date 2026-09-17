@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from unittest import mock
 
 import pytest
@@ -7,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from server import GameConnection
-from server.db.models import coop_leaderboard, game_stats
+from server.db.models import coop_leaderboard, game_desync, game_stats
 from server.games import (
     CoopGame,
     Game,
@@ -535,6 +536,77 @@ async def test_handle_action_Rehost(game_connection: GameConnection):
     args = ["foo", "bar"]
     await game_connection.handle_action("Rehost", args)
     await game_connection.handle_rehost(*args)
+
+
+@pytest.fixture
+def live_game(game: Game):
+    game.state = GameState.LIVE
+    game.launched_at = time.time()
+    game.desyncs = 0
+    game.desync_reporters = set()
+    return game
+
+
+async def test_handle_action_Desync(
+    live_game: Game,
+    game_connection: GameConnection,
+    database
+):
+    await game_connection.handle_action("Desync", [])
+
+    assert live_game.desyncs == 1
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select(game_desync).where(game_desync.c.game_id == live_game.id)
+        )
+        rows = result.fetchall()
+
+    assert len(rows) == 1
+    assert rows[0].player_id == game_connection.player.id
+    assert rows[0].game_time == 0
+
+
+async def test_handle_action_Desync_only_logged_once_per_player(
+    live_game: Game,
+    game_connection: GameConnection,
+    database
+):
+    for _ in range(10):
+        await game_connection.handle_action("Desync", [])
+
+    # The validity check still sees every report
+    assert live_game.desyncs == 10
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select(game_desync).where(game_desync.c.game_id == live_game.id)
+        )
+        rows = result.fetchall()
+
+    assert len(rows) == 1
+
+
+async def test_handle_action_Desync_not_logged_before_launch(
+    game: Game,
+    game_connection: GameConnection,
+    database
+):
+    game.state = GameState.LOBBY
+    game.desyncs = 0
+    game.desync_reporters = set()
+
+    await game_connection.handle_action("Desync", [])
+
+    assert game.desyncs == 1
+
+    async with database.acquire() as conn:
+        result = await conn.execute(
+            select(game_desync).where(game_desync.c.game_id == game.id)
+        )
+        row = result.fetchone()
+
+    assert row is None
 
 
 async def test_handle_action_TeamkillReport(

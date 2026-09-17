@@ -6,14 +6,16 @@ import asyncio
 import contextlib
 import json
 import logging
+import time
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.exc import DBAPIError
 
 from server.db import FAFDatabase
 
 from .config import TRACE
-from .db.models import coop_leaderboard, coop_map, teamkills
+from .db.models import coop_leaderboard, coop_map, game_desync, teamkills
 from .game_service import GameService
 from .games import (
     CoopGame,
@@ -219,8 +221,38 @@ class GameConnection(GpgNetServerProtocol):
             )
             await self.abort()
 
-    async def handle_desync(self, *_args):  # pragma: no cover
+    async def handle_desync(self, *_args):
+        """
+        Sent by the game when it detects that its simulation state no longer
+        matches that of its peers.
+
+        The game keeps sending this for as long as it stays desynced, so only
+        the first report of each player is persisted.
+        """
         self.game.desyncs += 1
+
+        if self.game.state is not GameState.LIVE:
+            return
+
+        if self.player.id in self.game.desync_reporters:
+            return
+        self.game.desync_reporters.add(self.player.id)
+
+        game_time = (
+            int(time.time() - self.game.launched_at)
+            if self.game.launched_at is not None
+            else None
+        )
+
+        async with self._db.acquire() as conn:
+            with contextlib.suppress(DBAPIError):
+                await conn.execute(
+                    game_desync.insert().values(
+                        game_id=self.game.id,
+                        player_id=self.player.id,
+                        game_time=game_time,
+                    )
+                )
 
     async def handle_game_option(self, key: str, value: Any):
         if not self.is_host():
