@@ -2,6 +2,8 @@
 Common exception definitions
 """
 
+from datetime import timezone
+
 import humanize
 
 from server.timing import datetime_now
@@ -38,6 +40,16 @@ class BanError(Exception):
             "<i>If you would like to appeal this ban, please send an email to: "
             "moderation@faforever.com</i>"
         )
+
+    def to_dict(self):
+        expires_at = self.ban_expiry
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        return {
+            "command": "banned",
+            "expires_at": expires_at.astimezone(timezone.utc).isoformat(),
+            "reason": self.ban_reason,
+        }
 
     def _ban_duration_text(self):
         ban_duration = self.ban_expiry - datetime_now()
