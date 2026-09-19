@@ -246,8 +246,45 @@ el.replaceWith(d);
             )
             await self.abort()
 
-    async def handle_desync(self, *_args):  # pragma: no cover
+    async def handle_desync(self, *_args):
+        &#34;&#34;&#34;
+        Sent by the game when it detects that its simulation state no longer
+        matches that of its peers.
+
+        The game keeps sending this for as long as it stays desynced, so only
+        the first report of each player is persisted.
+        &#34;&#34;&#34;
         self.game.desyncs += 1
+
+        if self.game.state is not GameState.LIVE:
+            return
+
+        if self.player.id in self.game.desync_reporters:
+            return
+
+        game_time = (
+            int(time.time() - self.game.launched_at)
+            if self.game.launched_at is not None
+            else None
+        )
+
+        try:
+            async with self._db.acquire() as conn:
+                await conn.execute(
+                    game_desync.insert().values(
+                        game_id=self.game.id,
+                        player_id=self.player.id,
+                        game_time=game_time,
+                    )
+                )
+        except DBAPIError:
+            self._logger.exception(
+                &#34;Failed to persist desync report for player %s in game %s&#34;,
+                self.player.id, self.game.id,
+            )
+            return
+
+        self.game.desync_reporters.add(self.player.id)
 
     async def handle_game_option(self, key: str, value: Any):
         if not self.is_host():
@@ -953,10 +990,50 @@ is no longer being slowed down due to players being behind on data.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">async def handle_desync(self, *_args):  # pragma: no cover
-    self.game.desyncs += 1</code></pre>
+<pre><code class="python">async def handle_desync(self, *_args):
+    &#34;&#34;&#34;
+    Sent by the game when it detects that its simulation state no longer
+    matches that of its peers.
+
+    The game keeps sending this for as long as it stays desynced, so only
+    the first report of each player is persisted.
+    &#34;&#34;&#34;
+    self.game.desyncs += 1
+
+    if self.game.state is not GameState.LIVE:
+        return
+
+    if self.player.id in self.game.desync_reporters:
+        return
+
+    game_time = (
+        int(time.time() - self.game.launched_at)
+        if self.game.launched_at is not None
+        else None
+    )
+
+    try:
+        async with self._db.acquire() as conn:
+            await conn.execute(
+                game_desync.insert().values(
+                    game_id=self.game.id,
+                    player_id=self.player.id,
+                    game_time=game_time,
+                )
+            )
+    except DBAPIError:
+        self._logger.exception(
+            &#34;Failed to persist desync report for player %s in game %s&#34;,
+            self.player.id, self.game.id,
+        )
+        return
+
+    self.game.desync_reporters.add(self.player.id)</code></pre>
 </details>
-<div class="desc"></div>
+<div class="desc"><p>Sent by the game when it detects that its simulation state no longer
+matches that of its peers.</p>
+<p>The game keeps sending this for as long as it stays desynced, so only
+the first report of each player is persisted.</p></div>
 </dd>
 <dt id="server.gameconnection.GameConnection.handle_disconnected"><code class="name flex">
 <span>async def <span class="ident">handle_disconnected</span></span>(<span>self, *args: Any)</span>
