@@ -41,6 +41,9 @@ async def test_server_ban(lobby_server, user):
     assert msg == {
         "command": "notice",
         "style": "error",
+        "localization_key": "ban.error",
+        "ban_reason": "Test permanent ban",
+        "ban_expires_at": "9999-12-31T23:59:59+00:00",
         "text": (
             "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
             "<br><br><i>If you would like to appeal this ban, please send an "
@@ -76,6 +79,9 @@ async def test_server_ban_token(lobby_server, user, jwk_priv_key, jwk_kid):
     assert msg == {
         "command": "notice",
         "style": "error",
+        "localization_key": "ban.error",
+        "ban_reason": "Test permanent ban",
+        "ban_expires_at": "9999-12-31T23:59:59+00:00",
         "text": (
             "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
             "<br><br><i>If you would like to appeal this ban, please send an "
