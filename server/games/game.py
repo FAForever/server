@@ -105,6 +105,7 @@ class Game:
         self._players_at_launch: list[Player] = []
         self.AIs: dict[str, dict[str, Any]] = {}
         self.desyncs = 0
+        self.desync_reporters: set[int] = set()
         self.validity = ValidityState.VALID
         self.game_mode = game_mode
         self.rating_type = rating_type or RatingType.GLOBAL

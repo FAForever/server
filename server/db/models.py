@@ -100,6 +100,14 @@ friends_and_foes = Table(
     Column("status",        Enum("FRIEND", "FOE"))
 )
 
+game_desync = Table(
+    "game_desync", metadata,
+    Column("game_id",     Integer,      ForeignKey("game_stats.id"), primary_key=True),
+    Column("player_id",   Integer,      ForeignKey("login.id"),      primary_key=True),
+    Column("reported_at", UTCDateTime,  nullable=False, server_default="CURRENT_TIMESTAMP(3)"),
+    Column("game_time",   Integer),
+)
+
 game_featuredMods = Table(
     "game_featuredMods", metadata,
     Column("id",             Integer,    primary_key=True),
