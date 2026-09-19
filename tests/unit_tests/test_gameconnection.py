@@ -552,7 +552,11 @@ async def test_handle_action_Desync(
     game_connection: GameConnection,
     database
 ):
-    await game_connection.handle_action("Desync", [])
+    with mock.patch(
+        "server.gameconnection.time.time",
+        return_value=live_game.launched_at,
+    ):
+        await game_connection.handle_action("Desync", [])
 
     assert live_game.desyncs == 1
 

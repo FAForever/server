@@ -236,7 +236,6 @@ class GameConnection(GpgNetServerProtocol):
 
         if self.player.id in self.game.desync_reporters:
             return
-        self.game.desync_reporters.add(self.player.id)
 
         game_time = (
             int(time.time() - self.game.launched_at)
@@ -244,8 +243,8 @@ class GameConnection(GpgNetServerProtocol):
             else None
         )
 
-        async with self._db.acquire() as conn:
-            with contextlib.suppress(DBAPIError):
+        try:
+            async with self._db.acquire() as conn:
                 await conn.execute(
                     game_desync.insert().values(
                         game_id=self.game.id,
@@ -253,6 +252,14 @@ class GameConnection(GpgNetServerProtocol):
                         game_time=game_time,
                     )
                 )
+        except DBAPIError:
+            self._logger.exception(
+                "Failed to persist desync report for player %s in game %s",
+                self.player.id, self.game.id,
+            )
+            return
+
+        self.game.desync_reporters.add(self.player.id)
 
     async def handle_game_option(self, key: str, value: Any):
         if not self.is_host():
