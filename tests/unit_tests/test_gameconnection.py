@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 
 from server import GameConnection
 from server.db.models import coop_leaderboard, game_desync, game_stats
@@ -611,6 +611,26 @@ async def test_handle_action_Desync_not_logged_before_launch(
         row = result.fetchone()
 
     assert row is None
+
+
+async def test_handle_action_Desync_db_failure_does_not_abort_connection(
+    live_game: Game,
+    game_connection: GameConnection,
+    database
+):
+    with mock.patch.object(
+        game_connection._db,
+        "acquire",
+        side_effect=DBAPIError("stmt", {}, Exception("boom")),
+    ):
+        await game_connection.handle_action("Desync", [])
+
+    # The counter used for the validity check is unaffected by the failure
+    assert live_game.desyncs == 1
+    # The connection is not aborted just because persistence failed
+    assert game_connection.state is not GameConnectionState.ENDED
+    # The player is left eligible for a retry on the next report
+    assert game_connection.player.id not in live_game.desync_reporters
 
 
 async def test_handle_action_TeamkillReport(
