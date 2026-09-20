@@ -10,6 +10,23 @@ from .test_game import (
 )
 
 
+async def test_used_pools_have_some_maps_and_all_map_names_are_unique(ladder_service):
+    used_map_pools = {}
+    for queue in ladder_service.queues.values():
+        for mq_map_pool in queue.map_pools.values():
+            pool_id = mq_map_pool.map_pool.id
+            if pool_id in [1, 2, 3]:
+                used_map_pools[pool_id] = mq_map_pool
+
+    assert len(used_map_pools) == 3
+
+    for mq_map_pool in used_map_pools.values():
+        maps = list(mq_map_pool.map_pool.maps.values())
+        folder_names = [m.folder_name for m in maps if hasattr(m, "folder_name")]
+        assert len(folder_names) > 0, f"Pool {mq_map_pool.map_pool.id} has no regular maps"
+        assert len(folder_names) == len(set(folder_names)), f"Pool {mq_map_pool.map_pool.id} has duplicate map names: {folder_names}"
+
+
 async def test_vetoes_are_assigned_to_player_with_adjusting(lobby_server, player_service):
     async def test_vetoes(proto, vetoes, expected_vetoes):
         await proto.send_message({
@@ -51,8 +68,7 @@ async def test_if_veto_bans_working(lobby_server, mocker):
 
         msg1 = await client_response(proto1)
 
-        chosen_map_pool_version_id = msg1["map_pool_map_version_id"]
-        assert chosen_map_pool_version_id == 3
+        assert msg1["mapname"] == "scmp_015.v0003"
 
         await end_game_as_draw([proto1, proto2], msg1["uid"])
 
@@ -75,8 +91,7 @@ async def test_dynamic_max_tokens_per_map(lobby_server, mocker):
 
         msg1 = await client_response(proto1)
 
-        chosen_map_pool_version_id = msg1["map_pool_map_version_id"]
-        assert chosen_map_pool_version_id == 8
+        assert msg1["mapname"] == "scmp_015.v0003"
         await end_game_as_draw([proto1, proto2], msg1["uid"])
 
 
@@ -99,12 +114,12 @@ async def test_partial_vetoes(lobby_server, mocker):
 
         msg1 = await client_response(proto1)
 
-        chosen_map_pool_version_id = msg1["map_pool_map_version_id"]
-        chosen_maps.add(chosen_map_pool_version_id)
-        assert chosen_map_pool_version_id in [10, 11], f"Expected map 10 or 11, got {chosen_map_pool_version_id}"
+        chosen_mapname = msg1["mapname"]
+        chosen_maps.add(chosen_mapname)
+        assert chosen_mapname in ["scmp_002", "scmp_003"], f"Expected scmp_002 or scmp_003, got {chosen_mapname}"
         await end_game_as_draw([proto1, proto2], msg1["uid"])
 
-    assert chosen_maps == {10, 11}, f"Expected games on both maps 10 and 11, got {chosen_maps}"
+    assert chosen_maps == {"scmp_002", "scmp_003"}, f"Expected games on both scmp_002 and scmp_003, got {chosen_maps}"
 
 
 @fast_forward(120)
@@ -130,8 +145,7 @@ async def test_vetoes_tmm(lobby_server, mocker):
             await read_until_command(proto, "match_found", timeout=30)
 
         msg1 = await client_response(players[0])
-        chosen_map_pool_version_id = msg1["map_pool_map_version_id"]
-        assert chosen_map_pool_version_id == 10
+        assert msg1["mapname"] == "scmp_002"
         await end_game_as_draw(players, msg1["uid"])
 
 
