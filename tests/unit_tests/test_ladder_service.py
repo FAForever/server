@@ -8,11 +8,12 @@ from hypothesis import strategies as st
 from server import LadderService
 from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
 from server.exceptions import DisabledError
+from server.game_launch_service import MatchLaunchResult, MatchLaunchStatus
 from server.games import LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service import game_name
 from server.matchmaker import MapPool, MatchmakerQueue, MatchmakerQueueMapPool
-from server.players import PlayerState
+from server.players import MatchmakingState, PlayerState
 from server.rating import RatingType
 from server.types import Map, NeroxisGeneratedMap
 from tests.conftest import make_player
@@ -21,17 +22,26 @@ from tests.utils import autocontext, exhaust_callbacks, fast_forward
 from .strategies import st_players
 
 
+def register_players(ladder_service: LadderService, *players):
+    """Make the players known to the lobby so their match can be launched."""
+    player_service = ladder_service.game_launch_service.player_service
+    for player in players:
+        player_service[player.id] = player
+
+
 async def test_queue_initialization(
     database,
     game_service,
     violation_service,
     veto_service,
+    game_launch_service,
 ):
     ladder_service = LadderService(
         database,
         game_service,
         violation_service,
         veto_service,
+        game_launch_service,
     )
 
     def make_mock_queue(*args, **kwargs):
@@ -164,6 +174,7 @@ async def test_start_game_1v1(
     monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock())
     monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
 
+    register_players(ladder_service, player1, player2)
     await ladder_service.start_game([player1], [player2], queue)
 
     game = game_service[game_service.game_id_counter]
@@ -194,6 +205,7 @@ async def test_start_game_with_game_options(
 
     # We're cheating a little bit here for simplicity of the test. The queue
     # is actually set up to be 3v3 but `start_game` doesn't care.
+    register_players(ladder_service, p1, p2)
     await ladder_service.start_game([p1], [p2], queue)
 
     game = game_service[game_service.game_id_counter]
@@ -219,6 +231,7 @@ async def test_start_game_timeout(
     monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
     monkeypatch.setattr(LadderGame, "on_game_finish", mock.AsyncMock())
 
+    register_players(ladder_service, p1, p2)
     await ladder_service.start_game([p1], [p2], queue)
 
     LadderGame.timeout_game.assert_called_once()
@@ -275,6 +288,7 @@ async def test_start_game_timeout_on_send(
     p1.lobby_connection.launch_game.side_effect = wait_forever
     p2.lobby_connection.launch_game.side_effect = wait_forever
 
+    register_players(ladder_service, p1, p2)
     await asyncio.wait_for(
         ladder_service.start_game([p1], [p2], queue),
         timeout=150
@@ -324,6 +338,7 @@ async def test_start_game_game_closed_by_guest(
     monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock(side_effect=GameClosedError))
     monkeypatch.setattr(LadderGame, "on_game_finish", mock.AsyncMock())
 
+    register_players(ladder_service, p1, p2)
     await ladder_service.start_game([p1], [p2], queue)
 
     LadderGame.on_game_finish.assert_called()
@@ -355,6 +370,7 @@ async def test_start_game_game_closed_by_host(
     monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock())
     monkeypatch.setattr(LadderGame, "on_game_finish", mock.AsyncMock())
 
+    register_players(ladder_service, p1, p2)
     await ladder_service.start_game([p1], [p2], queue)
 
     LadderGame.on_game_finish.assert_called()
@@ -396,6 +412,7 @@ async def test_start_game_with_teams(
     monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock())
     monkeypatch.setattr(LadderGame, "timeout_game", mock.AsyncMock())
 
+    register_players(ladder_service, player1, player2, player3, player4)
     await ladder_service.start_game(
         [player1, player3],
         [player2, player4],
@@ -462,18 +479,64 @@ async def test_start_game_start_spots(
         ),
     )
 
-    monkeypatch.setattr(LadderGame, "wait_hosted", mock.AsyncMock())
-    monkeypatch.setattr(LadderGame, "wait_launched", mock.AsyncMock())
+    create_match = mock.AsyncMock(
+        return_value=MatchLaunchResult(MatchLaunchStatus.SUCCESSFUL, game_id=1)
+    )
+    monkeypatch.setattr(
+        ladder_service.game_launch_service, "create_match", create_match
+    )
     await ladder_service.start_game(team1, team2, queue)
 
-    game = game_service[game_service.game_id_counter]
+    spec = create_match.call_args.args[0]
+    start_spots = {player.player_id: player.slot for player in spec.players}
 
     def get_start_spot(player_id) -> int:
-        return game.get_player_option(player_id, "StartSpot")
+        return start_spots[player_id]
 
     assert get_start_spot(1) == get_start_spot(2) - 1
     assert get_start_spot(3) == get_start_spot(4) - 1
     assert get_start_spot(5) == get_start_spot(6) - 1
+
+
+async def test_start_game_players_unavailable(
+    ladder_service: LadderService,
+    player_factory,
+    monkeypatch
+):
+    queue = ladder_service.queues["ladder1v1"]
+    p1 = player_factory(
+        "Dostya",
+        player_id=1,
+        lobby_connection_spec="auto",
+        matchmaking_state=MatchmakingState.MATCHED
+    )
+    p2 = player_factory(
+        "Rhiza",
+        player_id=2,
+        lobby_connection_spec="auto",
+        matchmaking_state=MatchmakingState.MATCHED
+    )
+    monkeypatch.setattr(
+        ladder_service.game_launch_service,
+        "create_match",
+        mock.AsyncMock(return_value=MatchLaunchResult(
+            MatchLaunchStatus.PLAYERS_UNAVAILABLE,
+            player_ids=(2,)
+        ))
+    )
+    monkeypatch.setattr(
+        ladder_service.violation_service, "register_violations", mock.Mock()
+    )
+
+    await ladder_service.start_game([p1], [p2], queue)
+
+    for player in (p1, p2):
+        assert player.matchmaking_state is MatchmakingState.NOT_QUEUED
+        player.lobby_connection.write.assert_called_once_with({
+            "command": "match_cancelled",
+            "game_id": None
+        })
+    ladder_service.violation_service.register_violations.assert_not_called()
 
 
 async def test_write_rating_progress(ladder_service: LadderService, player_factory):
@@ -691,8 +754,8 @@ async def test_on_match_found_sets_player_state(
     ladder_service.start_search([p1], "ladder1v1")
     ladder_service.start_search([p2], "ladder1v1")
 
-    assert p1.state is PlayerState.SEARCHING_LADDER
-    assert p2.state is PlayerState.SEARCHING_LADDER
+    assert p1.matchmaking_state is MatchmakingState.SEARCHING
+    assert p2.matchmaking_state is MatchmakingState.SEARCHING
 
     ladder_service.on_match_found(
         ladder_service._searches[p1]["ladder1v1"],
@@ -700,8 +763,8 @@ async def test_on_match_found_sets_player_state(
         ladder_service.queues["ladder1v1"]
     )
 
-    assert p1.state is PlayerState.STARTING_AUTOMATCH
-    assert p2.state is PlayerState.STARTING_AUTOMATCH
+    assert p1.matchmaking_state is MatchmakingState.MATCHED
+    assert p2.matchmaking_state is MatchmakingState.MATCHED
 
 
 async def test_start_and_cancel_search(
@@ -719,13 +782,13 @@ async def test_start_and_cancel_search(
     search = ladder_service._searches[p1]["ladder1v1"]
     await exhaust_callbacks()
 
-    assert p1.state == PlayerState.SEARCHING_LADDER
+    assert p1.matchmaking_state is MatchmakingState.SEARCHING
     assert search in ladder_service.queues["ladder1v1"]._queue
     assert not search.is_cancelled
 
     ladder_service.cancel_search(p1)
 
-    assert p1.state == PlayerState.IDLE
+    assert p1.matchmaking_state is MatchmakingState.NOT_QUEUED
     assert search.is_cancelled
 
 
@@ -744,14 +807,14 @@ async def test_start_search_cancels_previous_search(
     search1 = ladder_service._searches[p1]["ladder1v1"]
     await exhaust_callbacks()
 
-    assert p1.state == PlayerState.SEARCHING_LADDER
+    assert p1.matchmaking_state is MatchmakingState.SEARCHING
     assert search1 in ladder_service.queues["ladder1v1"]._queue
 
     ladder_service.start_search([p1], "ladder1v1")
     search2 = ladder_service._searches[p1]["ladder1v1"]
     await exhaust_callbacks()
 
-    assert p1.state == PlayerState.SEARCHING_LADDER
+    assert p1.matchmaking_state is MatchmakingState.SEARCHING
     assert search1.is_cancelled
     assert search1 not in ladder_service.queues["ladder1v1"]._queue
     assert search2 in ladder_service.queues["ladder1v1"]._queue
@@ -772,13 +835,13 @@ async def test_cancel_all_searches(
     search = ladder_service._searches[p1]["ladder1v1"]
     await exhaust_callbacks()
 
-    assert p1.state == PlayerState.SEARCHING_LADDER
+    assert p1.matchmaking_state is MatchmakingState.SEARCHING
     assert search in ladder_service.queues["ladder1v1"]._queue
     assert not search.is_cancelled
 
     ladder_service.cancel_search(p1)
 
-    assert p1.state == PlayerState.IDLE
+    assert p1.matchmaking_state is MatchmakingState.NOT_QUEUED
     assert search.is_cancelled
     assert "ladder1v1" not in ladder_service._searches[p1]
 

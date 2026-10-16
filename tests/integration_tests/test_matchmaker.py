@@ -320,7 +320,8 @@ async def test_game_matchmaking_disconnect(lobby_server):
 
     msg = await read_until_command(proto2, "match_cancelled", timeout=120)
 
-    assert msg == {"command": "match_cancelled", "game_id": 41956}
+    # The match is rejected before a game is created
+    assert msg == {"command": "match_cancelled", "game_id": None}
 
 
 @pytest.mark.flaky

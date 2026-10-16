@@ -14,7 +14,7 @@ import server.metrics as metrics
 from server.config import config
 from server.db import FAFDatabase
 from server.decorators import with_logger
-from server.players import Player, PlayerState
+from server.players import Player
 from server.rating import Rating
 from server.timing import at_interval
 
@@ -321,7 +321,7 @@ class PlayerService(Service):
         for fut in asyncio.as_completed([
             player.lobby_connection.abort("Graceful shutdown.")
             for player in self.all_players
-            if player.state == PlayerState.IDLE
+            if player.is_idle()
             if player.lobby_connection is not None
         ]):
             try:

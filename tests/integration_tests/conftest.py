@@ -52,6 +52,7 @@ async def ladder_service(
     game_service,
     violation_service,
     veto_service,
+    game_launch_service,
 ):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
     ladder_service = LadderService(
@@ -59,6 +60,7 @@ async def ladder_service(
         game_service,
         violation_service,
         veto_service,
+        game_launch_service,
     )
     await ladder_service.initialize()
     yield ladder_service
@@ -151,6 +153,7 @@ async def lobby_server_factory(
     broadcast_service,
     player_service,
     game_service,
+    game_launch_service,
     geoip_service,
     ladder_service,
     rating_service,
@@ -174,6 +177,7 @@ async def lobby_server_factory(
                 "geo_ip_service": geoip_service,
                 "player_service": player_service,
                 "game_service": game_service,
+                "game_launch_service": game_launch_service,
                 "ladder_service": ladder_service,
                 "rating_service": rating_service,
                 "message_queue_service": message_queue_service,

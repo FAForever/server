@@ -7,15 +7,7 @@ import logging
 import random
 import statistics
 from collections import defaultdict
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    ClassVar,
-    Coroutine,
-    Optional,
-    cast
-)
+from typing import TYPE_CHECKING, Any, ClassVar, Coroutine, Optional, cast
 
 import aiocron
 import humanize
@@ -40,9 +32,14 @@ from server.db.models import (
 )
 from server.decorators import with_logger
 from server.exceptions import DisabledError
+from server.game_launch_service import (
+    GameLaunchService,
+    MatchLaunchResult,
+    MatchLaunchStatus,
+    MatchPlayer,
+    MatchSpec
+)
 from server.game_service import GameService
-from server.games import InitMode, LadderGame
-from server.games.ladder_game import GameClosedError
 from server.ladder_service.game_name import game_name
 from server.ladder_service.veto_system import VetoService
 from server.ladder_service.violation_service import ViolationService
@@ -54,13 +51,8 @@ from server.matchmaker import (
     Search
 )
 from server.metrics import MatchLaunch
-from server.players import Player, PlayerState
-from server.types import (
-    GameLaunchOptions,
-    Map,
-    MapPoolMap,
-    NeroxisGeneratedMap
-)
+from server.players import MatchmakingState, Player
+from server.types import Map, MapPoolMap, NeroxisGeneratedMap
 
 if TYPE_CHECKING:
     from server.lobbyconnection import LobbyConnection
@@ -81,10 +73,12 @@ class LadderService(Service):
         game_service: GameService,
         violation_service: ViolationService,
         veto_service: VetoService,
+        game_launch_service: GameLaunchService,
     ):
         self._db = database
         self._informed_players: set[Player] = set()
         self.game_service = game_service
+        self.game_launch_service = game_launch_service
         self.queues: dict[str, MatchmakerQueue] = {}
         self.violation_service = violation_service
         self.veto_service = veto_service
@@ -380,7 +374,7 @@ class LadderService(Service):
         )
 
         for player in players:
-            player.state = PlayerState.SEARCHING_LADDER
+            player.matchmaking_state = MatchmakingState.SEARCHING
 
             self.write_rating_progress(player, queue.rating_type)
 
@@ -432,9 +426,9 @@ class LadderService(Service):
             })
             if (
                 not self._searches[player]
-                and player.state == PlayerState.SEARCHING_LADDER
+                and player.matchmaking_state is MatchmakingState.SEARCHING
             ):
-                player.state = PlayerState.IDLE
+                player.matchmaking_state = MatchmakingState.NOT_QUEUED
         self._logger.info(
             "%s stopped searching for %s", cancelled_search, queue_name
         )
@@ -495,7 +489,7 @@ class LadderService(Service):
             msg = {"command": "match_found", "queue_name": queue.name}
 
             for player in s1.players + s2.players:
-                player.state = PlayerState.STARTING_AUTOMATCH
+                player.matchmaking_state = MatchmakingState.MATCHED
                 player.write_message(msg)
 
                 # Cancel any other searches
@@ -539,196 +533,132 @@ class LadderService(Service):
             [p.login for p in team1],
             [p.login for p in team2]
         )
-        game = None
+        all_players = team1 + team2
         try:
-            host = team1[0]
-            all_players = team1 + team2
-            all_guests = all_players[1:]
-
-            played_map_ids = await self.get_game_history(
-                all_players,
-                queue.id,
-                limit=config.LADDER_ANTI_REPETITION_LIMIT
-            )
-
-            def get_displayed_rating(player: Player) -> float:
-                return player.ratings[queue.rating_type].displayed()
-
-            ratings = (get_displayed_rating(player) for player in all_players)
-            func = MAP_POOL_RATING_SELECTION_FUNCTIONS.get(
-                config.MAP_POOL_RATING_SELECTION,
-                statistics.mean
-            )
-            rating = func(ratings)
-
-            map_pool = queue.get_map_pool_for_rating(rating)
-            if not map_pool:
-                raise RuntimeError(f"No map pool available for rating {rating}!")
-
-            self._logger.debug(
-                "queue.map_pools[map_pool.id]: %s",
-                queue.map_pools[map_pool.id],
-            )
-            initial_weights = self.veto_service.generate_initial_weights_for_match(
-                all_players,
-                queue.map_pools[map_pool.id],
-            )
-            self._logger.debug(
-                "initial_weights: %s",
-                initial_weights,
-            )
-            game_map = map_pool.choose_map(played_map_ids, initial_weights)
-
-            self._logger.debug("game_map: %s", game_map)
-
-            game = self.game_service.create_game(
-                game_class=LadderGame,
-                game_mode=queue.featured_mod,
-                host=host,
-                name="Matchmaker Game",
-                map=game_map,
-                matchmaker_queue_id=queue.id,
-                rating_type=queue.rating_type,
-                max_players=len(all_players),
-            )
-            game.init_mode = InitMode.AUTO_LOBBY
-            game.set_name_unchecked(game_name(team1, team2))
-
-            team1 = sorted(team1, key=get_displayed_rating)
-            team2 = sorted(team2, key=get_displayed_rating)
-
-            # Shuffle the teams such that direct opponents remain the same
-            zipped_teams = list(zip(team1, team2))
-            random.shuffle(zipped_teams)
-
-            for i, player in enumerate(
-                player for pair in zipped_teams for player in pair
-            ):
-                # FA uses lua and lua arrays are 1-indexed
-                slot = i + 1
-                # 2 if even, 3 if odd
-                team = (i % 2) + 2
-                player.game = game
-
-                # Set player options without triggering the logic for
-                # determining that players have actually connected to the game.
-                game._player_options[player.id]["Faction"] = player.faction.value
-                game._player_options[player.id]["Team"] = team
-                game._player_options[player.id]["StartSpot"] = slot
-                game._player_options[player.id]["Army"] = slot
-                game._player_options[player.id]["Color"] = slot
-
-            game_options = queue.get_game_options()
-            if game_options:
-                game.game_options.update(game_options)
-
-            self._logger.debug("Starting ladder game: %s", game)
-
-            def make_game_options(player: Player) -> GameLaunchOptions:
-                return GameLaunchOptions(
-                    mapname=game_map.folder_name,
-                    expected_players=len(all_players),
-                    game_options=game_options,
-                    team=game.get_player_option(player.id, "Team"),
-                    faction=game.get_player_option(player.id, "Faction"),
-                    map_position=game.get_player_option(player.id, "StartSpot"),
-                    map_pool_map_version_id=game_map.map_pool_map_version_id
-                )
-
-            await self.launch_match(game, host, all_guests, make_game_options)
-            self._logger.debug("Ladder game launched successfully %s", game)
-            metrics.matches.labels(queue.name, MatchLaunch.SUCCESSFUL).inc()
-        except Exception as e:
-            abandoning_players = []
-            if isinstance(e, NotConnectedError):
-                self._logger.info(
-                    "Ladder game failed to start! %s setup timed out",
-                    game
-                )
-                metrics.matches.labels(queue.name, MatchLaunch.TIMED_OUT).inc()
-                abandoning_players = e.players
-            elif isinstance(e, GameClosedError):
-                self._logger.info(
-                    "Ladder game %s failed to start! "
-                    "Player %s closed their game instance",
-                    game, e.player
-                )
-                metrics.matches.labels(queue.name, MatchLaunch.ABORTED_BY_PLAYER).inc()
-                abandoning_players = [e.player]
-            else:
-                # All timeout errors should be transformed by the match starter.
-                assert not isinstance(e, asyncio.TimeoutError)
-
-                self._logger.exception("Ladder game failed to start %s", game)
-                metrics.matches.labels(queue.name, MatchLaunch.ERRORED).inc()
-
-            if game:
-                await game.on_game_finish()
-
-            game_id = game.id if game else None
-            msg = {"command": "match_cancelled", "game_id": game_id}
+            result = await self._launch_match(team1, team2, queue)
+        except Exception:
+            self._logger.exception("Ladder game failed to start")
+            result = MatchLaunchResult(MatchLaunchStatus.ERRORED)
+        finally:
             for player in all_players:
-                player.write_message(msg)
+                if player.matchmaking_state is MatchmakingState.MATCHED:
+                    player.matchmaking_state = MatchmakingState.NOT_QUEUED
 
-            if abandoning_players:
-                self._logger.info(
-                    "Players failed to connect: %s",
-                    abandoning_players
-                )
-                self.violation_service.register_violations(abandoning_players)
+        if result.is_successful:
+            self._logger.debug(
+                "Ladder game launched successfully %s", result.game_id
+            )
+            metrics.matches.labels(queue.name, MatchLaunch.SUCCESSFUL).inc()
+            return
 
-    async def launch_match(
+        abandoning_players = []
+        if result.status is MatchLaunchStatus.NOT_CONNECTED:
+            metrics.matches.labels(queue.name, MatchLaunch.TIMED_OUT).inc()
+            abandoning_players = [
+                player for player in all_players
+                if player.id in result.player_ids
+            ]
+        elif result.status is MatchLaunchStatus.ABORTED_BY_PLAYER:
+            metrics.matches.labels(queue.name, MatchLaunch.ABORTED_BY_PLAYER).inc()
+            abandoning_players = [
+                player for player in all_players
+                if player.id in result.player_ids
+            ]
+        else:
+            metrics.matches.labels(queue.name, MatchLaunch.ERRORED).inc()
+
+        msg = {"command": "match_cancelled", "game_id": result.game_id}
+        for player in all_players:
+            player.write_message(msg)
+
+        if abandoning_players:
+            self._logger.info(
+                "Players failed to connect: %s",
+                abandoning_players
+            )
+            self.violation_service.register_violations(abandoning_players)
+
+    async def _launch_match(
         self,
-        game: LadderGame,
-        host: Player,
-        guests: list[Player],
-        make_game_options: Callable[[Player], GameLaunchOptions]
-    ):
-        # Launch the host
-        if host.lobby_connection is None:
-            raise NotConnectedError([host])
+        team1: list[Player],
+        team2: list[Player],
+        queue: MatchmakerQueue
+    ) -> MatchLaunchResult:
+        host = team1[0]
+        all_players = team1 + team2
 
-        host.lobby_connection.write_launch_game(
-            game,
-            is_host=True,
-            options=make_game_options(host)
+        played_map_ids = await self.get_game_history(
+            all_players,
+            queue.id,
+            limit=config.LADDER_ANTI_REPETITION_LIMIT
         )
 
-        try:
-            await game.wait_hosted(60)
-        except asyncio.TimeoutError:
-            raise NotConnectedError([host])
-        finally:
-            # TODO: Once the client supports `match_cancelled`, don't
-            # send `launch_game` to the client if the host timed out. Until
-            # then, failing to send `launch_game` will cause the client to
-            # think it is searching for ladder, even though the server has
-            # already removed it from the queue.
+        def get_displayed_rating(player: Player) -> float:
+            return player.ratings[queue.rating_type].displayed()
 
-            # Launch the guests
-            not_connected_guests = [
-                player for player in guests
-                if player.lobby_connection is None
-            ]
-            if not_connected_guests:
-                raise NotConnectedError(not_connected_guests)
+        ratings = (get_displayed_rating(player) for player in all_players)
+        func = MAP_POOL_RATING_SELECTION_FUNCTIONS.get(
+            config.MAP_POOL_RATING_SELECTION,
+            statistics.mean
+        )
+        rating = func(ratings)
 
-            for guest in guests:
-                assert guest.lobby_connection is not None
+        map_pool = queue.get_map_pool_for_rating(rating)
+        if not map_pool:
+            raise RuntimeError(f"No map pool available for rating {rating}!")
 
-                guest.lobby_connection.write_launch_game(
-                    game,
-                    is_host=False,
-                    options=make_game_options(guest)
-                )
-        try:
-            await game.wait_launched(60 + 10 * len(guests))
-        except asyncio.TimeoutError:
-            connected_players = game.get_connected_players()
-            raise NotConnectedError([
-                player for player in guests
-                if player not in connected_players
-            ])
+        self._logger.debug(
+            "queue.map_pools[map_pool.id]: %s",
+            queue.map_pools[map_pool.id],
+        )
+        initial_weights = self.veto_service.generate_initial_weights_for_match(
+            all_players,
+            queue.map_pools[map_pool.id],
+        )
+        self._logger.debug(
+            "initial_weights: %s",
+            initial_weights,
+        )
+        game_map = map_pool.choose_map(played_map_ids, initial_weights)
+
+        self._logger.debug("game_map: %s", game_map)
+
+        name = game_name(team1, team2)
+
+        team1 = sorted(team1, key=get_displayed_rating)
+        team2 = sorted(team2, key=get_displayed_rating)
+
+        # Shuffle the teams such that direct opponents remain the same
+        zipped_teams = list(zip(team1, team2))
+        random.shuffle(zipped_teams)
+
+        match_players = tuple(
+            MatchPlayer(
+                player_id=player.id,
+                # 2 if even, 3 if odd
+                team=(i % 2) + 2,
+                # FA uses lua and lua arrays are 1-indexed
+                slot=i + 1,
+                faction=player.faction.value,
+            )
+            for i, player in enumerate(
+                player for pair in zipped_teams for player in pair
+            )
+        )
+
+        spec = MatchSpec(
+            name=name,
+            featured_mod=queue.featured_mod,
+            rating_type=queue.rating_type,
+            map=game_map,
+            host_id=host.id,
+            players=match_players,
+            matchmaker_queue_id=queue.id,
+            game_options=queue.get_game_options(),
+        )
+        self._logger.debug("Starting ladder game: %s", spec)
+
+        return await self.game_launch_service.create_match(spec)
 
     async def get_game_history(
         self,
@@ -785,8 +715,3 @@ class LadderService(Service):
         for player, searches in self._searches.items():
             for queue_name in list(searches.keys()):
                 self._cancel_search(player, queue_name)
-
-
-class NotConnectedError(asyncio.TimeoutError):
-    def __init__(self, players: list[Player]):
-        self.players = players

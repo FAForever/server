@@ -124,6 +124,7 @@ from .config import TRACE, config
 from .configuration_service import ConfigurationService
 from .core import Service, create_services
 from .db import FAFDatabase
+from .game_launch_service import GameLaunchService
 from .game_service import GameService
 from .gameconnection import GameConnection
 from .geoip_service import GeoIpService
@@ -150,6 +151,7 @@ __all__ = (
     "ClientMessageQueueService",
     "ConfigurationService",
     "GameConnection",
+    "GameLaunchService",
     "GameService",
     "GameStatsService",
     "GeoIpService",

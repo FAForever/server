@@ -6,6 +6,7 @@ from unittest import mock
 import pytest
 
 from server import GameStatsService
+from server.game_launch_service import GameLaunchService
 from server.game_service import GameService
 from server.gameconnection import GameConnection, GameConnectionState
 from server.games import Game
@@ -42,6 +43,7 @@ def ladder_and_game_service_context(
                     game_service,
                     violation_service,
                     veto_service,
+                    GameLaunchService(game_service, player_service),
                 )
 
                 await player_service.initialize()
@@ -68,6 +70,7 @@ async def ladder_service(
     game_service,
     violation_service,
     veto_service,
+    game_launch_service,
 ):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
     ladder_service = LadderService(
@@ -75,6 +78,7 @@ async def ladder_service(
         game_service,
         violation_service,
         veto_service,
+        game_launch_service,
     )
     await ladder_service.initialize()
     yield ladder_service
