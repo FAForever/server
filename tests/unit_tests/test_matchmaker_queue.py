@@ -14,7 +14,7 @@ from server.matchmaker import (
     MatchmakerQueueMapPool,
     Search
 )
-from server.players import PlayerState
+from server.players import MatchmakingState
 from server.rating import RatingType
 
 from .strategies import st_rating
@@ -25,7 +25,7 @@ def player_factory(player_factory):
     return functools.partial(
         player_factory,
         ladder_games=(config.NEWBIE_MIN_GAMES + 1),
-        state=PlayerState.SEARCHING_LADDER
+        matchmaking_state=MatchmakingState.SEARCHING
     )
 
 

@@ -1,4 +1,4 @@
-from server.players import PlayerState
+from server.players import MatchmakingState
 from tests.utils import fast_forward
 
 from .conftest import connect_and_sign_in, read_until_command
@@ -141,7 +141,7 @@ async def test_pool_config_changes_causing_forced_update_and_stops_search(player
         ("test", "test_password"), lobby_server, "ladder1v1", gen_vetoes([(1, 1, 1)])
     )
     player = player_service.get_player(player_id)
-    assert player.state == PlayerState.SEARCHING_LADDER
+    assert player.matchmaking_state is MatchmakingState.SEARCHING
     try:
         async with database.acquire() as conn:
             await conn.execute(
@@ -152,7 +152,7 @@ async def test_pool_config_changes_causing_forced_update_and_stops_search(player
         assert msg.get("forced") is True
         assert msg["vetoes"] == gen_vetoes([])
         assert player.vetoes.to_dict()["vetoes"] == gen_vetoes([])
-        assert player.state == PlayerState.IDLE
+        assert player.matchmaking_state is MatchmakingState.NOT_QUEUED
     finally:
         async with database.acquire() as conn:
             await conn.execute(
@@ -166,7 +166,7 @@ async def test_map_pool_changes_causing_silent_update_and_not_stops_search(playe
         ("test", "test_password"), lobby_server, "ladder1v1", gen_vetoes([(1, 1, 1)])
     )
     player = player_service.get_player(player_id)
-    assert player.state == PlayerState.SEARCHING_LADDER
+    assert player.matchmaking_state is MatchmakingState.SEARCHING
 
     try:
         async with database.acquire() as conn:
@@ -178,7 +178,7 @@ async def test_map_pool_changes_causing_silent_update_and_not_stops_search(playe
 
         assert msg.get("forced") is False
         assert msg["vetoes"] == gen_vetoes([])
-        assert player.state == PlayerState.SEARCHING_LADDER
+        assert player.matchmaking_state is MatchmakingState.SEARCHING
     finally:
         async with database.acquire() as conn:
             await conn.execute(

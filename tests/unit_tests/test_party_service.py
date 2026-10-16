@@ -5,7 +5,7 @@ import pytest
 from server.exceptions import ClientError
 from server.factions import Faction
 from server.party_service import PartyService
-from server.players import PlayerState
+from server.players import MatchmakingState, PlayerState
 from server.team_matchmaker import PlayerParty
 
 
@@ -106,7 +106,7 @@ async def test_accept_invite_while_queued(party_service, player_factory):
     receiver = player_factory(player_id=2)
 
     party_service.invite_player_to_party(sender, receiver)
-    sender.state = PlayerState.SEARCHING_LADDER
+    sender.matchmaking_state = MatchmakingState.SEARCHING
 
     with pytest.raises(ClientError):
         await party_service.accept_invite(receiver, sender)

@@ -19,6 +19,7 @@ from server import ServerInstance
 from server.broadcast_service import BroadcastService
 from server.config import TRACE, config
 from server.db import FAFDatabase
+from server.game_launch_service import GameLaunchService
 from server.game_service import GameService
 from server.games import (
     CoopGame,
@@ -33,7 +34,7 @@ from server.matchmaker import MatchmakerQueue
 from server.message_queue_service import MessageQueueService
 from server.oauth_service import OAuthService
 from server.player_service import PlayerService
-from server.players import Player, PlayerState
+from server.players import MatchmakingState, Player, PlayerState
 from server.rating import RatingType
 from server.rating_service.rating_service import RatingService
 from server.stats.achievement_service import AchievementService
@@ -250,6 +251,7 @@ def make_game(database, uid, players, game_type=Game):
 def make_player(
     login=None,
     state=PlayerState.IDLE,
+    matchmaking_state=MatchmakingState.NOT_QUEUED,
     global_rating=None,
     ladder_rating=None,
     global_games=0,
@@ -269,6 +271,7 @@ def make_player(
 
     p = Player(login=login, ratings=ratings, game_count=games, **kwargs)
     p.state = state
+    p.matchmaking_state = matchmaking_state
 
     if lobby_connection_spec:
         if not isinstance(lobby_connection_spec, str):
@@ -359,6 +362,11 @@ async def game_service(
     )
     await game_service.initialize()
     return game_service
+
+
+@pytest.fixture
+def game_launch_service(game_service, player_service):
+    return GameLaunchService(game_service, player_service)
 
 
 @pytest.fixture

@@ -10,7 +10,7 @@ import server.metrics as metrics
 
 from ..asyncio_extensions import SpinLock, synchronized
 from ..decorators import with_logger
-from ..players import PlayerState
+from ..players import MatchmakingState, PlayerState
 from .algorithm.team_matchmaker import TeamMatchMaker
 from .map_pool import MapPool, MatchmakerQueueMapPool
 from .pop_timer import PopTimer
@@ -255,15 +255,16 @@ class MatchmakerQueue:
             return False
         # Additional failsafe. Ideally this check will never fail.
         if any(
-            player.state != PlayerState.SEARCHING_LADDER
+            player.state is not PlayerState.IDLE
+            or player.matchmaking_state is not MatchmakingState.SEARCHING
             for player in s1.players + s2.players
         ):
             self._logger.warning(
                 "Tried to match searches %s and %s while some players had "
                 "invalid states: team1: %s team2: %s",
                 s1, s2,
-                list(p.state for p in s1.players),
-                list(p.state for p in s2.players)
+                list(p.status_name for p in s1.players),
+                list(p.status_name for p in s2.players)
             )
             return False
 

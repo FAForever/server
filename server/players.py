@@ -22,13 +22,28 @@ if TYPE_CHECKING:
 
 @unique
 class PlayerState(Enum):
+    """What the player's game client is doing."""
+
+    # Owned by the lobby server, since a client can only run one game at a
+    # time. Matchmaking is tracked separately in `MatchmakingState`.
     IDLE = 1
     PLAYING = 2
     HOSTING = 3
     JOINING = 4
-    SEARCHING_LADDER = 5
     STARTING_AUTOMATCH = 6
     STARTING_GAME = 7
+
+
+@unique
+class MatchmakingState(Enum):
+    """What a matchmaker is doing with the player."""
+
+    # Independent of `PlayerState` so that matchmaking can eventually be done
+    # by services other than the lobby server.
+    NOT_QUEUED = 1
+    SEARCHING = 2
+    # A match was found and is being launched
+    MATCHED = 3
 
 
 @with_logger
@@ -85,6 +100,7 @@ class Player:
         self.user_groups: set[str] = set()
 
         self.state = PlayerState.IDLE
+        self.matchmaking_state = MatchmakingState.NOT_QUEUED
 
         if lobby_connection is not None:
             self.lobby_connection = lobby_connection
@@ -99,6 +115,23 @@ class Player:
             self._faction = value
         else:
             self._faction = Faction.from_value(value)
+
+    def is_idle(self) -> bool:
+        """Neither in a game nor queued in a matchmaker."""
+        return (
+            self.state is PlayerState.IDLE
+            and self.matchmaking_state is MatchmakingState.NOT_QUEUED
+        )
+
+    @property
+    def status_name(self) -> str:
+        """Return the combined state name as it is shown to clients."""
+        if self.state is PlayerState.IDLE:
+            if self.matchmaking_state is MatchmakingState.SEARCHING:
+                return "SEARCHING_LADDER"
+            if self.matchmaking_state is MatchmakingState.MATCHED:
+                return PlayerState.STARTING_AUTOMATCH.name
+        return self.state.name
 
     def power(self) -> int:
         """An artifact of the old permission system. The client still uses this

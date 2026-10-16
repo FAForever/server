@@ -5,7 +5,7 @@ import pytest
 from trueskill import Rating
 
 from server.factions import Faction
-from server.players import Player
+from server.players import MatchmakingState, Player, PlayerState
 from server.protocol import DisconnectedError
 from server.rating import Leaderboard, RatingType
 
@@ -139,3 +139,29 @@ def test_write_message_while_disconnecting(player_factory):
 
     # Should not raise
     p.write_message({})
+
+
+@pytest.mark.parametrize("state, matchmaking_state, is_idle, status_name", (
+    (PlayerState.IDLE, MatchmakingState.NOT_QUEUED, True, "IDLE"),
+    (PlayerState.IDLE, MatchmakingState.SEARCHING, False, "SEARCHING_LADDER"),
+    (PlayerState.IDLE, MatchmakingState.MATCHED, False, "STARTING_AUTOMATCH"),
+    (PlayerState.HOSTING, MatchmakingState.NOT_QUEUED, False, "HOSTING"),
+    (
+        PlayerState.STARTING_AUTOMATCH,
+        MatchmakingState.MATCHED,
+        False,
+        "STARTING_AUTOMATCH"
+    ),
+))
+def test_is_idle_and_status_name(
+    state,
+    matchmaking_state,
+    is_idle,
+    status_name
+):
+    p = Player("Schroedinger")
+    p.state = state
+    p.matchmaking_state = matchmaking_state
+
+    assert p.is_idle() is is_idle
+    assert p.status_name == status_name

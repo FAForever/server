@@ -57,7 +57,7 @@ from .ladder_service.veto_system import VetoService
 from .oauth_service import OAuthService
 from .party_service import PartyService
 from .player_service import PlayerService
-from .players import Player, PlayerState
+from .players import MatchmakingState, Player, PlayerState
 from .protocol import DisconnectedError, Protocol
 from .rating import InclusiveRange, RatingType
 from .rating_service import RatingService
@@ -78,16 +78,16 @@ def ice_only(func):
 
 def player_idle(state_text: str):
     """
-    Ensures that a handler function is not invoked unless the player state
-    is IDLE.
+    Ensures that a handler function is not invoked unless the player is
+    neither in a game nor queued in a matchmaker.
     """
     def decorator(func):
         @wraps(func)
         async def wrapper(self, message):
-            if self.player.state != PlayerState.IDLE:
+            if not self.player.is_idle():
                 raise ClientError(
                     f"Can't {state_text} while in state "
-                    f"{self.player.state.name}",
+                    f"{self.player.status_name}",
                     recoverable=True
                 )
             return await func(self, message)
@@ -1095,13 +1095,13 @@ class LobbyConnection:
 
         for member in party:
             player = member.player
-            if player.state not in (
-                PlayerState.IDLE,
-                PlayerState.SEARCHING_LADDER
+            if (
+                player.state is not PlayerState.IDLE
+                or player.matchmaking_state is MatchmakingState.MATCHED
             ):
                 raise ClientError(
                     f"Can't join a queue while {player.login} is in state "
-                    f"{player.state.name}",
+                    f"{player.status_name}",
                     recoverable=True
                 )
 
