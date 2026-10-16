@@ -8,7 +8,11 @@ from hypothesis import strategies as st
 from server import LadderService
 from server.db.models import matchmaker_queue, matchmaker_queue_map_pool
 from server.exceptions import DisabledError
-from server.game_launch_service import MatchLaunchResult, MatchLaunchStatus
+from server.game_launch_service import (
+    LaunchFailureReason,
+    MatchLaunchResult,
+    PlayerLaunchFailure
+)
 from server.games import LadderGame
 from server.games.ladder_game import GameClosedError
 from server.ladder_service import game_name
@@ -480,7 +484,7 @@ async def test_start_game_start_spots(
     )
 
     create_match = mock.AsyncMock(
-        return_value=MatchLaunchResult(MatchLaunchStatus.SUCCESSFUL, game_id=1)
+        return_value=MatchLaunchResult(game_id=1)
     )
     monkeypatch.setattr(
         ladder_service.game_launch_service, "create_match", create_match
@@ -498,10 +502,36 @@ async def test_start_game_start_spots(
     assert get_start_spot(5) == get_start_spot(6) - 1
 
 
-async def test_start_game_players_unavailable(
+@pytest.mark.parametrize("failures, metric, abandoning_ids", (
+    (
+        (
+            PlayerLaunchFailure(1, LaunchFailureReason.BUSY),
+            PlayerLaunchFailure(2, LaunchFailureReason.OFFLINE),
+        ),
+        "timed out",
+        {2},
+    ),
+    (
+        (PlayerLaunchFailure(2, LaunchFailureReason.BUSY),),
+        "errored",
+        set(),
+    ),
+    (
+        (
+            PlayerLaunchFailure(1, LaunchFailureReason.NOT_CONNECTED),
+            PlayerLaunchFailure(2, LaunchFailureReason.ABORTED),
+        ),
+        "aborted by player",
+        {1, 2},
+    ),
+))
+async def test_start_game_launch_failed(
     ladder_service: LadderService,
     player_factory,
-    monkeypatch
+    monkeypatch,
+    failures,
+    metric,
+    abandoning_ids,
 ):
     queue = ladder_service.queues["ladder1v1"]
     p1 = player_factory(
@@ -519,24 +549,33 @@ async def test_start_game_players_unavailable(
     monkeypatch.setattr(
         ladder_service.game_launch_service,
         "create_match",
-        mock.AsyncMock(return_value=MatchLaunchResult(
-            MatchLaunchStatus.PLAYERS_UNAVAILABLE,
-            player_ids=(2,)
-        ))
+        mock.AsyncMock(
+            return_value=MatchLaunchResult(failed_players=failures)
+        )
     )
     monkeypatch.setattr(
         ladder_service.violation_service, "register_violations", mock.Mock()
     )
+    matches_metric = mock.Mock()
+    monkeypatch.setattr(
+        "server.ladder_service.ladder_service.metrics.matches", matches_metric
+    )
 
     await ladder_service.start_game([p1], [p2], queue)
 
+    matches_metric.labels.assert_called_once_with("ladder1v1", metric)
     for player in (p1, p2):
         assert player.matchmaking_state is MatchmakingState.NOT_QUEUED
         player.lobby_connection.write.assert_called_once_with({
             "command": "match_cancelled",
             "game_id": None
         })
-    ladder_service.violation_service.register_violations.assert_not_called()
+    if abandoning_ids:
+        ladder_service.violation_service.register_violations.assert_called_once_with(
+            [p for p in (p1, p2) if p.id in abandoning_ids]
+        )
+    else:
+        ladder_service.violation_service.register_violations.assert_not_called()
 
 
 async def test_write_rating_progress(ladder_service: LadderService, player_factory):

@@ -34,8 +34,8 @@ from server.decorators import with_logger
 from server.exceptions import DisabledError
 from server.game_launch_service import (
     GameLaunchService,
+    LaunchFailureReason,
     MatchLaunchResult,
-    MatchLaunchStatus,
     MatchPlayer,
     MatchSpec
 )
@@ -536,9 +536,9 @@ class LadderService(Service):
         all_players = team1 + team2
         try:
             result = await self._launch_match(team1, team2, queue)
-        except Exception:
+        except Exception as e:
             self._logger.exception("Ladder game failed to start")
-            result = MatchLaunchResult(MatchLaunchStatus.ERRORED)
+            result = MatchLaunchResult(error=repr(e))
         finally:
             for player in all_players:
                 if player.matchmaking_state is MatchmakingState.MATCHED:
@@ -551,21 +551,26 @@ class LadderService(Service):
             metrics.matches.labels(queue.name, MatchLaunch.SUCCESSFUL).inc()
             return
 
-        abandoning_players = []
-        if result.status is MatchLaunchStatus.NOT_CONNECTED:
-            metrics.matches.labels(queue.name, MatchLaunch.TIMED_OUT).inc()
-            abandoning_players = [
-                player for player in all_players
-                if player.id in result.player_ids
-            ]
-        elif result.status is MatchLaunchStatus.ABORTED_BY_PLAYER:
+        if result.failed_player_ids(LaunchFailureReason.ABORTED):
             metrics.matches.labels(queue.name, MatchLaunch.ABORTED_BY_PLAYER).inc()
-            abandoning_players = [
-                player for player in all_players
-                if player.id in result.player_ids
-            ]
+        elif result.failed_player_ids(
+            LaunchFailureReason.OFFLINE,
+            LaunchFailureReason.NOT_CONNECTED
+        ):
+            metrics.matches.labels(queue.name, MatchLaunch.TIMED_OUT).inc()
         else:
             metrics.matches.labels(queue.name, MatchLaunch.ERRORED).inc()
+
+        # Players that were busy did not abandon anything
+        abandoning_ids = result.failed_player_ids(
+            LaunchFailureReason.OFFLINE,
+            LaunchFailureReason.NOT_CONNECTED,
+            LaunchFailureReason.ABORTED
+        )
+        abandoning_players = [
+            player for player in all_players
+            if player.id in abandoning_ids
+        ]
 
         msg = {"command": "match_cancelled", "game_id": result.game_id}
         for player in all_players:

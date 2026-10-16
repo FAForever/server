@@ -1,3 +1,4 @@
+import asyncio
 import dataclasses
 import json
 from unittest import mock
@@ -6,9 +7,10 @@ import pytest
 
 from server.game_launch_service import (
     GameLaunchService,
-    MatchLaunchStatus,
+    LaunchFailureReason,
     MatchPlayer,
-    MatchSpec
+    MatchSpec,
+    PlayerLaunchFailure
 )
 from server.games import LadderGame
 from server.games.ladder_game import GameClosedError
@@ -119,7 +121,9 @@ async def test_create_match_invalid_spec(
 
     result = await game_launch_service.create_match(spec)
 
-    assert result.status is MatchLaunchStatus.ERRORED
+    assert not result.is_successful
+    assert result.error == "invalid match spec"
+    assert result.failed_players == ()
     assert game_service.game_id_counter == game_id
 
 
@@ -134,8 +138,10 @@ async def test_create_match_player_busy(
 
     result = await game_launch_service.create_match(make_spec())
 
-    assert result.status is MatchLaunchStatus.PLAYERS_UNAVAILABLE
-    assert result.player_ids == (2,)
+    assert not result.is_successful
+    assert result.failed_players == (
+        PlayerLaunchFailure(2, LaunchFailureReason.BUSY),
+    )
     assert result.game_id is None
     assert game_service.game_id_counter == game_id
     assert p1.state is PlayerState.IDLE
@@ -155,11 +161,61 @@ async def test_create_match_player_offline(
 
     result = await game_launch_service.create_match(make_spec())
 
-    assert result.status is MatchLaunchStatus.NOT_CONNECTED
-    assert result.player_ids == (2,)
+    assert result.failed_players == (
+        PlayerLaunchFailure(2, LaunchFailureReason.OFFLINE),
+    )
     assert game_service.game_id_counter == game_id
     assert p1.state is PlayerState.IDLE
     p1.lobby_connection.write_launch_game.assert_not_called()
+
+
+async def test_create_match_reports_every_unavailable_player(
+    game_launch_service: GameLaunchService,
+    game_service,
+    player_service,
+    player_factory,
+    players,
+):
+    p1, p2 = players
+    p2.state = PlayerState.PLAYING
+    p3 = player_factory("QAI", player_id=3, lobby_connection_spec="auto")
+    player_service[p3.id] = p3
+    spec = make_spec(players=(
+        MatchPlayer(player_id=1, team=2, slot=1, faction=1),
+        MatchPlayer(player_id=2, team=3, slot=2, faction=1),
+        MatchPlayer(player_id=3, team=2, slot=3, faction=1),
+        MatchPlayer(player_id=4, team=3, slot=4, faction=1),
+    ))
+
+    result = await game_launch_service.create_match(spec)
+
+    assert result.failed_players == (
+        PlayerLaunchFailure(2, LaunchFailureReason.BUSY),
+        PlayerLaunchFailure(4, LaunchFailureReason.OFFLINE),
+    )
+    assert result.failed_player_ids() == {2, 4}
+    assert result.failed_player_ids(LaunchFailureReason.OFFLINE) == {4}
+    assert p1.state is PlayerState.IDLE
+    assert p3.state is PlayerState.IDLE
+
+
+async def test_create_match_guest_not_connected(
+    game_launch_service: GameLaunchService,
+    players,
+    mock_launch,
+):
+    p1, p2 = players
+    LadderGame.wait_launched.side_effect = asyncio.TimeoutError
+
+    result = await game_launch_service.create_match(make_spec())
+
+    assert result.failed_players == (
+        PlayerLaunchFailure(2, LaunchFailureReason.NOT_CONNECTED),
+    )
+    assert result.game_id is not None
+    LadderGame.on_game_finish.assert_called_once()
+    assert p1.state is PlayerState.IDLE
+    assert p2.state is PlayerState.IDLE
 
 
 async def test_create_match_game_closed(
@@ -172,8 +228,9 @@ async def test_create_match_game_closed(
 
     result = await game_launch_service.create_match(make_spec())
 
-    assert result.status is MatchLaunchStatus.ABORTED_BY_PLAYER
-    assert result.player_ids == (2,)
+    assert result.failed_players == (
+        PlayerLaunchFailure(2, LaunchFailureReason.ABORTED),
+    )
     assert result.game_id is not None
     LadderGame.on_game_finish.assert_called_once()
     # Neither player got a game connection, so they are released right away
@@ -191,8 +248,9 @@ async def test_create_match_errored(
 
     result = await game_launch_service.create_match(make_spec())
 
-    assert result.status is MatchLaunchStatus.ERRORED
-    assert result.player_ids == ()
+    assert not result.is_successful
+    assert result.error == "RuntimeError('Boom')"
+    assert result.failed_players == ()
     LadderGame.on_game_finish.assert_called_once()
     assert p1.state is PlayerState.IDLE
     assert p2.state is PlayerState.IDLE

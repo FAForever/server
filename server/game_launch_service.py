@@ -55,32 +55,47 @@ class MatchSpec:
 
 
 @unique
-class MatchLaunchStatus(Enum):
-    """Outcome of a match launch."""
+class LaunchFailureReason(Enum):
+    """Why a player kept a match from launching."""
 
-    SUCCESSFUL = "successful"
-    # Some players were already busy, nothing was launched
-    PLAYERS_UNAVAILABLE = "players_unavailable"
-    # Some players were offline or did not connect to the game in time
+    # Rejected before a game was created
+    OFFLINE = "offline"
+    BUSY = "busy"
+    # The game was created, but the player did not make it into the game
     NOT_CONNECTED = "not_connected"
-    # A player closed their game during setup
-    ABORTED_BY_PLAYER = "aborted_by_player"
-    ERRORED = "errored"
+    ABORTED = "aborted"
+
+
+@dataclass(frozen=True)
+class PlayerLaunchFailure:
+    """A player that kept a match from launching."""
+
+    player_id: int
+    reason: LaunchFailureReason
 
 
 @dataclass(frozen=True)
 class MatchLaunchResult:
     """Answer to a `MatchSpec`."""
 
-    status: MatchLaunchStatus
+    # Set as soon as a game was created, even if it failed to launch
     game_id: Optional[int] = None
-    # The players that caused the launch to fail
-    player_ids: tuple[int, ...] = ()
+    failed_players: tuple[PlayerLaunchFailure, ...] = ()
+    # Set if the launch failed for a reason that no player is responsible for
+    error: Optional[str] = None
 
     @property
     def is_successful(self) -> bool:
         """Whether the match was launched."""
-        return self.status is MatchLaunchStatus.SUCCESSFUL
+        return not self.failed_players and self.error is None
+
+    def failed_player_ids(self, *reasons: LaunchFailureReason) -> set[int]:
+        """Get the players that failed for any of `reasons`, or for any reason."""
+        return {
+            failure.player_id
+            for failure in self.failed_players
+            if not reasons or failure.reason in reasons
+        }
 
 
 class NotConnectedError(asyncio.TimeoutError):
@@ -117,38 +132,30 @@ class GameLaunchService(Service):
             or spec.host_id not in player_ids
         ):
             self._logger.warning("Rejecting invalid match spec: %s", spec)
-            return MatchLaunchResult(MatchLaunchStatus.ERRORED)
+            return MatchLaunchResult(error="invalid match spec")
 
         players: dict[int, Player] = {}
-        offline: list[int] = []
-        busy: list[int] = []
+        unavailable: list[PlayerLaunchFailure] = []
         for match_player in spec.players:
             player = self.player_service.get_player(match_player.player_id)
             if player is None or player.lobby_connection is None:
-                offline.append(match_player.player_id)
+                unavailable.append(PlayerLaunchFailure(
+                    match_player.player_id, LaunchFailureReason.OFFLINE
+                ))
             elif player.state is not PlayerState.IDLE:
-                busy.append(match_player.player_id)
+                unavailable.append(PlayerLaunchFailure(
+                    match_player.player_id, LaunchFailureReason.BUSY
+                ))
             else:
                 players[player.id] = player
 
-        if busy:
+        if unavailable:
             self._logger.info(
-                "Rejecting match %s, players are busy: %s", spec.name, busy
-            )
-            return MatchLaunchResult(
-                MatchLaunchStatus.PLAYERS_UNAVAILABLE,
-                player_ids=tuple(busy)
-            )
-        if offline:
-            self._logger.info(
-                "Rejecting match %s, players are offline: %s",
+                "Rejecting match %s, players are unavailable: %s",
                 spec.name,
-                offline
+                unavailable
             )
-            return MatchLaunchResult(
-                MatchLaunchStatus.NOT_CONNECTED,
-                player_ids=tuple(offline)
-            )
+            return MatchLaunchResult(failed_players=tuple(unavailable))
 
         for player in players.values():
             player.state = PlayerState.STARTING_AUTOMATCH
@@ -157,10 +164,7 @@ class GameLaunchService(Service):
         try:
             game = self._create_game(spec, players)
             await self._launch_game(game, spec, players)
-            return MatchLaunchResult(
-                MatchLaunchStatus.SUCCESSFUL,
-                game_id=game.id
-            )
+            return MatchLaunchResult(game_id=game.id)
         except Exception as e:
             result = self._make_failure_result(e, game)
 
@@ -286,9 +290,13 @@ class GameLaunchService(Service):
         if isinstance(e, NotConnectedError):
             self._logger.info("Match %s setup timed out", game)
             return MatchLaunchResult(
-                MatchLaunchStatus.NOT_CONNECTED,
                 game_id=game_id,
-                player_ids=tuple(player.id for player in e.players)
+                failed_players=tuple(
+                    PlayerLaunchFailure(
+                        player.id, LaunchFailureReason.NOT_CONNECTED
+                    )
+                    for player in e.players
+                )
             )
         if isinstance(e, GameClosedError):
             self._logger.info(
@@ -297,16 +305,19 @@ class GameLaunchService(Service):
                 game, e.player
             )
             return MatchLaunchResult(
-                MatchLaunchStatus.ABORTED_BY_PLAYER,
                 game_id=game_id,
-                player_ids=(e.player.id,)
+                failed_players=(
+                    PlayerLaunchFailure(
+                        e.player.id, LaunchFailureReason.ABORTED
+                    ),
+                )
             )
 
         # All timeout errors should be transformed into NotConnectedError
         assert not isinstance(e, asyncio.TimeoutError)
 
         self._logger.exception("Match %s failed to start", game, exc_info=e)
-        return MatchLaunchResult(MatchLaunchStatus.ERRORED, game_id=game_id)
+        return MatchLaunchResult(game_id=game_id, error=repr(e))
 
     def _release_unlaunched_players(self, players) -> None:
         """Make players that never got a game connection idle again."""
