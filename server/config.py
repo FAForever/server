@@ -79,19 +79,20 @@ class ConfigurationStore:
         self.DB_PORT = 3306
         self.DB_LOGIN = "root"
         self.DB_PASSWORD = "banana"
-        self.DB_NAME = "faf"
+        self.DB_NAME = "faf_lobby"
         # An empty value will disable the database version check
         self.DB_FLYWAY_TABLE = "flyway_schema_history"
 
         # Location of the OAuth jwks
         self.HYDRA_JWKS_URI = "https://hydra.faforever.com/.well-known/jwks.json"
 
-        self.MQ_USER = "faf-python-server"
+        self.MQ_USER = "faf-lobby-server"
         self.MQ_PASSWORD = "banana"
         self.MQ_SERVER = "127.0.0.1"
         self.MQ_PORT = 5672
         self.MQ_VHOST = "/faf-core"
         self.MQ_EXCHANGE_NAME = "faf-rabbitmq"
+        self.OUTBOUND_EXCHANGE_NAME = "lobby.messages.outbound"
 
         self.WWW_URL = "https://www.faforever.com"
         self.CONTENT_URL = "http://content.faforever.com"
