@@ -679,7 +679,7 @@ class LobbyConnection:
         })
 
         await self.on_player_login(
-            player_id, username, unique_id, auth_method
+            player_id, username, auth_method
         )
 
     async def command_hello(self, message):
@@ -704,28 +704,45 @@ class LobbyConnection:
             )
 
         await self.on_player_login(
-            player_id, username, unique_id, "password"
+            player_id, username, "password"
+        )
+
+    async def on_external_auth(self, player_id: int, source: str, new_connection: bool):
+        async with self._db.acquire() as conn:
+            result = await conn.execute(
+                select(
+                    t_login.c.login,
+                )
+                .select_from(t_login)
+                .where(t_login.c.id == player_id)
+            )
+            row = result.fetchone()
+
+            if not row:
+                raise AuthenticationError("Cannot find user id", "external")
+
+            username = row.login
+
+        # DEPRECATED: IRC passwords are handled outside of the lobby server.
+        # This message remains here for backwards compatibility, but the data
+        # sent is meaningless and can be ignored by clients.
+        await self.send({
+            "command": "irc_password",
+            "password": "deprecated"
+        })
+
+        await self.on_player_login(
+            player_id, username, source, new_connection,
         )
 
     async def on_player_login(
         self,
         player_id: int,
         username: str,
-        unique_id: str,
-        method: str
+        method: str,
+        new_connection: bool = True,
     ):
         assert self.peer_address is not None
-
-        conforms_policy = await self.check_policy_conformity(
-            player_id,
-            unique_id,
-            self.session,
-            # All players are required to have game ownership verified
-            # so this is for informational purposes only
-            ignore_result=True
-        )
-        if not conforms_policy:
-            return
 
         old_player = self.player_service.get_player(player_id)
         if old_player:
@@ -783,30 +800,6 @@ class LobbyConnection:
         # -------
         self.player.country = self.geoip_service.country(self.peer_address.host)
 
-        # Send the player their own player info.
-        await self.send({
-            "command": "welcome",
-            "me": self.player.to_dict(),
-            "current_time": datetime_now().isoformat(),
-
-            # For backwards compatibility for old clients. For now.
-            "id": self.player.id,
-            "login": username
-        })
-
-        # Tell player about everybody online. This must happen after "welcome".
-        await self.send({
-            "command": "player_info",
-            "players": [player.to_dict() for player in self.player_service]
-        })
-
-        # Tell everyone else online about us. This must happen after all the player_info messages.
-        # This ensures that no other client will perform an operation that interacts with the
-        # incoming user, allowing the client to make useful assumptions: it can be certain it has
-        # initialised its local player service before it is going to get messages that want to
-        # query it.
-        self.player_service.mark_dirty(self.player)
-
         friends = []
         foes = []
         async with self._db.acquire() as conn:
@@ -828,24 +821,49 @@ class LobbyConnection:
         self.player.friends = set(friends)
         self.player.foes = set(foes)
 
-        channels = []
-        if self.player.is_moderator():
-            channels.append("#moderators")
+        if new_connection:
+            # Send the player their own player info.
+            await self.send({
+                "command": "welcome",
+                "me": self.player.to_dict(),
+                "current_time": datetime_now().isoformat(),
 
-        if self.player.clan is not None:
-            channels.append(f"#{self.player.clan}_clan")
+                # For backwards compatibility for old clients. For now.
+                "id": self.player.id,
+                "login": username
+            })
 
-        json_to_send = {
-            "command": "social",
-            "autojoin": channels,
-            "channels": channels,
-            "friends": friends,
-            "foes": foes,
-            "power": self.player.power()
-        }
-        await self.send(json_to_send)
+            # Tell player about everybody online. This must happen after "welcome".
+            await self.send({
+                "command": "player_info",
+                "players": [player.to_dict() for player in self.player_service]
+            })
 
-        await self.send_game_list()
+            # Tell everyone else online about us. This must happen after all the player_info messages.
+            # This ensures that no other client will perform an operation that interacts with the
+            # incoming user, allowing the client to make useful assumptions: it can be certain it has
+            # initialised its local player service before it is going to get messages that want to
+            # query it.
+            self.player_service.mark_dirty(self.player)
+
+            channels = []
+            if self.player.is_moderator():
+                channels.append("#moderators")
+
+            if self.player.clan is not None:
+                channels.append(f"#{self.player.clan}_clan")
+
+            json_to_send = {
+                "command": "social",
+                "autojoin": channels,
+                "channels": channels,
+                "friends": friends,
+                "foes": foes,
+                "power": self.player.power()
+            }
+            await self.send(json_to_send)
+
+            await self.send_game_list()
 
     @ice_only
     @player_idle("reconnect to a game")

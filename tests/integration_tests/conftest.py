@@ -35,7 +35,7 @@ from server.config import config
 from server.control import ControlServer
 from server.db.models import login
 from server.health import HealthServer
-from server.protocol import Protocol, WebSocketProtocol
+from server.protocol import Protocol, WebSocketProtocol, RabbitMQProtocol
 from server.servercontext import ServerContext
 from tests.utils import exhaust_callbacks
 
@@ -195,8 +195,7 @@ async def lobby_server_factory(
         instance.started = True
 
         contexts = {
-            name: await instance.listen(
-                (cfg["ADDRESS"], cfg["PORT"]),
+            name: await instance.listen(cfg["CLIENT_EXCHANGE"], cfg["STATE_EXCHANGE"],
             )
             for name, cfg in config.items()
         }
@@ -221,8 +220,8 @@ async def lobby_server_factory(
 async def lobby_setup(lobby_server_factory):
     return await lobby_server_factory({
         "ws": {
-            "ADDRESS": "127.0.0.1",
-            "PORT": None,
+            "CLIENT_EXCHANGE": config.INBOUND_EXCHANGE_NAME,
+            "STATE_EXCHANGE": config.STATE_EXCHANGE_NAME,
         },
     })
 
@@ -416,7 +415,7 @@ async def connect_client(
     url = f"http://{host}:{port}{server.path}"
     session = aiohttp.ClientSession()
     ws = await session.ws_connect(url)
-    return WebSocketProtocol(ws, owned_session=session)
+    return RabbitMQProtocol(asyncio.Queue(), ws, owned_session=session)
 
 
 async def perform_login(

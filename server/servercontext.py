@@ -1,29 +1,30 @@
 """
-Manages a group of connections using WebSocket as the transport.
+Manages a group of connections using RabbitMQ as the transport.
 """
 
 import asyncio
+import json
 import logging
+import socket
 from contextlib import contextmanager
 from typing import Callable, ClassVar, Iterable, Optional
 
 import humanize
-from aiohttp import web
+from aio_pika.abc import AbstractIncomingMessage, AbstractQueue
 
 import server.metrics as metrics
-
-from .config import config
 from .core import Service
 from .decorators import with_logger
 from .lobbyconnection import LobbyConnection
-from .protocol import DisconnectedError, WebSocketProtocol
+from .message_queue_service import MessageQueueService
+from .protocol import DisconnectedError, RabbitMQProtocol
 from .types import Address
 
 
 @with_logger
 class ServerContext:
     """
-    Base class for managing connections and holding state about them.
+    Base class for managing connections and holding state about them using RabbitMQ.
     """
 
     _logger: ClassVar[logging.Logger]
@@ -33,60 +34,241 @@ class ServerContext:
         name: str,
         connection_factory: Callable[[], LobbyConnection],
         services: Iterable[Service],
+        message_queue_service: MessageQueueService,
     ):
         super().__init__()
         self.name = name
         self._drain_event: Optional[asyncio.Event] = None
         self._connection_factory = connection_factory
-        self._services = services
-        self.connections: dict[LobbyConnection, WebSocketProtocol] = {}
+        self._services = list(services)
+        self.message_queue_service = message_queue_service
 
-        self.app = web.Application()
-        self.runner = web.AppRunner(self.app, access_log=None)
-        self.site: Optional[web.TCPSite] = None
-        self.host: Optional[str] = None
-        self.port: Optional[int] = None
-        self.path: str = "/"
+        self.connections: dict[LobbyConnection, RabbitMQProtocol] = {}
+        self.sessions: dict[int, tuple[LobbyConnection, RabbitMQProtocol]] = {}
+        self._consumer_tags: list[tuple[AbstractQueue, str]] = []
+        self._tasks: set[asyncio.Task] = set()
+
+        self.connection_exchange: Optional[str] = None
+        self.auth_exchange: Optional[str] = None
 
     def __repr__(self):
         return f"ServerContext({self.name})"
 
     async def listen(
         self,
-        host: str,
-        port: Optional[int],
-        path: str = "/",
+        client_exchange: str,
+        state_exchange: str,
+        client_routing_key: str = "#",
+        state_routing_key: str = "#",
     ):
         self._logger.debug(
-            "%s: listen(%r, %r, path=%r)",
+            "%s: listen(connection_exchange=%r, auth_exchange=%r)",
             self.name,
-            host,
-            port,
-            path,
+            client_exchange,
+            state_exchange,
         )
 
-        self.host = host
-        self.port = port
-        self.path = path
+        self.connection_exchange = client_exchange
+        self.auth_exchange = state_exchange
 
-        self.app.router.add_get(path, self._ws_handler)
+        hostname = socket.gethostname()
 
-        await self.runner.setup()
-        self.site = web.TCPSite(self.runner, host, port)
-        await self.site.start()
+        # Declare and consume state messages (already authenticated player connected)
+        state_queue_name = f"{state_exchange}.state.{hostname}"
+        state_consumer = await self.message_queue_service.declare_queue_and_consume(
+            exchange_name=state_exchange,
+            routing_key=state_routing_key,
+            callback=self._on_state_message,
+            queue_name=state_queue_name,
+        )
+        if state_consumer is not None:
+            self._consumer_tags.append(state_consumer)
 
-        bound = self.runner.addresses[0]
-        self.host, self.port = bound[0], bound[1]
+        # Declare and consume client messages
+        client_queue_name = f"{client_exchange}.client.{hostname}"
+        client_consumer = await self.message_queue_service.declare_queue_and_consume(
+            exchange_name=client_exchange,
+            routing_key=client_routing_key,
+            callback=self._on_client_message,
+            queue_name=client_queue_name,
+        )
+        if client_consumer is not None:
+            self._consumer_tags.append(client_consumer)
 
         self._logger.info(
-            "%s: listening on ws://%s:%s%s",
+            "%s: listening on RabbitMQ exchanges: connection=%s, state=%s",
             self.name,
-            self.host,
-            self.port,
-            path,
+            client_exchange,
+            state_exchange,
         )
 
+    async def _on_state_message(self, message: AbstractIncomingMessage) -> None:
+        async with message.process(requeue=False):
+            try:
+                payload = json.loads(message.body)
+            except (ValueError, UnicodeDecodeError):
+                self._logger.warning("Dropping auth message with non-JSON body")
+                return
+
+            if not isinstance(payload, dict):
+                self._logger.warning("Dropping auth message: payload is not a JSON object")
+                return
+
+            player_id = payload.get("player_id")
+
+            if player_id is None:
+                self._logger.warning("Dropping auth message: missing player_id")
+                return
+
+            try:
+                player_id = int(player_id)
+            except (TypeError, ValueError):
+                self._logger.warning("Dropping auth message: invalid player_id %r", player_id)
+                return
+
+            session_id = payload.get("session_id")
+            if session_id is None:
+                self._logger.warning("Dropping auth message: missing session_id")
+                return
+
+            try:
+                session_id = int(session_id)
+            except (TypeError, ValueError):
+                self._logger.warning("Dropping auth message: invalid session_id %r", session_id)
+                return
+
+            state = payload.get("state")
+            if not isinstance(state, dict):
+                self._logger.warning("Dropping auth message: missing state")
+                return
+
+            state_type = state.get("@type")
+            host = payload.get("ip_address") or "unknown"
+            if state_type == "new":
+                self.create_session(host, player_id, session_id, True)
+            elif state_type == "existing":
+                if not self.sessions[session_id]:
+                    self.create_session(host, player_id, session_id, False)
+
+            elif state_type == "gone":
+                if session_id is None:
+                    self._logger.debug(
+                        "%s: Dropping 'gone' auth message for player %s: missing session_id",
+                        self.name,
+                        player_id,
+                    )
+                    return
+
+                try:
+                    session_key = int(session_id)
+                except (TypeError, ValueError):
+                    self._logger.warning(
+                        "%s: Dropping 'gone' auth message: invalid session_id %r",
+                        self.name,
+                        session_id,
+                    )
+                    return
+
+                conn_tuple = self.sessions.get(session_key)
+                if conn_tuple is not None:
+                    conn, proto = conn_tuple
+                    self._logger.info(
+                        "%s: Closing connection for player %s with session %s (gone)",
+                        self.name,
+                        player_id,
+                        conn.session,
+                    )
+                    await proto.close()
+                else:
+                    self._logger.debug(
+                        "%s: No active connection found to close for session %s (player %s)",
+                        self.name,
+                        session_id,
+                        player_id,
+                    )
+
+    def create_session(self, host: str, player_id: int, session_id: int, new_connection: bool):
+        peername = Address(host, 0)
+
+        connection = self._connection_factory()
+        if session_id is not None:
+            try:
+                connection.session = int(session_id)
+            except (TypeError, ValueError):
+                pass
+
+        queue: asyncio.Queue = asyncio.Queue()
+        protocol = RabbitMQProtocol(
+            queue=queue,
+            message_queue_service=self.message_queue_service,
+            session=connection.session,
+        )
+
+        self.connections[connection] = protocol
+        self.sessions[connection.session] = (connection, protocol)
+
+        self._logger.info(
+            "%s: Authenticated player %s connected with session %s",
+            self.name,
+            player_id,
+            connection.session,
+        )
+
+        task = asyncio.create_task(
+            self.handle_client_connected(connection, protocol, peername, player_id, new_connection)
+        )
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+
+    async def _on_client_message(self, message: AbstractIncomingMessage) -> None:
+        async with message.process(requeue=False):
+            try:
+                payload = json.loads(message.body)
+            except (ValueError, UnicodeDecodeError):
+                self._logger.warning("Dropping connection message with non-JSON body")
+                return
+
+            if not isinstance(payload, dict):
+                self._logger.warning("Dropping connection message: payload is not a JSON object")
+                return
+
+            session_id = payload.get("session_id")
+            if session_id is None and isinstance(payload.get("target"), dict):
+                session_id = payload["target"].get("session_id") or payload["target"].get("session")
+
+            if session_id is None:
+                self._logger.warning("Dropping connection message: missing session_id")
+                return
+
+            try:
+                session_id = int(session_id)
+            except (TypeError, ValueError):
+                self._logger.warning("Dropping connection message: invalid session_id %r", session_id)
+                return
+
+            conn_tuple = self.sessions.get(session_id)
+            if conn_tuple is None:
+                self._logger.debug("Dropping connection message: session %s not found on this context", session_id)
+                return
+
+            conn, proto = conn_tuple
+            inner_message = payload.get("message", payload)
+            if not isinstance(inner_message, dict):
+                inner_message = payload
+
+            await proto.queue.put(inner_message)
+
     async def shutdown(self, timeout: Optional[float] = 5):
+        self._logger.debug("%s: stop serving", self.name)
+
+        # Cancel consumers
+        for queue, consumer_tag in self._consumer_tags:
+            try:
+                await queue.cancel(consumer_tag)
+            except Exception:
+                pass
+        self._consumer_tags.clear()
+
         async def close_or_abort(conn, proto):
             try:
                 await asyncio.wait_for(proto.close(), timeout)
@@ -110,16 +292,18 @@ class ServerContext:
                 humanize.naturaldelta(timeout)
             )
 
-        self._logger.debug("%s: stop serving", self.name)
-
         for fut in asyncio.as_completed([
             close_or_abort(conn, proto)
-            for conn, proto in self.connections.items()
+            for conn, proto in list(self.connections.items())
         ]):
             await fut
-        self._logger.debug("%s: All connections closed", self.name)
 
-        await self.runner.cleanup()
+        for task in list(self._tasks):
+            task.cancel()
+        if self._tasks:
+            await asyncio.gather(*self._tasks, return_exceptions=True)
+
+        self._logger.debug("%s: All connections closed", self.name)
 
     async def drain_connections(self):
         """
@@ -133,14 +317,20 @@ class ServerContext:
 
         await self._drain_event.wait()
 
-    def write_broadcast(self, message, validate_fn=lambda _: True):
-        self.write_broadcast_raw(
-            WebSocketProtocol.encode_message(message),
-            validate_fn
-        )
+    def write_broadcast(self, message: dict, validate_fn=lambda _: True):
+        for conn, proto in list(self.connections.items()):
+            try:
+                if proto.is_connected() and validate_fn(conn):
+                    proto.write_message(message)
+            except Exception:
+                self._logger.exception(
+                    "%s: Encountered error in broadcast: %s",
+                    self.name,
+                    conn
+                )
 
-    def write_broadcast_raw(self, data, validate_fn=lambda _: True):
-        for conn, proto in self.connections.items():
+    def write_broadcast_raw(self, data: bytes, validate_fn=lambda _: True):
+        for conn, proto in list(self.connections.items()):
             try:
                 if proto.is_connected() and validate_fn(conn):
                     proto.write_raw(data)
@@ -151,43 +341,17 @@ class ServerContext:
                     conn
                 )
 
-    async def _ws_handler(self, request: web.Request) -> web.WebSocketResponse:
-        ws = web.WebSocketResponse()
-        await ws.prepare(request)
-
-        # Only honor a forwarded-IP header when explicitly configured —
-        # otherwise clients connecting directly could spoof their peername.
-        peer_host = None
-        header_name = config.WS_FORWARDED_IP_HEADER
-        if header_name:
-            forwarded = request.headers.get(header_name, "")
-            peer_host = forwarded.split(",")[0].strip() or None
-
-        if not peer_host:
-            peer_host = request.remote or "unknown"
-
-        peername = Address(peer_host, 0)
-
-        self._logger.info(
-            "%s: Client connected from %s",
-            self.name,
-            peer_host,
-        )
-
-        await self.handle_client_connected(ws, peername)
-        return ws
-
     async def handle_client_connected(
         self,
-        ws: web.WebSocketResponse,
+        connection: LobbyConnection,
+        protocol: RabbitMQProtocol,
         peername: Address,
+        player_id: int,
+        new_connection: bool,
     ):
-        protocol = WebSocketProtocol(ws)
-        connection = self._connection_factory()
-        self.connections[connection] = protocol
-
         try:
             await connection.on_connection_made(protocol, peername)
+            await connection.on_external_auth(player_id, "broker", new_connection)
             metrics.user_connections.labels("None", "None").inc()
             while protocol.is_connected():
                 message = await protocol.read_message()
@@ -216,7 +380,8 @@ class ServerContext:
                 e
             )
         finally:
-            del self.connections[connection]
+            self.connections.pop(connection, None)
+            self.sessions.pop(connection.session, None)
             # Do not wait for buffers to empty here. This could stop the process
             # from exiting if the client isn't reading data.
             protocol.abort()

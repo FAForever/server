@@ -116,13 +116,13 @@ async def main():
 
     try:
         await instance.listen(
-            address=(config.WS_HOST, config.WS_PORT),
-            path=config.WS_PATH,
+            client_exchange=config.INBOUND_EXCHANGE_NAME,
+            state_exchange=config.STATE_EXCHANGE_NAME,
         )
     except Exception as e:
         raise RuntimeError(
-            f"Error starting WebSocket listener on "
-            f"{config.WS_HOST}:{config.WS_PORT}{config.WS_PATH}"
+            f"Error starting RabbitMQ listener on exchanges "
+            f"{config.INBOUND_EXCHANGE_NAME}, {config.STATE_EXCHANGE_NAME}"
         ) from e
 
     server.metrics.info.info({

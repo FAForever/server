@@ -92,7 +92,9 @@ class ConfigurationStore:
         self.MQ_PORT = 5672
         self.MQ_VHOST = "/faf-core"
         self.MQ_EXCHANGE_NAME = "faf-rabbitmq"
-        self.OUTBOUND_EXCHANGE_NAME = "lobby.messages.outbound"
+        self.OUTBOUND_EXCHANGE_NAME = "lobby.message.outbound"
+        self.INBOUND_EXCHANGE_NAME = "lobby.message.inbound"
+        self.STATE_EXCHANGE_NAME = "lobby.session.state"
 
         self.WWW_URL = "https://www.faforever.com"
         self.CONTENT_URL = "http://content.faforever.com"

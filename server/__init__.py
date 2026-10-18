@@ -259,27 +259,36 @@ class ServerInstance(object):
 
     async def listen(
         self,
-        address: tuple[str, int],
+        client_exchange: str,
+        state_exchange: str,
+        connection_routing_key: str = "#",
+        auth_routing_key: str = "#",
         name: Optional[str] = None,
-        path: str = "/",
     ) -> ServerContext:
         """
-        Start listening for WebSocket connections on a new address.
+        Start listening for RabbitMQ messages on the given exchanges.
 
         # Params
-        - `address`: Tuple indicating the host, port to listen on.
+        - `connection_exchange`: Exchange for messages that go to a connection.
+        - `auth_exchange`: Exchange for messages signalling an already authenticated player connected.
         - `name`: String used to identify this context in log messages.
-        - `path`: HTTP path on which to expose the WebSocket endpoint.
         """
         if not self.started:
             await self.start_services()
 
+        mq_service = self.services.get("message_queue_service")
         ctx = ServerContext(
-            f"{self.name}[{name or 'WebSocket'}]",
+            f"{self.name}[{name or 'RabbitMQ'}]",
             self.connection_factory,
             list(self.services.values()),
+            message_queue_service=mq_service,
         )
-        await ctx.listen(*address, path=path)
+        await ctx.listen(
+            client_exchange=client_exchange,
+            state_exchange=state_exchange,
+            client_routing_key=connection_routing_key,
+            state_routing_key=auth_routing_key,
+        )
 
         self.contexts.add(ctx)
 

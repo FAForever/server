@@ -62,6 +62,9 @@ class MessageQueueService(Service):
         self._is_ready = True
 
         await self._declare_exchange(config.MQ_EXCHANGE_NAME, ExchangeType.TOPIC)
+        await self._declare_exchange(config.INBOUND_EXCHANGE_NAME, ExchangeType.TOPIC)
+        await self._declare_exchange(config.STATE_EXCHANGE_NAME, ExchangeType.TOPIC)
+        await self._declare_exchange(config.OUTBOUND_EXCHANGE_NAME, ExchangeType.TOPIC)
 
     async def _connect(self) -> None:
         try:
@@ -178,7 +181,8 @@ class MessageQueueService(Service):
             for payload in payloads:
                 message = aio_pika.Message(
                     json.dumps(payload).encode(),
-                    delivery_mode=delivery_mode
+                    delivery_mode=delivery_mode,
+                    content_type="application/json",
                 )
                 await exchange.publish(
                     message,

@@ -1311,39 +1311,3 @@ async def test_check_policy_conformity_fatal(lobbyconnection, policy_server):
         )
         assert honest is False
         lobbyconnection.abort.assert_called_once()
-
-
-async def test_abort_connection_if_banned(
-    lobbyconnection: LobbyConnection,
-):
-    # test user that has never been banned
-    lobbyconnection.player.id = 1
-    await lobbyconnection.abort_connection_if_banned()
-
-    # test user whose ban has been revoked
-    lobbyconnection.player.id = 201
-    await lobbyconnection.abort_connection_if_banned()
-
-    # test user whose ban has expired
-    lobbyconnection.player.id = 202
-    await lobbyconnection.abort_connection_if_banned()
-
-    # test user who is permabanned
-    lobbyconnection.player.id = 203
-    with pytest.raises(BanError) as banned_error:
-        await lobbyconnection.abort_connection_if_banned()
-    assert banned_error.value.message() == (
-        "You are banned from FAF forever. <br>Reason: <br>Test permanent ban"
-        "<br><br><i>If you would like to appeal this ban, please send an email "
-        "to: moderation@faforever.com</i>"
-    )
-
-    # test user who is banned for another 46 hours
-    lobbyconnection.player.id = 204
-    with pytest.raises(BanError) as banned_error:
-        await lobbyconnection.abort_connection_if_banned()
-    assert re.match(
-        r"You are banned from FAF for 1 day and 2[12]\.[0-9]+ hours. <br>"
-        "Reason: <br>Test ongoing ban with 46 hours left",
-        banned_error.value.message()
-    )
