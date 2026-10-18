@@ -69,7 +69,7 @@ class ClientMessageQueueService(Service):
         )
         result = await self.message_queue_service.declare_queue_and_consume(
             exchange_name=config.MQ_EXCHANGE_NAME,
-            routing_key=CLIENT_NOTIFY_ROUTING_KEY,
+            routing_keys=[CLIENT_NOTIFY_ROUTING_KEY],
             callback=self._on_message,
             queue_name=queue_name,
         )

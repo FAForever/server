@@ -81,7 +81,7 @@ async def test_initialize_declares_consumer(avatar_queue_service):
     mq.declare_queue_and_consume.assert_awaited_once()
     kwargs = mq.declare_queue_and_consume.await_args.kwargs
     assert kwargs["exchange_name"] == config.MQ_EXCHANGE_NAME
-    assert kwargs["routing_key"] == PLAYER_AVATAR_UPDATE_ROUTING_KEY
+    assert kwargs["routing_keys"] == [PLAYER_AVATAR_UPDATE_ROUTING_KEY]
     assert kwargs["callback"] == avatar_queue_service._on_message
 
 

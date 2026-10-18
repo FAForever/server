@@ -56,7 +56,7 @@ async def test_declare_queue_and_consume(mq_service):
 
     result = await mq_service.declare_queue_and_consume(
         exchange_name="test_exchange",
-        routing_key="consume.test",
+        routing_keys=["consume.test"],
         callback=callback,
     )
     assert result is not None
@@ -83,7 +83,7 @@ async def test_declare_queue_and_consume_unknown_exchange(mq_service):
     with pytest.raises(KeyError):
         await mq_service.declare_queue_and_consume(
             exchange_name="not_declared",
-            routing_key="anything",
+            routing_keys=["anything"],
             callback=callback,
         )
 
@@ -99,7 +99,7 @@ async def test_declare_queue_and_consume_not_ready(mocker, caplog):
 
     result = await service.declare_queue_and_consume(
         exchange_name="test_exchange",
-        routing_key="x",
+        routing_keys=["x"],
         callback=callback,
     )
     assert result is None

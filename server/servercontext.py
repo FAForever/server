@@ -19,7 +19,7 @@ from .lobbyconnection import LobbyConnection
 from .message_queue_service import MessageQueueService
 from .protocol import DisconnectedError, RabbitMQProtocol
 from .types import Address
-
+from .config import TRACE
 
 @with_logger
 class ServerContext:
@@ -57,89 +57,93 @@ class ServerContext:
     async def listen(
         self,
         client_exchange: str,
-        state_exchange: str,
-        client_routing_key: str = "#",
-        state_routing_key: str = "#",
+        session_exchange: str,
+        session_request_exchange: str,
+        client_routing_keys: list[str],
     ):
         self._logger.debug(
             "%s: listen(connection_exchange=%r, auth_exchange=%r)",
             self.name,
             client_exchange,
-            state_exchange,
+            session_exchange,
         )
 
         self.connection_exchange = client_exchange
-        self.auth_exchange = state_exchange
+        self.auth_exchange = session_exchange
 
         hostname = socket.gethostname()
 
         # Declare and consume state messages (already authenticated player connected)
-        state_queue_name = f"{state_exchange}.state.{hostname}"
-        state_consumer = await self.message_queue_service.declare_queue_and_consume(
-            exchange_name=state_exchange,
-            routing_key=state_routing_key,
-            callback=self._on_state_message,
-            queue_name=state_queue_name,
+        session_queue_name = f"{session_exchange}.state.{hostname}"
+        session_consumer = await self.message_queue_service.declare_queue_and_consume(
+            exchange_name=session_exchange,
+            routing_keys=["#"],
+            callback=self._on_session_message,
+            queue_name=session_queue_name,
         )
-        if state_consumer is not None:
-            self._consumer_tags.append(state_consumer)
+        if session_consumer is not None:
+            self._consumer_tags.append(session_consumer)
 
         # Declare and consume client messages
         client_queue_name = f"{client_exchange}.client.{hostname}"
         client_consumer = await self.message_queue_service.declare_queue_and_consume(
             exchange_name=client_exchange,
-            routing_key=client_routing_key,
+            routing_keys=client_routing_keys,
             callback=self._on_client_message,
             queue_name=client_queue_name,
         )
         if client_consumer is not None:
             self._consumer_tags.append(client_consumer)
 
+        await self.message_queue_service.publish(session_request_exchange, "", {}, reply_to=session_queue_name)
+
         self._logger.info(
             "%s: listening on RabbitMQ exchanges: connection=%s, state=%s",
             self.name,
             client_exchange,
-            state_exchange,
+            session_exchange,
         )
 
-    async def _on_state_message(self, message: AbstractIncomingMessage) -> None:
+    async def _on_session_message(self, message: AbstractIncomingMessage) -> None:
         async with message.process(requeue=False):
             try:
                 payload = json.loads(message.body)
             except (ValueError, UnicodeDecodeError):
-                self._logger.warning("Dropping auth message with non-JSON body")
+                self._logger.warning("Dropping session message with non-JSON body")
                 return
 
+            self._logger.log(TRACE, "Received session message: %s", payload)
+
             if not isinstance(payload, dict):
-                self._logger.warning("Dropping auth message: payload is not a JSON object")
+                self._logger.warning("Dropping session message: payload is not a JSON object")
                 return
 
             player_id = payload.get("player_id")
 
             if player_id is None:
-                self._logger.warning("Dropping auth message: missing player_id")
+                self._logger.warning("Dropping session message: missing player_id")
                 return
 
             try:
                 player_id = int(player_id)
             except (TypeError, ValueError):
-                self._logger.warning("Dropping auth message: invalid player_id %r", player_id)
+                self._logger.warning("Dropping session message: invalid player_id %r", player_id)
                 return
 
             session_id = payload.get("session_id")
             if session_id is None:
-                self._logger.warning("Dropping auth message: missing session_id")
+                self._logger.warning("Dropping session message: missing session_id")
                 return
 
             try:
                 session_id = int(session_id)
             except (TypeError, ValueError):
-                self._logger.warning("Dropping auth message: invalid session_id %r", session_id)
+                self._logger.warning("Dropping session message: invalid session_id %r", session_id)
                 return
 
             state = payload.get("state")
             if not isinstance(state, dict):
-                self._logger.warning("Dropping auth message: missing state")
+                self._logger.warning("Dropping session message: missing state")
                 return
 
             state_type = state.get("@type")
@@ -147,13 +151,13 @@ class ServerContext:
             if state_type == "new":
                 self.create_session(host, player_id, session_id, True)
             elif state_type == "existing":
-                if not self.sessions[session_id]:
+                if not session_id in self.sessions:
                     self.create_session(host, player_id, session_id, False)
 
             elif state_type == "gone":
                 if session_id is None:
                     self._logger.debug(
-                        "%s: Dropping 'gone' auth message for player %s: missing session_id",
+                        "%s: Dropping 'gone' session message for player %s: missing session_id",
                         self.name,
                         player_id,
                     )
@@ -163,7 +167,7 @@ class ServerContext:
                     session_key = int(session_id)
                 except (TypeError, ValueError):
                     self._logger.warning(
-                        "%s: Dropping 'gone' auth message: invalid session_id %r",
+                        "%s: Dropping 'gone' session message: invalid session_id %r",
                         self.name,
                         session_id,
                     )
@@ -227,6 +231,8 @@ class ServerContext:
             except (ValueError, UnicodeDecodeError):
                 self._logger.warning("Dropping connection message with non-JSON body")
                 return
+
+            self._logger.log(TRACE, "Received client message: %s", payload)
 
             if not isinstance(payload, dict):
                 self._logger.warning("Dropping connection message: payload is not a JSON object")

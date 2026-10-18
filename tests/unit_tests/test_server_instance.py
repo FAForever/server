@@ -29,7 +29,7 @@ async def test_instance_listen():
 
     ctx = await instance.listen(
         client_exchange="test-conn-ex",
-        state_exchange="test-auth-ex",
+        session_exchange="test-auth-ex",
     )
 
     assert ctx in instance.contexts

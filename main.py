@@ -117,12 +117,13 @@ async def main():
     try:
         await instance.listen(
             client_exchange=config.INBOUND_EXCHANGE_NAME,
-            state_exchange=config.STATE_EXCHANGE_NAME,
+            session_exchange=config.SESSION_EXCHANGE_NAME,
+            session_request_exchange=config.SESSION_REQUEST_EXCHANGE_NAME,
         )
     except Exception as e:
         raise RuntimeError(
             f"Error starting RabbitMQ listener on exchanges "
-            f"{config.INBOUND_EXCHANGE_NAME}, {config.STATE_EXCHANGE_NAME}"
+            f"{config.INBOUND_EXCHANGE_NAME}, {config.SESSION_EXCHANGE_NAME}"
         ) from e
 
     server.metrics.info.info({

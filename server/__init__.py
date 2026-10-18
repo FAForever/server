@@ -115,7 +115,6 @@ import time
 from typing import Optional, cast
 
 import server.metrics as metrics
-
 from .asyncio_extensions import map_suppress, synchronizedmethod
 from .avatar_change_queue_service import AvatarChangeQueueService
 from .broadcast_service import BroadcastService
@@ -178,12 +177,12 @@ class ServerInstance(object):
     """
 
     def __init__(
-        self,
-        name: str,
-        database: FAFDatabase,
-        loop: asyncio.AbstractEventLoop,
-        # For testing
-        _override_services: Optional[dict[str, Service]] = None
+            self,
+            name: str,
+            database: FAFDatabase,
+            loop: asyncio.AbstractEventLoop,
+            # For testing
+            _override_services: Optional[dict[str, Service]] = None
     ):
         self.name = name
         self._logger = logging.getLogger(self.name)
@@ -213,9 +212,9 @@ class ServerInstance(object):
         )
 
     def write_broadcast(
-        self,
-        message,
-        predicate=lambda conn: conn.authenticated
+            self,
+            message,
+            predicate=lambda conn: conn.authenticated
     ):
         """
         Queue a message to be sent to all connected clients.
@@ -258,12 +257,11 @@ class ServerInstance(object):
         self.started = True
 
     async def listen(
-        self,
-        client_exchange: str,
-        state_exchange: str,
-        connection_routing_key: str = "#",
-        auth_routing_key: str = "#",
-        name: Optional[str] = None,
+            self,
+            client_exchange: str,
+            session_exchange: str,
+            session_request_exchange: str,
+            name: Optional[str] = None,
     ) -> ServerContext:
         """
         Start listening for RabbitMQ messages on the given exchanges.
@@ -276,7 +274,7 @@ class ServerInstance(object):
         if not self.started:
             await self.start_services()
 
-        mq_service = self.services.get("message_queue_service")
+        mq_service: MessageQueueService = self.services.get("message_queue_service")
         ctx = ServerContext(
             f"{self.name}[{name or 'RabbitMQ'}]",
             self.connection_factory,
@@ -285,9 +283,9 @@ class ServerInstance(object):
         )
         await ctx.listen(
             client_exchange=client_exchange,
-            state_exchange=state_exchange,
-            client_routing_key=connection_routing_key,
-            state_routing_key=auth_routing_key,
+            session_exchange=session_exchange,
+            session_request_exchange=session_request_exchange,
+            client_routing_keys=["lobby.legacy.#", "gpg.#"],
         )
 
         self.contexts.add(ctx)

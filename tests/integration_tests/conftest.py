@@ -221,7 +221,7 @@ async def lobby_setup(lobby_server_factory):
     return await lobby_server_factory({
         "ws": {
             "CLIENT_EXCHANGE": config.INBOUND_EXCHANGE_NAME,
-            "STATE_EXCHANGE": config.STATE_EXCHANGE_NAME,
+            "STATE_EXCHANGE": config.SESSION_EXCHANGE_NAME,
         },
     })
 

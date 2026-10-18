@@ -63,8 +63,9 @@ class MessageQueueService(Service):
 
         await self._declare_exchange(config.MQ_EXCHANGE_NAME, ExchangeType.TOPIC)
         await self._declare_exchange(config.INBOUND_EXCHANGE_NAME, ExchangeType.TOPIC)
-        await self._declare_exchange(config.STATE_EXCHANGE_NAME, ExchangeType.TOPIC)
+        await self._declare_exchange(config.SESSION_EXCHANGE_NAME, ExchangeType.TOPIC)
         await self._declare_exchange(config.OUTBOUND_EXCHANGE_NAME, ExchangeType.TOPIC)
+        await self._declare_exchange(config.SESSION_REQUEST_EXCHANGE_NAME, ExchangeType.TOPIC)
 
     async def _connect(self) -> None:
         try:
@@ -148,13 +149,15 @@ class MessageQueueService(Service):
         payload: dict,
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        reply_to: Optional[str] = None,
     ) -> None:
         await self.publish_many(
             exchange_name,
             routing,
             [payload],
             mandatory=mandatory,
-            delivery_mode=delivery_mode
+            delivery_mode=delivery_mode,
+            reply_to=reply_to,
         )
 
     async def publish_many(
@@ -164,6 +167,7 @@ class MessageQueueService(Service):
         payloads: Iterable[dict],
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        reply_to: Optional[str] = None,
     ) -> None:
         if not self._is_ready:
             self._logger.warning(
@@ -200,7 +204,7 @@ class MessageQueueService(Service):
     async def declare_queue_and_consume(
         self,
         exchange_name: str,
-        routing_key: str,
+        routing_keys: list[str],
         callback: Callable[[AbstractIncomingMessage], Awaitable[None]],
         queue_name: str = "",
         exclusive: bool = True,
@@ -231,12 +235,13 @@ class MessageQueueService(Service):
             auto_delete=auto_delete,
             durable=durable,
         )
-        await queue.bind(exchange, routing_key=routing_key)
+        for routing_key in routing_keys:
+            await queue.bind(exchange, routing_key=routing_key)
         consumer_tag = await queue.consume(callback)
 
         self._logger.debug(
             "Consuming from queue %r bound to %s/%s",
-            queue.name, exchange_name, routing_key,
+            queue.name, exchange_name, routing_keys,
         )
         return queue, consumer_tag
 

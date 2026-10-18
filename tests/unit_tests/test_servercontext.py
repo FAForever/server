@@ -36,21 +36,28 @@ async def test_listen_declares_consumers():
     ctx = ServerContext("TestServer", mock.Mock, [], message_queue_service=mq_service)
     await ctx.listen(
         client_exchange="client-ex",
-        state_exchange="state-ex",
-        client_routing_key="client.rk",
-        state_routing_key="state.rk",
+        session_exchange="session-ex",
+        session_request_exchange="session-request-ex",
+        client_routing_keys="client.rk",
     )
 
     assert mq_service.declare_queue_and_consume.await_count == 2
     # Verify state consumer declared
     state_call = mq_service.declare_queue_and_consume.await_args_list[0]
-    assert state_call.kwargs["exchange_name"] == "state-ex"
-    assert state_call.kwargs["routing_key"] == "state.rk"
+    assert state_call.kwargs["exchange_name"] == "session-ex"
+    assert state_call.kwargs["routing_keys"] == ["#"]
 
     # Verify connection consumer declared
     client_call = mq_service.declare_queue_and_consume.await_args_list[1]
     assert client_call.kwargs["exchange_name"] == "client-ex"
-    assert client_call.kwargs["routing_key"] == "client.rk"
+    assert client_call.kwargs["routing_keys"] == ["client.rk"]
+
+    request_call = mq_service.publish.await_args_list[1]
+    assert client_call.kwargs["exchange_name"] == "session-request-ex"
+    assert client_call.kwargs["routing"] == ""
+    assert client_call.kwargs["reply_to"] is not None
+    assert client_call.kwargs["payload"] == {}
+
 
 
 async def test_on_state_message_connects_player():
@@ -71,7 +78,7 @@ async def test_on_state_message_connects_player():
     incoming_msg.headers = None
     incoming_msg.process = mock.MagicMock(return_value=mock.AsyncMock(__aenter__=mock.AsyncMock(), __aexit__=mock.AsyncMock()))
 
-    await ctx._on_state_message(incoming_msg)
+    await ctx._on_session_message(incoming_msg)
 
     assert conn in ctx.connections
     assert 42 in ctx.sessions
@@ -96,7 +103,7 @@ async def test_on_state_message_closes_connection_when_gone_by_session():
     incoming_msg.headers = None
     incoming_msg.process = mock.MagicMock(return_value=mock.AsyncMock(__aenter__=mock.AsyncMock(), __aexit__=mock.AsyncMock()))
 
-    await ctx._on_state_message(incoming_msg)
+    await ctx._on_session_message(incoming_msg)
 
     proto.close.assert_awaited_once()
 
@@ -119,7 +126,7 @@ async def test_on_state_message_does_not_close_connection_without_session():
     incoming_msg.headers = None
     incoming_msg.process = mock.MagicMock(return_value=mock.AsyncMock(__aenter__=mock.AsyncMock(), __aexit__=mock.AsyncMock()))
 
-    await ctx._on_state_message(incoming_msg)
+    await ctx._on_session_message(incoming_msg)
 
     proto.close.assert_not_called()
 
