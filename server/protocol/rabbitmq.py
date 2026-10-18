@@ -69,11 +69,6 @@ class RabbitMQProtocol(Protocol):
     def write_message(
             self,
             message: dict,
-            routing_key: Optional[str] = None,
-            exchange_name: Optional[str] = None,
-            mandatory: Optional[bool] = None,
-            delivery_mode: Optional[DeliveryMode] = None,
-            **kwargs,
     ) -> None:
         metrics.sent_messages.labels(self.__class__.__name__).inc()
         if not self.is_connected():
@@ -117,7 +112,6 @@ class RabbitMQProtocol(Protocol):
 
     def _wrap_message_with_session(self, payload: dict) -> dict:
         return {"target": {"@type": "session", "session_id": self.session}, "message": payload}
-
 
     async def drain(self) -> None:
         if not self._pending:

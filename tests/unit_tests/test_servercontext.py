@@ -53,7 +53,7 @@ async def test_listen_declares_consumers():
     assert client_call.kwargs["exchange_name"] == "client-ex"
     assert client_call.kwargs["routing_keys"] == ["client.rk"]
 
-    request_call = mq_service.publish.await_args_list[1]
+    request_call = mq_service.publish.await_args_list[0]
     assert request_call.kwargs["exchange_name"] == "session-request-ex"
     assert request_call.kwargs["routing"] == ""
     assert request_call.kwargs["reply_to"] is not None

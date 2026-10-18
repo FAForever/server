@@ -187,6 +187,7 @@ class MessageQueueService(Service):
                     json.dumps(payload).encode(),
                     delivery_mode=delivery_mode,
                     content_type="application/json",
+                    reply_to=reply_to
                 )
                 await exchange.publish(
                     message,
