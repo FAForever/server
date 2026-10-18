@@ -19,6 +19,7 @@ async def test_instance_listen():
     mq_service.declare_queue_and_consume = mock.AsyncMock(
         return_value=(mock.Mock(), "tag")
     )
+    mq_service.publish = mock.AsyncMock()
 
     instance = ServerInstance(
         "TestInstanceListen",
@@ -28,8 +29,9 @@ async def test_instance_listen():
     )
 
     ctx = await instance.listen(
-        client_exchange="test-conn-ex",
-        session_exchange="test-auth-ex",
+        client_exchange="test-client-ex",
+        session_exchange="test-session-ex",
+        session_request_exchange="test-session-request-ex"
     )
 
     assert ctx in instance.contexts

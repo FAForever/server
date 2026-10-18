@@ -27,6 +27,7 @@ from .test_game import (
 
 
 @fast_forward(10)
+@pytest.mark.skip(reason="Lobby server no longer handles authentication")
 async def test_login_timeout(lobby_server, monkeypatch, caplog):
     monkeypatch.setattr(config, "LOGIN_TIMEOUT", 5)
 
@@ -40,6 +41,7 @@ async def test_login_timeout(lobby_server, monkeypatch, caplog):
     assert "Client took too long to log in" in caplog.text
 
 
+@pytest.mark.skip(reason="Lobby server no longer handles authentication")
 @fast_forward(10)
 async def test_disconnect_before_login_timeout(
     lobby_server,
@@ -61,6 +63,7 @@ async def test_disconnect_before_login_timeout(
     assert "Client took too long to log in" not in caplog.text
 
 
+@pytest.mark.skip(reason="Lobby server no longer handles authentication")
 async def test_server_deprecated_client(lobby_server):
     proto = await connect_client(lobby_server)
 
@@ -367,6 +370,7 @@ async def test_player_info_broadcast_to_rabbitmq(lobby_server, channel):
 
 
 @fast_forward(5)
+@pytest.mark.skip(reason="Lobby server no longer handles authentication")
 async def test_info_broadcast_authenticated(lobby_server):
     proto1 = await connect_client(lobby_server)
     proto2 = await connect_client(lobby_server)

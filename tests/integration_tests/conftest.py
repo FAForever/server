@@ -35,7 +35,7 @@ from server.config import config
 from server.control import ControlServer
 from server.db.models import login
 from server.health import HealthServer
-from server.protocol import Protocol, WebSocketProtocol, RabbitMQProtocol
+from server.protocol import Protocol, RabbitMQProtocol
 from server.servercontext import ServerContext
 from tests.utils import exhaust_callbacks
 
@@ -47,11 +47,11 @@ def mock_games():
 
 @pytest.fixture
 async def ladder_service(
-    mocker,
-    database,
-    game_service,
-    violation_service,
-    veto_service,
+        mocker,
+        database,
+        game_service,
+        violation_service,
+        veto_service,
 ):
     mocker.patch("server.matchmaker.pop_timer.config.QUEUE_POP_TIME_MAX", 1)
     ladder_service = LadderService(
@@ -93,9 +93,9 @@ async def party_service(game_service):
 
 @pytest.fixture
 async def broadcast_service(
-    message_queue_service,
-    game_service,
-    player_service,
+        message_queue_service,
+        game_service,
+        player_service,
 ):
     # The reference to the ServerInstance needs to be established later
     service = BroadcastService(
@@ -147,20 +147,20 @@ def jwk_kid():
 
 @pytest.fixture
 async def lobby_server_factory(
-    database,
-    broadcast_service,
-    player_service,
-    game_service,
-    geoip_service,
-    ladder_service,
-    rating_service,
-    message_queue_service,
-    party_service,
-    oauth_service,
-    violation_service,
-    veto_service,
-    policy_server,
-    jwks_server,
+        database,
+        broadcast_service,
+        player_service,
+        game_service,
+        geoip_service,
+        ladder_service,
+        rating_service,
+        message_queue_service,
+        party_service,
+        oauth_service,
+        violation_service,
+        veto_service,
+        policy_server,
+        jwks_server,
 ):
     all_contexts = []
 
@@ -195,8 +195,8 @@ async def lobby_server_factory(
         instance.started = True
 
         contexts = {
-            name: await instance.listen(cfg["CLIENT_EXCHANGE"], cfg["STATE_EXCHANGE"],
-            )
+            name: await instance.listen(cfg["INBOUND_EXCHANGE"], cfg["SESSION_EXCHANGE"],
+                                        cfg["SESSION_REQUEST_EXCHANGE"], )
             for name, cfg in config.items()
         }
         all_contexts.extend(contexts.values())
@@ -219,9 +219,11 @@ async def lobby_server_factory(
 @pytest.fixture
 async def lobby_setup(lobby_server_factory):
     return await lobby_server_factory({
-        "ws": {
-            "CLIENT_EXCHANGE": config.INBOUND_EXCHANGE_NAME,
-            "STATE_EXCHANGE": config.SESSION_EXCHANGE_NAME,
+        "mq": {
+            "INBOUND_EXCHANGE": config.INBOUND_EXCHANGE_NAME,
+            "SESSION_EXCHANGE": config.SESSION_EXCHANGE_NAME,
+            "SESSION_REQUEST_EXCHANGE": config.SESSION_REQUEST_EXCHANGE_NAME,
+            "OUTBOUND_EXCHANGE": config.OUTBOUND_EXCHANGE_NAME,
         },
     })
 
@@ -273,7 +275,7 @@ def fixed_time(monkeypatch):
 # it is used in almost every tests, so renaming it is a large task.
 @pytest.fixture
 def lobby_server(lobby_contexts) -> ServerContext:
-    yield lobby_contexts["ws"]
+    yield lobby_contexts["mq"]
 
 
 @pytest.fixture
@@ -408,8 +410,8 @@ def tmp_user(database):
 
 
 async def connect_client(
-    server: ServerContext,
-    address: Optional[tuple[str, int]] = None
+        server: ServerContext,
+        address: Optional[tuple[str, int]] = None
 ) -> Protocol:
     host, port = address or (server.host, server.port)
     url = f"http://{host}:{port}{server.path}"
@@ -419,7 +421,7 @@ async def connect_client(
 
 
 async def perform_login(
-    proto: Protocol, credentials: tuple[str, str]
+        proto: Protocol, credentials: tuple[str, str]
 ) -> None:
     login, pw = credentials
     pw_hash = hashlib.sha256(pw.encode("utf-8"))
@@ -434,8 +436,8 @@ async def perform_login(
 
 
 async def _read_until(
-    proto: Protocol,
-    pred: Callable[[dict[str, Any]], bool]
+        proto: Protocol,
+        pred: Callable[[dict[str, Any]], bool]
 ) -> dict[str, Any]:
     while True:
         msg = await proto.read_message()
@@ -453,18 +455,18 @@ async def _read_until(
 
 
 async def read_until(
-    proto: Protocol,
-    pred: Callable[[dict[str, Any]], bool],
-    timeout: float = 60
+        proto: Protocol,
+        pred: Callable[[dict[str, Any]], bool],
+        timeout: float = 60
 ) -> dict[str, Any]:
     return await asyncio.wait_for(_read_until(proto, pred), timeout=timeout)
 
 
 async def read_until_command(
-    proto: Protocol,
-    command: str,
-    timeout: float = 60,
-    **kwargs
+        proto: Protocol,
+        command: str,
+        timeout: float = 60,
+        **kwargs
 ) -> dict[str, Any]:
     kwargs["command"] = command
     return await asyncio.wait_for(
@@ -488,9 +490,9 @@ async def get_session(proto):
 
 
 async def connect_and_sign_in(
-    credentials,
-    lobby_server: ServerContext,
-    address: Optional[tuple[str, int]] = None
+        credentials,
+        lobby_server: ServerContext,
+        address: Optional[tuple[str, int]] = None
 ) -> tuple[int, int, Protocol]:
     proto = await connect_client(lobby_server, address)
     session = await get_session(proto)
@@ -510,9 +512,9 @@ async def channel() -> AsyncGenerator[AbstractChannel]:
 
 
 async def connect_mq_consumer(
-    server: ServerContext,
-    channel: AbstractChannel,
-    routing_key: str | None,
+        server: ServerContext,
+        channel: AbstractChannel,
+        routing_key: str | None,
 ) -> AioQueueProtocol:
     """
     Returns a subclass of Protocol that yields messages read from a rabbitmq

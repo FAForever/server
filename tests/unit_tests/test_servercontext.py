@@ -32,13 +32,14 @@ async def test_listen_declares_consumers():
     mq_service.declare_queue_and_consume = mock.AsyncMock(
         return_value=(mock.Mock(), "consumer-tag-1")
     )
+    mq_service.publish = mock.AsyncMock()
 
     ctx = ServerContext("TestServer", mock.Mock, [], message_queue_service=mq_service)
     await ctx.listen(
         client_exchange="client-ex",
         session_exchange="session-ex",
         session_request_exchange="session-request-ex",
-        client_routing_keys="client.rk",
+        client_routing_keys=["client.rk"],
     )
 
     assert mq_service.declare_queue_and_consume.await_count == 2
@@ -53,10 +54,10 @@ async def test_listen_declares_consumers():
     assert client_call.kwargs["routing_keys"] == ["client.rk"]
 
     request_call = mq_service.publish.await_args_list[1]
-    assert client_call.kwargs["exchange_name"] == "session-request-ex"
-    assert client_call.kwargs["routing"] == ""
-    assert client_call.kwargs["reply_to"] is not None
-    assert client_call.kwargs["payload"] == {}
+    assert request_call.kwargs["exchange_name"] == "session-request-ex"
+    assert request_call.kwargs["routing"] == ""
+    assert request_call.kwargs["reply_to"] is not None
+    assert request_call.kwargs["payload"] == {}
 
 
 
@@ -162,7 +163,7 @@ async def test_write_broadcast():
     proto2 = mock.Mock()
     proto2.is_connected.return_value = False
 
-    ctx = ServerContext("TestServer", mock.Mock, [])
+    ctx = ServerContext("TestServer", mock.Mock, [], message_queue_service=(mock.Mock()))
     ctx.connections[conn1] = proto1
     ctx.connections[conn2] = proto2
 
