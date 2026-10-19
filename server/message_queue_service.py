@@ -62,10 +62,6 @@ class MessageQueueService(Service):
         self._is_ready = True
 
         await self._declare_exchange(config.MQ_EXCHANGE_NAME, ExchangeType.TOPIC)
-        await self._declare_exchange(config.INBOUND_EXCHANGE_NAME, ExchangeType.TOPIC)
-        await self._declare_exchange(config.SESSION_EXCHANGE_NAME, ExchangeType.TOPIC)
-        await self._declare_exchange(config.OUTBOUND_EXCHANGE_NAME, ExchangeType.TOPIC)
-        await self._declare_exchange(config.SESSION_REQUEST_EXCHANGE_NAME, ExchangeType.TOPIC)
 
     async def _connect(self) -> None:
         try:

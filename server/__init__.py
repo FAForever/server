@@ -258,9 +258,6 @@ class ServerInstance(object):
 
     async def listen(
             self,
-            client_exchange: str,
-            session_exchange: str,
-            session_request_exchange: str,
             name: Optional[str] = None,
     ) -> ServerContext:
         """
@@ -274,17 +271,12 @@ class ServerInstance(object):
         if not self.started:
             await self.start_services()
 
-        mq_service: MessageQueueService = self.services.get("message_queue_service")
         ctx = ServerContext(
             f"{self.name}[{name or 'RabbitMQ'}]",
             self.connection_factory,
             list(self.services.values()),
-            message_queue_service=mq_service,
         )
         await ctx.listen(
-            client_exchange=client_exchange,
-            session_exchange=session_exchange,
-            session_request_exchange=session_request_exchange,
             client_routing_keys=["lobby.legacy.#", "gpg.#"],
         )
 

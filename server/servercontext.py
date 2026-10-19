@@ -7,19 +7,26 @@ import json
 import logging
 import socket
 from contextlib import contextmanager
-from typing import Callable, ClassVar, Iterable, Optional
+from typing import Callable, ClassVar, Iterable, Optional, Awaitable
 
+import aio_pika
 import humanize
-from aio_pika.abc import AbstractIncomingMessage, AbstractQueue
+from aio_pika.abc import AbstractIncomingMessage, AbstractQueue, ExchangeType, DeliveryMode, AbstractConnection, \
+    AbstractChannel, AbstractExchange
+from aiormq import ProbableAuthenticationError
 
 import server.metrics as metrics
+from .config import TRACE
+from .config import config
 from .core import Service
 from .decorators import with_logger
 from .lobbyconnection import LobbyConnection
-from .message_queue_service import MessageQueueService
 from .protocol import DisconnectedError, RabbitMQProtocol
 from .types import Address
-from .config import TRACE
+
+
+class ConnectionAttemptFailed(ConnectionError):
+    pass
 
 @with_logger
 class ServerContext:
@@ -34,14 +41,16 @@ class ServerContext:
         name: str,
         connection_factory: Callable[[], LobbyConnection],
         services: Iterable[Service],
-        message_queue_service: MessageQueueService,
     ):
         super().__init__()
         self.name = name
         self._drain_event: Optional[asyncio.Event] = None
         self._connection_factory = connection_factory
         self._services = list(services)
-        self.message_queue_service = message_queue_service
+        self._connection: Optional[AbstractConnection] = None
+        self._channel: Optional[AbstractChannel] = None
+        self._exchanges: dict[str, AbstractExchange] = {}
+        self._exchange_types: dict[str, ExchangeType] = {}
 
         self.connections: dict[LobbyConnection, RabbitMQProtocol] = {}
         self.sessions: dict[int, tuple[LobbyConnection, RabbitMQProtocol]] = {}
@@ -56,27 +65,25 @@ class ServerContext:
 
     async def listen(
         self,
-        client_exchange: str,
-        session_exchange: str,
-        session_request_exchange: str,
         client_routing_keys: list[str],
     ):
         self._logger.debug(
-            "%s: listen(connection_exchange=%r, auth_exchange=%r)",
+            "%s: listen",
             self.name,
-            client_exchange,
-            session_exchange,
         )
 
-        self.connection_exchange = client_exchange
-        self.auth_exchange = session_exchange
+        await self._connect()
+        await self._declare_exchange(config.INBOUND_EXCHANGE_NAME, ExchangeType.TOPIC)
+        await self._declare_exchange(config.SESSION_EXCHANGE_NAME, ExchangeType.TOPIC)
+        await self._declare_exchange(config.OUTBOUND_EXCHANGE_NAME, ExchangeType.TOPIC)
+        await self._declare_exchange(config.SESSION_REQUEST_EXCHANGE_NAME, ExchangeType.TOPIC)
 
         hostname = socket.gethostname()
 
         # Declare and consume state messages (already authenticated player connected)
-        session_queue_name = f"{session_exchange}.state.{hostname}"
-        session_consumer = await self.message_queue_service.declare_queue_and_consume(
-            exchange_name=session_exchange,
+        session_queue_name = f"{config.SESSION_EXCHANGE_NAME}.state.{hostname}"
+        session_consumer = await self.declare_queue_and_consume(
+            exchange_name=config.SESSION_EXCHANGE_NAME,
             routing_keys=["#"],
             callback=self._on_session_message,
             queue_name=session_queue_name,
@@ -85,9 +92,9 @@ class ServerContext:
             self._consumer_tags.append(session_consumer)
 
         # Declare and consume client messages
-        client_queue_name = f"{client_exchange}.client.{hostname}"
-        client_consumer = await self.message_queue_service.declare_queue_and_consume(
-            exchange_name=client_exchange,
+        client_queue_name = f"{config.INBOUND_EXCHANGE_NAME}.client.{hostname}"
+        client_consumer = await self.declare_queue_and_consume(
+            exchange_name=config.INBOUND_EXCHANGE_NAME,
             routing_keys=client_routing_keys,
             callback=self._on_client_message,
             queue_name=client_queue_name,
@@ -95,14 +102,161 @@ class ServerContext:
         if client_consumer is not None:
             self._consumer_tags.append(client_consumer)
 
-        await self.message_queue_service.publish(session_request_exchange, "", {}, reply_to=session_queue_name)
+        await self.publish(config.SESSION_REQUEST_EXCHANGE_NAME, "", {}, reply_to=session_queue_name)
 
         self._logger.info(
             "%s: listening on RabbitMQ exchanges: connection=%s, state=%s",
             self.name,
-            client_exchange,
-            session_exchange,
+            config.INBOUND_EXCHANGE_NAME,
+            config.SESSION_EXCHANGE_NAME,
         )
+
+    async def _connect(self) -> None:
+        try:
+            self._connection = await aio_pika.connect_robust(
+                "amqp://{user}:{password}@{server}:{port}/{vhost}".format(
+                    user=config.MQ_USER,
+                    password=config.MQ_PASSWORD,
+                    vhost=config.MQ_VHOST,
+                    server=config.MQ_SERVER,
+                    port=config.MQ_PORT,
+                ),
+                loop=asyncio.get_running_loop(),
+            )
+        except ProbableAuthenticationError as e:
+            self._logger.warning(
+                "Unable to connect to RabbitMQ. Incorrect credentials?", exc_info=True
+            )
+            raise ConnectionAttemptFailed from e
+        except ConnectionError as e:
+            self._logger.warning(
+                "Unable to connect to RabbitMQ. Is it running?", exc_info=True
+            )
+            raise ConnectionAttemptFailed from e
+        except Exception as e:
+            self._logger.warning(
+                "Unable to connect to RabbitMQ due to unhandled excpetion %s. Incorrect vhost?",
+                e,
+                exc_info=True,
+            )
+            raise ConnectionAttemptFailed from e
+
+        assert self._connection is not None
+
+        self._channel = await self._connection.channel(publisher_confirms=True)
+        self._logger.debug("Connected to RabbitMQ %r", self._connection)
+
+    async def declare_exchange(
+        self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC, durable: bool = True
+    ) -> None:
+        await self._declare_exchange(exchange_name, exchange_type, durable)
+
+    async def _declare_exchange(
+        self, exchange_name: str, exchange_type: ExchangeType, durable: bool = True
+    ) -> None:
+        assert self._channel is not None
+
+        new_exchange = await self._channel.declare_exchange(
+            exchange_name,
+            exchange_type,
+            durable=durable,
+        )
+
+        self._exchanges[exchange_name] = new_exchange
+        self._exchange_types[exchange_name] = exchange_type
+
+
+    async def publish(
+        self,
+        exchange_name: str,
+        routing: str,
+        payload: dict,
+        mandatory: bool = False,
+        delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        reply_to: Optional[str] = None,
+    ) -> None:
+        await self.publish_many(
+            exchange_name,
+            routing,
+            [payload],
+            mandatory=mandatory,
+            delivery_mode=delivery_mode,
+            reply_to=reply_to,
+        )
+
+    async def publish_many(
+        self,
+        exchange_name: str,
+        routing: str,
+        payloads: Iterable[dict],
+        mandatory: bool = False,
+        delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        reply_to: Optional[str] = None,
+    ) -> None:
+        assert self._channel is not None
+
+        exchange = self._exchanges.get(exchange_name)
+        if exchange is None:
+            raise KeyError(f"Unknown exchange {exchange_name}.")
+
+        for payload in payloads:
+            message = aio_pika.Message(
+                json.dumps(payload).encode(),
+                delivery_mode=delivery_mode,
+                content_type="application/json",
+                reply_to=reply_to
+            )
+            await exchange.publish(
+                message,
+                routing_key=routing,
+                mandatory=mandatory
+            )
+            self._logger.log(
+                TRACE,
+                "Published message %s to %s/%s",
+                payload,
+                exchange_name,
+                routing
+            )
+
+    async def declare_queue_and_consume(
+        self,
+        exchange_name: str,
+        routing_keys: list[str],
+        callback: Callable[[AbstractIncomingMessage], Awaitable[None]],
+        queue_name: str = "",
+        exclusive: bool = True,
+        auto_delete: bool = True,
+        durable: bool = False,
+    ) -> Optional[tuple[AbstractQueue, str]]:
+        """
+        Declare a queue, bind it to an exchange with the given routing key, and
+        start consuming. Returns `(queue, consumer_tag)` so the caller can
+        cancel on shutdown.
+        """
+
+        assert self._channel is not None
+
+        exchange = self._exchanges.get(exchange_name)
+        if exchange is None:
+            raise KeyError(f"Unknown exchange {exchange_name}.")
+
+        queue = await self._channel.declare_queue(
+            queue_name,
+            exclusive=exclusive,
+            auto_delete=auto_delete,
+            durable=durable,
+        )
+        for routing_key in routing_keys:
+            await queue.bind(exchange, routing_key=routing_key)
+        consumer_tag = await queue.consume(callback)
+
+        self._logger.debug(
+            "Consuming from queue %r bound to %s/%s",
+            queue.name, exchange_name, routing_keys,
+        )
+        return queue, consumer_tag
+
 
     async def _on_session_message(self, message: AbstractIncomingMessage) -> None:
         async with message.process(requeue=False):
@@ -204,7 +358,7 @@ class ServerContext:
         queue: asyncio.Queue = asyncio.Queue()
         protocol = RabbitMQProtocol(
             queue=queue,
-            message_queue_service=self.message_queue_service,
+            server_context=self,
             session=connection.session,
         )
 
@@ -308,6 +462,14 @@ class ServerContext:
             task.cancel()
         if self._tasks:
             await asyncio.gather(*self._tasks, return_exceptions=True)
+
+        if self._channel is not None:
+            await self._channel.close()
+            self._channel = None
+
+        if self._connection is not None:
+            await self._connection.close()
+            self._connection = None
 
         self._logger.debug("%s: All connections closed", self.name)
 

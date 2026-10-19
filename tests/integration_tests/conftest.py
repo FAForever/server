@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import datetime
 import hashlib
 import json
@@ -20,6 +21,7 @@ from aio_pika.abc import (
     AbstractQueue
 )
 from aiohttp import web
+from sqlalchemy import select
 
 from server import (
     BroadcastService,
@@ -31,11 +33,14 @@ from server import (
     VetoService,
     ViolationService
 )
+import server.metrics as metrics
 from server.config import config
 from server.control import ControlServer
 from server.db.models import login
 from server.health import HealthServer
-from server.protocol import Protocol, RabbitMQProtocol
+from server.message_queue_service import MessageQueueService
+from server.protocol import DisconnectedError, Protocol, RabbitMQProtocol
+from server.protocol.protocol import json_encoder
 from server.servercontext import ServerContext
 from tests.utils import exhaust_callbacks
 
@@ -195,10 +200,15 @@ async def lobby_server_factory(
         instance.started = True
 
         contexts = {
-            name: await instance.listen(cfg["INBOUND_EXCHANGE"], cfg["SESSION_EXCHANGE"],
-                                        cfg["SESSION_REQUEST_EXCHANGE"], )
+            name: await instance.listen()
             for name, cfg in config.items()
         }
+
+        # This is a dirty workaround to pass the database to the connect_and_sign_in function for tests
+        # Ideally that function should be a proper fixture
+        for context in contexts.values():
+            context.database = database
+
         all_contexts.extend(contexts.values())
         player_service.is_uniqueid_exempt = lambda id: True
 
@@ -219,12 +229,7 @@ async def lobby_server_factory(
 @pytest.fixture
 async def lobby_setup(lobby_server_factory):
     return await lobby_server_factory({
-        "mq": {
-            "INBOUND_EXCHANGE": config.INBOUND_EXCHANGE_NAME,
-            "SESSION_EXCHANGE": config.SESSION_EXCHANGE_NAME,
-            "SESSION_REQUEST_EXCHANGE": config.SESSION_REQUEST_EXCHANGE_NAME,
-            "OUTBOUND_EXCHANGE": config.OUTBOUND_EXCHANGE_NAME,
-        },
+        "mq": {},
     })
 
 
@@ -413,11 +418,7 @@ async def connect_client(
         server: ServerContext,
         address: Optional[tuple[str, int]] = None
 ) -> Protocol:
-    host, port = address or (server.host, server.port)
-    url = f"http://{host}:{port}{server.path}"
-    session = aiohttp.ClientSession()
-    ws = await session.ws_connect(url)
-    return RabbitMQProtocol(asyncio.Queue(), ws, owned_session=session)
+    raise RuntimeError("Not implemented")
 
 
 async def perform_login(
@@ -489,17 +490,214 @@ async def get_session(proto):
     return msg["session"]
 
 
-async def connect_and_sign_in(
+_SENTINEL = object()
+_session_counter = 0
+
+class ClientRabbitMQProtocol(Protocol):
+    """
+    Client-side protocol implementation over RabbitMQ for integration tests.
+    Sends client messages wrapped with session over INBOUND_EXCHANGE_NAME.
+    Receives server messages from OUTBOUND_EXCHANGE_NAME and unwraps them.
+    """
+
+    def __init__(
+            self,
+            queue: asyncio.Queue,
+            server_context: ServerContext,
+            session: int,
+            player_id: Optional[int] = None,
+            consumer_tag: Optional[str] = None,
+            consumer_queue: Optional[AbstractQueue] = None,
+    ):
+        self.queue = queue
+        self.server_context = server_context
+        self.session = session
+        self.player_id = player_id
+        self.consumer_tag = consumer_tag
+        self.consumer_queue = consumer_queue
+        self._pending: set[asyncio.Task] = set()
+        self._closed = False
+
+    @staticmethod
+    def encode_message(message: dict) -> bytes:
+        return json_encoder.encode(message).encode()
+
+    @staticmethod
+    def decode_message(data: bytes) -> dict:
+        return json.loads(data)
+
+    def is_connected(self) -> bool:
+        return not self._closed
+
+    async def read_message(self) -> dict:
+        if not self.is_connected():
+            raise DisconnectedError("RabbitMQ protocol is not connected!")
+
+        item = await self.queue.get()
+        if item is _SENTINEL or not self.is_connected():
+            raise DisconnectedError("RabbitMQ connection closed")
+
+        return item
+
+    def write_message(self, message: dict) -> None:
+        metrics.sent_messages.labels(self.__class__.__name__).inc()
+        if not self.is_connected():
+            raise DisconnectedError("Protocol is not connected!")
+        if self.server_context is None:
+            raise DisconnectedError("No message queue service configured for publishing!")
+
+        task = asyncio.create_task(
+            self.server_context.publish(
+                exchange_name=config.INBOUND_EXCHANGE_NAME,
+                routing="lobby.legacy.client",
+                payload=self._wrap_message_with_session(message),
+            )
+        )
+        self._pending.add(task)
+        task.add_done_callback(self._pending.discard)
+
+    def write_messages(self, messages: list[dict]) -> None:
+        metrics.sent_messages.labels(self.__class__.__name__).inc()
+        if not self.is_connected():
+            raise DisconnectedError("Protocol is not connected!")
+        if self.server_context is None:
+            raise DisconnectedError("No message queue service configured for publishing!")
+
+        task = asyncio.create_task(
+            self.server_context.publish_many(
+                exchange_name=config.INBOUND_EXCHANGE_NAME,
+                routing="lobby.legacy.client",
+                payloads=[self._wrap_message_with_session(message) for message in messages],
+            )
+        )
+        self._pending.add(task)
+        task.add_done_callback(self._pending.discard)
+
+    def write_raw(self, data: bytes) -> None:
+        payload = self.decode_message(data)
+        self.write_message(payload)
+
+    def _wrap_message_with_session(self, payload: dict) -> dict:
+        return {"player_id": self.player_id, "session_id": self.session, "ip_address": "127.0.0.1", "message": payload}
+
+    async def drain(self) -> None:
+        if not self._pending:
+            return
+        try:
+            await asyncio.gather(*self._pending)
+        except Exception as e:
+            await self.close()
+            raise DisconnectedError("Protocol connection lost!") from e
+
+    def abort(self) -> None:
+        self._closed = True
+        for task in self._pending:
+            task.cancel()
+        if self.queue is not None:
+            self.queue.put_nowait(_SENTINEL)
+
+    async def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        for task in self._pending:
+            task.cancel()
+        if self.server_context is not None and self.player_id is not None:
+            with contextlib.suppress(Exception):
+                await self.server_context.publish(
+                    exchange_name=config.SESSION_EXCHANGE_NAME,
+                    routing="",
+                    payload={
+                        "player_id": self.player_id,
+                        "session_id": self.session,
+                        "state": {"@type": "gone"},
+                    },
+                )
+        if self.consumer_queue is not None and self.consumer_tag is not None:
+            with contextlib.suppress(Exception):
+                await self.consumer_queue.cancel(self.consumer_tag)
+        if self.queue is not None:
+            self.queue.put_nowait(_SENTINEL)
+
+
+async def _connect_and_sign_in(
         credentials,
-        lobby_server: ServerContext,
-        address: Optional[tuple[str, int]] = None
+        database,
+        server_context,
 ) -> tuple[int, int, Protocol]:
-    proto = await connect_client(lobby_server, address)
-    session = await get_session(proto)
-    await perform_login(proto, credentials)
+    global _session_counter
+    _session_counter += 1
+    session_id = _session_counter
+
+    # Resolve player_id
+    player_id = None
+    username, _ = credentials
+    if database is not None:
+        async with database.acquire() as conn:
+            result = await conn.execute(
+                select(login.c.id).where(login.c.login == username)
+            )
+            row = result.fetchone()
+            if row is not None:
+                player_id = row.id
+
+    if player_id is None:
+        raise ValueError("Player not found")
+
+    queue = asyncio.Queue()
+    proto = ClientRabbitMQProtocol(
+        queue=queue,
+        server_context=server_context,
+        session=session_id,
+        player_id=player_id,
+    )
+
+    async def _on_outbound_message(msg: AbstractIncomingMessage) -> None:
+        async with msg.process(requeue=False):
+            try:
+                payload = json.loads(msg.body)
+            except Exception:
+                return
+            if not isinstance(payload, dict):
+                return
+            target = payload["target"]
+            target_session = target["session_id"]
+
+            if target_session == session_id:
+                await queue.put(payload.get("message"))
+
+    res = await server_context.declare_queue_and_consume(
+        exchange_name=config.OUTBOUND_EXCHANGE_NAME,
+        routing_keys=["#"],
+        callback=_on_outbound_message,
+        exclusive=True,
+        auto_delete=True,
+    )
+    if res is not None:
+        proto.consumer_queue, proto.consumer_tag = res
+
+    await server_context.publish(
+        exchange_name=config.SESSION_EXCHANGE_NAME,
+        routing="",
+        payload={
+            "player_id": player_id,
+            "session_id": session_id,
+            "state": {"@type": "new"},
+            "ip_address": "127.0.0.1",
+        },
+    )
+
     hello = await read_until_command(proto, "welcome", timeout=120)
-    player_id = hello["id"]
-    return player_id, session, proto
+    actual_player_id = hello.get("id", player_id)
+    return actual_player_id, session_id, proto
+
+
+async def connect_and_sign_in(credentials, lobby_server) -> tuple[int, int, Protocol]:
+    return await _connect_and_sign_in(
+        credentials,
+        database=lobby_server.database,
+        server_context=lobby_server,
+    )
 
 
 @pytest.fixture

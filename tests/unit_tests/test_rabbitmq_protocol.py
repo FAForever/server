@@ -24,7 +24,7 @@ async def test_read_message_from_asyncio_queue_dict():
     queue = asyncio.Queue()
     mq_service = mock.Mock()
 
-    proto = RabbitMQProtocol(queue=queue, message_queue_service=mq_service, session=0)
+    proto = RabbitMQProtocol(queue=queue, server_context=mq_service, session=0)
     await queue.put({"command": "pong", "count": 1})
 
     assert await proto.read_message() == {"command": "pong", "count": 1}
@@ -32,7 +32,7 @@ async def test_read_message_from_asyncio_queue_dict():
 
 async def test_read_message_when_closed_raises():
     queue = asyncio.Queue()
-    proto = RabbitMQProtocol(queue=queue, message_queue_service=mock.Mock(), session=0)
+    proto = RabbitMQProtocol(queue=queue, server_context=mock.Mock(), session=0)
     await proto.close()
 
     with pytest.raises(DisconnectedError):
@@ -41,7 +41,7 @@ async def test_read_message_when_closed_raises():
 
 async def test_read_message_unblocks_on_close():
     queue = asyncio.Queue()
-    proto = RabbitMQProtocol(queue=queue, message_queue_service=mock.Mock(), session=0)
+    proto = RabbitMQProtocol(queue=queue, server_context=mock.Mock(), session=0)
 
     async def close_later():
         await asyncio.sleep(0.05)
@@ -55,7 +55,7 @@ async def test_read_message_unblocks_on_close():
 
 async def test_read_message_unblocks_on_abort():
     queue = asyncio.Queue()
-    proto = RabbitMQProtocol(queue=queue, message_queue_service=mock.Mock(), session=0)
+    proto = RabbitMQProtocol(queue=queue, server_context=mock.Mock(), session=0)
 
     async def abort_later():
         await asyncio.sleep(0.05)
@@ -72,7 +72,7 @@ async def test_send_message_publishes_via_message_queue_service():
 
     proto = RabbitMQProtocol(
         queue=asyncio.Queue(),
-        message_queue_service=mq_service,
+        server_context=mq_service,
         session=0,
     )
 
@@ -92,7 +92,7 @@ async def test_send_messages_publishes_all():
 
     proto = RabbitMQProtocol(
         queue=asyncio.Queue(),
-        message_queue_service=mq_service,
+        server_context=mq_service,
         session=0
     )
     payloads = [{"a": 1}, {"b": 2}, {"c": 3}]
@@ -112,7 +112,7 @@ async def test_write_message_and_drain():
 
     proto = RabbitMQProtocol(
         queue=asyncio.Queue(),
-        message_queue_service=mq_service,
+        server_context=mq_service,
         session=0
     )
     proto.write_message({"command": "ping"})
@@ -132,7 +132,7 @@ async def test_write_messages_and_drain():
 
     proto = RabbitMQProtocol(
         queue=asyncio.Queue(),
-        message_queue_service=mq_service,
+        server_context=mq_service,
         session=0
     )
     proto.write_messages([{"msg": 1}, {"msg": 2}])
@@ -149,7 +149,7 @@ async def test_write_messages_and_drain():
 async def test_write_raw_when_disconnected_raises():
     proto = RabbitMQProtocol(
         queue=asyncio.Queue(),
-        message_queue_service=mock.Mock(),
+        server_context=mock.Mock(),
         session=0
     )
     await proto.close()
@@ -161,7 +161,7 @@ async def test_write_raw_when_disconnected_raises():
 async def test_write_message_when_disconnected_raises():
     proto = RabbitMQProtocol(
         queue=asyncio.Queue(),
-        message_queue_service=mock.Mock(),
+        server_context=mock.Mock(),
         session=0,
     )
     await proto.close()
@@ -174,7 +174,7 @@ async def test_drain_raises_disconnected_on_publish_error():
     mq_service = mock.Mock()
     mq_service.publish = mock.AsyncMock(side_effect=ConnectionError("Broker unavailable"))
 
-    proto = RabbitMQProtocol(queue=asyncio.Queue(), message_queue_service=mq_service, session=0)
+    proto = RabbitMQProtocol(queue=asyncio.Queue(), server_context=mq_service, session=0)
     proto.write_message({"command": "test"})
 
     with pytest.raises(DisconnectedError):
@@ -186,7 +186,7 @@ async def test_send_raw():
     mq_service = mock.Mock()
     mq_service.publish = mock.AsyncMock()
 
-    proto = RabbitMQProtocol(queue=asyncio.Queue(), message_queue_service=mq_service, session=0)
+    proto = RabbitMQProtocol(queue=asyncio.Queue(), server_context=mq_service, session=0)
     await proto.send_raw(b'{"raw":"data"}')
 
     mq_service.publish.assert_awaited_once_with(
@@ -197,6 +197,6 @@ async def test_send_raw():
     await proto.close()
 
 async def test_drain_empty_pending_noop():
-    proto = RabbitMQProtocol(queue=asyncio.Queue(), message_queue_service=mock.Mock(), session=0)
+    proto = RabbitMQProtocol(queue=asyncio.Queue(), server_context=mock.Mock(), session=0)
     await proto.drain()
     await proto.close()

@@ -2,14 +2,10 @@
 
 import asyncio
 import json
-from typing import Optional
-
-from aio_pika import DeliveryMode
 
 import server.metrics as metrics
 from .protocol import DisconnectedError, Protocol, json_encoder
 from ..config import config
-from ..message_queue_service import MessageQueueService
 
 _SENTINEL = object()
 
@@ -24,7 +20,7 @@ class RabbitMQProtocol(Protocol):
     def __init__(
             self,
             queue: asyncio.Queue,
-            message_queue_service: MessageQueueService,
+            server_context: "ServerContext",
             session: int,
     ):
         """
@@ -36,7 +32,7 @@ class RabbitMQProtocol(Protocol):
         - session: session id for the protocol
         """
         self.queue = queue
-        self.message_queue_service = message_queue_service
+        self.server_context = server_context
         self.exchange_name = config.OUTBOUND_EXCHANGE_NAME
         self.session = session
 
@@ -73,11 +69,11 @@ class RabbitMQProtocol(Protocol):
         metrics.sent_messages.labels(self.__class__.__name__).inc()
         if not self.is_connected():
             raise DisconnectedError("Protocol is not connected!")
-        if self.message_queue_service is None:
+        if self.server_context is None:
             raise DisconnectedError("No message queue service configured for publishing!")
 
         task = asyncio.create_task(
-            self.message_queue_service.publish(
+            self.server_context.publish(
                 exchange_name=config.OUTBOUND_EXCHANGE_NAME,
                 routing="",
                 payload=self._wrap_message_with_session(message),
@@ -93,11 +89,11 @@ class RabbitMQProtocol(Protocol):
         metrics.sent_messages.labels(self.__class__.__name__).inc()
         if not self.is_connected():
             raise DisconnectedError("Protocol is not connected!")
-        if self.message_queue_service is None:
+        if self.server_context is None:
             raise DisconnectedError("No message queue service configured for publishing!")
 
         task = asyncio.create_task(
-            self.message_queue_service.publish_many(
+            self.server_context.publish_many(
                 exchange_name=config.OUTBOUND_EXCHANGE_NAME,
                 routing="",
                 payloads=[self._wrap_message_with_session(message) for message in messages],
