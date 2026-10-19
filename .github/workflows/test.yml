@@ -49,7 +49,7 @@ jobs:
           RABBITMQ_PID_FILE: /var/lib/rabbitmq/pid
           RABBITMQ_DEFAULT_USER: admin
           RABBITMQ_DEFAULT_PASS: banana
-          RABBITMQ_DEFAULT_VHOST: /
+          RABBITMQ_DEFAULT_VHOST: /faf-core
 
     steps:
       - uses: actions/checkout@v4
