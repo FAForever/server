@@ -32,7 +32,7 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: banana
           MYSQL_DATABASE: faf_lobby
-          MYSQL_USER: root
+          MYSQL_USER: faf-python-server
           MYSQL_PASSWORD: banana
 
       faf-rabbitmq:
