@@ -20,7 +20,7 @@ services:
     command: migrate
     environment:
       FLYWAY_URL: jdbc:mysql://faf-db/faf_lobby?useSSL=false
-      FLYWAY_USER: faf-lobby-server
+      FLYWAY_USER: root
       FLYWAY_PASSWORD: banana
       FLYWAY_DATABASE: faf_lobby
     depends_on:

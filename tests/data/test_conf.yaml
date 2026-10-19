@@ -12,7 +12,7 @@ DB_SERVER: "127.0.0.1"
 DB_PORT: 3306
 DB_LOGIN: "root"
 DB_PASSWORD: "banana"
-DB_NAME: "faf"
+DB_NAME: "faf-lobby"
 
 WWW_URL: "https://www.faforever.com"
 CONTENT_URL: "http://content.faforever.com"
