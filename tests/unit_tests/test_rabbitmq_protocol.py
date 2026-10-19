@@ -2,7 +2,6 @@ import asyncio
 from unittest import mock
 
 import pytest
-from aio_pika import DeliveryMode
 
 from server.config import config
 from server.protocol import DisconnectedError, RabbitMQProtocol

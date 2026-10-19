@@ -37,7 +37,7 @@ from server.config import config
 from server.control import ControlServer
 from server.db.models import login
 from server.health import HealthServer
-from server.protocol import DisconnectedError, Protocol, RabbitMQProtocol
+from server.protocol import DisconnectedError, Protocol
 from server.protocol.protocol import json_encoder
 from server.servercontext import ServerContext
 from tests.utils import exhaust_callbacks
@@ -490,6 +490,7 @@ async def get_session(proto):
 
 _SENTINEL = object()
 _session_counter = 0
+
 
 class ClientRabbitMQProtocol(Protocol):
     """
