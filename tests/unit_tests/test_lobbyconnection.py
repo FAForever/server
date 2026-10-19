@@ -1,4 +1,4 @@
-import re
+from hashlib import sha256
 from hashlib import sha256
 from unittest import mock
 
@@ -9,7 +9,7 @@ from sqlalchemy.exc import OperationalError
 
 from server.config import config
 from server.db.models import ban, friends_and_foes
-from server.exceptions import BanError, ClientError
+from server.exceptions import ClientError
 from server.game_service import GameService
 from server.gameconnection import GameConnection
 from server.games import CustomGame, Game, GameState, InitMode, VisibilityState

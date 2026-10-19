@@ -37,7 +37,6 @@ from server.config import config
 from server.control import ControlServer
 from server.db.models import login
 from server.health import HealthServer
-from server.message_queue_service import MessageQueueService
 from server.protocol import DisconnectedError, Protocol, RabbitMQProtocol
 from server.protocol.protocol import json_encoder
 from server.servercontext import ServerContext

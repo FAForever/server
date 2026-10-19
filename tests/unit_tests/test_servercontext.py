@@ -26,6 +26,7 @@ async def test_unstarted(context):
 
     assert context.connections == {}
 
+
 def test_write_broadcast_raw_error(context, caplog):
     conn = mock.create_autospec(LobbyConnection)
     proto = mock.create_autospec(Protocol)

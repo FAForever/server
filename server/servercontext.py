@@ -35,6 +35,7 @@ from .types import Address
 class ConnectionAttemptFailed(ConnectionError):
     pass
 
+
 @with_logger
 class ServerContext:
     """
@@ -172,7 +173,6 @@ class ServerContext:
         self._exchanges[exchange_name] = new_exchange
         self._exchange_types[exchange_name] = exchange_type
 
-
     async def publish(
         self,
         exchange_name: str,
@@ -264,7 +264,6 @@ class ServerContext:
         )
         return queue, consumer_tag
 
-
     async def _on_session_message(self, message: AbstractIncomingMessage) -> None:
         async with message.process(requeue=False):
             try:
@@ -312,7 +311,7 @@ class ServerContext:
             if state_type == "new":
                 self.create_session(host, player_id, session_id, True)
             elif state_type == "existing":
-                if not session_id in self.sessions:
+                if session_id not in self.sessions:
                     self.create_session(host, player_id, session_id, False)
 
             elif state_type == "gone":

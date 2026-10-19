@@ -13,6 +13,7 @@ from tests.utils import exhaust_callbacks, fast_forward
 
 pytestmark = pytest.mark.skip(reason="Disabling as the server context no longer makes direct connections")
 
+
 async def wait_for_connection_registered(ctx, max_iters=1000):
     for _ in range(max_iters):
         if ctx.connections:
