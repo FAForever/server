@@ -7,17 +7,24 @@ import json
 import logging
 import socket
 from contextlib import contextmanager
-from typing import Callable, ClassVar, Iterable, Optional, Awaitable
+from typing import Awaitable, Callable, ClassVar, Iterable, Optional
 
 import aio_pika
 import humanize
-from aio_pika.abc import AbstractIncomingMessage, AbstractQueue, ExchangeType, DeliveryMode, AbstractConnection, \
-    AbstractChannel, AbstractExchange
+from aio_pika.abc import (
+    AbstractChannel,
+    AbstractConnection,
+    AbstractExchange,
+    AbstractIncomingMessage,
+    AbstractQueue,
+    DeliveryMode,
+    ExchangeType
+)
 from aiormq import ProbableAuthenticationError
 
 import server.metrics as metrics
-from .config import TRACE
-from .config import config
+
+from .config import TRACE, config
 from .core import Service
 from .decorators import with_logger
 from .lobbyconnection import LobbyConnection

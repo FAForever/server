@@ -2,10 +2,16 @@
 
 import asyncio
 import json
+from typing import TYPE_CHECKING
 
 import server.metrics as metrics
-from .protocol import DisconnectedError, Protocol, json_encoder
+
 from ..config import config
+from .protocol import DisconnectedError, Protocol, json_encoder
+
+if TYPE_CHECKING:
+    # 2. These imports only run during type checking, never at runtime
+    from .. import ServerContext
 
 _SENTINEL = object()
 

@@ -115,6 +115,7 @@ import time
 from typing import Optional, cast
 
 import server.metrics as metrics
+
 from .asyncio_extensions import map_suppress, synchronizedmethod
 from .avatar_change_queue_service import AvatarChangeQueueService
 from .broadcast_service import BroadcastService

@@ -13,7 +13,6 @@ from typing import Any, Callable, Optional
 from unittest import mock
 
 import aio_pika
-import aiohttp
 import pytest
 from aio_pika.abc import (
     AbstractChannel,
@@ -23,6 +22,7 @@ from aio_pika.abc import (
 from aiohttp import web
 from sqlalchemy import select
 
+import server.metrics as metrics
 from server import (
     BroadcastService,
     GameService,
@@ -33,7 +33,6 @@ from server import (
     VetoService,
     ViolationService
 )
-import server.metrics as metrics
 from server.config import config
 from server.control import ControlServer
 from server.db.models import login

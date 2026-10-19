@@ -632,7 +632,7 @@ class LobbyConnection:
 
     async def command_auth(self, message):
         token = message["token"]
-        unique_id = message["unique_id"]
+        # unique_id = message["unique_id"]
         player_id = await self.oauth_service.get_player_id_from_token(token)
         auth_method = "token"
 
@@ -685,7 +685,7 @@ class LobbyConnection:
     async def command_hello(self, message):
         login = message["login"].strip()
         password = message["password"]
-        unique_id = message["unique_id"]
+        # unique_id = message["unique_id"]
 
         if not config.ALLOW_PASSWORD_LOGIN:
             self._logger.debug(
