@@ -31,8 +31,8 @@ jobs:
           --health-retries 5
         env:
           MYSQL_ROOT_PASSWORD: banana
-          MYSQL_DATABASE: faf
-          MYSQL_USER: faf-python-server
+          MYSQL_DATABASE: faf_lobby
+          MYSQL_USER: root
           MYSQL_PASSWORD: banana
 
       faf-rabbitmq:
@@ -67,7 +67,7 @@ jobs:
 
       - name: Run flyway db migrations
         env:
-          FLYWAY_URL: jdbc:mysql://localhost/faf?useSSL=false
+          FLYWAY_URL: jdbc:mysql://localhost/faf_lobby?useSSL=false
           FLYWAY_USER: root
           FLYWAY_PASSWORD: banana
           FLYWAY_LOCATIONS: filesystem:db/migrations
