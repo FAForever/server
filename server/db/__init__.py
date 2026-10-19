@@ -42,7 +42,7 @@ class FAFDatabase:
         port: int = 3306,
         user: str = "root",
         password: str = "",
-        db: str = "faf_test",
+        db: str = "faf_lobby",
         **kwargs
     ):
         kwargs["future"] = True

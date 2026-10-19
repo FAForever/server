@@ -313,11 +313,8 @@ async def test_drain(
 
 @fast_forward(15)
 async def test_player_info_broadcast(lobby_server):
-    p1 = await connect_client(lobby_server)
-    p2 = await connect_client(lobby_server)
-
-    await perform_login(p1, ("test", "test_password"))
-    await perform_login(p2, ("Rhiza", "puff_the_magic_dragon"))
+    _, _, p1 = await connect_and_sign_in(("test", "test_password"), lobby_server)
+    _, _, p2 = await connect_and_sign_in(("Rhiza", "puff_the_magic_dragon"), lobby_server)
 
     await read_until(
         p2,

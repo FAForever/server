@@ -32,7 +32,7 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: banana
           MYSQL_DATABASE: faf_lobby
-          MYSQL_USER: faf-python-server
+          MYSQL_USER: faf-lobby-server
           MYSQL_PASSWORD: banana
 
       faf-rabbitmq:
@@ -88,11 +88,11 @@ jobs:
 
       - name: Run tests
         if: ${{ github.event_name != 'schedule' }}
-        run: pipenv run tests --cov-report=xml --color=yes --mysql_database=faf_lobby --mysql_password=banana  -m ""
+        run: pipenv run tests --cov-report=xml --color=yes -m ""
 
       - name: Run hypothesis tests with many examples
         if: ${{ github.event_name == 'schedule' }}
-        run: pipenv run tests --mysql_database=faf_lobby --mysql_password=banana -m "hypothesis" --hypothesis-profile nightly
+        run: pipenv run tests -m "hypothesis" --hypothesis-profile nightly
 
       - name: Report coverage
         if: ${{ github.event_name != 'schedule' }}

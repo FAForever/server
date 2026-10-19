@@ -56,8 +56,8 @@ async def test_multiple_contexts(
     )
     broadcast_service.server = instance
 
-    await instance.listen(("127.0.0.1", 0), name="ws-a")
-    await instance.listen(("127.0.0.1", 0), name="ws-b")
+    await instance.listen()
+    await instance.listen()
 
     ctx_1, ctx_2 = tuple(instance.contexts)
 

@@ -38,7 +38,7 @@ services:
     image: rabbitmq:3.13-management
     environment:
       RABBITMQ_DEFAULT_VHOST: /faf-core
-      RABBITMQ_DEFAULT_USER: faf-python-server
+      RABBITMQ_DEFAULT_USER: faf-lobby-server
       RABBITMQ_DEFAULT_PASS: banana
     ports:
       - "5672:5672"
