@@ -88,11 +88,11 @@ jobs:
 
       - name: Run tests
         if: ${{ github.event_name != 'schedule' }}
-        run: pipenv run tests --cov-report=xml --color=yes --mysql_database faf_lobby --mysql_password banana  -m ""
+        run: pipenv run tests --cov-report=xml --color=yes --mysql_database=faf_lobby --mysql_password=banana  -m ""
 
       - name: Run hypothesis tests with many examples
         if: ${{ github.event_name == 'schedule' }}
-        run: pipenv run tests --mysql_database faf_lobby --mysql_password banana -m "hypothesis" --hypothesis-profile nightly
+        run: pipenv run tests --mysql_database=faf_lobby --mysql_password=banana -m "hypothesis" --hypothesis-profile nightly
 
       - name: Report coverage
         if: ${{ github.event_name != 'schedule' }}
