@@ -1,5 +1,7 @@
 import asyncio
 
+import pytest
+
 from server import ServerInstance
 from server.config import config
 from tests.utils import fast_forward
@@ -19,6 +21,7 @@ def has_player(msg, name):
     return False
 
 
+@pytest.mark.skip("Multiple contexts not supported anymore")
 @fast_forward(100)
 async def test_multiple_contexts(
     database,
