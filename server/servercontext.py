@@ -123,11 +123,12 @@ class ServerContext:
             config.SESSION_EXCHANGE_NAME,
         )
 
-        self._session_cleanup_timer = LazyIntervalTimer(
-            lambda: config.SESSION_CHECK_INTERVAL,
-            self._cleanup_sessions,
-            start=True
-        )
+        if config.CLEAN_EXPIRED_SESSIONS:
+            self._session_cleanup_timer = LazyIntervalTimer(
+                lambda: config.SESSION_CHECK_INTERVAL,
+                self._cleanup_sessions,
+                start=True
+            )
 
     async def _connect(self) -> None:
         try:
@@ -495,6 +496,9 @@ class ServerContext:
             self._connection = None
 
         self._logger.debug("%s: All connections closed", self.name)
+
+        if self._session_cleanup_timer is not None:
+            self._session_cleanup_timer.stop()
 
     async def drain_connections(self):
         """
