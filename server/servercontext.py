@@ -7,7 +7,8 @@ import json
 import logging
 import socket
 from contextlib import contextmanager
-from typing import Awaitable, Callable, ClassVar, Iterable, Optional, Any
+from datetime import datetime, timedelta
+from typing import Awaitable, Callable, ClassVar, Iterable, Optional
 
 import aio_pika
 import humanize
@@ -23,15 +24,12 @@ from aio_pika.abc import (
 from aiormq import ProbableAuthenticationError
 
 import server.metrics as metrics
-
-from datetime import datetime, timedelta
-
 from .config import TRACE, config
 from .core import Service
 from .decorators import with_logger
 from .lobbyconnection import LobbyConnection
 from .protocol import DisconnectedError, RabbitMQProtocol
-from .timing import datetime_now, LazyIntervalTimer
+from .timing import LazyIntervalTimer, datetime_now
 from .types import Address
 
 
@@ -68,7 +66,7 @@ class ServerContext:
         self.sessions_expiration: dict[int, datetime] = {}
         self._consumer_tags: list[tuple[AbstractQueue, str]] = []
         self._tasks: set[asyncio.Task] = set()
-        self._session_cleanup_timer = None
+        self._session_cleanup_timer: Optional[LazyIntervalTimer] = None
 
         self.connection_exchange: Optional[str] = None
         self.auth_exchange: Optional[str] = None
