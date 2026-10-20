@@ -397,10 +397,11 @@ class ServerContext:
 
     async def _cleanup_sessions(self):
         now = datetime_now()
-        for session_id, expiration in self.sessions_expiration.items():
-            if expiration < now:
-                self._logger.info("Dropping expired session %s", session_id)
-                await self._remove_session(session_id)
+        expired_session_ids = [session_id for session_id, expiration in self.sessions_expiration.items() if expiration < now]
+
+        for session_id in expired_session_ids:
+            self._logger.info("Dropping expired session %s", session_id)
+            await self._remove_session(session_id)
 
     async def _on_client_message(self, message: AbstractIncomingMessage) -> None:
         async with message.process(requeue=False):
