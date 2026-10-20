@@ -7,7 +7,7 @@ import json
 import logging
 import socket
 from contextlib import contextmanager
-from typing import Awaitable, Callable, ClassVar, Iterable, Optional
+from typing import Awaitable, Callable, ClassVar, Iterable, Optional, Any
 
 import aio_pika
 import humanize
@@ -24,11 +24,14 @@ from aiormq import ProbableAuthenticationError
 
 import server.metrics as metrics
 
+from datetime import datetime, timedelta
+
 from .config import TRACE, config
 from .core import Service
 from .decorators import with_logger
 from .lobbyconnection import LobbyConnection
 from .protocol import DisconnectedError, RabbitMQProtocol
+from .timing import datetime_now, LazyIntervalTimer
 from .types import Address
 
 
@@ -62,8 +65,10 @@ class ServerContext:
 
         self.connections: dict[LobbyConnection, RabbitMQProtocol] = {}
         self.sessions: dict[int, tuple[LobbyConnection, RabbitMQProtocol]] = {}
+        self.sessions_expiration: dict[int, datetime] = {}
         self._consumer_tags: list[tuple[AbstractQueue, str]] = []
         self._tasks: set[asyncio.Task] = set()
+        self._session_cleanup_timer = None
 
         self.connection_exchange: Optional[str] = None
         self.auth_exchange: Optional[str] = None
@@ -117,6 +122,12 @@ class ServerContext:
             self.name,
             config.INBOUND_EXCHANGE_NAME,
             config.SESSION_EXCHANGE_NAME,
+        )
+
+        self._session_cleanup_timer = LazyIntervalTimer(
+            lambda: config.SESSION_CHECK_INTERVAL,
+            self._cleanup_sessions,
+            start=True
         )
 
     async def _connect(self) -> None:
@@ -307,52 +318,52 @@ class ServerContext:
                 return
 
             state_type = state.get("@type")
-            host = payload.get("ip_address") or "unknown"
+            ip_address = payload.get("ip_address") or "unknown"
             if state_type == "new":
-                self.create_session(host, player_id, session_id, True)
-            elif state_type == "existing":
+                self.sessions_expiration[session_id] = datetime_now() + timedelta(seconds=int(state.get("seconds_to_expiry", config.DEFAULT_SESSION_EXPIRATION)))
                 if session_id not in self.sessions:
-                    self.create_session(host, player_id, session_id, False)
+                    self._create_session(ip_address, player_id, session_id, config.PUBLISH_WELCOME_MESSAGE)
+
+            elif state_type == "existing":
+                self.sessions_expiration[session_id] = datetime_now() + timedelta(seconds=int(state.get("seconds_to_expiry", config.DEFAULT_SESSION_EXPIRATION)))
+                if session_id not in self.sessions:
+                    self._create_session(ip_address, player_id, session_id, False)
 
             elif state_type == "gone":
-                if session_id is None:
-                    self._logger.debug(
-                        "%s: Dropping 'gone' session message for player %s: missing session_id",
-                        self.name,
-                        player_id,
-                    )
-                    return
+                await self._remove_session(session_id)
 
-                try:
-                    session_key = int(session_id)
-                except (TypeError, ValueError):
-                    self._logger.warning(
-                        "%s: Dropping 'gone' session message: invalid session_id %r",
-                        self.name,
-                        session_id,
-                    )
-                    return
+    async def _remove_session(self, session_id: int):
 
-                conn_tuple = self.sessions.get(session_key)
-                if conn_tuple is not None:
-                    conn, proto = conn_tuple
-                    self._logger.info(
-                        "%s: Closing connection for player %s with session %s (gone)",
-                        self.name,
-                        player_id,
-                        conn.session,
-                    )
-                    await proto.close()
-                else:
-                    self._logger.debug(
-                        "%s: No active connection found to close for session %s (player %s)",
-                        self.name,
-                        session_id,
-                        player_id,
-                    )
+        try:
+            session_key = int(session_id)
+        except (TypeError, ValueError):
+            self._logger.warning(
+                "%s: Dropping 'gone' session message: invalid session_id %r",
+                self.name,
+                session_id,
+            )
+            return
 
-    def create_session(self, host: str, player_id: int, session_id: int, new_connection: bool):
-        peername = Address(host, 0)
+        self.sessions_expiration.pop(session_key, None)
+        conn_tuple = self.sessions.pop(session_key, None)
+        if conn_tuple is not None:
+            conn, proto = conn_tuple
+            self._logger.info(
+                "%s: Closing connection for session %s (gone)",
+                self.name,
+                conn.session,
+            )
+            await proto.close()
+            self.connections.pop(conn, None)
+        else:
+            self._logger.debug(
+                "%s: No active connection found to close for session %s",
+                self.name,
+                session_id,
+            )
+
+    def _create_session(self, ip_address: str, player_id: int, session_id: int, publish_welcome_messages: bool):
+        peername = Address(ip_address, 0)
 
         connection = self._connection_factory()
         if session_id is not None:
@@ -379,10 +390,17 @@ class ServerContext:
         )
 
         task = asyncio.create_task(
-            self.handle_client_connected(connection, protocol, peername, player_id, new_connection)
+            self.handle_client_connected(connection, protocol, peername, player_id, publish_welcome_messages)
         )
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
+
+    async def _cleanup_sessions(self):
+        now = datetime_now()
+        for session_id, expiration in self.sessions_expiration.items():
+            if expiration < now:
+                self._logger.info("Dropping expired session %s", session_id)
+                await self._remove_session(session_id)
 
     async def _on_client_message(self, message: AbstractIncomingMessage) -> None:
         async with message.process(requeue=False):
@@ -521,11 +539,11 @@ class ServerContext:
         protocol: RabbitMQProtocol,
         peername: Address,
         player_id: int,
-        new_connection: bool,
+        publish_welcome_messages: bool,
     ):
         try:
             await connection.on_connection_made(protocol, peername)
-            await connection.on_external_auth(player_id, "broker", new_connection)
+            await connection.on_external_auth(player_id, "broker", publish_welcome_messages)
             metrics.user_connections.labels("None", "None").inc()
             while protocol.is_connected():
                 message = await protocol.read_message()

@@ -707,7 +707,7 @@ class LobbyConnection:
             player_id, username, "password"
         )
 
-    async def on_external_auth(self, player_id: int, source: str, new_connection: bool):
+    async def on_external_auth(self, player_id: int, source: str, publish_welcome_messages: bool):
         async with self._db.acquire() as conn:
             result = await conn.execute(
                 select(
@@ -732,7 +732,7 @@ class LobbyConnection:
         })
 
         await self.on_player_login(
-            player_id, username, source, new_connection,
+            player_id, username, source, publish_welcome_messages,
         )
 
     async def on_player_login(
@@ -740,7 +740,7 @@ class LobbyConnection:
         player_id: int,
         username: str,
         method: str,
-        new_connection: bool = True,
+        publish_welcome_messages: bool = True,
     ):
         assert self.peer_address is not None
 
@@ -821,7 +821,7 @@ class LobbyConnection:
         self.player.friends = set(friends)
         self.player.foes = set(foes)
 
-        if new_connection:
+        if publish_welcome_messages:
             # Send the player their own player info.
             await self.send({
                 "command": "welcome",
