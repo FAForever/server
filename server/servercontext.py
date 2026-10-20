@@ -24,6 +24,7 @@ from aio_pika.abc import (
 from aiormq import ProbableAuthenticationError
 
 import server.metrics as metrics
+
 from .config import TRACE, config
 from .core import Service
 from .decorators import with_logger
