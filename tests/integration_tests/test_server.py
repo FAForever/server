@@ -311,6 +311,23 @@ async def test_drain(
     assert "Graceful shutdown period ended! 1 games are still live!" in caplog.messages
 
 
+@fast_forward(10)
+async def test_expired_session_removal(
+    lobby_server,
+    tmp_user,
+):
+    _, _, proto = await connect_and_sign_in(
+        await tmp_user("Player"),
+        lobby_server
+    )
+
+    assert lobby_server.sessions
+
+    await lobby_server._cleanup_sessions()
+
+    assert not lobby_server.sessions
+
+
 @fast_forward(15)
 async def test_player_info_broadcast(lobby_server):
     _, _, p1 = await connect_and_sign_in(("test", "test_password"), lobby_server)

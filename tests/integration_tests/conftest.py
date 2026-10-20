@@ -681,7 +681,7 @@ async def _connect_and_sign_in(
         payload={
             "player_id": player_id,
             "session_id": session_id,
-            "state": {"@type": "new"},
+            "state": {"@type": "new", "seconds_to_expiry": 0,},
             "ip_address": "127.0.0.1",
         },
     )
