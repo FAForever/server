@@ -98,7 +98,8 @@ class ConfigurationStore:
         self.INBOUND_EXCHANGE_NAME = "lobby.message.inbound"
         self.SESSION_EXCHANGE_NAME = "lobby.session.state"
         self.SESSION_REQUEST_EXCHANGE_NAME = "lobby.session.request"
-        self.PUBLISH_WELCOME_MESSAGE = False
+        self.PUBLISH_WELCOME_MESSAGE = True
+        self.CLEAN_EXPIRED_SESSIONS = True
 
         self.WWW_URL = "https://www.faforever.com"
         self.CONTENT_URL = "http://content.faforever.com"
