@@ -94,10 +94,10 @@ class ConfigurationStore:
         self.MQ_PORT = 5672
         self.MQ_VHOST = "/faf-core"
         self.MQ_EXCHANGE_NAME = "faf-rabbitmq"
-        self.OUTBOUND_EXCHANGE_NAME = "lobby.message.outbound"
-        self.INBOUND_EXCHANGE_NAME = "lobby.message.inbound"
-        self.SESSION_EXCHANGE_NAME = "lobby.session.state"
-        self.SESSION_REQUEST_EXCHANGE_NAME = "lobby.session.request"
+        self.OUTBOUND_EXCHANGE_NAME = "lobby-message-outbound"
+        self.INBOUND_EXCHANGE_NAME = "lobby-message-inbound"
+        self.SESSION_EXCHANGE_NAME = "lobby-session-state"
+        self.SESSION_REQUEST_EXCHANGE_NAME = "lobby-session-request"
         self.PUBLISH_WELCOME_MESSAGE = True
         self.CLEAN_EXPIRED_SESSIONS = True
 
