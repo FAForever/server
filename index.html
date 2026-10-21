@@ -265,7 +265,7 @@ the application logic of each command handler.</li>
 </dd>
 <dt><code class="name"><a title="server.servercontext" href="servercontext.html">server.servercontext</a></code></dt>
 <dd>
-<div class="desc"><p>Manages a group of connections using WebSocket as the transport.</p></div>
+<div class="desc"><p>Manages a group of connections using RabbitMQ as the transport.</p></div>
 </dd>
 <dt><code class="name"><a title="server.stats" href="stats/index.html">server.stats</a></code></dt>
 <dd>
@@ -353,7 +353,7 @@ class AvatarChangeQueueService(Service):
         )
         result = await self.message_queue_service.declare_queue_and_consume(
             exchange_name=config.MQ_EXCHANGE_NAME,
-            routing_key=PLAYER_AVATAR_UPDATE_ROUTING_KEY,
+            routing_keys=[PLAYER_AVATAR_UPDATE_ROUTING_KEY],
             callback=self._on_message,
             queue_name=queue_name,
         )
@@ -789,7 +789,7 @@ class ClientMessageQueueService(Service):
         )
         result = await self.message_queue_service.declare_queue_and_consume(
             exchange_name=config.MQ_EXCHANGE_NAME,
-            routing_key=CLIENT_NOTIFY_ROUTING_KEY,
+            routing_keys=[CLIENT_NOTIFY_ROUTING_KEY],
             callback=self._on_message,
             queue_name=queue_name,
         )
@@ -5557,13 +5557,15 @@ class MessageQueueService(Service):
         payload: dict,
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        reply_to: Optional[str] = None,
     ) -&gt; None:
         await self.publish_many(
             exchange_name,
             routing,
             [payload],
             mandatory=mandatory,
-            delivery_mode=delivery_mode
+            delivery_mode=delivery_mode,
+            reply_to=reply_to,
         )
 
     async def publish_many(
@@ -5573,6 +5575,7 @@ class MessageQueueService(Service):
         payloads: Iterable[dict],
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        reply_to: Optional[str] = None,
     ) -&gt; None:
         if not self._is_ready:
             self._logger.warning(
@@ -5590,7 +5593,9 @@ class MessageQueueService(Service):
             for payload in payloads:
                 message = aio_pika.Message(
                     json.dumps(payload).encode(),
-                    delivery_mode=delivery_mode
+                    delivery_mode=delivery_mode,
+                    content_type=&#34;application/json&#34;,
+                    reply_to=reply_to
                 )
                 await exchange.publish(
                     message,
@@ -5608,7 +5613,7 @@ class MessageQueueService(Service):
     async def declare_queue_and_consume(
         self,
         exchange_name: str,
-        routing_key: str,
+        routing_keys: list[str],
         callback: Callable[[AbstractIncomingMessage], Awaitable[None]],
         queue_name: str = &#34;&#34;,
         exclusive: bool = True,
@@ -5639,12 +5644,13 @@ class MessageQueueService(Service):
             auto_delete=auto_delete,
             durable=durable,
         )
-        await queue.bind(exchange, routing_key=routing_key)
+        for routing_key in routing_keys:
+            await queue.bind(exchange, routing_key=routing_key)
         consumer_tag = await queue.consume(callback)
 
         self._logger.debug(
             &#34;Consuming from queue %r bound to %s/%s&#34;,
-            queue.name, exchange_name, routing_key,
+            queue.name, exchange_name, routing_keys,
         )
         return queue, consumer_tag
 
@@ -5695,7 +5701,7 @@ and providing an interface to publish messages.</p></div>
 <div class="desc"></div>
 </dd>
 <dt id="server.MessageQueueService.declare_queue_and_consume"><code class="name flex">
-<span>async def <span class="ident">declare_queue_and_consume</span></span>(<span>self,<br>exchange_name: str,<br>routing_key: str,<br>callback: Callable[[aio_pika.abc.AbstractIncomingMessage], Awaitable[None]],<br>queue_name: str = '',<br>exclusive: bool = True,<br>auto_delete: bool = True,<br>durable: bool = False) ‑> tuple[aio_pika.abc.AbstractQueue, str] | None</span>
+<span>async def <span class="ident">declare_queue_and_consume</span></span>(<span>self,<br>exchange_name: str,<br>routing_keys: list[str],<br>callback: Callable[[aio_pika.abc.AbstractIncomingMessage], Awaitable[None]],<br>queue_name: str = '',<br>exclusive: bool = True,<br>auto_delete: bool = True,<br>durable: bool = False) ‑> tuple[aio_pika.abc.AbstractQueue, str] | None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -5705,7 +5711,7 @@ and providing an interface to publish messages.</p></div>
 <pre><code class="python">async def declare_queue_and_consume(
     self,
     exchange_name: str,
-    routing_key: str,
+    routing_keys: list[str],
     callback: Callable[[AbstractIncomingMessage], Awaitable[None]],
     queue_name: str = &#34;&#34;,
     exclusive: bool = True,
@@ -5736,12 +5742,13 @@ and providing an interface to publish messages.</p></div>
         auto_delete=auto_delete,
         durable=durable,
     )
-    await queue.bind(exchange, routing_key=routing_key)
+    for routing_key in routing_keys:
+        await queue.bind(exchange, routing_key=routing_key)
     consumer_tag = await queue.consume(callback)
 
     self._logger.debug(
         &#34;Consuming from queue %r bound to %s/%s&#34;,
-        queue.name, exchange_name, routing_key,
+        queue.name, exchange_name, routing_keys,
     )
     return queue, consumer_tag</code></pre>
 </details>
@@ -5750,7 +5757,7 @@ start consuming. Returns <code>(queue, consumer_tag)</code> so the caller can
 cancel on shutdown. Returns None if the broker connection is not ready.</p></div>
 </dd>
 <dt id="server.MessageQueueService.publish"><code class="name flex">
-<span>async def <span class="ident">publish</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payload: dict,<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = 2) ‑> None</span>
+<span>async def <span class="ident">publish</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payload: dict,<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = 2,<br>reply_to: str | None = None) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -5764,19 +5771,21 @@ cancel on shutdown. Returns None if the broker connection is not ready.</p></div
     payload: dict,
     mandatory: bool = False,
     delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+    reply_to: Optional[str] = None,
 ) -&gt; None:
     await self.publish_many(
         exchange_name,
         routing,
         [payload],
         mandatory=mandatory,
-        delivery_mode=delivery_mode
+        delivery_mode=delivery_mode,
+        reply_to=reply_to,
     )</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
 <dt id="server.MessageQueueService.publish_many"><code class="name flex">
-<span>async def <span class="ident">publish_many</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payloads: Iterable[dict],<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = 2) ‑> None</span>
+<span>async def <span class="ident">publish_many</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payloads: Iterable[dict],<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = 2,<br>reply_to: str | None = None) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -5790,6 +5799,7 @@ cancel on shutdown. Returns None if the broker connection is not ready.</p></div
     payloads: Iterable[dict],
     mandatory: bool = False,
     delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+    reply_to: Optional[str] = None,
 ) -&gt; None:
     if not self._is_ready:
         self._logger.warning(
@@ -5807,7 +5817,9 @@ cancel on shutdown. Returns None if the broker connection is not ready.</p></div
         for payload in payloads:
             message = aio_pika.Message(
                 json.dumps(payload).encode(),
-                delivery_mode=delivery_mode
+                delivery_mode=delivery_mode,
+                content_type=&#34;application/json&#34;,
+                reply_to=reply_to
             )
             await exchange.publish(
                 message,
@@ -7804,12 +7816,12 @@ atomic.</p></div>
     &#34;&#34;&#34;
 
     def __init__(
-        self,
-        name: str,
-        database: FAFDatabase,
-        loop: asyncio.AbstractEventLoop,
-        # For testing
-        _override_services: Optional[dict[str, Service]] = None
+            self,
+            name: str,
+            database: FAFDatabase,
+            loop: asyncio.AbstractEventLoop,
+            # For testing
+            _override_services: Optional[dict[str, Service]] = None
     ):
         self.name = name
         self._logger = logging.getLogger(self.name)
@@ -7839,9 +7851,9 @@ atomic.</p></div>
         )
 
     def write_broadcast(
-        self,
-        message,
-        predicate=lambda conn: conn.authenticated
+            self,
+            message,
+            predicate=lambda conn: conn.authenticated
     ):
         &#34;&#34;&#34;
         Queue a message to be sent to all connected clients.
@@ -7884,28 +7896,28 @@ atomic.</p></div>
         self.started = True
 
     async def listen(
-        self,
-        address: tuple[str, int],
-        name: Optional[str] = None,
-        path: str = &#34;/&#34;,
+            self,
+            name: Optional[str] = None,
     ) -&gt; ServerContext:
         &#34;&#34;&#34;
-        Start listening for WebSocket connections on a new address.
+        Start listening for RabbitMQ messages on the given exchanges.
 
         # Params
-        - `address`: Tuple indicating the host, port to listen on.
+        - `connection_exchange`: Exchange for messages that go to a connection.
+        - `auth_exchange`: Exchange for messages signalling an already authenticated player connected.
         - `name`: String used to identify this context in log messages.
-        - `path`: HTTP path on which to expose the WebSocket endpoint.
         &#34;&#34;&#34;
         if not self.started:
             await self.start_services()
 
         ctx = ServerContext(
-            f&#34;{self.name}[{name or &#39;WebSocket&#39;}]&#34;,
+            f&#34;{self.name}[{name or &#39;RabbitMQ&#39;}]&#34;,
             self.connection_factory,
             list(self.services.values()),
         )
-        await ctx.listen(*address, path=path)
+        await ctx.listen(
+            client_routing_keys=[&#34;lobby.legacy.#&#34;, &#34;gpg.#&#34;],
+        )
 
         self.contexts.add(ctx)
 
@@ -8057,7 +8069,7 @@ state, i.e. the same players, games, etc.</p></div>
 </ol></div>
 </dd>
 <dt id="server.ServerInstance.listen"><code class="name flex">
-<span>async def <span class="ident">listen</span></span>(<span>self, address: tuple[str, int], name: str | None = None, path: str = '/') ‑> <a title="server.servercontext.ServerContext" href="servercontext.html#server.servercontext.ServerContext">ServerContext</a></span>
+<span>async def <span class="ident">listen</span></span>(<span>self, name: str | None = None) ‑> <a title="server.servercontext.ServerContext" href="servercontext.html#server.servercontext.ServerContext">ServerContext</a></span>
 </code></dt>
 <dd>
 <details class="source">
@@ -8065,39 +8077,39 @@ state, i.e. the same players, games, etc.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def listen(
-    self,
-    address: tuple[str, int],
-    name: Optional[str] = None,
-    path: str = &#34;/&#34;,
+        self,
+        name: Optional[str] = None,
 ) -&gt; ServerContext:
     &#34;&#34;&#34;
-    Start listening for WebSocket connections on a new address.
+    Start listening for RabbitMQ messages on the given exchanges.
 
     # Params
-    - `address`: Tuple indicating the host, port to listen on.
+    - `connection_exchange`: Exchange for messages that go to a connection.
+    - `auth_exchange`: Exchange for messages signalling an already authenticated player connected.
     - `name`: String used to identify this context in log messages.
-    - `path`: HTTP path on which to expose the WebSocket endpoint.
     &#34;&#34;&#34;
     if not self.started:
         await self.start_services()
 
     ctx = ServerContext(
-        f&#34;{self.name}[{name or &#39;WebSocket&#39;}]&#34;,
+        f&#34;{self.name}[{name or &#39;RabbitMQ&#39;}]&#34;,
         self.connection_factory,
         list(self.services.values()),
     )
-    await ctx.listen(*address, path=path)
+    await ctx.listen(
+        client_routing_keys=[&#34;lobby.legacy.#&#34;, &#34;gpg.#&#34;],
+    )
 
     self.contexts.add(ctx)
 
     return ctx</code></pre>
 </details>
-<div class="desc"><p>Start listening for WebSocket connections on a new address.</p>
+<div class="desc"><p>Start listening for RabbitMQ messages on the given exchanges.</p>
 <h1 id="params">Params</h1>
 <ul>
-<li><code>address</code>: Tuple indicating the host, port to listen on.</li>
+<li><code>connection_exchange</code>: Exchange for messages that go to a connection.</li>
+<li><code>auth_exchange</code>: Exchange for messages signalling an already authenticated player connected.</li>
 <li><code>name</code>: String used to identify this context in log messages.</li>
-<li><code>path</code>: HTTP path on which to expose the WebSocket endpoint.</li>
 </ul></div>
 </dd>
 <dt id="server.ServerInstance.shutdown"><code class="name flex">
@@ -8173,9 +8185,9 @@ async def start_services(self) -&gt; None:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def write_broadcast(
-    self,
-    message,
-    predicate=lambda conn: conn.authenticated
+        self,
+        message,
+        predicate=lambda conn: conn.authenticated
 ):
     &#34;&#34;&#34;
     Queue a message to be sent to all connected clients.

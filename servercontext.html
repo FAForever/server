@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
 <meta name="generator" content="pdoc3 0.11.6">
 <title>server.servercontext API documentation</title>
-<meta name="description" content="Manages a group of connections using WebSocket as the transport.">
+<meta name="description" content="Manages a group of connections using RabbitMQ as the transport.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
@@ -36,7 +36,7 @@ el.replaceWith(d);
 <h1 class="title">Module <code>server.servercontext</code></h1>
 </header>
 <section id="section-intro">
-<p>Manages a group of connections using WebSocket as the transport.</p>
+<p>Manages a group of connections using RabbitMQ as the transport.</p>
 </section>
 <section>
 </section>
@@ -47,6 +47,27 @@ el.replaceWith(d);
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="server.servercontext.ConnectionAttemptFailed"><code class="flex name class">
+<span>class <span class="ident">ConnectionAttemptFailed</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ConnectionAttemptFailed(ConnectionError):
+    pass</code></pre>
+</details>
+<div class="desc"><p>Connection error.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.ConnectionError</li>
+<li>builtins.OSError</li>
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
 <dt id="server.servercontext.ServerContext"><code class="flex name class">
 <span>class <span class="ident">ServerContext</span></span>
 <span>(</span><span>name: str,<br>connection_factory: Callable[[], <a title="server.lobbyconnection.LobbyConnection" href="lobbyconnection.html#server.lobbyconnection.LobbyConnection">LobbyConnection</a>],<br>services: Iterable[<a title="server.core.service.Service" href="core/service.html#server.core.service.Service">Service</a>])</span>
@@ -59,7 +80,7 @@ el.replaceWith(d);
 <pre><code class="python">@with_logger
 class ServerContext:
     &#34;&#34;&#34;
-    Base class for managing connections and holding state about them.
+    Base class for managing connections and holding state about them using RabbitMQ.
     &#34;&#34;&#34;
 
     _logger: ClassVar[logging.Logger]
@@ -74,55 +95,404 @@ class ServerContext:
         self.name = name
         self._drain_event: Optional[asyncio.Event] = None
         self._connection_factory = connection_factory
-        self._services = services
-        self.connections: dict[LobbyConnection, WebSocketProtocol] = {}
+        self._services = list(services)
+        self._connection: Optional[AbstractConnection] = None
+        self._channel: Optional[AbstractChannel] = None
+        self._exchanges: dict[str, AbstractExchange] = {}
+        self._exchange_types: dict[str, ExchangeType] = {}
 
-        self.app = web.Application()
-        self.runner = web.AppRunner(self.app, access_log=None)
-        self.site: Optional[web.TCPSite] = None
-        self.host: Optional[str] = None
-        self.port: Optional[int] = None
-        self.path: str = &#34;/&#34;
+        self.connections: dict[LobbyConnection, RabbitMQProtocol] = {}
+        self.sessions: dict[int, tuple[LobbyConnection, RabbitMQProtocol]] = {}
+        self.sessions_expiration: dict[int, datetime] = {}
+        self._consumer_tags: list[tuple[AbstractQueue, str]] = []
+        self._tasks: set[asyncio.Task] = set()
+        self._session_cleanup_timer: Optional[LazyIntervalTimer] = None
+
+        self.connection_exchange: Optional[str] = None
+        self.auth_exchange: Optional[str] = None
 
     def __repr__(self):
         return f&#34;ServerContext({self.name})&#34;
 
     async def listen(
         self,
-        host: str,
-        port: Optional[int],
-        path: str = &#34;/&#34;,
+        client_routing_keys: list[str],
     ):
         self._logger.debug(
-            &#34;%s: listen(%r, %r, path=%r)&#34;,
+            &#34;%s: listen&#34;,
             self.name,
-            host,
-            port,
-            path,
         )
 
-        self.host = host
-        self.port = port
-        self.path = path
+        await self._connect()
+        await self._declare_exchange(config.INBOUND_EXCHANGE_NAME, ExchangeType.TOPIC)
+        await self._declare_exchange(config.SESSION_EXCHANGE_NAME, ExchangeType.TOPIC)
+        await self._declare_exchange(config.OUTBOUND_EXCHANGE_NAME, ExchangeType.TOPIC)
+        await self._declare_exchange(config.SESSION_REQUEST_EXCHANGE_NAME, ExchangeType.TOPIC)
 
-        self.app.router.add_get(path, self._ws_handler)
+        hostname = socket.gethostname()
 
-        await self.runner.setup()
-        self.site = web.TCPSite(self.runner, host, port)
-        await self.site.start()
+        # Declare and consume state messages (already authenticated player connected)
+        session_queue_name = f&#34;{config.SESSION_EXCHANGE_NAME}.state.{hostname}&#34;
+        session_consumer = await self.declare_queue_and_consume(
+            exchange_name=config.SESSION_EXCHANGE_NAME,
+            routing_keys=[&#34;#&#34;],
+            callback=self._on_session_message,
+            queue_name=session_queue_name,
+        )
+        if session_consumer is not None:
+            self._consumer_tags.append(session_consumer)
 
-        bound = self.runner.addresses[0]
-        self.host, self.port = bound[0], bound[1]
+        # Declare and consume client messages
+        client_queue_name = f&#34;{config.INBOUND_EXCHANGE_NAME}.client.{hostname}&#34;
+        client_consumer = await self.declare_queue_and_consume(
+            exchange_name=config.INBOUND_EXCHANGE_NAME,
+            routing_keys=client_routing_keys,
+            callback=self._on_client_message,
+            queue_name=client_queue_name,
+        )
+        if client_consumer is not None:
+            self._consumer_tags.append(client_consumer)
+
+        await self.publish(config.SESSION_REQUEST_EXCHANGE_NAME, &#34;&#34;, {}, reply_to=session_queue_name)
 
         self._logger.info(
-            &#34;%s: listening on ws://%s:%s%s&#34;,
+            &#34;%s: listening on RabbitMQ exchanges: connection=%s, state=%s&#34;,
             self.name,
-            self.host,
-            self.port,
-            path,
+            config.INBOUND_EXCHANGE_NAME,
+            config.SESSION_EXCHANGE_NAME,
         )
 
+        if config.CLEAN_EXPIRED_SESSIONS:
+            self._session_cleanup_timer = LazyIntervalTimer(
+                lambda: config.SESSION_CHECK_INTERVAL,
+                self._cleanup_sessions,
+                start=True
+            )
+
+    async def _connect(self) -&gt; None:
+        try:
+            self._connection = await aio_pika.connect_robust(
+                &#34;amqp://{user}:{password}@{server}:{port}/{vhost}&#34;.format(
+                    user=config.MQ_USER,
+                    password=config.MQ_PASSWORD,
+                    vhost=config.MQ_VHOST,
+                    server=config.MQ_SERVER,
+                    port=config.MQ_PORT,
+                ),
+                loop=asyncio.get_running_loop(),
+            )
+        except ProbableAuthenticationError as e:
+            self._logger.warning(
+                &#34;Unable to connect to RabbitMQ. Incorrect credentials?&#34;, exc_info=True
+            )
+            raise ConnectionAttemptFailed from e
+        except ConnectionError as e:
+            self._logger.warning(
+                &#34;Unable to connect to RabbitMQ. Is it running?&#34;, exc_info=True
+            )
+            raise ConnectionAttemptFailed from e
+        except Exception as e:
+            self._logger.warning(
+                &#34;Unable to connect to RabbitMQ due to unhandled excpetion %s. Incorrect vhost?&#34;,
+                e,
+                exc_info=True,
+            )
+            raise ConnectionAttemptFailed from e
+
+        assert self._connection is not None
+
+        self._channel = await self._connection.channel(publisher_confirms=True)
+        self._logger.debug(&#34;Connected to RabbitMQ %r&#34;, self._connection)
+
+    async def declare_exchange(
+        self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC, durable: bool = True
+    ) -&gt; None:
+        await self._declare_exchange(exchange_name, exchange_type, durable)
+
+    async def _declare_exchange(
+        self, exchange_name: str, exchange_type: ExchangeType, durable: bool = True
+    ) -&gt; None:
+        assert self._channel is not None
+
+        new_exchange = await self._channel.declare_exchange(
+            exchange_name,
+            exchange_type,
+            durable=durable,
+        )
+
+        self._exchanges[exchange_name] = new_exchange
+        self._exchange_types[exchange_name] = exchange_type
+
+    async def publish(
+        self,
+        exchange_name: str,
+        routing: str,
+        payload: dict,
+        mandatory: bool = False,
+        delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        reply_to: Optional[str] = None,
+    ) -&gt; None:
+        await self.publish_many(
+            exchange_name,
+            routing,
+            [payload],
+            mandatory=mandatory,
+            delivery_mode=delivery_mode,
+            reply_to=reply_to,
+        )
+
+    async def publish_many(
+        self,
+        exchange_name: str,
+        routing: str,
+        payloads: Iterable[dict],
+        mandatory: bool = False,
+        delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        reply_to: Optional[str] = None,
+    ) -&gt; None:
+        assert self._channel is not None
+
+        exchange = self._exchanges.get(exchange_name)
+        if exchange is None:
+            raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
+
+        for payload in payloads:
+            message = aio_pika.Message(
+                json.dumps(payload).encode(),
+                delivery_mode=delivery_mode,
+                content_type=&#34;application/json&#34;,
+                reply_to=reply_to
+            )
+            await exchange.publish(
+                message,
+                routing_key=routing,
+                mandatory=mandatory
+            )
+            self._logger.log(
+                TRACE,
+                &#34;Published message %s to %s/%s&#34;,
+                payload,
+                exchange_name,
+                routing
+            )
+
+    async def declare_queue_and_consume(
+        self,
+        exchange_name: str,
+        routing_keys: list[str],
+        callback: Callable[[AbstractIncomingMessage], Awaitable[None]],
+        queue_name: str = &#34;&#34;,
+        exclusive: bool = True,
+        auto_delete: bool = True,
+        durable: bool = False,
+    ) -&gt; Optional[tuple[AbstractQueue, str]]:
+        &#34;&#34;&#34;
+        Declare a queue, bind it to an exchange with the given routing key, and
+        start consuming. Returns `(queue, consumer_tag)` so the caller can
+        cancel on shutdown.
+        &#34;&#34;&#34;
+
+        assert self._channel is not None
+
+        exchange = self._exchanges.get(exchange_name)
+        if exchange is None:
+            raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
+
+        queue = await self._channel.declare_queue(
+            queue_name,
+            exclusive=exclusive,
+            auto_delete=auto_delete,
+            durable=durable,
+        )
+        for routing_key in routing_keys:
+            await queue.bind(exchange, routing_key=routing_key)
+        consumer_tag = await queue.consume(callback)
+
+        self._logger.debug(
+            &#34;Consuming from queue %r bound to %s/%s&#34;,
+            queue.name, exchange_name, routing_keys,
+        )
+        return queue, consumer_tag
+
+    async def _on_session_message(self, message: AbstractIncomingMessage) -&gt; None:
+        async with message.process(requeue=False):
+            try:
+                payload = json.loads(message.body)
+            except (ValueError, UnicodeDecodeError):
+                self._logger.warning(&#34;Dropping session message with non-JSON body&#34;)
+                return
+
+            self._logger.log(TRACE, &#34;Received session message: %s&#34;, payload)
+
+            if not isinstance(payload, dict):
+                self._logger.warning(&#34;Dropping session message: payload is not a JSON object&#34;)
+                return
+
+            player_id = payload.get(&#34;player_id&#34;)
+
+            if player_id is None:
+                self._logger.warning(&#34;Dropping session message: missing player_id&#34;)
+                return
+
+            try:
+                player_id = int(player_id)
+            except (TypeError, ValueError):
+                self._logger.warning(&#34;Dropping session message: invalid player_id %r&#34;, player_id)
+                return
+
+            session_id = payload.get(&#34;session_id&#34;)
+            if session_id is None:
+                self._logger.warning(&#34;Dropping session message: missing session_id&#34;)
+                return
+
+            try:
+                session_id = int(session_id)
+            except (TypeError, ValueError):
+                self._logger.warning(&#34;Dropping session message: invalid session_id %r&#34;, session_id)
+                return
+
+            state = payload.get(&#34;state&#34;)
+            if not isinstance(state, dict):
+                self._logger.warning(&#34;Dropping session message: missing state&#34;)
+                return
+
+            state_type = state.get(&#34;@type&#34;)
+            ip_address = payload.get(&#34;ip_address&#34;) or &#34;unknown&#34;
+            if state_type == &#34;new&#34;:
+                self.sessions_expiration[session_id] = datetime_now() + timedelta(seconds=int(state.get(&#34;seconds_to_expiry&#34;, config.DEFAULT_SESSION_EXPIRATION)))
+                if session_id not in self.sessions:
+                    self._create_session(ip_address, player_id, session_id, config.PUBLISH_WELCOME_MESSAGE)
+
+            elif state_type == &#34;existing&#34;:
+                self.sessions_expiration[session_id] = datetime_now() + timedelta(seconds=int(state.get(&#34;seconds_to_expiry&#34;, config.DEFAULT_SESSION_EXPIRATION)))
+                if session_id not in self.sessions:
+                    self._create_session(ip_address, player_id, session_id, False)
+
+            elif state_type == &#34;gone&#34;:
+                await self._remove_session(session_id)
+
+    async def _remove_session(self, session_id: int):
+
+        try:
+            session_key = int(session_id)
+        except (TypeError, ValueError):
+            self._logger.warning(
+                &#34;%s: Dropping &#39;gone&#39; session message: invalid session_id %r&#34;,
+                self.name,
+                session_id,
+            )
+            return
+
+        self.sessions_expiration.pop(session_key, None)
+        conn_tuple = self.sessions.pop(session_key, None)
+        if conn_tuple is not None:
+            conn, proto = conn_tuple
+            self._logger.info(
+                &#34;%s: Closing connection for session %s (gone)&#34;,
+                self.name,
+                conn.session,
+            )
+            await proto.close()
+            self.connections.pop(conn, None)
+        else:
+            self._logger.debug(
+                &#34;%s: No active connection found to close for session %s&#34;,
+                self.name,
+                session_id,
+            )
+
+    def _create_session(self, ip_address: str, player_id: int, session_id: int, publish_welcome_messages: bool):
+        peername = Address(ip_address, 0)
+
+        connection = self._connection_factory()
+        if session_id is not None:
+            try:
+                connection.session = int(session_id)
+            except (TypeError, ValueError):
+                pass
+
+        queue: asyncio.Queue = asyncio.Queue()
+        protocol = RabbitMQProtocol(
+            queue=queue,
+            server_context=self,
+            session=connection.session,
+        )
+
+        self.connections[connection] = protocol
+        self.sessions[connection.session] = (connection, protocol)
+
+        self._logger.info(
+            &#34;%s: Authenticated player %s connected with session %s&#34;,
+            self.name,
+            player_id,
+            connection.session,
+        )
+
+        task = asyncio.create_task(
+            self.handle_client_connected(connection, protocol, peername, player_id, publish_welcome_messages)
+        )
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+
+    async def _cleanup_sessions(self):
+        now = datetime_now()
+        expired_session_ids = [session_id for session_id, expiration in self.sessions_expiration.items() if expiration &lt; now]
+
+        for session_id in expired_session_ids:
+            self._logger.info(&#34;Dropping expired session %s&#34;, session_id)
+            await self._remove_session(session_id)
+
+    async def _on_client_message(self, message: AbstractIncomingMessage) -&gt; None:
+        async with message.process(requeue=False):
+            try:
+                payload = json.loads(message.body)
+            except (ValueError, UnicodeDecodeError):
+                self._logger.warning(&#34;Dropping connection message with non-JSON body&#34;)
+                return
+
+            self._logger.log(TRACE, &#34;Received client message: %s&#34;, payload)
+
+            if not isinstance(payload, dict):
+                self._logger.warning(&#34;Dropping connection message: payload is not a JSON object&#34;)
+                return
+
+            session_id = payload.get(&#34;session_id&#34;)
+            if session_id is None and isinstance(payload.get(&#34;target&#34;), dict):
+                session_id = payload[&#34;target&#34;].get(&#34;session_id&#34;) or payload[&#34;target&#34;].get(&#34;session&#34;)
+
+            if session_id is None:
+                self._logger.warning(&#34;Dropping connection message: missing session_id&#34;)
+                return
+
+            try:
+                session_id = int(session_id)
+            except (TypeError, ValueError):
+                self._logger.warning(&#34;Dropping connection message: invalid session_id %r&#34;, session_id)
+                return
+
+            conn_tuple = self.sessions.get(session_id)
+            if conn_tuple is None:
+                self._logger.debug(&#34;Dropping connection message: session %s not found on this context&#34;, session_id)
+                return
+
+            conn, proto = conn_tuple
+            inner_message = payload.get(&#34;message&#34;, payload)
+            if not isinstance(inner_message, dict):
+                inner_message = payload
+
+            await proto.queue.put(inner_message)
+
     async def shutdown(self, timeout: Optional[float] = 5):
+        self._logger.debug(&#34;%s: stop serving&#34;, self.name)
+
+        # Cancel consumers
+        for queue, consumer_tag in self._consumer_tags:
+            try:
+                await queue.cancel(consumer_tag)
+            except Exception:
+                pass
+        self._consumer_tags.clear()
+
         async def close_or_abort(conn, proto):
             try:
                 await asyncio.wait_for(proto.close(), timeout)
@@ -146,16 +516,29 @@ class ServerContext:
                 humanize.naturaldelta(timeout)
             )
 
-        self._logger.debug(&#34;%s: stop serving&#34;, self.name)
-
         for fut in asyncio.as_completed([
             close_or_abort(conn, proto)
-            for conn, proto in self.connections.items()
+            for conn, proto in list(self.connections.items())
         ]):
             await fut
+
+        for task in list(self._tasks):
+            task.cancel()
+        if self._tasks:
+            await asyncio.gather(*self._tasks, return_exceptions=True)
+
+        if self._channel is not None:
+            await self._channel.close()
+            self._channel = None
+
+        if self._connection is not None:
+            await self._connection.close()
+            self._connection = None
+
         self._logger.debug(&#34;%s: All connections closed&#34;, self.name)
 
-        await self.runner.cleanup()
+        if self._session_cleanup_timer is not None:
+            self._session_cleanup_timer.stop()
 
     async def drain_connections(self):
         &#34;&#34;&#34;
@@ -169,14 +552,20 @@ class ServerContext:
 
         await self._drain_event.wait()
 
-    def write_broadcast(self, message, validate_fn=lambda _: True):
-        self.write_broadcast_raw(
-            WebSocketProtocol.encode_message(message),
-            validate_fn
-        )
+    def write_broadcast(self, message: dict, validate_fn=lambda _: True):
+        for conn, proto in list(self.connections.items()):
+            try:
+                if proto.is_connected() and validate_fn(conn):
+                    proto.write_message(message)
+            except Exception:
+                self._logger.exception(
+                    &#34;%s: Encountered error in broadcast: %s&#34;,
+                    self.name,
+                    conn
+                )
 
-    def write_broadcast_raw(self, data, validate_fn=lambda _: True):
-        for conn, proto in self.connections.items():
+    def write_broadcast_raw(self, data: bytes, validate_fn=lambda _: True):
+        for conn, proto in list(self.connections.items()):
             try:
                 if proto.is_connected() and validate_fn(conn):
                     proto.write_raw(data)
@@ -187,43 +576,17 @@ class ServerContext:
                     conn
                 )
 
-    async def _ws_handler(self, request: web.Request) -&gt; web.WebSocketResponse:
-        ws = web.WebSocketResponse()
-        await ws.prepare(request)
-
-        # Only honor a forwarded-IP header when explicitly configured —
-        # otherwise clients connecting directly could spoof their peername.
-        peer_host = None
-        header_name = config.WS_FORWARDED_IP_HEADER
-        if header_name:
-            forwarded = request.headers.get(header_name, &#34;&#34;)
-            peer_host = forwarded.split(&#34;,&#34;)[0].strip() or None
-
-        if not peer_host:
-            peer_host = request.remote or &#34;unknown&#34;
-
-        peername = Address(peer_host, 0)
-
-        self._logger.info(
-            &#34;%s: Client connected from %s&#34;,
-            self.name,
-            peer_host,
-        )
-
-        await self.handle_client_connected(ws, peername)
-        return ws
-
     async def handle_client_connected(
         self,
-        ws: web.WebSocketResponse,
+        connection: LobbyConnection,
+        protocol: RabbitMQProtocol,
         peername: Address,
+        player_id: int,
+        publish_welcome_messages: bool,
     ):
-        protocol = WebSocketProtocol(ws)
-        connection = self._connection_factory()
-        self.connections[connection] = protocol
-
         try:
             await connection.on_connection_made(protocol, peername)
+            await connection.on_external_auth(player_id, &#34;broker&#34;, publish_welcome_messages)
             metrics.user_connections.labels(&#34;None&#34;, &#34;None&#34;).inc()
             while protocol.is_connected():
                 message = await protocol.read_message()
@@ -252,7 +615,8 @@ class ServerContext:
                 e
             )
         finally:
-            del self.connections[connection]
+            self.connections.pop(connection, None)
+            self.sessions.pop(connection.session, None)
             # Do not wait for buffers to empty here. This could stop the process
             # from exiting if the client isn&#39;t reading data.
             protocol.abort()
@@ -296,9 +660,74 @@ class ServerContext:
                 exc_info=True
             )</code></pre>
 </details>
-<div class="desc"><p>Base class for managing connections and holding state about them.</p></div>
+<div class="desc"><p>Base class for managing connections and holding state about them using RabbitMQ.</p></div>
 <h3>Methods</h3>
 <dl>
+<dt id="server.servercontext.ServerContext.declare_exchange"><code class="name flex">
+<span>async def <span class="ident">declare_exchange</span></span>(<span>self,<br>exchange_name: str,<br>exchange_type: aio_pika.abc.ExchangeType = ExchangeType.TOPIC,<br>durable: bool = True) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def declare_exchange(
+    self, exchange_name: str, exchange_type: ExchangeType = ExchangeType.TOPIC, durable: bool = True
+) -&gt; None:
+    await self._declare_exchange(exchange_name, exchange_type, durable)</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="server.servercontext.ServerContext.declare_queue_and_consume"><code class="name flex">
+<span>async def <span class="ident">declare_queue_and_consume</span></span>(<span>self,<br>exchange_name: str,<br>routing_keys: list[str],<br>callback: Callable[[aio_pika.abc.AbstractIncomingMessage], Awaitable[None]],<br>queue_name: str = '',<br>exclusive: bool = True,<br>auto_delete: bool = True,<br>durable: bool = False) ‑> tuple[aio_pika.abc.AbstractQueue, str] | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def declare_queue_and_consume(
+    self,
+    exchange_name: str,
+    routing_keys: list[str],
+    callback: Callable[[AbstractIncomingMessage], Awaitable[None]],
+    queue_name: str = &#34;&#34;,
+    exclusive: bool = True,
+    auto_delete: bool = True,
+    durable: bool = False,
+) -&gt; Optional[tuple[AbstractQueue, str]]:
+    &#34;&#34;&#34;
+    Declare a queue, bind it to an exchange with the given routing key, and
+    start consuming. Returns `(queue, consumer_tag)` so the caller can
+    cancel on shutdown.
+    &#34;&#34;&#34;
+
+    assert self._channel is not None
+
+    exchange = self._exchanges.get(exchange_name)
+    if exchange is None:
+        raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
+
+    queue = await self._channel.declare_queue(
+        queue_name,
+        exclusive=exclusive,
+        auto_delete=auto_delete,
+        durable=durable,
+    )
+    for routing_key in routing_keys:
+        await queue.bind(exchange, routing_key=routing_key)
+    consumer_tag = await queue.consume(callback)
+
+    self._logger.debug(
+        &#34;Consuming from queue %r bound to %s/%s&#34;,
+        queue.name, exchange_name, routing_keys,
+    )
+    return queue, consumer_tag</code></pre>
+</details>
+<div class="desc"><p>Declare a queue, bind it to an exchange with the given routing key, and
+start consuming. Returns <code>(queue, consumer_tag)</code> so the caller can
+cancel on shutdown.</p></div>
+</dd>
 <dt id="server.servercontext.ServerContext.drain_connections"><code class="name flex">
 <span>async def <span class="ident">drain_connections</span></span>(<span>self)</span>
 </code></dt>
@@ -322,7 +751,7 @@ class ServerContext:
 <div class="desc"><p>Wait for all connections to terminate.</p></div>
 </dd>
 <dt id="server.servercontext.ServerContext.handle_client_connected"><code class="name flex">
-<span>async def <span class="ident">handle_client_connected</span></span>(<span>self,<br>ws: aiohttp.web_ws.WebSocketResponse,<br>peername: <a title="server.types.Address" href="types.html#server.types.Address">Address</a>)</span>
+<span>async def <span class="ident">handle_client_connected</span></span>(<span>self,<br>connection: <a title="server.lobbyconnection.LobbyConnection" href="lobbyconnection.html#server.lobbyconnection.LobbyConnection">LobbyConnection</a>,<br>protocol: <a title="server.protocol.rabbitmq.RabbitMQProtocol" href="protocol/rabbitmq.html#server.protocol.rabbitmq.RabbitMQProtocol">RabbitMQProtocol</a>,<br>peername: <a title="server.types.Address" href="types.html#server.types.Address">Address</a>,<br>player_id: int,<br>publish_welcome_messages: bool)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -331,15 +760,15 @@ class ServerContext:
 </summary>
 <pre><code class="python">async def handle_client_connected(
     self,
-    ws: web.WebSocketResponse,
+    connection: LobbyConnection,
+    protocol: RabbitMQProtocol,
     peername: Address,
+    player_id: int,
+    publish_welcome_messages: bool,
 ):
-    protocol = WebSocketProtocol(ws)
-    connection = self._connection_factory()
-    self.connections[connection] = protocol
-
     try:
         await connection.on_connection_made(protocol, peername)
+        await connection.on_external_auth(player_id, &#34;broker&#34;, publish_welcome_messages)
         metrics.user_connections.labels(&#34;None&#34;, &#34;None&#34;).inc()
         while protocol.is_connected():
             message = await protocol.read_message()
@@ -368,7 +797,8 @@ class ServerContext:
             e
         )
     finally:
-        del self.connections[connection]
+        self.connections.pop(connection, None)
+        self.sessions.pop(connection.session, None)
         # Do not wait for buffers to empty here. This could stop the process
         # from exiting if the client isn&#39;t reading data.
         protocol.abort()
@@ -400,7 +830,7 @@ class ServerContext:
 <div class="desc"></div>
 </dd>
 <dt id="server.servercontext.ServerContext.listen"><code class="name flex">
-<span>async def <span class="ident">listen</span></span>(<span>self, host: str, port: int | None, path: str = '/')</span>
+<span>async def <span class="ident">listen</span></span>(<span>self, client_routing_keys: list[str])</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -409,38 +839,131 @@ class ServerContext:
 </summary>
 <pre><code class="python">async def listen(
     self,
-    host: str,
-    port: Optional[int],
-    path: str = &#34;/&#34;,
+    client_routing_keys: list[str],
 ):
     self._logger.debug(
-        &#34;%s: listen(%r, %r, path=%r)&#34;,
+        &#34;%s: listen&#34;,
         self.name,
-        host,
-        port,
-        path,
     )
 
-    self.host = host
-    self.port = port
-    self.path = path
+    await self._connect()
+    await self._declare_exchange(config.INBOUND_EXCHANGE_NAME, ExchangeType.TOPIC)
+    await self._declare_exchange(config.SESSION_EXCHANGE_NAME, ExchangeType.TOPIC)
+    await self._declare_exchange(config.OUTBOUND_EXCHANGE_NAME, ExchangeType.TOPIC)
+    await self._declare_exchange(config.SESSION_REQUEST_EXCHANGE_NAME, ExchangeType.TOPIC)
 
-    self.app.router.add_get(path, self._ws_handler)
+    hostname = socket.gethostname()
 
-    await self.runner.setup()
-    self.site = web.TCPSite(self.runner, host, port)
-    await self.site.start()
+    # Declare and consume state messages (already authenticated player connected)
+    session_queue_name = f&#34;{config.SESSION_EXCHANGE_NAME}.state.{hostname}&#34;
+    session_consumer = await self.declare_queue_and_consume(
+        exchange_name=config.SESSION_EXCHANGE_NAME,
+        routing_keys=[&#34;#&#34;],
+        callback=self._on_session_message,
+        queue_name=session_queue_name,
+    )
+    if session_consumer is not None:
+        self._consumer_tags.append(session_consumer)
 
-    bound = self.runner.addresses[0]
-    self.host, self.port = bound[0], bound[1]
+    # Declare and consume client messages
+    client_queue_name = f&#34;{config.INBOUND_EXCHANGE_NAME}.client.{hostname}&#34;
+    client_consumer = await self.declare_queue_and_consume(
+        exchange_name=config.INBOUND_EXCHANGE_NAME,
+        routing_keys=client_routing_keys,
+        callback=self._on_client_message,
+        queue_name=client_queue_name,
+    )
+    if client_consumer is not None:
+        self._consumer_tags.append(client_consumer)
+
+    await self.publish(config.SESSION_REQUEST_EXCHANGE_NAME, &#34;&#34;, {}, reply_to=session_queue_name)
 
     self._logger.info(
-        &#34;%s: listening on ws://%s:%s%s&#34;,
+        &#34;%s: listening on RabbitMQ exchanges: connection=%s, state=%s&#34;,
         self.name,
-        self.host,
-        self.port,
-        path,
+        config.INBOUND_EXCHANGE_NAME,
+        config.SESSION_EXCHANGE_NAME,
+    )
+
+    if config.CLEAN_EXPIRED_SESSIONS:
+        self._session_cleanup_timer = LazyIntervalTimer(
+            lambda: config.SESSION_CHECK_INTERVAL,
+            self._cleanup_sessions,
+            start=True
+        )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="server.servercontext.ServerContext.publish"><code class="name flex">
+<span>async def <span class="ident">publish</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payload: dict,<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = 2,<br>reply_to: str | None = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def publish(
+    self,
+    exchange_name: str,
+    routing: str,
+    payload: dict,
+    mandatory: bool = False,
+    delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+    reply_to: Optional[str] = None,
+) -&gt; None:
+    await self.publish_many(
+        exchange_name,
+        routing,
+        [payload],
+        mandatory=mandatory,
+        delivery_mode=delivery_mode,
+        reply_to=reply_to,
     )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="server.servercontext.ServerContext.publish_many"><code class="name flex">
+<span>async def <span class="ident">publish_many</span></span>(<span>self,<br>exchange_name: str,<br>routing: str,<br>payloads: Iterable[dict],<br>mandatory: bool = False,<br>delivery_mode: aio_pika.abc.DeliveryMode = 2,<br>reply_to: str | None = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def publish_many(
+    self,
+    exchange_name: str,
+    routing: str,
+    payloads: Iterable[dict],
+    mandatory: bool = False,
+    delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+    reply_to: Optional[str] = None,
+) -&gt; None:
+    assert self._channel is not None
+
+    exchange = self._exchanges.get(exchange_name)
+    if exchange is None:
+        raise KeyError(f&#34;Unknown exchange {exchange_name}.&#34;)
+
+    for payload in payloads:
+        message = aio_pika.Message(
+            json.dumps(payload).encode(),
+            delivery_mode=delivery_mode,
+            content_type=&#34;application/json&#34;,
+            reply_to=reply_to
+        )
+        await exchange.publish(
+            message,
+            routing_key=routing,
+            mandatory=mandatory
+        )
+        self._logger.log(
+            TRACE,
+            &#34;Published message %s to %s/%s&#34;,
+            payload,
+            exchange_name,
+            routing
+        )</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -453,6 +976,16 @@ class ServerContext:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">async def shutdown(self, timeout: Optional[float] = 5):
+    self._logger.debug(&#34;%s: stop serving&#34;, self.name)
+
+    # Cancel consumers
+    for queue, consumer_tag in self._consumer_tags:
+        try:
+            await queue.cancel(consumer_tag)
+        except Exception:
+            pass
+    self._consumer_tags.clear()
+
     async def close_or_abort(conn, proto):
         try:
             await asyncio.wait_for(proto.close(), timeout)
@@ -476,16 +1009,29 @@ class ServerContext:
             humanize.naturaldelta(timeout)
         )
 
-    self._logger.debug(&#34;%s: stop serving&#34;, self.name)
-
     for fut in asyncio.as_completed([
         close_or_abort(conn, proto)
-        for conn, proto in self.connections.items()
+        for conn, proto in list(self.connections.items())
     ]):
         await fut
+
+    for task in list(self._tasks):
+        task.cancel()
+    if self._tasks:
+        await asyncio.gather(*self._tasks, return_exceptions=True)
+
+    if self._channel is not None:
+        await self._channel.close()
+        self._channel = None
+
+    if self._connection is not None:
+        await self._connection.close()
+        self._connection = None
+
     self._logger.debug(&#34;%s: All connections closed&#34;, self.name)
 
-    await self.runner.cleanup()</code></pre>
+    if self._session_cleanup_timer is not None:
+        self._session_cleanup_timer.stop()</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
@@ -515,31 +1061,37 @@ def suppress_and_log(self, func, *exceptions: type[BaseException]):
 <div class="desc"></div>
 </dd>
 <dt id="server.servercontext.ServerContext.write_broadcast"><code class="name flex">
-<span>def <span class="ident">write_broadcast</span></span>(<span>self, message, validate_fn=&lt;function ServerContext.&lt;lambda&gt;&gt;)</span>
+<span>def <span class="ident">write_broadcast</span></span>(<span>self, message: dict, validate_fn=&lt;function ServerContext.&lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def write_broadcast(self, message, validate_fn=lambda _: True):
-    self.write_broadcast_raw(
-        WebSocketProtocol.encode_message(message),
-        validate_fn
-    )</code></pre>
+<pre><code class="python">def write_broadcast(self, message: dict, validate_fn=lambda _: True):
+    for conn, proto in list(self.connections.items()):
+        try:
+            if proto.is_connected() and validate_fn(conn):
+                proto.write_message(message)
+        except Exception:
+            self._logger.exception(
+                &#34;%s: Encountered error in broadcast: %s&#34;,
+                self.name,
+                conn
+            )</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
 <dt id="server.servercontext.ServerContext.write_broadcast_raw"><code class="name flex">
-<span>def <span class="ident">write_broadcast_raw</span></span>(<span>self, data, validate_fn=&lt;function ServerContext.&lt;lambda&gt;&gt;)</span>
+<span>def <span class="ident">write_broadcast_raw</span></span>(<span>self, data: bytes, validate_fn=&lt;function ServerContext.&lt;lambda&gt;&gt;)</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def write_broadcast_raw(self, data, validate_fn=lambda _: True):
-    for conn, proto in self.connections.items():
+<pre><code class="python">def write_broadcast_raw(self, data: bytes, validate_fn=lambda _: True):
+    for conn, proto in list(self.connections.items()):
         try:
             if proto.is_connected() and validate_fn(conn):
                 proto.write_raw(data)
@@ -570,11 +1122,18 @@ def suppress_and_log(self, func, *exceptions: type[BaseException]):
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
+<h4><code><a title="server.servercontext.ConnectionAttemptFailed" href="#server.servercontext.ConnectionAttemptFailed">ConnectionAttemptFailed</a></code></h4>
+</li>
+<li>
 <h4><code><a title="server.servercontext.ServerContext" href="#server.servercontext.ServerContext">ServerContext</a></code></h4>
 <ul class="">
+<li><code><a title="server.servercontext.ServerContext.declare_exchange" href="#server.servercontext.ServerContext.declare_exchange">declare_exchange</a></code></li>
+<li><code><a title="server.servercontext.ServerContext.declare_queue_and_consume" href="#server.servercontext.ServerContext.declare_queue_and_consume">declare_queue_and_consume</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.drain_connections" href="#server.servercontext.ServerContext.drain_connections">drain_connections</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.handle_client_connected" href="#server.servercontext.ServerContext.handle_client_connected">handle_client_connected</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.listen" href="#server.servercontext.ServerContext.listen">listen</a></code></li>
+<li><code><a title="server.servercontext.ServerContext.publish" href="#server.servercontext.ServerContext.publish">publish</a></code></li>
+<li><code><a title="server.servercontext.ServerContext.publish_many" href="#server.servercontext.ServerContext.publish_many">publish_many</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.shutdown" href="#server.servercontext.ServerContext.shutdown">shutdown</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.suppress_and_log" href="#server.servercontext.ServerContext.suppress_and_log">suppress_and_log</a></code></li>
 <li><code><a title="server.servercontext.ServerContext.write_broadcast" href="#server.servercontext.ServerContext.write_broadcast">write_broadcast</a></code></li>
