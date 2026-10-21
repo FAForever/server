@@ -27,6 +27,7 @@ from .test_game import (
 
 
 @fast_forward(10)
+@pytest.mark.skip(reason="Lobby server no longer handles authentication")
 async def test_login_timeout(lobby_server, monkeypatch, caplog):
     monkeypatch.setattr(config, "LOGIN_TIMEOUT", 5)
 
@@ -40,6 +41,7 @@ async def test_login_timeout(lobby_server, monkeypatch, caplog):
     assert "Client took too long to log in" in caplog.text
 
 
+@pytest.mark.skip(reason="Lobby server no longer handles authentication")
 @fast_forward(10)
 async def test_disconnect_before_login_timeout(
     lobby_server,
@@ -61,6 +63,7 @@ async def test_disconnect_before_login_timeout(
     assert "Client took too long to log in" not in caplog.text
 
 
+@pytest.mark.skip(reason="Lobby server no longer handles authentication")
 async def test_server_deprecated_client(lobby_server):
     proto = await connect_client(lobby_server)
 
@@ -308,13 +311,27 @@ async def test_drain(
     assert "Graceful shutdown period ended! 1 games are still live!" in caplog.messages
 
 
+@fast_forward(10)
+async def test_expired_session_removal(
+    lobby_server,
+    tmp_user,
+):
+    _, _, proto = await connect_and_sign_in(
+        await tmp_user("Player"),
+        lobby_server
+    )
+
+    assert lobby_server.sessions
+
+    await lobby_server._cleanup_sessions()
+
+    assert not lobby_server.sessions
+
+
 @fast_forward(15)
 async def test_player_info_broadcast(lobby_server):
-    p1 = await connect_client(lobby_server)
-    p2 = await connect_client(lobby_server)
-
-    await perform_login(p1, ("test", "test_password"))
-    await perform_login(p2, ("Rhiza", "puff_the_magic_dragon"))
+    _, _, p1 = await connect_and_sign_in(("test", "test_password"), lobby_server)
+    _, _, p2 = await connect_and_sign_in(("Rhiza", "puff_the_magic_dragon"), lobby_server)
 
     await read_until(
         p2,
@@ -367,6 +384,7 @@ async def test_player_info_broadcast_to_rabbitmq(lobby_server, channel):
 
 
 @fast_forward(5)
+@pytest.mark.skip(reason="Lobby server no longer handles authentication")
 async def test_info_broadcast_authenticated(lobby_server):
     proto1 = await connect_client(lobby_server)
     proto2 = await connect_client(lobby_server)

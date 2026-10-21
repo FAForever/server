@@ -145,13 +145,15 @@ class MessageQueueService(Service):
         payload: dict,
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        reply_to: Optional[str] = None,
     ) -> None:
         await self.publish_many(
             exchange_name,
             routing,
             [payload],
             mandatory=mandatory,
-            delivery_mode=delivery_mode
+            delivery_mode=delivery_mode,
+            reply_to=reply_to,
         )
 
     async def publish_many(
@@ -161,6 +163,7 @@ class MessageQueueService(Service):
         payloads: Iterable[dict],
         mandatory: bool = False,
         delivery_mode: DeliveryMode = DeliveryMode.PERSISTENT,
+        reply_to: Optional[str] = None,
     ) -> None:
         if not self._is_ready:
             self._logger.warning(
@@ -178,7 +181,9 @@ class MessageQueueService(Service):
             for payload in payloads:
                 message = aio_pika.Message(
                     json.dumps(payload).encode(),
-                    delivery_mode=delivery_mode
+                    delivery_mode=delivery_mode,
+                    content_type="application/json",
+                    reply_to=reply_to
                 )
                 await exchange.publish(
                     message,
@@ -196,7 +201,7 @@ class MessageQueueService(Service):
     async def declare_queue_and_consume(
         self,
         exchange_name: str,
-        routing_key: str,
+        routing_keys: list[str],
         callback: Callable[[AbstractIncomingMessage], Awaitable[None]],
         queue_name: str = "",
         exclusive: bool = True,
@@ -227,12 +232,13 @@ class MessageQueueService(Service):
             auto_delete=auto_delete,
             durable=durable,
         )
-        await queue.bind(exchange, routing_key=routing_key)
+        for routing_key in routing_keys:
+            await queue.bind(exchange, routing_key=routing_key)
         consumer_tag = await queue.consume(callback)
 
         self._logger.debug(
             "Consuming from queue %r bound to %s/%s",
-            queue.name, exchange_name, routing_key,
+            queue.name, exchange_name, routing_keys,
         )
         return queue, consumer_tag
 

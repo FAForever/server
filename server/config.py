@@ -63,6 +63,8 @@ class ConfigurationStore:
 
         self.DIRTY_REPORT_INTERVAL = 1
         self.PING_INTERVAL = 45
+        self.DEFAULT_SESSION_EXPIRATION = 300
+        self.SESSION_CHECK_INTERVAL = 600
         # How many seconds to wait for games to end before doing a hard shutdown.
         # If using kubernetes, you must set terminationGracePeriodSeconds
         # on the pod to be larger than this value. With docker compose, use
@@ -79,19 +81,25 @@ class ConfigurationStore:
         self.DB_PORT = 3306
         self.DB_LOGIN = "root"
         self.DB_PASSWORD = "banana"
-        self.DB_NAME = "faf"
+        self.DB_NAME = "faf_lobby"
         # An empty value will disable the database version check
         self.DB_FLYWAY_TABLE = "flyway_schema_history"
 
         # Location of the OAuth jwks
         self.HYDRA_JWKS_URI = "https://hydra.faforever.com/.well-known/jwks.json"
 
-        self.MQ_USER = "faf-python-server"
+        self.MQ_USER = "faf-lobby-server"
         self.MQ_PASSWORD = "banana"
         self.MQ_SERVER = "127.0.0.1"
         self.MQ_PORT = 5672
         self.MQ_VHOST = "/faf-core"
         self.MQ_EXCHANGE_NAME = "faf-rabbitmq"
+        self.OUTBOUND_EXCHANGE_NAME = "lobby-message-outbound"
+        self.INBOUND_EXCHANGE_NAME = "lobby-message-inbound"
+        self.SESSION_EXCHANGE_NAME = "lobby-session-state"
+        self.SESSION_REQUEST_EXCHANGE_NAME = "lobby-session-request"
+        self.PUBLISH_WELCOME_MESSAGE = True
+        self.CLEAN_EXPIRED_SESSIONS = True
 
         self.WWW_URL = "https://www.faforever.com"
         self.CONTENT_URL = "http://content.faforever.com"

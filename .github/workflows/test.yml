@@ -31,8 +31,8 @@ jobs:
           --health-retries 5
         env:
           MYSQL_ROOT_PASSWORD: banana
-          MYSQL_DATABASE: faf
-          MYSQL_USER: faf-python-server
+          MYSQL_DATABASE: faf_lobby
+          MYSQL_USER: faf-lobby-server
           MYSQL_PASSWORD: banana
 
       faf-rabbitmq:
@@ -49,7 +49,7 @@ jobs:
           RABBITMQ_PID_FILE: /var/lib/rabbitmq/pid
           RABBITMQ_DEFAULT_USER: admin
           RABBITMQ_DEFAULT_PASS: banana
-          RABBITMQ_DEFAULT_VHOST: /
+          RABBITMQ_DEFAULT_VHOST: /faf-core
 
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +67,7 @@ jobs:
 
       - name: Run flyway db migrations
         env:
-          FLYWAY_URL: jdbc:mysql://localhost/faf?useSSL=false
+          FLYWAY_URL: jdbc:mysql://localhost/faf_lobby?useSSL=false
           FLYWAY_USER: root
           FLYWAY_PASSWORD: banana
           FLYWAY_LOCATIONS: filesystem:db/migrations
@@ -88,11 +88,11 @@ jobs:
 
       - name: Run tests
         if: ${{ github.event_name != 'schedule' }}
-        run: pipenv run tests --cov-report=xml --color=yes -m ""
+        run: pipenv run tests --mysql_database=faf_lobby --mysql_password=banana --cov-report=xml --color=yes -m ""
 
       - name: Run hypothesis tests with many examples
         if: ${{ github.event_name == 'schedule' }}
-        run: pipenv run tests -m "hypothesis" --hypothesis-profile nightly
+        run: pipenv run tests --mysql_database=faf_lobby --mysql_password=banana -m "hypothesis" --hypothesis-profile nightly
 
       - name: Report coverage
         if: ${{ github.event_name != 'schedule' }}

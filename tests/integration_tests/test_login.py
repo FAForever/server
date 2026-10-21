@@ -12,6 +12,8 @@ from .conftest import (
     read_until_command
 )
 
+pytestmark = pytest.mark.skip(reason="Disabling login tests as the lobby server no longer handles authentication")
+
 
 async def test_server_login_invalid(lobby_server):
     proto = await connect_client(lobby_server)

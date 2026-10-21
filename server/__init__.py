@@ -178,12 +178,12 @@ class ServerInstance(object):
     """
 
     def __init__(
-        self,
-        name: str,
-        database: FAFDatabase,
-        loop: asyncio.AbstractEventLoop,
-        # For testing
-        _override_services: Optional[dict[str, Service]] = None
+            self,
+            name: str,
+            database: FAFDatabase,
+            loop: asyncio.AbstractEventLoop,
+            # For testing
+            _override_services: Optional[dict[str, Service]] = None
     ):
         self.name = name
         self._logger = logging.getLogger(self.name)
@@ -213,9 +213,9 @@ class ServerInstance(object):
         )
 
     def write_broadcast(
-        self,
-        message,
-        predicate=lambda conn: conn.authenticated
+            self,
+            message,
+            predicate=lambda conn: conn.authenticated
     ):
         """
         Queue a message to be sent to all connected clients.
@@ -258,28 +258,28 @@ class ServerInstance(object):
         self.started = True
 
     async def listen(
-        self,
-        address: tuple[str, int],
-        name: Optional[str] = None,
-        path: str = "/",
+            self,
+            name: Optional[str] = None,
     ) -> ServerContext:
         """
-        Start listening for WebSocket connections on a new address.
+        Start listening for RabbitMQ messages on the given exchanges.
 
         # Params
-        - `address`: Tuple indicating the host, port to listen on.
+        - `connection_exchange`: Exchange for messages that go to a connection.
+        - `auth_exchange`: Exchange for messages signalling an already authenticated player connected.
         - `name`: String used to identify this context in log messages.
-        - `path`: HTTP path on which to expose the WebSocket endpoint.
         """
         if not self.started:
             await self.start_services()
 
         ctx = ServerContext(
-            f"{self.name}[{name or 'WebSocket'}]",
+            f"{self.name}[{name or 'RabbitMQ'}]",
             self.connection_factory,
             list(self.services.values()),
         )
-        await ctx.listen(*address, path=path)
+        await ctx.listen(
+            client_routing_keys=["lobby.legacy.#", "gpg.#"],
+        )
 
         self.contexts.add(ctx)
 

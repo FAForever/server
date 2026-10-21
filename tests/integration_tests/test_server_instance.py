@@ -1,5 +1,7 @@
 import asyncio
 
+import pytest
+
 from server import ServerInstance
 from server.config import config
 from tests.utils import fast_forward
@@ -19,6 +21,7 @@ def has_player(msg, name):
     return False
 
 
+@pytest.mark.skip("Multiple contexts not supported anymore")
 @fast_forward(100)
 async def test_multiple_contexts(
     database,
@@ -56,8 +59,8 @@ async def test_multiple_contexts(
     )
     broadcast_service.server = instance
 
-    await instance.listen(("127.0.0.1", 0), name="ws-a")
-    await instance.listen(("127.0.0.1", 0), name="ws-b")
+    await instance.listen()
+    await instance.listen()
 
     ctx_1, ctx_2 = tuple(instance.contexts)
 

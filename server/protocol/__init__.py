@@ -12,6 +12,7 @@ are serialized to bytes and sent across the network.
 from .gpgnet import GpgNetClientProtocol, GpgNetServerProtocol
 from .protocol import DisconnectedError, Protocol
 from .qdatastream import QDataStreamProtocol
+from .rabbitmq import RabbitMQProtocol
 from .simple_json import SimpleJsonProtocol
 from .websocket import WebSocketProtocol
 
@@ -21,6 +22,7 @@ __all__ = (
     "GpgNetServerProtocol",
     "Protocol",
     "QDataStreamProtocol",
+    "RabbitMQProtocol",
     "SimpleJsonProtocol",
     "WebSocketProtocol",
 )

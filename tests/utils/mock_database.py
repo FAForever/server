@@ -35,7 +35,7 @@ class MockDatabase(FAFDatabase):
         port: int = 3306,
         user: str = "root",
         password: str = "",
-        db: str = "faf_test",
+        db: str = "faf_lobby",
         **kwargs
     ):
         super().__init__(host, port, user, password, db, **kwargs)

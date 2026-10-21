@@ -12,7 +12,7 @@ DB_SERVER: "127.0.0.1"
 DB_PORT: 3306
 DB_LOGIN: "root"
 DB_PASSWORD: "banana"
-DB_NAME: "faf"
+DB_NAME: "faf_lobby"
 
 WWW_URL: "https://www.faforever.com"
 CONTENT_URL: "http://content.faforever.com"
@@ -33,3 +33,4 @@ LADDER_SEARCH_EXPANSION_STEP: 0.05
 QUEUE_POP_TIME_MAX: 180
 QUEUE_POP_DESIRED_MATCHES: 4
 QUEUE_POP_TIME_MOVING_AVG_SIZE: 5
+CLEAN_EXPIRED_SESSIONS: false
