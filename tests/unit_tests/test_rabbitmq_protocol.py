@@ -2,6 +2,7 @@ import asyncio
 from unittest import mock
 
 import pytest
+from aio_pika import DeliveryMode
 
 from server.config import config
 from server.protocol import DisconnectedError, RabbitMQProtocol
@@ -84,6 +85,7 @@ async def test_send_message_publishes_via_message_queue_service():
         exchange_name=config.OUTBOUND_EXCHANGE_NAME,
         routing="",
         payload={"message": {"command": "login", "user": "alice"}, "target": {"@type": "session", "session_id": 0}},
+        delivery_mode=DeliveryMode.NOT_PERSISTENT,
     )
     await proto.close()
 
@@ -104,6 +106,7 @@ async def test_send_messages_publishes_all():
         exchange_name=config.OUTBOUND_EXCHANGE_NAME,
         routing="",
         payloads=[{"message": {"a": 1}, "target": {"@type": "session", "session_id": 0}}, {"message": {"b": 2}, "target": {"@type": "session", "session_id": 0}}, {"message": {"c": 3}, "target": {"@type": "session", "session_id": 0}}],
+        delivery_mode=DeliveryMode.NOT_PERSISTENT,
     )
     await proto.close()
 
@@ -124,6 +127,7 @@ async def test_write_message_and_drain():
         exchange_name=config.OUTBOUND_EXCHANGE_NAME,
         routing="",
         payload={"message": {"command": "ping"}, "target": {"@type": "session", "session_id": 0}},
+        delivery_mode=DeliveryMode.NOT_PERSISTENT,
     )
     await proto.close()
 
@@ -144,6 +148,7 @@ async def test_write_messages_and_drain():
         exchange_name=config.OUTBOUND_EXCHANGE_NAME,
         routing="",
         payloads=[{"message": {"msg": 1}, "target": {"@type": "session", "session_id": 0}}, {"message": {"msg": 2}, "target": {"@type": "session", "session_id": 0}}],
+        delivery_mode=DeliveryMode.NOT_PERSISTENT,
     )
     await proto.close()
 
@@ -196,6 +201,7 @@ async def test_send_raw():
         exchange_name=config.OUTBOUND_EXCHANGE_NAME,
         routing="",
         payload={"message": {"raw": "data"}, "target": {"@type": "session", "session_id": 0}},
+        delivery_mode=DeliveryMode.NOT_PERSISTENT,
     )
     await proto.close()
 
