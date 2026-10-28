@@ -4,6 +4,8 @@ import asyncio
 import json
 from typing import TYPE_CHECKING
 
+from aio_pika import DeliveryMode
+
 import server.metrics as metrics
 
 from ..config import config
@@ -83,6 +85,7 @@ class RabbitMQProtocol(Protocol):
                 exchange_name=config.OUTBOUND_EXCHANGE_NAME,
                 routing="",
                 payload=self._wrap_message_with_session(message),
+                delivery_mode=DeliveryMode.NOT_PERSISTENT,
             )
         )
         self._pending.add(task)
@@ -103,6 +106,7 @@ class RabbitMQProtocol(Protocol):
                 exchange_name=config.OUTBOUND_EXCHANGE_NAME,
                 routing="",
                 payloads=[self._wrap_message_with_session(message) for message in messages],
+                delivery_mode=DeliveryMode.NOT_PERSISTENT,
             )
         )
         self._pending.add(task)
