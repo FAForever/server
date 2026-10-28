@@ -5,11 +5,18 @@ import pytest
 from sqlalchemy import and_, select
 
 from server.config import config
-from server.db.models import avatars, avatars_list, ban, friends_and_foes
+from server.db.models import (
+    avatars,
+    avatars_list,
+    ban,
+    friends_and_foes,
+    login
+)
 from server.protocol import DisconnectedError
 from tests.utils import fast_forward
 
 from .conftest import (
+    _connect_and_sign_in,
     connect_and_sign_in,
     connect_client,
     connect_mq_consumer,
@@ -892,6 +899,31 @@ async def get_player_selected_avatars(conn, player_id):
 
 
 @fast_forward(30)
+async def test_broker_session_records_user_agent(lobby_server):
+    # The broker answers the client's `ask_session` itself and passes the user
+    # agent on in the session message; the login must still record it.
+    player_id, _, proto = await _connect_and_sign_in(
+        ("test", "test_password"),
+        database=lobby_server.database,
+        server_context=lobby_server,
+        user_agent="faf-client-rust",
+        version="0.9.2",
+    )
+    await read_until_command(proto, "game_info")
+
+    async with lobby_server.database.acquire() as conn:
+        result = await conn.execute(
+            select(login.c.user_agent).where(login.c.id == player_id)
+        )
+        assert result.fetchone().user_agent == "faf-client-rust"
+
+    connection = next(
+        conn for conn in lobby_server.connections
+        if conn.player is not None and conn.player.id == player_id
+    )
+    assert connection.version == "0.9.2"
+
+
 async def test_avatar_list_empty(lobby_server):
     _, _, proto = await connect_and_sign_in(
         ("test", "test_password"),

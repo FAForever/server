@@ -623,6 +623,8 @@ async def _connect_and_sign_in(
         credentials,
         database,
         server_context,
+        user_agent: str | None = None,
+        version: str | None = None,
 ) -> tuple[int, int, Protocol]:
     global _session_counter
     _session_counter += 1
@@ -683,6 +685,8 @@ async def _connect_and_sign_in(
             "session_id": session_id,
             "state": {"@type": "new", "seconds_to_expiry": 0},
             "ip_address": "127.0.0.1",
+            "user_agent": user_agent,
+            "version": version,
         },
     )
 

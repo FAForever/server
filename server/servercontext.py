@@ -34,6 +34,11 @@ from .timing import LazyIntervalTimer, datetime_now
 from .types import Address
 
 
+def _optional_str(value) -> Optional[str]:
+    """A string field of a broker message, or `None` when it is absent or not a string."""
+    return value if isinstance(value, str) else None
+
+
 class ConnectionAttemptFailed(ConnectionError):
     pass
 
@@ -319,15 +324,19 @@ class ServerContext:
 
             state_type = state.get("@type")
             ip_address = payload.get("ip_address") or "unknown"
+            # The broker answers the client's `ask_session` itself, so the
+            # user agent and version it carried arrive here instead.
+            user_agent = _optional_str(payload.get("user_agent"))
+            version = _optional_str(payload.get("version"))
             if state_type == "new":
                 self.sessions_expiration[session_id] = datetime_now() + timedelta(seconds=int(state.get("seconds_to_expiry", config.DEFAULT_SESSION_EXPIRATION)))
                 if session_id not in self.sessions:
-                    self._create_session(ip_address, player_id, session_id, config.TRACK_PLAYER_STATE)
+                    self._create_session(ip_address, player_id, session_id, config.TRACK_PLAYER_STATE, user_agent, version)
 
             elif state_type == "existing":
                 self.sessions_expiration[session_id] = datetime_now() + timedelta(seconds=int(state.get("seconds_to_expiry", config.DEFAULT_SESSION_EXPIRATION)))
                 if session_id not in self.sessions:
-                    self._create_session(ip_address, player_id, session_id, False)
+                    self._create_session(ip_address, player_id, session_id, False, user_agent, version)
 
             elif state_type == "gone":
                 await self._remove_session(session_id)
@@ -362,7 +371,15 @@ class ServerContext:
                 session_id,
             )
 
-    def _create_session(self, ip_address: str, player_id: int, session_id: int, publish_welcome_messages: bool):
+    def _create_session(
+        self,
+        ip_address: str,
+        player_id: int,
+        session_id: int,
+        publish_welcome_messages: bool,
+        user_agent: Optional[str] = None,
+        version: Optional[str] = None,
+    ):
         peername = Address(ip_address, 0)
 
         connection = self._connection_factory()
@@ -390,7 +407,15 @@ class ServerContext:
         )
 
         task = asyncio.create_task(
-            self.handle_client_connected(connection, protocol, peername, player_id, publish_welcome_messages)
+            self.handle_client_connected(
+                connection,
+                protocol,
+                peername,
+                player_id,
+                publish_welcome_messages,
+                user_agent,
+                version,
+            )
         )
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
@@ -544,11 +569,16 @@ class ServerContext:
         peername: Address,
         player_id: int,
         publish_welcome_messages: bool,
+        user_agent: Optional[str] = None,
+        version: Optional[str] = None,
     ):
         try:
             await connection.on_connection_made(protocol, peername)
-            await connection.on_external_auth(player_id, "broker", publish_welcome_messages)
             metrics.user_connections.labels("None", "None").inc()
+            # Before the login, which records the user agent in `login`.
+            if user_agent is not None or version is not None:
+                connection._set_user_agent_and_version(user_agent, version)
+            await connection.on_external_auth(player_id, "broker", publish_welcome_messages)
             while protocol.is_connected():
                 message = await protocol.read_message()
                 with metrics.connection_on_message_received.time():
