@@ -1187,6 +1187,7 @@ position.</p>
                 exchange_name=config.OUTBOUND_EXCHANGE_NAME,
                 routing=&#34;&#34;,
                 payload=self._wrap_message_with_session(message),
+                delivery_mode=DeliveryMode.NOT_PERSISTENT,
             )
         )
         self._pending.add(task)
@@ -1207,6 +1208,7 @@ position.</p>
                 exchange_name=config.OUTBOUND_EXCHANGE_NAME,
                 routing=&#34;&#34;,
                 payloads=[self._wrap_message_with_session(message) for message in messages],
+                delivery_mode=DeliveryMode.NOT_PERSISTENT,
             )
         )
         self._pending.add(task)
