@@ -171,7 +171,8 @@ class BroadcastService(Service):
             )
 
     def broadcast_ping(self):
-        self.server.write_broadcast({&#34;command&#34;: &#34;ping&#34;})
+        if config.TRACK_PLAYER_STATE:
+            self.server.write_broadcast({&#34;command&#34;: &#34;ping&#34;})
 
     async def wait_report_dirtes(self):
         &#34;&#34;&#34;
@@ -234,7 +235,8 @@ class BroadcastService(Service):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def broadcast_ping(self):
-    self.server.write_broadcast({&#34;command&#34;: &#34;ping&#34;})</code></pre>
+    if config.TRACK_PLAYER_STATE:
+        self.server.write_broadcast({&#34;command&#34;: &#34;ping&#34;})</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
