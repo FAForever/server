@@ -39,6 +39,19 @@ class BanError(Exception):
             "moderation@faforever.com</i>"
         )
 
+    def to_notice(self):
+        """
+        Return a localized notice payload with a legacy text fallback.
+        """
+        return {
+            "command": "notice",
+            "style": "error",
+            "text": self.message(),
+            "localization_key": "ban.error",
+            "ban_reason": self.ban_reason,
+            "ban_expires_at": self.ban_expiry.isoformat(),
+        }
+
     def _ban_duration_text(self):
         ban_duration = self.ban_expiry - datetime_now()
         if ban_duration.days > 365 * 100:
