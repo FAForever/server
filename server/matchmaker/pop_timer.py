@@ -56,9 +56,12 @@ class PopTimer(object):
         num_players = self.queue.num_players
         metrics.matchmaker_players.labels(self.queue.name).set(num_players)
 
+        num_new_players = self.queue.num_new_queued_players
+        metrics.matchmaker_new_players.labels(self.queue.name).set(num_new_players)
+
         self._last_queue_pop = time()
         self.next_queue_pop = self._last_queue_pop + self.time_until_next_pop(
-            num_players, time_remaining
+            num_new_players, time_remaining
         )
 
     def time_until_next_pop(self, num_queued: int, time_queued: float) -> float:
@@ -82,8 +85,9 @@ class PopTimer(object):
 
         players_per_match = self.queue.team_size * 2
         desired_players = config.QUEUE_POP_DESIRED_MATCHES * players_per_match
-        # Obtained by solving $ NUM_PLAYERS = rate * time $ for time.
-        next_pop_time = desired_players * total_times / total_players
+        player_addition_rate = total_players / total_times
+        # Obtained by solving $ desired_players = player_addition_rate * time $ for time.
+        next_pop_time = desired_players / player_addition_rate
         if next_pop_time > config.QUEUE_POP_TIME_MAX:
             self._logger.info(
                 "Required time (%.2fs) for %s is larger than max pop time (%ds). "

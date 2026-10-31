@@ -67,6 +67,10 @@ matchmaker_players = Gauge(
     "server_matchmaker_queue_players", "Players in the queue at pop time", ["queue"]
 )
 
+matchmaker_new_players = Gauge(
+    "server_matchmaker_queue_new_players", "Number of newly added players to the queue at pop time", ["queue"]
+)
+
 matchmaker_queue_pop = Gauge(
     "server_matchmaker_queue_pop_timer_seconds",
     "Queue pop timer duration in seconds",
