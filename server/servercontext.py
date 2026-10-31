@@ -322,7 +322,7 @@ class ServerContext:
             if state_type == "new":
                 self.sessions_expiration[session_id] = datetime_now() + timedelta(seconds=int(state.get("seconds_to_expiry", config.DEFAULT_SESSION_EXPIRATION)))
                 if session_id not in self.sessions:
-                    self._create_session(ip_address, player_id, session_id, config.PUBLISH_WELCOME_MESSAGE)
+                    self._create_session(ip_address, player_id, session_id, config.TRACK_PLAYER_STATE)
 
             elif state_type == "existing":
                 self.sessions_expiration[session_id] = datetime_now() + timedelta(seconds=int(state.get("seconds_to_expiry", config.DEFAULT_SESSION_EXPIRATION)))

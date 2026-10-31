@@ -73,7 +73,8 @@ class PlayerService(Service):
         return self._players.values()
 
     def mark_dirty(self, player: Player) -> None:
-        self._dirty_players.add(player)
+        if config.TRACK_PLAYER_STATE:
+            self._dirty_players.add(player)
 
     def pop_dirty_players(self) -> set[Player]:
         dirty_players = self._dirty_players
