@@ -134,7 +134,8 @@ class BroadcastService(Service):
             )
 
     def broadcast_ping(self):
-        self.server.write_broadcast({"command": "ping"})
+        if config.TRACKER_ENABLED:
+            self.server.write_broadcast({"command": "ping"})
 
     async def wait_report_dirtes(self):
         """
