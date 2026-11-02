@@ -877,7 +877,7 @@ class LobbyConnection:
             }
             await self.send(json_to_send)
 
-            await self.send_game_list()
+        await self.send_game_list()
 
     @ice_only
     @player_idle(&#34;reconnect to a game&#34;)
@@ -3113,7 +3113,7 @@ async def command_restore_game_session(self, message):
         }
         await self.send(json_to_send)
 
-        await self.send_game_list()</code></pre>
+    await self.send_game_list()</code></pre>
 </details>
 <div class="desc"></div>
 </dd>
