@@ -106,6 +106,15 @@ class MatchmakerQueue:
     def num_players(self) -> int:
         return sum(len(search.players) for search in self._queue.keys())
 
+    @property
+    def num_new_queued_players(self) -> int:
+        """ Get the number of players who have joined the queue and not yet had a failed matching attempt in the last pop.
+
+        Returns:
+            int: Number of players who have joined the queue since last matching attempt.
+        """
+        return sum(len(search.players) for search in self._queue.keys() if search.failed_matching_attempts == 0)
+
     async def queue_pop_timer(self) -> None:
         """ Periodically tries to match all Searches in the queue. The amount
         of time until next queue 'pop' is determined by the number of players
