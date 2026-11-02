@@ -863,7 +863,7 @@ class LobbyConnection:
             }
             await self.send(json_to_send)
 
-            await self.send_game_list()
+        await self.send_game_list()
 
     @ice_only
     @player_idle("reconnect to a game")
