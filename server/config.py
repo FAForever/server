@@ -73,6 +73,9 @@ class ConfigurationStore:
         self.SHUTDOWN_KICK_IDLE_PLAYERS = False
 
         self.CONTROL_SERVER_PORT = 4000
+        self.PUBLIC_SERVER_PORT = 4001
+        # How long the public game list and queues are served from one copy
+        self.PUBLIC_SERVER_CACHE_SECONDS = 2
         self.HEALTH_SERVER_PORT = 2000
         self.METRICS_PORT = 8011
         self.ENABLE_METRICS = False

@@ -28,6 +28,7 @@ from server.game_service import GameService
 from server.health import HealthServer
 from server.player_service import PlayerService
 from server.profiler import Profiler
+from server.public import PublicServer
 from server.timing import datetime_now
 
 
@@ -110,6 +111,13 @@ async def main():
     config.register_callback(
         "CONTROL_SERVER_PORT",
         control_server.run_from_config
+    )
+
+    public_server = PublicServer(instance)
+    await public_server.run_from_config()
+    config.register_callback(
+        "PUBLIC_SERVER_PORT",
+        public_server.run_from_config
     )
 
     await instance.start_services()

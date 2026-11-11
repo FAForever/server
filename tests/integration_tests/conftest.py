@@ -39,6 +39,7 @@ from server.db.models import login
 from server.health import HealthServer
 from server.protocol import DisconnectedError, Protocol
 from server.protocol.protocol import json_encoder
+from server.public import PublicServer
 from server.servercontext import ServerContext
 from tests.utils import exhaust_callbacks
 
@@ -287,6 +288,19 @@ async def control_server(lobby_instance):
     await server.start(
         "127.0.0.1",
         config.CONTROL_SERVER_PORT
+    )
+
+    yield server
+
+    await server.shutdown()
+
+
+@pytest.fixture
+async def public_server(lobby_instance):
+    server = PublicServer(lobby_instance)
+    await server.start(
+        "127.0.0.1",
+        config.PUBLIC_SERVER_PORT
     )
 
     yield server
