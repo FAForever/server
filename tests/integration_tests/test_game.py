@@ -970,6 +970,43 @@ async def test_double_join_message(lobby_server):
     }
 
 
+@fast_forward(120)
+async def test_game_join_setup_timeout(lobby_server):
+    """
+    A player whose game takes too long to start must be told that the server
+    gave up on them. Otherwise the game ends up sitting in the lobby forever,
+    waiting for a `JoinGame` message that is never sent.
+    """
+    _, _, host_proto = await connect_and_sign_in(
+        ("test", "test_password"), lobby_server
+    )
+    _, _, guest_proto = await connect_and_sign_in(
+        ("Rhiza", "puff_the_magic_dragon"), lobby_server
+    )
+    game_id = await host_game(host_proto)
+
+    await guest_proto.send_message({
+        "command": "game_join",
+        "uid": game_id
+    })
+    await read_until_command(guest_proto, "game_launch", timeout=10)
+
+    # The game does not manage to start up in time
+    msg = await read_until_command(guest_proto, "notice", timeout=100)
+    assert msg["style"] == "info"
+    assert "took too long to start" in msg["text"]
+
+    # The game finishes loading after all. It is too late to join.
+    await open_fa(guest_proto)
+    with pytest.raises(asyncio.TimeoutError):
+        await read_until_command(
+            guest_proto, "JoinGame", target="game", timeout=5
+        )
+
+    # But the player is free to try again
+    await join_game(guest_proto, game_id)
+
+
 @fast_forward(30)
 async def test_double_restore_game_session_message(lobby_server):
     host_id, _, host_proto = await connect_and_sign_in(

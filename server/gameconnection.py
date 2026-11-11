@@ -78,8 +78,15 @@ class GameConnection(GpgNetServerProtocol):
     async def timeout_game_connection(self, timeout):
         await asyncio.sleep(timeout)
         if self.state is GameConnectionState.INITIALIZING:
-            self._logger.debug("GameConection timed out...")
-            await self.abort("Player took too long to start the game")
+            self._logger.info(
+                "%s did not start the game within %s seconds, aborting",
+                self.player, timeout
+            )
+            await self.abort_and_notify(
+                "Player took too long to start the game",
+                "Your game took too long to start, so the server cancelled "
+                "your connection to it. Please close the game and try again."
+            )
 
     @property
     def state(self) -> GameConnectionState:
@@ -159,19 +166,39 @@ class GameConnection(GpgNetServerProtocol):
                     self._logger.debug("%s connecting to %s", self.player, peer)
                     tasks.append(self.connect_to_peer(peer))
             await asyncio.gather(*tasks)
+        else:
+            # The game is waiting in the lobby for instructions that we will
+            # never send. Don't leave the player hanging.
+            self._logger.warning(
+                "%s entered lobby in unexpected state %s, aborting",
+                self.player, player_state
+            )
+            await self.abort_and_notify(
+                f"Player entered lobby in unexpected state {player_state}",
+                "The server was not able to set up your game. Please close "
+                "the game and try again."
+            )
 
     async def connect_to_host(self, peer: "GameConnection"):
         """
         Connect self to a given peer (host)
         """
         if not peer or peer.player.state != PlayerState.HOSTING:
-            await self.abort("The host left the lobby")
+            await self.abort_and_notify(
+                "The host left the lobby",
+                "The host left the lobby before you could connect. Please "
+                "close the game."
+            )
             return
 
         await self.send_JoinGame(peer.player.login, peer.player.id)
 
         if not peer:
-            await self.abort("The host left the lobby")
+            await self.abort_and_notify(
+                "The host left the lobby",
+                "The host left the lobby before you could connect. Please "
+                "close the game."
+            )
             return
 
         await peer.send_ConnectToPeer(
@@ -630,6 +657,26 @@ class GameConnection(GpgNetServerProtocol):
             del self.player.game_connection
         except Exception as ex:  # pragma: no cover
             self._logger.debug("Exception in abort(): %s", ex)
+
+    async def abort_and_notify(self, log_message: str, notice: str):
+        """
+        Abort the connection and tell the player why.
+
+        Use this when the abort is not a reaction to something the player's
+        client already knows about. Otherwise the game would be left waiting
+        in the lobby for messages that are never going to arrive, without any
+        indication of what went wrong.
+        """
+        if self._state is GameConnectionState.ENDED:
+            return
+
+        player = self.player
+        await self.abort(log_message)
+        player.write_message({
+            "command": "notice",
+            "style": "info",
+            "text": notice
+        })
 
     async def disconnect_all_peers(self):
         tasks = []
