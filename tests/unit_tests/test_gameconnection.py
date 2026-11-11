@@ -21,7 +21,7 @@ from server.players import PlayerState
 from server.protocol import DisconnectedError
 from server.timing import datetime_now
 from server.types import Map
-from tests.utils import exhaust_callbacks
+from tests.utils import exhaust_callbacks, fast_forward
 
 
 @pytest.fixture
@@ -44,6 +44,64 @@ async def test_abort(game_connection: GameConnection, game: Game, players):
     await game_connection.abort()
 
     game.remove_game_connection.assert_called_with(game_connection)
+
+
+@fast_forward(90)
+async def test_setup_timeout_notifies_player(
+    game_connection: GameConnection,
+    game: Game,
+    players
+):
+    lobby_connection = mock.Mock()
+    players.hosting.lobby_connection = lobby_connection
+    assert game_connection.state is GameConnectionState.INITIALIZING
+
+    await game_connection.timeout_game_connection(60)
+
+    assert game_connection.state is GameConnectionState.ENDED
+    game.remove_game_connection.assert_called_with(game_connection)
+    lobby_connection.write.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": mock.ANY
+    })
+
+
+@fast_forward(90)
+async def test_setup_timeout_does_nothing_when_game_started(
+    game_connection: GameConnection,
+    game: Game,
+    players
+):
+    lobby_connection = mock.Mock()
+    players.hosting.lobby_connection = lobby_connection
+    game.host = players.hosting
+    await game_connection.handle_action("GameState", ["Idle"])
+
+    await game_connection.timeout_game_connection(60)
+
+    assert game_connection.state is GameConnectionState.CONNECTED_TO_HOST
+    lobby_connection.write.assert_not_called()
+
+
+async def test_abort_and_notify(
+    game_connection: GameConnection,
+    game: Game,
+    players
+):
+    lobby_connection = mock.Mock()
+    players.hosting.lobby_connection = lobby_connection
+
+    await game_connection.abort_and_notify("Log message", "Player message")
+    # A second call must not notify the player again
+    await game_connection.abort_and_notify("Log message", "Player message")
+
+    game.remove_game_connection.assert_called_once_with(game_connection)
+    lobby_connection.write.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": "Player message"
+    })
 
 
 async def test_disconnect_all_peers(
@@ -228,6 +286,55 @@ async def test_handle_action_GameState_lobby_calls_abort(
     await exhaust_callbacks()
 
     game_connection.abort.assert_called_once()
+
+
+async def test_handle_lobby_state_host_left_notifies_player(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
+    lobby_connection = mock.Mock()
+    players.joining.lobby_connection = lobby_connection
+    game_connection.player = players.joining
+    players.joining.game = game
+    game.host = players.hosting
+    game.host.state = PlayerState.IDLE
+
+    await game_connection.handle_action("GameState", ["Lobby"])
+    await exhaust_callbacks()
+
+    assert game_connection.state is GameConnectionState.ENDED
+    game_connection.protocol.send_message.assert_not_called()
+    lobby_connection.write.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": mock.ANY
+    })
+
+
+async def test_handle_lobby_state_unexpected_player_state_notifies_player(
+    game: Game,
+    game_connection: GameConnection,
+    players
+):
+    lobby_connection = mock.Mock()
+    players.joining.lobby_connection = lobby_connection
+    game_connection.player = players.joining
+    players.joining.game = game
+    players.joining.state = PlayerState.STARTING_GAME
+    game.host = players.hosting
+
+    # The game skipped the Idle state
+    await game_connection.handle_action("GameState", ["Lobby"])
+    await exhaust_callbacks()
+
+    assert game_connection.state is GameConnectionState.ENDED
+    game_connection.protocol.send_message.assert_not_called()
+    lobby_connection.write.assert_called_once_with({
+        "command": "notice",
+        "style": "info",
+        "text": mock.ANY
+    })
 
 
 async def test_handle_action_GameState_launching_calls_launch(

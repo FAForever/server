@@ -203,6 +203,11 @@ class LobbyConnection:
             target = message.get("target")
             if target == "game":
                 if not self.game_connection:
+                    self._logger.debug(
+                        "Ignoring game message from %s without an active "
+                        "game connection: %s",
+                        self.get_user_identifier(), message
+                    )
                     return
 
                 await self.game_connection.handle_action(cmd, message.get("args", []))
