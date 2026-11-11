@@ -1005,6 +1005,9 @@ async def test_game_join_setup_timeout(lobby_server):
 
     # But the player is free to try again
     await join_game(guest_proto, game_id)
+    await read_until_command(
+        guest_proto, "JoinGame", target="game", timeout=10
+    )
 
 
 @fast_forward(30)
