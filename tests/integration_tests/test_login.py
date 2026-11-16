@@ -48,12 +48,12 @@ async def test_server_ban(lobby_server, user):
         "<br><br><i>If you would like to appeal this ban, please send an "
         "email to: moderation@faforever.com</i>"
     )
-        assert msg["i18n_key"] == "login.error.banned"
+    assert msg["i18n_key"] == "login.error.banned"
     assert msg["i18n_args"] == [msg["expires_at"], "Test permanent ban"]
     # The permanent test bans expire far in the future
-assert datetime.fromisoformat(msg["expires_at"]) > datetime.now(
-    timezone.utc
-)
+    assert datetime.fromisoformat(msg["expires_at"]) > datetime.now(
+        timezone.utc
+    )
 
 
 @pytest.mark.parametrize("user", [
@@ -90,9 +90,9 @@ async def test_server_ban_token(lobby_server, user, jwk_priv_key, jwk_kid):
     assert msg["i18n_key"] == "login.error.banned"
     assert msg["i18n_args"] == [msg["expires_at"], "Test permanent ban"]
     # The permanent test bans expire far in the future
-assert datetime.fromisoformat(msg["expires_at"]) > datetime.now(
-    timezone.utc
-)
+    assert datetime.fromisoformat(msg["expires_at"]) > datetime.now(
+        timezone.utc
+    )
 
 
 @pytest.mark.parametrize("user", ["ban_revoked", "ban_expired"])
