@@ -64,7 +64,6 @@ async def test_server_ban_token(lobby_server, user, jwk_priv_key, jwk_kid):
     user_name, user_id = user
     proto = await connect_client(lobby_server)
     await proto.send_message({
-       
         "command": "auth",
         "version": "1.0.0-dev",
         "user_agent": "faf-client",
