@@ -14,6 +14,7 @@ class ClientError(Exception):
     If recoverable is False, it is expected that the connection be terminated
     immediately.
     """
+
     def __init__(self, message, recoverable=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.message = message
@@ -24,6 +25,7 @@ class BanError(Exception):
     """
     Signals that an operation could not be completed because the user is banned.
     """
+
     def __init__(self, ban_expiry, ban_reason, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ban_expiry = ban_expiry
@@ -75,6 +77,7 @@ class AuthenticationError(Exception):
     """
     The operation failed to authenticate.
     """
+
     def __init__(self, message, method, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.message = message
@@ -83,8 +86,5 @@ class AuthenticationError(Exception):
 
 class DisabledError(Exception):
     """
-    The operation failed because the account was disabled.
+    The operation is disabled due to an impending server shutdown.
     """
-    def __init__(self, message, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.message = message
