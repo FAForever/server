@@ -39,6 +39,29 @@ class BanError(Exception):
             "moderation@faforever.com</i>"
         )
 
+    def notice(self):
+        """
+        Build the protocol message notifying the client about the ban.
+
+        The human readable `text` is kept unchanged so that older clients
+        render the message exactly as before. Newer clients can instead
+        localize the message themselves using `i18n_key` and `i18n_args`,
+        where the arguments are the ban expiry as an ISO 8601 timestamp in
+        UTC and the ban reason, matching the placeholders of the
+        `login.error.banned` translation. The expiry is also sent on its
+        own as `expires_at` so clients can use it without having to reach
+        into the translation arguments.
+        """
+        expires_at = self.ban_expiry.isoformat()
+        return {
+            "command": "notice",
+            "style": "error",
+            "text": self.message(),
+            "i18n_key": "login.error.banned",
+            "i18n_args": [expires_at, self.ban_reason],
+            "expires_at": expires_at
+        }
+
     def _ban_duration_text(self):
         ban_duration = self.ban_expiry - datetime_now()
         if ban_duration.days > 365 * 100:

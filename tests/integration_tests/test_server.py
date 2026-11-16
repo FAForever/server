@@ -838,7 +838,10 @@ async def test_server_ban_prevents_hosting(lobby_server, database, command):
             "You are banned from FAF forever. <br>Reason: <br>Test live ban<br>"
             "<br><i>If you would like to appeal this ban, please send an email "
             "to: moderation@faforever.com</i>"
-        )
+        ),
+        "i18n_key": "login.error.banned",
+        "i18n_args": ["2999-12-31T00:00:00+00:00", "Test live ban"],
+        "expires_at": "2999-12-31T00:00:00+00:00"
     }
 
 
